@@ -42,7 +42,7 @@ export const DashboardPage: React.FC = () => {
         <div className="card" style={{
           textAlign: 'center',
           padding: '60px 20px',
-          background: 'rgba(17, 24, 39, 0.4)',
+          background: 'var(--bg-subtle)',
           border: '1px dashed var(--border-color)',
           marginTop: '20px'
         }}>

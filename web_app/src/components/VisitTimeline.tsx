@@ -125,7 +125,7 @@ export const VisitTimeline: React.FC<VisitTimelineProps> = ({
                         <div
                           key={mIdx}
                           style={{
-                            background: 'rgba(15, 23, 42, 0.8)',
+                            background: 'var(--bg-subtle)',
                             border: '1px solid var(--border-color)',
                             borderRadius: 'var(--radius-sm)',
                             padding: '6px 12px',

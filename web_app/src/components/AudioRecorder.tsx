@@ -267,7 +267,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
 
       {/* Recording Studio View */}
       <div style={{
-        background: 'rgba(15, 23, 42, 0.6)',
+        background: 'var(--bg-subtle)',
         border: '1px dashed var(--border-color)',
         borderRadius: 'var(--radius-md)',
         padding: '30px 20px',
@@ -282,8 +282,9 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
           width: '100%',
           maxWidth: '500px',
           height: '64px',
-          background: 'rgba(0, 0, 0, 0.3)',
+          background: 'var(--waveform-bg)',
           borderRadius: 'var(--radius-sm)',
+          border: '1px solid var(--border-color)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

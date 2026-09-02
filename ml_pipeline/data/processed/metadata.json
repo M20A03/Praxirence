@@ -1,0 +1,244 @@
+[
+  {
+    "id": "consult_001",
+    "audio_path": "/home/mayank-raj/Desktop/Praxirence/ml_pipeline/scripts/../data/raw/audio/consult_001.wav",
+    "transcript": "Doctor: Good morning Sarah. Tell me about your cough. Patient: It started three days ago doctor. It hurts in my chest and I have a low fever around 100 degrees. Doctor: Let me listen to your chest. Deep breath in. Yes, bilateral rhonchi and bronchial wheezing. You have acute bronchitis. I am prescribing Azithromycin 500mg once daily after breakfast for 3 days. For the cough, take Levosalbutamol syrup 5ml twice daily after meals for 5 days. For the fever, take Paracetamol 650mg twice daily after food as needed. Drink warm water and avoid cold drinks.",
+    "diagnosis": "Acute Bronchitis with Mild Pyrexia & Bronchial Wheezing",
+    "medicines": [
+      {
+        "name": "Azithromycin",
+        "dosage": "500mg",
+        "frequency": "Once daily after breakfast",
+        "instructions": "Take after breakfast for 3 days",
+        "duration_days": 3
+      },
+      {
+        "name": "Levosalbutamol Syrup",
+        "dosage": "5ml",
+        "frequency": "Twice daily after meals",
+        "instructions": "Take 5ml after breakfast and dinner",
+        "duration_days": 5
+      },
+      {
+        "name": "Paracetamol",
+        "dosage": "650mg",
+        "frequency": "Twice daily as needed",
+        "instructions": "Take after food for fever or pain",
+        "duration_days": 3
+      }
+    ],
+    "reminders": [
+      {
+        "medicine_name": "Azithromycin",
+        "dosage": "500mg",
+        "time": "08:30",
+        "frequency": "daily",
+        "instructions": "Take 1 tablet after breakfast"
+      },
+      {
+        "medicine_name": "Levosalbutamol Syrup",
+        "dosage": "5ml",
+        "time": "08:30",
+        "frequency": "daily",
+        "instructions": "Take 5ml syrup after breakfast"
+      },
+      {
+        "medicine_name": "Levosalbutamol Syrup",
+        "dosage": "5ml",
+        "time": "20:30",
+        "frequency": "daily",
+        "instructions": "Take 5ml syrup after dinner"
+      },
+      {
+        "medicine_name": "Paracetamol",
+        "dosage": "650mg",
+        "time": "08:30",
+        "frequency": "daily",
+        "instructions": "Take 1 tablet if fever/pain"
+      },
+      {
+        "medicine_name": "Paracetamol",
+        "dosage": "650mg",
+        "time": "20:30",
+        "frequency": "daily",
+        "instructions": "Take 1 tablet if fever/pain"
+      }
+    ],
+    "processed_audio_path": "/home/mayank-raj/Desktop/Praxirence/ml_pipeline/scripts/../data/processed/audio/consult_001.wav",
+    "sample_rate": 16000
+  },
+  {
+    "id": "consult_002",
+    "audio_path": "/home/mayank-raj/Desktop/Praxirence/ml_pipeline/scripts/../data/raw/audio/consult_002.wav",
+    "transcript": "Doctor: Hello Michael. How have your sugar readings been? Patient: Fasting was around 160 this week doctor, and I have been feeling quite thirsty. Doctor: Your HbA1c is 7.8 percent, so we need to adjust your regimen. We will start Metformin 500mg twice daily with meals morning and night. Also add Glimepiride 1mg once daily before breakfast. Make sure you walk for 30 minutes every evening and reduce refined carbohydrates. We will recheck your fasting blood glucose in 4 weeks.",
+    "diagnosis": "Type 2 Diabetes Mellitus with Suboptimal Glycemic Control",
+    "medicines": [
+      {
+        "name": "Metformin",
+        "dosage": "500mg",
+        "frequency": "Twice daily with meals (1-0-1)",
+        "instructions": "Take with breakfast and dinner",
+        "duration_days": 30
+      },
+      {
+        "name": "Glimepiride",
+        "dosage": "1mg",
+        "frequency": "Once daily before breakfast (1-0-0)",
+        "instructions": "Take 15 minutes before breakfast",
+        "duration_days": 30
+      }
+    ],
+    "reminders": [
+      {
+        "medicine_name": "Glimepiride",
+        "dosage": "1mg",
+        "time": "07:45",
+        "frequency": "daily",
+        "instructions": "Take 1 tablet before breakfast"
+      },
+      {
+        "medicine_name": "Metformin",
+        "dosage": "500mg",
+        "time": "08:30",
+        "frequency": "daily",
+        "instructions": "Take 1 tablet with breakfast"
+      },
+      {
+        "medicine_name": "Metformin",
+        "dosage": "500mg",
+        "time": "20:30",
+        "frequency": "daily",
+        "instructions": "Take 1 tablet with dinner"
+      }
+    ],
+    "processed_audio_path": "/home/mayank-raj/Desktop/Praxirence/ml_pipeline/scripts/../data/processed/audio/consult_002.wav",
+    "sample_rate": 16000
+  },
+  {
+    "id": "consult_003",
+    "audio_path": "/home/mayank-raj/Desktop/Praxirence/ml_pipeline/scripts/../data/raw/audio/consult_003.wav",
+    "transcript": "Doctor: Good afternoon Robert. What is bothering you? Patient: I have this terrible throbbing headache on the right side of my head and nausea when looking at bright lights. Doctor: Classic symptoms of a migraine without aura. I am prescribing Sumatriptan 50mg to take at the earliest onset of headache. For the nausea, take Ondansetron 4mg twice daily before food as needed. Stay in a dark, quiet room during an episode and drink plenty of electrolyte fluids.",
+    "diagnosis": "Acute Migraine Headache with Nausea and Photophobia",
+    "medicines": [
+      {
+        "name": "Sumatriptan",
+        "dosage": "50mg",
+        "frequency": "At onset of migraine attack",
+        "instructions": "Take 1 tablet immediately when headache starts",
+        "duration_days": 5
+      },
+      {
+        "name": "Ondansetron",
+        "dosage": "4mg",
+        "frequency": "Twice daily before food as needed",
+        "instructions": "Dissolve on tongue before meals for nausea",
+        "duration_days": 3
+      }
+    ],
+    "reminders": [
+      {
+        "medicine_name": "Sumatriptan",
+        "dosage": "50mg",
+        "time": "09:00",
+        "frequency": "as_needed",
+        "instructions": "Take immediately if migraine begins"
+      },
+      {
+        "medicine_name": "Ondansetron",
+        "dosage": "4mg",
+        "time": "08:00",
+        "frequency": "daily",
+        "instructions": "Take before breakfast if nauseated"
+      },
+      {
+        "medicine_name": "Ondansetron",
+        "dosage": "4mg",
+        "time": "19:30",
+        "frequency": "daily",
+        "instructions": "Take before dinner if nauseated"
+      }
+    ],
+    "processed_audio_path": "/home/mayank-raj/Desktop/Praxirence/ml_pipeline/scripts/../data/processed/audio/consult_003.wav",
+    "sample_rate": 16000
+  },
+  {
+    "id": "consult_004",
+    "audio_path": "/home/mayank-raj/Desktop/Praxirence/ml_pipeline/scripts/../data/raw/audio/consult_004.wav",
+    "transcript": "Doctor: Hi Emily, let us check your throat. Patient: Swallowing has been painful for two days and I feel chills. Doctor: The pharynx is erythematous with tonsillar exudate. This is acute streptococcal pharyngitis. Start Amoxicillin-Clavulanate 625mg twice daily after meals for 7 days. It is critical to finish all 7 days. Take Ibuprofen 400mg twice daily after food for throat pain and inflammation. Gargle with warm saline twice daily.",
+    "diagnosis": "Acute Streptococcal Pharyngotonsillitis",
+    "medicines": [
+      {
+        "name": "Amoxicillin-Clavulanate",
+        "dosage": "625mg",
+        "frequency": "Twice daily after meals (1-0-1)",
+        "instructions": "Take after breakfast and dinner. Complete full 7-day course.",
+        "duration_days": 7
+      },
+      {
+        "name": "Ibuprofen",
+        "dosage": "400mg",
+        "frequency": "Twice daily after food as needed",
+        "instructions": "Take after meals for throat pain.",
+        "duration_days": 4
+      }
+    ],
+    "reminders": [
+      {
+        "medicine_name": "Amoxicillin-Clavulanate",
+        "dosage": "625mg",
+        "time": "08:30",
+        "frequency": "daily",
+        "instructions": "Take 1 tablet after breakfast"
+      },
+      {
+        "medicine_name": "Amoxicillin-Clavulanate",
+        "dosage": "625mg",
+        "time": "20:30",
+        "frequency": "daily",
+        "instructions": "Take 1 tablet after dinner"
+      },
+      {
+        "medicine_name": "Ibuprofen",
+        "dosage": "400mg",
+        "time": "08:30",
+        "frequency": "daily",
+        "instructions": "Take 1 tablet after breakfast if throat pain"
+      },
+      {
+        "medicine_name": "Ibuprofen",
+        "dosage": "400mg",
+        "time": "20:30",
+        "frequency": "daily",
+        "instructions": "Take 1 tablet after dinner if throat pain"
+      }
+    ],
+    "processed_audio_path": "/home/mayank-raj/Desktop/Praxirence/ml_pipeline/scripts/../data/processed/audio/consult_004.wav",
+    "sample_rate": 16000
+  },
+  {
+    "id": "consult_005",
+    "audio_path": "/home/mayank-raj/Desktop/Praxirence/ml_pipeline/scripts/../data/raw/audio/consult_005.wav",
+    "transcript": "Doctor: Welcome back David. Your blood pressure today is 148 over 92 millimeters of mercury. Patient: Yes doctor, I have been stressed with work lately. Doctor: We will initiate mild antihypertensive therapy with Telmisartan 40mg once daily in the morning after breakfast. Reduce dietary sodium, avoid processed foods, and maintain a daily blood pressure log. Come back in 3 weeks for follow up.",
+    "diagnosis": "Primary Essential Hypertension (Stage 1)",
+    "medicines": [
+      {
+        "name": "Telmisartan",
+        "dosage": "40mg",
+        "frequency": "Once daily in morning (1-0-0)",
+        "instructions": "Take after breakfast every morning.",
+        "duration_days": 30
+      }
+    ],
+    "reminders": [
+      {
+        "medicine_name": "Telmisartan",
+        "dosage": "40mg",
+        "time": "08:00",
+        "frequency": "daily",
+        "instructions": "Take 1 tablet after breakfast"
+      }
+    ],
+    "processed_audio_path": "/home/mayank-raj/Desktop/Praxirence/ml_pipeline/scripts/../data/processed/audio/consult_005.wav",
+    "sample_rate": 16000
+  }
+]

@@ -1,0 +1,122 @@
+services:
+  # ----------------------------------------------------------------------------
+  # PostgreSQL Database (HIPAA / Encrypted Storage)
+  # ----------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: praxirence-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-praxirence}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------------------------------
+  # Redis Queue & Cache Broker
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: praxirence-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------------------------------
+  # FastAPI REST Backend & AI Inference Service
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: praxirence-backend
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DEBUG: ${DEBUG:-True}
+      SECRET_KEY: ${SECRET_KEY:-praxirence-super-secret-jwt-key-change-in-production-32bytes-min}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-praxirence}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-rV8_NqjH6_t5z9oEwM11x2_4pX-9yK0Z7Q_3uI6v8w0=}
+      PHONE_HASH_SALT: ${PHONE_HASH_SALT:-praxirence-phone-blind-index-salt-v1}
+      META_WHATSAPP_TOKEN: ${META_WHATSAPP_TOKEN:-}
+      META_PHONE_NUMBER_ID: ${META_PHONE_NUMBER_ID:-}
+      FAST2SMS_API_KEY: ${FAST2SMS_API_KEY:-}
+      WHISPER_BASE_MODEL: ${WHISPER_BASE_MODEL:-openai/whisper-small}
+      LLM_BASE_MODEL: ${LLM_BASE_MODEL:-mistralai/Mistral-7B-Instruct-v0.2}
+      ALLOWED_ORIGINS: '["http://localhost:5173", "http://localhost:3000", "http://localhost:8080"]'
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - audio_recordings:/tmp/praxirence_recordings
+
+  # ----------------------------------------------------------------------------
+  # Celery Background Worker (Meta WhatsApp Delivery & Scheduled Reminders)
+  # ----------------------------------------------------------------------------
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: praxirence-celery-worker
+    restart: unless-stopped
+    command: ["celery", "-A", "app.tasks.celery_app", "worker", "--loglevel=info", "-c", "2"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-praxirence}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-rV8_NqjH6_t5z9oEwM11x2_4pX-9yK0Z7Q_3uI6v8w0=}
+      PHONE_HASH_SALT: ${PHONE_HASH_SALT:-praxirence-phone-blind-index-salt-v1}
+      META_WHATSAPP_TOKEN: ${META_WHATSAPP_TOKEN:-}
+      META_PHONE_NUMBER_ID: ${META_PHONE_NUMBER_ID:-}
+      FAST2SMS_API_KEY: ${FAST2SMS_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - audio_recordings:/tmp/praxirence_recordings
+
+  # ----------------------------------------------------------------------------
+  # Doctor Web App (React + Vite)
+  # ----------------------------------------------------------------------------
+  web_app:
+    build:
+      context: ./web_app
+      dockerfile: Dockerfile
+    container_name: praxirence-web
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  redisdata:
+  audio_recordings:

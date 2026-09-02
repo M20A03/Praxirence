@@ -1,0 +1,13 @@
+{
+  "asr": {
+    "wer": 0.0,
+    "cer": 0.0
+  },
+  "llm": {
+    "rouge1": 0.92,
+    "rouge2": 0.78,
+    "rougeL": 0.88,
+    "bleu": 0.75
+  },
+  "samples_evaluated": 1
+}

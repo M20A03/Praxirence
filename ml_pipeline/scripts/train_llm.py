@@ -132,23 +132,31 @@ def main():
         report_to="none"
     )
 
-    # 7. SFTTrainer
-    logger.info("Initializing SFTTrainer...")
-    sft_kwargs = dict(
-        model=model,
-        train_dataset=train_dataset,
-        eval_dataset=val_dataset,
-        peft_config=peft_config,
-        dataset_text_field="text",
-        max_seq_length=args.max_seq_length,
-        args=training_args,
-    )
-    try:
-        trainer = SFTTrainer(processing_class=tokenizer, **sft_kwargs)
-    except TypeError:
-        trainer = SFTTrainer(tokenizer=tokenizer, **sft_kwargs)
+    # 7. Trainer Setup (Universal compatibility across all Transformers versions)
+    logger.info("Tokenizing instruction training dataset...")
+    def tokenize_fn(batch):
+        tokens = tokenizer(
+            batch["text"],
+            truncation=True,
+            max_length=args.max_seq_length,
+            padding="max_length"
+        )
+        tokens["labels"] = tokens["input_ids"].copy()
+        return tokens
 
-    logger.info("Starting SFT fine-tuning run...")
+    tokenized_train = train_dataset.map(tokenize_fn, batched=True)
+    tokenized_val = val_dataset.map(tokenize_fn, batched=True) if val_dataset else None
+
+    from transformers import Trainer, DataCollatorForLanguageModeling
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=tokenized_train,
+        eval_dataset=tokenized_val,
+        data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
+    )
+
+    logger.info("Starting fine-tuning run on T4 GPU...")
     trainer.train()
 
     # 8. Save adapter and tokenizer

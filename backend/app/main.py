@@ -45,6 +45,7 @@ def seed_initial_data():
         else:
             doctor.name = "Dr. Mayank Raj"
             doctor.specialty = "Chief Medical Officer & Physician"
+            doctor.hashed_password = get_password_hash("Doctor123!")
             db.commit()
 
         sample_patient = db.query(Patient).first()

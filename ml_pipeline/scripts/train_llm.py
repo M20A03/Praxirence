@@ -119,7 +119,7 @@ def main():
     val_dataset = load_jsonl_dataset(val_file) if os.path.exists(val_file) else None
 
     # 6. Training Arguments optimized for Google Colab T4 16GB
-    t_args_kwargs = dict(
+    training_args = TrainingArguments(
         output_dir=os.path.join(args.output_dir, "checkpoints"),
         per_device_train_batch_size=args.batch_size,
         gradient_accumulation_steps=args.grad_accum,
@@ -129,27 +129,24 @@ def main():
         fp16=is_cuda,
         optim="paged_adamw_8bit" if is_cuda else "adamw_torch",
         save_strategy="no",
-        warmup_ratio=0.05,
-        lr_scheduler_type="cosine",
         report_to="none"
     )
-    try:
-        training_args = TrainingArguments(eval_strategy="no", **t_args_kwargs)
-    except TypeError:
-        training_args = TrainingArguments(evaluation_strategy="no", **t_args_kwargs)
 
     # 7. SFTTrainer
     logger.info("Initializing SFTTrainer...")
-    trainer = SFTTrainer(
+    sft_kwargs = dict(
         model=model,
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
         peft_config=peft_config,
         dataset_text_field="text",
         max_seq_length=args.max_seq_length,
-        tokenizer=tokenizer,
         args=training_args,
     )
+    try:
+        trainer = SFTTrainer(processing_class=tokenizer, **sft_kwargs)
+    except TypeError:
+        trainer = SFTTrainer(tokenizer=tokenizer, **sft_kwargs)
 
     logger.info("Starting SFT fine-tuning run...")
     trainer.train()

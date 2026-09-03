@@ -9,6 +9,15 @@ const API_BASE_URL = (
 // In-memory demo state for standalone Vercel preview
 let demoPatients: Patient[] = [
   {
+    id: 'p-000',
+    name: 'Mayank',
+    phone: '+919835139865',
+    dob: '1998-05-15',
+    consent_status: true,
+    consent_updated_at: new Date().toISOString(),
+    created_at: new Date().toISOString(),
+  },
+  {
     id: 'p-001',
     name: 'Sarah Jenkins',
     phone: '+15551234567',
@@ -37,6 +46,74 @@ let demoPatients: Patient[] = [
 ];
 
 let demoVisits: Record<string, Visit[]> = {
+  'p-000': [
+    {
+      id: 'v-000',
+      patient_id: 'p-000',
+      doctor_id: 'doc-001',
+      date: new Date().toISOString(),
+      keep_recording: false,
+      raw_transcription: 'Doctor: Fasting blood glucose is elevated at 160. HbA1c is 7.8 percent. Start Metformin 1000mg twice daily with meals and Glimepiride 1mg once daily before breakfast. Add Teneligliptin 20mg once daily before lunch.',
+      diagnosis: 'Type 2 Diabetes Mellitus with Suboptimal Glycemic Control',
+      medicines: [
+        {
+          name: 'Glimepiride',
+          dosage: '1mg',
+          frequency: 'Once daily before breakfast (1-0-0)',
+          instructions: 'Take 15 mins before morning meal',
+          duration_days: 30
+        },
+        {
+          name: 'Metformin',
+          dosage: '1000mg',
+          frequency: 'Twice daily with meals (1-0-1)',
+          instructions: 'Take immediately after breakfast and dinner',
+          duration_days: 30
+        },
+        {
+          name: 'Teneligliptin',
+          dosage: '20mg',
+          frequency: 'Once daily before lunch (0-1-0)',
+          instructions: 'Take before lunch with water',
+          duration_days: 30
+        }
+      ],
+      reminders: [
+        {
+          medicine_name: 'Glimepiride',
+          dosage: '1mg',
+          time: '08:00',
+          frequency: 'daily',
+          instructions: 'Take 1 tablet before breakfast'
+        },
+        {
+          medicine_name: 'Metformin',
+          dosage: '1000mg',
+          time: '08:30',
+          frequency: 'daily',
+          instructions: 'Take 1 tablet with breakfast'
+        },
+        {
+          medicine_name: 'Teneligliptin',
+          dosage: '20mg',
+          time: '13:00',
+          frequency: 'daily',
+          instructions: 'Take 1 tablet before lunch'
+        },
+        {
+          medicine_name: 'Metformin',
+          dosage: '1000mg',
+          time: '20:30',
+          frequency: 'daily',
+          instructions: 'Take 1 tablet with dinner'
+        }
+      ],
+      status: 'approved',
+      approved_at: new Date().toISOString(),
+      whatsapp_message_id: 'wamid.demo_mayank',
+      created_at: new Date().toISOString(),
+    }
+  ],
   'p-001': [
     {
       id: 'v-001',

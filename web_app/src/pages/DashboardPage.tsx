@@ -3,13 +3,15 @@ import { PatientSearch } from '../components/PatientSearch';
 import { AudioRecorder } from '../components/AudioRecorder';
 import { CarePlanEditor } from '../components/CarePlanEditor';
 import { VisitTimeline } from '../components/VisitTimeline';
+import { DownloadApkModal } from '../components/DownloadApkModal';
 import { Patient, Visit } from '../types';
-import { UserCheck, Sparkles, AlertCircle, PlusCircle, Activity, Mic, Brain, Send } from 'lucide-react';
+import { UserCheck, Sparkles, AlertCircle, PlusCircle, Activity, Mic, Brain, Send, Smartphone, Download } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [activeVisit, setActiveVisit] = useState<Visit | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isApkModalOpen, setIsApkModalOpen] = useState(false);
 
   const handleSelectPatient = (patient: Patient) => {
     setSelectedPatient(patient);
@@ -162,6 +164,59 @@ export const DashboardPage: React.FC = () => {
         </div>
       )}
 
+      {/* Patient Mobile App Banner */}
+      <div className="card" style={{
+        marginTop: '32px',
+        padding: '20px 24px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.06), rgba(16, 185, 129, 0.06))',
+        border: '1px solid rgba(6, 182, 212, 0.25)',
+        borderRadius: 'var(--radius-md)',
+        flexWrap: 'wrap',
+        gap: '16px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{
+            width: '46px',
+            height: '46px',
+            borderRadius: '12px',
+            background: 'var(--bg-card)',
+            border: '1px solid rgba(6, 182, 212, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(6, 182, 212, 0.15)'
+          }}>
+            <Smartphone size={24} color="#06b6d4" />
+          </div>
+          <div>
+            <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+              Praxirence Patient Mobile App (Android APK)
+            </div>
+            <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              Enable daily pill alarms, WhatsApp OTP login, and bilingual English / हिंदी prescriptions on Android.
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setIsApkModalOpen(true)}
+          className="btn btn-primary"
+          style={{
+            padding: '10px 18px',
+            fontSize: '0.875rem',
+            fontWeight: 700,
+            gap: '8px',
+            boxShadow: '0 4px 14px rgba(6, 182, 212, 0.25)'
+          }}
+        >
+          <Download size={16} />
+          <span>Download Patient APK</span>
+        </button>
+      </div>
+
       {/* Patient Past Visit History Modal */}
       {selectedPatient && (
         <VisitTimeline
@@ -170,6 +225,12 @@ export const DashboardPage: React.FC = () => {
           onClose={() => setIsHistoryOpen(false)}
         />
       )}
+
+      {/* Patient App APK Modal */}
+      <DownloadApkModal
+        isOpen={isApkModalOpen}
+        onClose={() => setIsApkModalOpen(false)}
+      />
     </main>
   );
 };

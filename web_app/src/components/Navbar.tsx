@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Stethoscope, User, LogOut, ShieldCheck, Sun, Moon } from 'lucide-react';
+import { Stethoscope, User, LogOut, ShieldCheck, Sun, Moon, Smartphone } from 'lucide-react';
 import { DoctorUser } from '../types';
+import { DownloadApkModal } from './DownloadApkModal';
 
 interface NavbarProps {
   doctor: DoctorUser | null;
@@ -9,6 +10,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ doctor, onLogout }) => {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [isApkModalOpen, setIsApkModalOpen] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('praxirence_theme') as 'light' | 'dark' | null;
@@ -72,7 +74,27 @@ export const Navbar: React.FC<NavbarProps> = ({ doctor, onLogout }) => {
         </div>
 
         {/* Right Section: Theme Toggle & Doctor Info */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Download Patient App Button */}
+          <button
+            onClick={() => setIsApkModalOpen(true)}
+            className="btn btn-secondary"
+            style={{
+              padding: '7px 13px',
+              fontSize: '0.825rem',
+              fontWeight: 600,
+              gap: '6px',
+              border: '1px solid rgba(6, 182, 212, 0.4)',
+              background: 'rgba(6, 182, 212, 0.08)',
+              color: 'var(--text-primary)',
+              cursor: 'pointer'
+            }}
+            title="Download Patient Android APK"
+          >
+            <Smartphone size={16} color="#06b6d4" />
+            <span>Patient App (APK)</span>
+          </button>
+
           {/* Theme Toggle Button */}
           <button
             onClick={toggleTheme}
@@ -128,6 +150,12 @@ export const Navbar: React.FC<NavbarProps> = ({ doctor, onLogout }) => {
           )}
         </div>
       </div>
+
+      {/* Patient App APK Modal */}
+      <DownloadApkModal
+        isOpen={isApkModalOpen}
+        onClose={() => setIsApkModalOpen(false)}
+      />
     </header>
   );
 };

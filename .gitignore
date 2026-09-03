@@ -70,3 +70,10 @@ backend/audio_recordings/
 *.tmp
 .vercel
 .env*
+
+# Model Weights & Large Binaries
+*.safetensors
+*.bin
+*.pt
+ml_pipeline/models/
+*.zip

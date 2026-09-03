@@ -3,26 +3,31 @@
    ============================================================================== */
 
 :root {
-  /* Light Theme (Crisp, High-Tech Apple Health / Linear aesthetic) */
+  /* Light Theme - Institutional Medical Grade (Linear / Apple Health / Stripe Aesthetic) */
   --bg-main: #f8fafc;
   --bg-card: #ffffff;
   --bg-card-hover: #f1f5f9;
-  --bg-subtle: #f1f5f9;
-  --bg-header: rgba(255, 255, 255, 0.85);
+  --bg-subtle: #f8fafc;
+  --bg-header: rgba(255, 255, 255, 0.9);
   --border-color: #e2e8f0;
-  --border-focus: rgba(16, 185, 129, 0.6);
+  --border-focus: #0d9488;
 
   --text-primary: #0f172a;
-  --text-secondary: #475569;
+  --text-secondary: #334155;
   --text-muted: #64748b;
 
   --input-bg: #ffffff;
   --input-border: #cbd5e1;
 
+  --teal-500: #0d9488;
+  --teal-600: #0f766e;
+  --teal-700: #115e59;
+  --teal-subtle: rgba(13, 148, 136, 0.1);
+
   --emerald-500: #10b981;
-  --emerald-400: #059669;
-  --emerald-600: #047857;
-  --cyan-500: #0891b2;
+  --emerald-400: #34d399;
+  --emerald-600: #059669;
+  --cyan-500: #06b6d4;
   --blue-500: #2563eb;
   --purple-500: #7c3aed;
   --rose-500: #e11d48;
@@ -32,34 +37,38 @@
   --font-mono: 'JetBrains Mono', monospace;
 
   --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
   --radius-full: 9999px;
 
-  --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
-  --shadow-glow: 0 0 25px rgba(16, 185, 129, 0.25);
-  --shadow-rec: 0 0 35px rgba(239, 68, 68, 0.45);
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --shadow-hover: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
 
   --table-hover: rgba(0, 0, 0, 0.02);
   --waveform-bg: #f8fafc;
 }
 
 [data-theme="dark"] {
-  /* Dark Theme (Sleek Deep Space Healthtech aesthetic) */
-  --bg-main: #090d16;
+  /* Dark Theme - High-Precision Medical Command Center */
+  --bg-main: #0b0f19;
   --bg-card: #111827;
-  --bg-card-hover: #172033;
-  --bg-subtle: #1e293b;
-  --bg-header: rgba(17, 24, 39, 0.85);
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-focus: rgba(16, 185, 129, 0.5);
+  --bg-card-hover: #172236;
+  --bg-subtle: #162032;
+  --bg-header: rgba(17, 24, 39, 0.9);
+  --border-color: #1e293b;
+  --border-focus: #14b8a6;
 
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
 
-  --input-bg: rgba(15, 23, 42, 0.8);
-  --input-border: rgba(255, 255, 255, 0.08);
+  --input-bg: rgba(15, 23, 42, 0.85);
+  --input-border: #1e293b;
+
+  --teal-500: #14b8a6;
+  --teal-600: #0d9488;
+  --teal-700: #0f766e;
+  --teal-subtle: rgba(20, 184, 166, 0.15);
 
   --emerald-500: #10b981;
   --emerald-400: #34d399;
@@ -70,9 +79,8 @@
   --rose-500: #f43f5e;
   --amber-500: #f59e0b;
 
-  --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
-  --shadow-glow: 0 0 25px rgba(16, 185, 129, 0.3);
-  --shadow-rec: 0 0 35px rgba(239, 68, 68, 0.5);
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.2);
+  --shadow-hover: 0 8px 24px -4px rgba(0, 0, 0, 0.4);
 
   --table-hover: rgba(255, 255, 255, 0.02);
   --waveform-bg: rgba(0, 0, 0, 0.3);
@@ -142,14 +150,15 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--emerald-500), var(--emerald-600));
+  background: var(--teal-600);
   color: #ffffff;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+  border: 1px solid var(--teal-700);
+  box-shadow: 0 1px 3px rgba(13, 148, 136, 0.2);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #059669, #047857);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+  background: var(--teal-700);
+  box-shadow: 0 2px 6px rgba(13, 148, 136, 0.3);
 }
 
 .btn-secondary {
@@ -376,7 +385,7 @@ h1, h2, h3, h4, h5, h6 {
   to { transform: rotate(360deg); }
 }
 
-.animate-spin {
+.animate-spin, .spin {
   animation: spin 1s linear infinite;
 }
 

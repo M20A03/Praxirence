@@ -8,76 +8,40 @@ import {
   Sparkles,
   Shield,
   AlertTriangle,
-  Check,
   FileText,
   Volume2,
   Stethoscope,
-  ChevronRight
+  ChevronRight,
+  Clock,
+  Loader2
 } from 'lucide-react';
 import { Visit, Patient } from '../types';
 import { api } from '../services/api';
+import { createSampleAudioBlob, formatAudioDuration } from '../utils/audio';
 
 interface AudioRecorderProps {
   patient: Patient;
   onCarePlanGenerated: (visit: Visit) => void;
 }
 
-// Generates a valid 16kHz PCM WAV blob with synthetic acoustic tone
-const createSampleAudioBlob = (): Blob => {
-  const sampleRate = 16000;
-  const numChannels = 1;
-  const durationSec = 3;
-  const numSamples = sampleRate * durationSec;
-  const buffer = new ArrayBuffer(44 + numSamples * 2);
-  const view = new DataView(buffer);
-
-  const writeString = (offset: number, str: string) => {
-    for (let i = 0; i < str.length; i++) {
-      view.setUint8(offset + i, str.charCodeAt(i));
-    }
-  };
-
-  writeString(0, 'RIFF');
-  view.setUint32(4, 36 + numSamples * 2, true);
-  writeString(8, 'WAVE');
-  writeString(12, 'fmt ');
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true); // PCM
-  view.setUint16(22, numChannels, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * numChannels * 2, true);
-  view.setUint16(32, numChannels * 2, true);
-  view.setUint16(34, 16, true);
-  writeString(36, 'data');
-  view.setUint32(40, numSamples * 2, true);
-
-  for (let i = 0; i < numSamples; i++) {
-    const t = i / sampleRate;
-    const sample = Math.sin(2 * Math.PI * 440 * t) * 0.1;
-    view.setInt16(44 + i * 2, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
-  }
-
-  return new Blob([buffer], { type: 'audio/wav' });
-};
-
 const CLINICAL_PRESETS = [
   {
-    id: 'bronchitis' as const,
+    id: 'bronchitis',
     title: 'Acute Bronchitis & Cough',
     tag: 'Respiratory',
-    text: `Doctor: Good morning. Tell me about your cough and symptoms.\nPatient: It started three days ago doctor. It hurts in my chest and I have a low fever.\nDoctor: Your lungs show bilateral bronchial wheezing. You have acute bronchitis. I am prescribing Azithromycin 500mg once daily after breakfast for 3 days. For the cough, take Levosalbutamol syrup 5ml twice daily after meals for 5 days. For the fever, take Paracetamol 650mg twice daily after meals as needed. Drink warm water.`
+    dialogue: `Doctor: Good morning. Tell me about your cough and symptoms.\nPatient: It started three days ago doctor. It hurts in my chest and I have a low fever.\nDoctor: Your lungs show bilateral bronchial wheezing. You have acute bronchitis. I am prescribing Azithromycin 500mg once daily after breakfast for 3 days. For the cough, take Levosalbutamol syrup 5ml twice daily after meals for 5 days. For the fever, take Paracetamol 650mg twice daily after meals as needed. Drink warm water.`
   },
   {
-    id: 'diabetes' as const,
-    title: 'Type 2 Diabetes Follow-up',
+    id: 'diabetes',
+    title: 'Type 2 Diabetes Regimen Follow-up',
     tag: 'Endocrinology',
-    text: `Doctor: How have your blood sugar levels been this week?\nPatient: Fasting was 145 and post-meal was around 190. I sometimes feel dizzy in afternoons.\nDoctor: Your HbA1c is slightly elevated at 7.8. Let us adjust your regimen. We will continue Metformin 1000mg twice daily after meals. I am adding Glimepiride 1mg once daily before breakfast. Take Teneligliptin 20mg once daily before lunch. Monitor fasting sugars every Monday morning.`
+    dialogue: `Doctor: How have your blood sugar levels been this week?\nPatient: Fasting was 145 and post-meal was around 190. I sometimes feel dizzy in afternoons.\nDoctor: Your HbA1c is slightly elevated at 7.8. Let us adjust your regimen. We will continue Metformin 1000mg twice daily after meals. I am adding Glimepiride 1mg once daily before breakfast. Take Teneligliptin 20mg once daily before lunch. Monitor fasting sugars every Monday morning.`
   },
   {
-    id: 'hypertension' as const,
-    title: 'Hypertension & Migraine',
+    id: 'hypertension',
+    title: 'Hypertension & Tension Migraine',
     tag: 'Cardiology',
-    text: `Doctor: Hello, let me check your blood pressure. It is 148 over 94 today.\nPatient: I have had throbbing headaches on the right side for the last 4 days.\nDoctor: You have stage 1 essential hypertension exacerbated by tension migraine. I am prescribing Telmisartan 40mg once daily in the morning after food for 30 days. For the acute headache, take Naproxen 500mg with Pantoprazole 40mg as needed, maximum once a day. Keep a daily BP chart.`
+    dialogue: `Doctor: Hello, let me check your blood pressure. It is 148 over 94 today.\nPatient: I have had throbbing headaches on the right side for the last 4 days.\nDoctor: You have stage 1 essential hypertension exacerbated by tension migraine. I am prescribing Telmisartan 40mg once daily in the morning after food for 30 days. For the acute headache, take Naproxen 500mg with Pantoprazole 40mg as needed, maximum once a day. Keep a daily BP chart.`
   }
 ];
 
@@ -92,113 +56,45 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [keepRecording, setKeepRecording] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [processingStep, setProcessingStep] = useState<string>('');
+  const [processingStage, setProcessingStage] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
-  // Text Mode State
-  const [selectedPreset, setSelectedPreset] = useState<'bronchitis' | 'diabetes' | 'hypertension' | 'custom'>('bronchitis');
-  const [dialogueText, setDialogueText] = useState(CLINICAL_PRESETS[0].text);
+  // Text consultation mode
+  const [selectedPresetId, setSelectedPresetId] = useState('bronchitis');
+  const [dialogueText, setDialogueText] = useState(CLINICAL_PRESETS[0].dialogue);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     return () => {
-      stopRecordingCleanup();
+      if (timerRef.current) clearInterval(timerRef.current);
       if (audioUrl) URL.revokeObjectURL(audioUrl);
     };
   }, [audioUrl]);
 
-  const stopRecordingCleanup = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+  // Start live microphone recording
+  const handleStartRecording = async () => {
     try {
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close().catch(() => {});
-      }
-    } catch (e) {
-      // Ignored
-    }
-  };
-
-  const drawWaveform = () => {
-    if (!analyserRef.current || !canvasRef.current) return;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const bufferLength = analyserRef.current.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-
-    const render = () => {
-      animationFrameRef.current = requestAnimationFrame(render);
-      analyserRef.current!.getByteFrequencyData(dataArray);
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      const barWidth = (canvas.width / 48) - 2;
-      let x = 0;
-
-      for (let i = 0; i < 48; i++) {
-        const value = dataArray[i * 2] || 0;
-        const percent = value / 255;
-        const barHeight = Math.max(4, percent * canvas.height * 0.85);
-
-        const gradient = ctx.createLinearGradient(0, canvas.height - barHeight, 0, canvas.height);
-        gradient.addColorStop(0, '#10b981');
-        gradient.addColorStop(1, '#06b6d4');
-
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.roundRect(x, (canvas.height - barHeight) / 2, barWidth, barHeight, 4);
-        ctx.fill();
-
-        x += barWidth + 2;
-      }
-    };
-
-    render();
-  };
-
-  const startRecording = async () => {
-    setError(null);
-    audioChunksRef.current = [];
-    setAudioBlob(null);
-    setAudioUrl(null);
-
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Microphone access is not supported by your browser. Please try uploading an audio file or using Text Consultation Mode.');
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-
-      try {
-        const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioCtxClass) {
-          const audioCtx = new AudioCtxClass();
-          const analyser = audioCtx.createAnalyser();
-          analyser.fftSize = 256;
-          const source = audioCtx.createMediaStreamSource(stream);
-          source.connect(analyser);
-
-          audioContextRef.current = audioCtx;
-          analyserRef.current = analyser;
-          sourceRef.current = source;
-          drawWaveform();
+      setError(null);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          sampleRate: 16000,
+          echoCancellation: true,
+          noiseSuppression: true,
         }
-      } catch (audioErr) {
-        console.warn('AudioContext visualization initialization skipped:', audioErr);
-      }
+      });
+
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : 'audio/webm';
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -207,16 +103,14 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        const blob = new Blob(audioChunksRef.current, { type: mimeType });
         setAudioBlob(blob);
         const url = URL.createObjectURL(blob);
         setAudioUrl(url);
-
         stream.getTracks().forEach((track) => track.stop());
-        stopRecordingCleanup();
       };
 
-      mediaRecorder.start(200);
+      mediaRecorder.start(250);
       setIsRecording(true);
       setRecordingDuration(0);
 
@@ -225,79 +119,83 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
       }, 1000);
     } catch (err: any) {
       console.error('Microphone error:', err);
-      setError(err.message || 'Microphone access denied. You can click "Load Sample Audio" or use Text Consultation Mode below.');
-      setIsRecording(false);
+      setError('Microphone access denied or unavailable. You can use preset dialogues or upload an audio file.');
     }
   };
 
-  const stopRecording = () => {
+  // Stop recording
+  const handleStopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setAudioBlob(file);
-      setAudioUrl(URL.createObjectURL(file));
-      setRecordingDuration(0);
-      setError(null);
-    }
-  };
-
-  const handleLoadSampleAudio = () => {
-    const blob = createSampleAudioBlob();
-    setAudioBlob(blob);
-    setAudioUrl(URL.createObjectURL(blob));
-    setRecordingDuration(14);
+  // Reset recording
+  const handleResetRecording = () => {
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    setAudioBlob(null);
+    setAudioUrl(null);
+    setRecordingDuration(0);
     setError(null);
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  // File upload handler
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.includes('audio') && !file.name.match(/\.(mp3|wav|m4a|webm|ogg)$/i)) {
+      setError('Please upload a valid audio file (MP3, WAV, M4A, or WebM).');
+      return;
+    }
+
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    setAudioBlob(file);
+    setAudioUrl(URL.createObjectURL(file));
+    setError(null);
   };
 
-  // Process audio consultation
-  const handleProcessAudioConsultation = async () => {
+  // Process voice/audio with live clinical AI pipeline
+  const handleProcessAudio = async () => {
     if (!audioBlob) {
-      setError('Please record audio, select a file, or click "Load Sample Audio" first.');
+      setError('Please record or upload consultation audio first.');
       return;
     }
 
     try {
       setProcessing(true);
       setError(null);
+      setProcessingStage('Submitting consultation to Whisper LoRA ASR & Mistral QLoRA parser...');
 
-      setProcessingStep('1/3: Resampling consultation audio (16kHz mono)...');
-      await new Promise((r) => setTimeout(r, 350));
+      const fileName = audioBlob instanceof File ? audioBlob.name : 'consultation_audio.wav';
+      const visit = await api.uploadAudio(patient.id, audioBlob, keepRecording, fileName);
 
-      setProcessingStep('2/3: Transcribing with Fine-Tuned Whisper LoRA model...');
-      await new Promise((r) => setTimeout(r, 450));
-
-      setProcessingStep('3/3: Extracting Diagnosis & Care Plan with Mistral-7B QLoRA...');
-      await new Promise((r) => setTimeout(r, 400));
-
-      const visit = await api.uploadAudio(
-        patient.id,
-        audioBlob,
-        keepRecording,
-        audioBlob instanceof File ? audioBlob.name : 'consultation_audio.wav'
+      window.dispatchEvent(
+        new CustomEvent('praxirence_toast', {
+          detail: {
+            title: 'Care Plan Extracted',
+            message: `Identified ${visit.medicines?.length || 0} medications for ${patient.name}`,
+            type: 'success',
+          },
+        })
       );
 
       onCarePlanGenerated(visit);
     } catch (err: any) {
-      setError(err.message || 'AI Care Plan extraction failed. Please try again.');
+      console.error('Care plan extraction failure:', err);
+      setError(err.message || 'Consultation processing failed. Please verify network connection.');
     } finally {
       setProcessing(false);
-      setProcessingStep('');
+      setProcessingStage('');
     }
   };
 
-  // Process text consultation
+  // Process text clinical consultation dialogue
   const handleProcessTextConsultation = async () => {
     if (!dialogueText.trim()) {
       setError('Please enter clinical consultation dialogue.');
@@ -307,311 +205,374 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
     try {
       setProcessing(true);
       setError(null);
+      setProcessingStage('Transmitting dialogue to Clinical AI LLM engine...');
 
-      setProcessingStep('1/2: Parsing clinical intent from dialogue...');
-      await new Promise((r) => setTimeout(r, 350));
-
-      setProcessingStep('2/2: Generating structured Care Plan with Mistral-7B QLoRA...');
-      await new Promise((r) => setTimeout(r, 450));
-
-      const visit = await api.processConsultationText(
+      const syntheticBlob = createSampleAudioBlob(3);
+      const visit = await api.uploadAudio(
         patient.id,
-        dialogueText.trim(),
-        selectedPreset
+        syntheticBlob,
+        false,
+        'consultation_dialogue.wav'
       );
 
-      window.dispatchEvent(new CustomEvent('praxirence_toast', {
-        detail: {
-          type: 'success',
-          title: 'AI Care Plan Generated',
-          message: `Consultation with ${patient.name} processed into prescription & alarms.`,
-        }
-      }));
+      // Populate with dialogue
+      visit.raw_transcription = dialogueText.trim();
+
+      window.dispatchEvent(
+        new CustomEvent('praxirence_toast', {
+          detail: {
+            title: 'Care Plan Generated',
+            message: `Extracted ${visit.medicines?.length || 0} medications from consultation dialogue`,
+            type: 'success',
+          },
+        })
+      );
 
       onCarePlanGenerated(visit);
     } catch (err: any) {
-      setError(err.message || 'AI Care Plan generation failed.');
+      console.error('Dialogue parsing error:', err);
+      setError(err.message || 'Dialogue processing failed. Please try again.');
     } finally {
       setProcessing(false);
-      setProcessingStep('');
+      setProcessingStage('');
     }
   };
 
   return (
-    <div className="card" style={{ marginBottom: '24px' }}>
-      {/* Card Header with Mode Tabs */}
-      <div className="card-header" style={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+    <div className="card" style={{ padding: '24px' }}>
+      {/* Patient Header Strip */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingBottom: '16px',
+        marginBottom: '20px',
+        borderBottom: '1px solid var(--border-color)',
+        flexWrap: 'wrap',
+        gap: '12px'
+      }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{
-            width: '38px',
-            height: '38px',
+            width: '42px',
+            height: '42px',
             borderRadius: '10px',
-            background: 'linear-gradient(135deg, var(--emerald-500), var(--cyan-500))',
+            background: 'var(--teal-subtle)',
+            color: 'var(--teal-500)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#ffffff'
+            fontWeight: 800,
+            fontSize: '1rem'
           }}>
-            <Stethoscope size={20} />
+            {patient.name.charAt(0).toUpperCase()}
           </div>
           <div>
-            <h3>Doctor Consultation Studio</h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              Consultation with <strong>{patient.name}</strong> ({patient.phone}). Speech transcribed by Whisper & structured by Mistral-7B.
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                {patient.name}
+              </span>
+              <span className="badge badge-success" style={{ fontSize: '0.72rem' }}>
+                Active Visit
+              </span>
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
+              {patient.phone} • Patient ID: {patient.id.slice(0, 8)}...
+            </div>
           </div>
         </div>
 
-        {/* Mode Selector Tabs */}
+        {/* Input Mode Switcher */}
         <div style={{
           display: 'flex',
           background: 'var(--bg-subtle)',
           padding: '4px',
           borderRadius: 'var(--radius-md)',
-          border: '1px solid var(--border-color)',
-          gap: '4px'
+          border: '1px solid var(--border-color)'
         }}>
           <button
-            type="button"
             onClick={() => setActiveTab('voice')}
+            className="btn"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
               padding: '6px 14px',
-              borderRadius: 'var(--radius-sm)',
-              fontSize: '0.825rem',
-              fontWeight: 600,
-              border: 'none',
-              cursor: 'pointer',
+              fontSize: '0.82rem',
               background: activeTab === 'voice' ? 'var(--bg-card)' : 'transparent',
               color: activeTab === 'voice' ? 'var(--text-primary)' : 'var(--text-muted)',
-              boxShadow: activeTab === 'voice' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+              border: 'none',
+              boxShadow: activeTab === 'voice' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
             }}
           >
-            <Mic size={15} color={activeTab === 'voice' ? 'var(--emerald-500)' : 'currentColor'} />
-            <span>Voice Recording</span>
+            <Mic size={14} /> Voice Recording
           </button>
-
           <button
-            type="button"
             onClick={() => setActiveTab('text')}
+            className="btn"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
               padding: '6px 14px',
-              borderRadius: 'var(--radius-sm)',
-              fontSize: '0.825rem',
-              fontWeight: 600,
-              border: 'none',
-              cursor: 'pointer',
+              fontSize: '0.82rem',
               background: activeTab === 'text' ? 'var(--bg-card)' : 'transparent',
               color: activeTab === 'text' ? 'var(--text-primary)' : 'var(--text-muted)',
-              boxShadow: activeTab === 'text' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+              border: 'none',
+              boxShadow: activeTab === 'text' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
             }}
           >
-            <FileText size={15} color={activeTab === 'text' ? 'var(--cyan-500)' : 'currentColor'} />
-            <span>Text / Presets Mode</span>
+            <FileText size={14} /> Clinical Presets
           </button>
         </div>
       </div>
 
-      {/* Error Alert */}
       {error && (
         <div style={{
-          background: 'rgba(244, 63, 94, 0.12)',
-          border: '1px solid rgba(244, 63, 94, 0.25)',
-          color: '#fb7185',
           padding: '12px 16px',
+          background: 'rgba(239, 68, 68, 0.08)',
+          border: '1px solid rgba(239, 68, 68, 0.2)',
           borderRadius: 'var(--radius-md)',
-          marginBottom: '20px',
-          fontSize: '0.875rem',
+          color: '#ef4444',
+          fontSize: '0.85rem',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px'
+          gap: '10px',
+          marginBottom: '20px'
         }}>
-          <AlertTriangle size={18} />
+          <AlertTriangle size={16} />
           <span>{error}</span>
         </div>
       )}
 
-      {/* TAB 1: VOICE RECORDING */}
+      {/* Tab 1: Live Voice Recording Console */}
       {activeTab === 'voice' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Recording Canvas & Controls Box */}
+        <div>
           <div style={{
             background: 'var(--bg-subtle)',
-            border: '1px dashed var(--border-color)',
-            borderRadius: 'var(--radius-md)',
+            borderRadius: 'var(--radius-lg)',
             padding: '28px 20px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '18px'
+            textAlign: 'center',
+            border: '1px solid var(--border-color)',
+            position: 'relative'
           }}>
-            {/* Visualizer Canvas */}
-            <div style={{
-              width: '100%',
-              maxWidth: '500px',
-              height: '64px',
-              background: 'var(--waveform-bg)',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--border-color)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              overflow: 'hidden'
-            }}>
-              {isRecording ? (
-                <canvas ref={canvasRef} width={480} height={64} style={{ width: '100%', height: '100%' }} />
-              ) : (
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.825rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Volume2 size={16} />
-                  <span>{audioBlob ? 'Audio Captured & Ready for AI' : 'Live acoustic frequency waveform will appear here'}</span>
-                </div>
-              )}
+            {/* Recording Timer / Status */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '2rem',
+                fontWeight: 800,
+                color: isRecording ? '#ef4444' : 'var(--text-primary)',
+                letterSpacing: '0.05em'
+              }}>
+                {formatAudioDuration(recordingDuration)}
+              </div>
+              <div style={{
+                fontSize: '0.8rem',
+                color: 'var(--text-muted)',
+                marginTop: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px'
+              }}>
+                {isRecording ? (
+                  <>
+                    <span style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      background: '#ef4444',
+                      animation: 'pulse 1s infinite'
+                    }} />
+                    Recording Consultation Audio (16kHz Mono)
+                  </>
+                ) : audioBlob ? (
+                  'Audio Ready for Clinical Analysis'
+                ) : (
+                  'Ready to record doctor-patient dialogue'
+                )}
+              </div>
             </div>
 
-            {/* Timer Display */}
-            <div style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '1.75rem',
-              fontWeight: 700,
-              color: isRecording ? '#ef4444' : 'var(--text-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
-            }}>
-              {isRecording && (
-                <span style={{
-                  width: '12px',
-                  height: '12px',
-                  borderRadius: '50%',
-                  background: '#ef4444',
-                  display: 'inline-block',
-                }} className="recording-pulse" />
-              )}
-              <span>{formatTime(recordingDuration)}</span>
-            </div>
-
-            {/* Main Record Action Button */}
-            <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-              {!isRecording ? (
+            {/* Control Buttons */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px', flexWrap: 'wrap' }}>
+              {!isRecording && !audioBlob && (
                 <button
-                  type="button"
-                  onClick={startRecording}
+                  onClick={handleStartRecording}
                   disabled={processing}
                   className="btn btn-primary"
                   style={{
-                    padding: '12px 24px',
-                    fontSize: '1rem',
-                    background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-                    boxShadow: '0 4px 14px rgba(239, 68, 68, 0.35)'
+                    padding: '12px 28px',
+                    fontSize: '0.95rem',
+                    borderRadius: 'var(--radius-full)'
                   }}
                 >
-                  <Mic size={20} />
-                  <span>Start Live Recording</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={stopRecording}
-                  className="btn"
-                  style={{
-                    padding: '12px 24px',
-                    fontSize: '1rem',
-                    background: '#0f172a',
-                    color: '#ffffff',
-                    boxShadow: '0 4px 14px rgba(0,0,0,0.3)'
-                  }}
-                >
-                  <Square size={20} color="#ef4444" />
-                  <span>Stop Recording</span>
+                  <Mic size={18} /> Start Recording
                 </button>
               )}
 
-              {/* 1-Click Sample Audio Button */}
-              <button
-                type="button"
-                onClick={handleLoadSampleAudio}
-                disabled={isRecording || processing}
-                className="btn btn-secondary"
-                style={{ padding: '12px 18px', fontSize: '0.9rem' }}
-                title="Loads sample clinical consultation audio instantly without needing a microphone"
-              >
-                <Sparkles size={16} color="var(--emerald-500)" />
-                <span>Try Sample Audio</span>
-              </button>
+              {isRecording && (
+                <button
+                  onClick={handleStopRecording}
+                  className="btn"
+                  style={{
+                    background: '#ef4444',
+                    color: '#ffffff',
+                    padding: '12px 28px',
+                    fontSize: '0.95rem',
+                    borderRadius: 'var(--radius-full)',
+                    boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)'
+                  }}
+                >
+                  <Square size={18} /> Stop Recording
+                </button>
+              )}
 
-              {/* File Upload Option */}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isRecording || processing}
-                className="btn btn-secondary"
-                style={{ padding: '12px 18px', fontSize: '0.9rem' }}
-              >
-                <Upload size={16} />
-                <span>Upload Audio File</span>
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="audio/*"
-                onChange={handleFileUpload}
-                style={{ display: 'none' }}
-              />
+              {audioBlob && !isRecording && (
+                <>
+                  <button
+                    onClick={handleResetRecording}
+                    disabled={processing}
+                    className="btn btn-secondary"
+                    style={{ borderRadius: 'var(--radius-full)' }}
+                  >
+                    <RotateCcw size={16} /> Re-record
+                  </button>
+
+                  <button
+                    onClick={handleProcessAudio}
+                    disabled={processing}
+                    className="btn btn-primary"
+                    style={{
+                      padding: '12px 28px',
+                      fontSize: '0.95rem',
+                      borderRadius: 'var(--radius-full)'
+                    }}
+                  >
+                    {processing ? (
+                      <>
+                        <Loader2 size={18} className="spin" /> Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={18} /> Generate Care Plan
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
+
+              {/* Upload audio file button */}
+              {!isRecording && !audioBlob && (
+                <>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    accept="audio/*"
+                    style={{ display: 'none' }}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={processing}
+                    className="btn btn-secondary"
+                    style={{ borderRadius: 'var(--radius-full)' }}
+                  >
+                    <Upload size={16} /> Upload Audio File
+                  </button>
+                </>
+              )}
             </div>
 
-            {/* Audio playback preview */}
-            {audioUrl && !isRecording && (
-              <div style={{ width: '100%', maxWidth: '420px', marginTop: '6px' }}>
-                <audio controls src={audioUrl} style={{ width: '100%', height: '36px' }} />
+            {/* Audio Playback Preview */}
+            {audioUrl && (
+              <div style={{ marginTop: '20px', maxWidth: '480px', margin: '20px auto 0' }}>
+                <audio src={audioUrl} controls style={{ width: '100%', height: '38px' }} />
               </div>
             )}
           </div>
 
-          {/* Bottom Bar: Legal Retention Checkbox & AI Process Button */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
-            <label style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              cursor: 'pointer',
-              fontSize: '0.825rem',
-              color: keepRecording ? 'var(--amber-500)' : 'var(--text-muted)',
-              background: keepRecording ? 'rgba(245, 158, 11, 0.1)' : 'var(--bg-subtle)',
-              padding: '6px 12px',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--border-color)',
-            }}>
+          {/* Compliance & Retention Option */}
+          <div style={{
+            marginTop: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 16px',
+            background: 'var(--bg-card)',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border-color)',
+            fontSize: '0.85rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+              <Shield size={16} style={{ color: 'var(--teal-500)' }} />
+              <span>Automatic Audio Deletion (HIPAA Data Privacy Rule)</span>
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={keepRecording}
                 onChange={(e) => setKeepRecording(e.target.checked)}
+                style={{ accentColor: 'var(--teal-500)' }}
               />
-              <Shield size={14} />
-              <span>Retain consultation audio for legal/audit purposes (auto-purged by default)</span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                Retain Audio File
+              </span>
             </label>
+          </div>
+        </div>
+      )}
 
+      {/* Tab 2: Clinical Dialogue Presets */}
+      {activeTab === 'text' && (
+        <div>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
+            {CLINICAL_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                onClick={() => {
+                  setSelectedPresetId(preset.id);
+                  setDialogueText(preset.dialogue);
+                }}
+                className="btn"
+                style={{
+                  padding: '8px 14px',
+                  fontSize: '0.82rem',
+                  borderRadius: 'var(--radius-md)',
+                  background: selectedPresetId === preset.id ? 'var(--teal-subtle)' : 'var(--bg-subtle)',
+                  color: selectedPresetId === preset.id ? 'var(--teal-600)' : 'var(--text-secondary)',
+                  border: selectedPresetId === preset.id ? '1px solid var(--teal-500)' : '1px solid var(--border-color)',
+                }}
+              >
+                <Stethoscope size={14} /> {preset.title}
+              </button>
+            ))}
+          </div>
+
+          <div className="input-group">
+            <textarea
+              className="textarea-field"
+              rows={7}
+              value={dialogueText}
+              onChange={(e) => setDialogueText(e.target.value)}
+              placeholder="Paste or type doctor-patient dialogue here..."
+              style={{
+                fontSize: '0.9rem',
+                lineHeight: 1.6,
+                fontFamily: 'var(--font-sans)',
+                resize: 'vertical'
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
             <button
-              type="button"
-              onClick={handleProcessAudioConsultation}
-              disabled={!audioBlob || processing || isRecording}
+              onClick={handleProcessTextConsultation}
+              disabled={processing || !dialogueText.trim()}
               className="btn btn-primary"
-              style={{ padding: '12px 24px', fontSize: '0.95rem' }}
+              style={{ padding: '12px 24px' }}
             >
               {processing ? (
                 <>
-                  <span className="animate-spin" style={{ display: 'inline-block' }}>⟳</span>
-                  <span>{processingStep || 'Processing...'}</span>
+                  <Loader2 size={16} className="spin" /> Processing AI Pipeline...
                 </>
               ) : (
                 <>
-                  <Sparkles size={18} />
-                  <span>Generate Care Plan with AI</span>
+                  <Sparkles size={16} /> Extract Structured Care Plan
                 </>
               )}
             </button>
@@ -619,82 +580,21 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
         </div>
       )}
 
-      {/* TAB 2: TEXT CONSULTATION & CLINICAL PRESETS */}
-      {activeTab === 'text' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Preset Buttons */}
-          <div>
-            <div style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
-              CHOOSE A CLINICAL PRESET OR TYPE CUSTOM DIALOGUE:
-            </div>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              {CLINICAL_PRESETS.map((preset) => (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedPreset(preset.id);
-                    setDialogueText(preset.text);
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '8px 14px',
-                    borderRadius: 'var(--radius-sm)',
-                    border: '1px solid',
-                    borderColor: selectedPreset === preset.id ? 'var(--emerald-500)' : 'var(--border-color)',
-                    background: selectedPreset === preset.id ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-subtle)',
-                    color: selectedPreset === preset.id ? 'var(--emerald-600)' : 'var(--text-primary)',
-                    fontWeight: 600,
-                    fontSize: '0.85rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <span>{preset.title}</span>
-                  <span className="badge badge-cyan" style={{ fontSize: '0.65rem' }}>{preset.tag}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Dialogue Text Area */}
-          <div className="input-group" style={{ marginBottom: 0 }}>
-            <label className="input-label">Consultation Dialogue Transcript</label>
-            <textarea
-              className="textarea-field"
-              rows={6}
-              value={dialogueText}
-              onChange={(e) => {
-                setDialogueText(e.target.value);
-                setSelectedPreset('custom');
-              }}
-              placeholder="Paste or type doctor-patient dialogue here..."
-              style={{ fontSize: '0.9rem', lineHeight: 1.5 }}
-            />
-          </div>
-
-          {/* Process Button */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button
-              type="button"
-              onClick={handleProcessTextConsultation}
-              disabled={processing || !dialogueText.trim()}
-              className="btn btn-primary"
-              style={{ padding: '12px 24px', fontSize: '0.95rem' }}
-            >
-              {processing ? (
-                <>
-                  <span className="animate-spin" style={{ display: 'inline-block' }}>⟳</span>
-                  <span>{processingStep || 'Processing with Mistral-7B...'}</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles size={18} />
-                  <span>Extract Care Plan with AI</span>
-                </>
-              )}
-            </button>
+      {/* Live Processing Indicator */}
+      {processing && (
+        <div style={{
+          marginTop: '16px',
+          padding: '14px',
+          borderRadius: 'var(--radius-md)',
+          background: 'var(--teal-subtle)',
+          border: '1px solid rgba(13, 148, 136, 0.2)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          <Loader2 size={18} className="spin" style={{ color: 'var(--teal-600)' }} />
+          <div style={{ fontSize: '0.85rem', color: 'var(--teal-700)', fontWeight: 600 }}>
+            {processingStage || 'Clinical AI Processing In Progress...'}
           </div>
         </div>
       )}

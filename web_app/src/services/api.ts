@@ -205,6 +205,29 @@ export const api = {
     return demoVisits[patientId] || [];
   },
 
+  async updatePatientConsent(patientId: string, consentStatus: boolean): Promise<Patient> {
+    if (API_BASE_URL) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/patients/${patientId}/consent`, {
+          method: 'POST',
+          headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ consent_status: consentStatus }),
+        });
+        return await handleResponse<Patient>(res);
+      } catch (err) {
+        console.warn('Backend unavailable, updating consent in demo memory.', err);
+      }
+    }
+
+    const patient = demoPatients.find(p => p.id === patientId);
+    if (patient) {
+      patient.consent_status = consentStatus;
+      patient.consent_updated_at = new Date().toISOString();
+      return { ...patient };
+    }
+    throw new Error('Patient not found');
+  },
+
   // Visits & Audio Recording
   async uploadAudio(
     patientId: string,
@@ -317,6 +340,191 @@ export const api = {
     }
     demoVisits[targetPatient.id].unshift(demoVisit);
 
+    return demoVisit;
+  },
+
+  async processConsultationText(
+    patientId: string,
+    dialogueText: string,
+    scenario: 'bronchitis' | 'diabetes' | 'hypertension' | 'custom' = 'bronchitis'
+  ): Promise<Visit> {
+    const targetPatient = demoPatients.find(p => p.id === patientId) || demoPatients[0];
+    const visitId = `v-${Date.now().toString(36)}`;
+
+    let diagnosis = "Acute Bronchitis with Mild Pyrexia & Bronchial Wheezing";
+    let medicines = [
+      {
+        name: "Azithromycin",
+        dosage: "500mg",
+        frequency: "Once daily after breakfast (1-0-0)",
+        instructions: "Take after breakfast for 3 days",
+        duration_days: 3
+      },
+      {
+        name: "Levosalbutamol Syrup",
+        dosage: "5ml",
+        frequency: "Twice daily after meals (1-0-1)",
+        instructions: "Take 5ml after breakfast and dinner",
+        duration_days: 5
+      },
+      {
+        name: "Paracetamol",
+        dosage: "650mg",
+        frequency: "Twice daily as needed (1-0-1)",
+        instructions: "Take after food if fever or pain",
+        duration_days: 3
+      }
+    ];
+    let reminders = [
+      {
+        medicine_name: "Azithromycin",
+        dosage: "500mg",
+        time: "08:30",
+        frequency: "daily",
+        instructions: "Take 1 tablet after breakfast"
+      },
+      {
+        medicine_name: "Levosalbutamol Syrup",
+        dosage: "5ml",
+        time: "08:30",
+        frequency: "daily",
+        instructions: "Take 5ml after breakfast"
+      },
+      {
+        medicine_name: "Levosalbutamol Syrup",
+        dosage: "5ml",
+        time: "20:30",
+        frequency: "daily",
+        instructions: "Take 5ml after dinner"
+      },
+      {
+        medicine_name: "Paracetamol",
+        dosage: "650mg",
+        time: "08:30",
+        frequency: "daily",
+        instructions: "Take 1 tablet if fever/pain"
+      }
+    ];
+
+    if (scenario === 'diabetes') {
+      diagnosis = "Type 2 Diabetes Mellitus - Suboptimally Controlled (HbA1c 7.8%)";
+      medicines = [
+        {
+          name: "Metformin Hydrochloride",
+          dosage: "1000mg",
+          frequency: "Twice daily after meals (1-0-1)",
+          instructions: "Take with or immediately after meals",
+          duration_days: 30
+        },
+        {
+          name: "Glimepiride",
+          dosage: "1mg",
+          frequency: "Once daily before breakfast (1-0-0)",
+          instructions: "Take 15 mins before morning meal",
+          duration_days: 30
+        },
+        {
+          name: "Teneligliptin",
+          dosage: "20mg",
+          frequency: "Once daily before lunch (0-1-0)",
+          instructions: "Take before lunch with water",
+          duration_days: 30
+        }
+      ];
+      reminders = [
+        {
+          medicine_name: "Glimepiride",
+          dosage: "1mg",
+          time: "08:00",
+          frequency: "daily",
+          instructions: "Take before breakfast"
+        },
+        {
+          medicine_name: "Metformin",
+          dosage: "1000mg",
+          time: "08:30",
+          frequency: "daily",
+          instructions: "Take after breakfast"
+        },
+        {
+          medicine_name: "Teneligliptin",
+          dosage: "20mg",
+          time: "13:00",
+          frequency: "daily",
+          instructions: "Take before lunch"
+        },
+        {
+          medicine_name: "Metformin",
+          dosage: "1000mg",
+          time: "20:30",
+          frequency: "daily",
+          instructions: "Take after dinner"
+        }
+      ];
+    } else if (scenario === 'hypertension') {
+      diagnosis = "Stage 1 Essential Hypertension with Episodic Tension Migraine";
+      medicines = [
+        {
+          name: "Telmisartan",
+          dosage: "40mg",
+          frequency: "Once daily in morning (1-0-0)",
+          instructions: "Take after breakfast with water",
+          duration_days: 30
+        },
+        {
+          name: "Naproxen",
+          dosage: "500mg",
+          frequency: "SOS as needed for severe headache (max 1/day)",
+          instructions: "Take with food during migraine attack",
+          duration_days: 5
+        },
+        {
+          name: "Pantoprazole",
+          dosage: "40mg",
+          frequency: "Once daily before breakfast (1-0-0)",
+          instructions: "Take 30 mins before breakfast on empty stomach",
+          duration_days: 10
+        }
+      ];
+      reminders = [
+        {
+          medicine_name: "Pantoprazole",
+          dosage: "40mg",
+          time: "07:30",
+          frequency: "daily",
+          instructions: "Take on empty stomach"
+        },
+        {
+          medicine_name: "Telmisartan",
+          dosage: "40mg",
+          time: "08:30",
+          frequency: "daily",
+          instructions: "Take after breakfast"
+        }
+      ];
+    }
+
+    const demoVisit: Visit = {
+      id: visitId,
+      patient_id: targetPatient.id,
+      doctor_id: 'doc-demo-001',
+      date: new Date().toISOString(),
+      keep_recording: false,
+      raw_transcription: dialogueText,
+      diagnosis,
+      medicines,
+      reminders,
+      status: 'draft',
+      created_at: new Date().toISOString(),
+      patient_name: targetPatient.name,
+      patient_phone: targetPatient.phone,
+      doctor_name: 'Dr. Sarah Jenkins, M.D.'
+    };
+
+    if (!demoVisits[targetPatient.id]) {
+      demoVisits[targetPatient.id] = [];
+    }
+    demoVisits[targetPatient.id].unshift(demoVisit);
     return demoVisit;
   },
 

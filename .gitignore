@@ -68,3 +68,5 @@ Thumbs.db
 /tmp/praxirence_recordings/
 backend/audio_recordings/
 *.tmp
+.vercel
+.env*

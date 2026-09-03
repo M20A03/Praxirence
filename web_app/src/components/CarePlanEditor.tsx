@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Visit, MedicineItem, ReminderItem, Patient } from '../types';
 import { api } from '../services/api';
+import { WhatsAppPreviewModal } from './WhatsAppPreviewModal';
 
 interface CarePlanEditorProps {
   visit: Visit;
@@ -33,6 +34,7 @@ export const CarePlanEditor: React.FC<CarePlanEditorProps> = ({
   const [approving, setApproving] = useState(false);
   const [approvalResult, setApprovalResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showWhatsAppPreview, setShowWhatsAppPreview] = useState(false);
 
   // Add new medicine row
   const handleAddMedicine = () => {
@@ -119,6 +121,7 @@ export const CarePlanEditor: React.FC<CarePlanEditorProps> = ({
       // Trigger approval and background WhatsApp dispatch
       const res = await api.approveVisit(visit.id);
       setApprovalResult(res.message);
+      setShowWhatsAppPreview(true);
 
       const refreshed = await api.getVisit(visit.id);
       onVisitApproved(refreshed);
@@ -155,7 +158,18 @@ export const CarePlanEditor: React.FC<CarePlanEditorProps> = ({
           </div>
         </div>
 
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => setShowWhatsAppPreview(true)}
+            className="btn btn-secondary"
+            style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+            title="Preview how this prescription appears in WhatsApp"
+          >
+            <MessageSquare size={14} color="#25D366" />
+            <span>Preview WhatsApp</span>
+          </button>
+
           {isApprovedOrSent ? (
             <span className="badge badge-success" style={{ padding: '6px 14px', fontSize: '0.8rem' }}>
               <CheckCircle size={14} /> Care Plan Approved & Sent
@@ -184,7 +198,7 @@ export const CarePlanEditor: React.FC<CarePlanEditorProps> = ({
 
       {approvalResult && (
         <div style={{
-          background: 'rgba(16, 185, 129, 0.15)',
+          background: 'rgba(16, 185, 129, 0.12)',
           border: '1px solid rgba(16, 185, 129, 0.3)',
           color: 'var(--emerald-400)',
           padding: '16px 20px',
@@ -192,15 +206,31 @@ export const CarePlanEditor: React.FC<CarePlanEditorProps> = ({
           marginBottom: '20px',
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
           gap: '12px'
         }}>
-          <CheckCircle size={24} />
-          <div>
-            <div style={{ fontWeight: 700, fontSize: '1rem' }}>WhatsApp Care Plan Successfully Dispatched!</div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              {approvalResult} Formatted message sent to {patient.phone}.
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <CheckCircle size={24} />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--emerald-400)' }}>
+                WhatsApp Care Plan Successfully Dispatched!
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                {approvalResult} Formatted message sent to {patient.phone}.
+              </div>
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setShowWhatsAppPreview(true)}
+            className="btn btn-whatsapp"
+            style={{ padding: '8px 16px', fontSize: '0.825rem' }}
+          >
+            <MessageSquare size={16} />
+            <span>View WhatsApp Message</span>
+          </button>
         </div>
       )}
 
@@ -446,8 +476,8 @@ export const CarePlanEditor: React.FC<CarePlanEditorProps> = ({
         flexWrap: 'wrap',
         gap: '16px'
       }}>
-        {!isApprovedOrSent ? (
-          <>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          {!isApprovedOrSent && (
             <button
               type="button"
               onClick={handleSaveDraft}
@@ -457,17 +487,30 @@ export const CarePlanEditor: React.FC<CarePlanEditorProps> = ({
               <Save size={16} />
               <span>{saving ? 'Saving Draft...' : 'Save Draft'}</span>
             </button>
+          )}
 
-            <button
-              type="button"
-              onClick={handleApproveAndSend}
-              disabled={approving || saving}
-              className="btn btn-whatsapp"
-            >
-              <Send size={18} />
-              <span>{approving ? 'Approving & Sending...' : 'Approve & Send via WhatsApp'}</span>
-            </button>
-          </>
+          <button
+            type="button"
+            onClick={() => setShowWhatsAppPreview(true)}
+            className="btn btn-secondary"
+            style={{ borderColor: 'rgba(37, 211, 102, 0.4)' }}
+            title="Preview patient WhatsApp message format"
+          >
+            <MessageSquare size={16} color="#25D366" />
+            <span>{isApprovedOrSent ? 'View Sent WhatsApp Message' : 'Preview WhatsApp Message'}</span>
+          </button>
+        </div>
+
+        {!isApprovedOrSent ? (
+          <button
+            type="button"
+            onClick={handleApproveAndSend}
+            disabled={approving || saving}
+            className="btn btn-whatsapp"
+          >
+            <Send size={18} />
+            <span>{approving ? 'Approving & Sending...' : 'Approve & Send via WhatsApp'}</span>
+          </button>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--emerald-400)', fontSize: '0.9rem' }}>
             <CheckCircle size={18} />
@@ -475,6 +518,19 @@ export const CarePlanEditor: React.FC<CarePlanEditorProps> = ({
           </div>
         )}
       </div>
+
+      {/* WhatsApp Message Live Simulation Modal */}
+      <WhatsAppPreviewModal
+        visit={{
+          ...visit,
+          diagnosis,
+          medicines,
+          reminders,
+        }}
+        patient={patient}
+        isOpen={showWhatsAppPreview}
+        onClose={() => setShowWhatsAppPreview(false)}
+      />
     </div>
   );
 };

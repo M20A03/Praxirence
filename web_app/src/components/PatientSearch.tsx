@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, UserPlus, Phone, Calendar, CheckCircle2, AlertCircle, History, X } from 'lucide-react';
+import { Search, UserPlus, Phone, Calendar, CheckCircle2, AlertCircle, History, X, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { Patient } from '../types';
 import { api } from '../services/api';
 
@@ -26,6 +26,7 @@ export const PatientSearch: React.FC<PatientSearchProps> = ({
   const [newDob, setNewDob] = useState('');
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [updatingConsent, setUpdatingConsent] = useState(false);
 
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
@@ -80,6 +81,20 @@ export const PatientSearch: React.FC<PatientSearchProps> = ({
       setCreateError(err.message || 'Failed to create patient.');
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleToggleConsent = async () => {
+    if (!selectedPatient) return;
+    try {
+      setUpdatingConsent(true);
+      const nextStatus = !selectedPatient.consent_status;
+      const updated = await api.updatePatientConsent(selectedPatient.id, nextStatus);
+      onSelectPatient(updated);
+    } catch (err: any) {
+      console.error('Failed to update consent:', err);
+    } finally {
+      setUpdatingConsent(false);
     }
   };
 
@@ -236,7 +251,31 @@ export const PatientSearch: React.FC<PatientSearchProps> = ({
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <button
+              onClick={handleToggleConsent}
+              disabled={updatingConsent}
+              className="btn btn-secondary"
+              style={{
+                borderColor: selectedPatient.consent_status ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.4)',
+                color: selectedPatient.consent_status ? '#ef4444' : 'var(--emerald-600)',
+                background: selectedPatient.consent_status ? 'rgba(239, 68, 68, 0.05)' : 'rgba(16, 185, 129, 0.08)'
+              }}
+              title={selectedPatient.consent_status ? 'Revoke patient WhatsApp communication consent' : 'Grant patient WhatsApp communication consent'}
+            >
+              {selectedPatient.consent_status ? (
+                <>
+                  <ShieldAlert size={16} />
+                  <span>{updatingConsent ? 'Updating...' : 'Revoke Consent'}</span>
+                </>
+              ) : (
+                <>
+                  <ShieldCheck size={16} />
+                  <span>{updatingConsent ? 'Updating...' : 'Grant 1-Tap Consent'}</span>
+                </>
+              )}
+            </button>
+
             <button
               onClick={onOpenHistory}
               className="btn btn-secondary"

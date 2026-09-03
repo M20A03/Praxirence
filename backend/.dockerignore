@@ -1,0 +1,17 @@
+mobile_app/
+web_app/
+ml_pipeline/
+Praxirence/
+deploy/
+docs/
+.git/
+.venv/
+node_modules/
+__pycache__/
+*.pyc
+*.safetensors
+*.zip
+*.apk
+*.docx
+*.bin
+*.pt

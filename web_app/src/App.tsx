@@ -24,6 +24,12 @@ const getInitialToken = (): string | null => {
   try {
     const token = localStorage.getItem('praxirence_token');
     if (!token || token === 'undefined' || token === 'null') return null;
+    // Automatically purge old mock/in-memory tokens that cause 401 on production Railway backend
+    if (token === 'praxirence-jwt-session' || token === 'praxirence-registered-jwt') {
+      localStorage.removeItem('praxirence_token');
+      localStorage.removeItem('praxirence_doctor');
+      return null;
+    }
     return token;
   } catch (e) {
     return null;

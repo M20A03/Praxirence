@@ -3,13 +3,15 @@ import { DoctorUser, Patient, Visit, VisitApproveResponse, AuthResponse } from '
 const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_URL ||
-  (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:8000' : '')
-);
+  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:8000'
+    : 'https://praxirence-production.up.railway.app')
+).replace(/\/+$/, '');
 
-// In-memory demo state for standalone Vercel preview
+// In-memory demo state fallback if server is unreachable
 let demoPatients: Patient[] = [
   {
-    id: '323f8add-7c5f-46ac-af2e-bbdbb7ab2128',
+    id: '62966d3e-69d9-4dde-8587-1c98a7938979',
     name: 'Mayank',
     phone: '+919835139865',
     dob: '1998-05-15',
@@ -20,10 +22,10 @@ let demoPatients: Patient[] = [
 ];
 
 let demoVisits: Record<string, Visit[]> = {
-  'p-000': [
+  '62966d3e-69d9-4dde-8587-1c98a7938979': [
     {
       id: 'v-000',
-      patient_id: 'p-000',
+      patient_id: '62966d3e-69d9-4dde-8587-1c98a7938979',
       doctor_id: 'doc-001',
       date: new Date().toISOString(),
       keep_recording: false,
@@ -95,7 +97,7 @@ function getAuthHeaders(): HeadersInit {
   const headers: HeadersInit = {
     'Accept': 'application/json',
   };
-  if (token) {
+  if (token && token !== 'null' && token !== 'undefined') {
     headers['Authorization'] = `Bearer ${token}`;
   }
   return headers;
@@ -108,8 +110,16 @@ async function handleResponse<T>(response: Response): Promise<T> {
       localStorage.removeItem('praxirence_doctor');
       window.dispatchEvent(new Event('auth_change'));
     }
-    const errorData = await response.json().catch(() => ({}));
-    const message = errorData.detail || `Request failed with status ${response.status}`;
+    const text = await response.text();
+    let message = `Request failed with status ${response.status}`;
+    try {
+      const errorData = JSON.parse(text);
+      message = errorData.detail || errorData.message || message;
+    } catch {
+      if (text && text.length < 250 && !text.includes('<!DOCTYPE')) {
+        message = text;
+      }
+    }
     throw new Error(message);
   }
   return response.json();
@@ -118,30 +128,12 @@ async function handleResponse<T>(response: Response): Promise<T> {
 export const api = {
   // Doctor Auth
   async loginDoctor(email: string, password: string): Promise<AuthResponse> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/auth/doctor/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      return await handleResponse<AuthResponse>(res);
-    } catch (err) {
-      console.warn('Backend API connection notice; using Dr. Mayank Raj profile.', err);
-    }
-
-    // Interactive Real Doctor Profile
-    const realDoctor: DoctorUser = {
-      id: 'doc-001',
-      email: email.trim() || 'doctor@praxirence.com',
-      name: 'Dr. Mayank Raj',
-      specialty: 'Chief Medical Officer & Physician',
-    };
-    return {
-      access_token: 'praxirence-jwt-session',
-      token_type: 'bearer',
-      role: 'doctor',
-      user: realDoctor,
-    };
+    const res = await fetch(`${API_BASE_URL}/auth/doctor/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim(), password }),
+    });
+    return await handleResponse<AuthResponse>(res);
   },
 
   async registerDoctor(data: {
@@ -152,41 +144,22 @@ export const api = {
     clinic_name?: string;
     reg_number?: string;
   }): Promise<AuthResponse> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/auth/doctor/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: data.name,
-          email: data.email,
-          password: data.password,
-          specialty: data.specialty || 'General Physician',
-        }),
-      });
-      const authRes = await handleResponse<AuthResponse>(res);
-      if (data.clinic_name) localStorage.setItem('praxirence_clinic_name', data.clinic_name);
-      if (data.name) localStorage.setItem('praxirence_doctor_name', data.name);
-      if (data.specialty) localStorage.setItem('praxirence_doctor_specialty', data.specialty);
-      return authRes;
-    } catch (err) {
-      console.warn('Backend register notice; creating local doctor profile.', err);
-    }
-
-    const doctor: DoctorUser = {
-      id: `doc-${Date.now().toString(36)}`,
-      email: data.email,
-      name: data.name,
-      specialty: data.specialty || 'General Physician',
-    };
+    const res = await fetch(`${API_BASE_URL}/auth/doctor/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: data.name,
+        email: data.email.trim(),
+        password: data.password,
+        specialty: data.specialty || 'General Physician',
+      }),
+    });
+    const authRes = await handleResponse<AuthResponse>(res);
     if (data.clinic_name) localStorage.setItem('praxirence_clinic_name', data.clinic_name);
     if (data.name) localStorage.setItem('praxirence_doctor_name', data.name);
     if (data.specialty) localStorage.setItem('praxirence_doctor_specialty', data.specialty);
-    return {
-      access_token: 'praxirence-registered-jwt',
-      token_type: 'bearer',
-      role: 'doctor',
-      user: doctor,
-    };
+    if (data.reg_number) localStorage.setItem('praxirence_doctor_reg', data.reg_number);
+    return authRes;
   },
 
   // Patients

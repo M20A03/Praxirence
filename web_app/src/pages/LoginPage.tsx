@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Stethoscope, Lock, Mail, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
+import { Stethoscope, Lock, Mail, ArrowRight, ShieldCheck, Sparkles, Building, Award, UserCheck } from 'lucide-react';
 import { api } from '../services/api';
 import { DoctorUser } from '../types';
 
@@ -8,12 +8,24 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
+  const [isRegistering, setIsRegistering] = useState(false);
+  
+  // Login State
   const [email, setEmail] = useState('doctor@praxirence.com');
   const [password, setPassword] = useState('Doctor123!');
+
+  // Register State
+  const [regName, setRegName] = useState('Dr. Mayank Raj');
+  const [regRegNumber, setRegRegNumber] = useState('NMC-2024-84920');
+  const [regClinicName, setRegClinicName] = useState('Praxirence Clinical Centre');
+  const [regSpecialty, setRegSpecialty] = useState('Chief Medical Officer & Physician');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -23,6 +35,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       onLoginSuccess(data.access_token, data.user);
     } catch (err: any) {
       setError(err.message || 'Login failed. Check your credentials.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      const data = await api.registerDoctor({
+        name: regName,
+        email: regEmail,
+        password: regPassword,
+        specialty: regSpecialty,
+        clinic_name: regClinicName,
+        reg_number: regRegNumber,
+      });
+      onLoginSuccess(data.access_token, data.user);
+    } catch (err: any) {
+      setError(err.message || 'Registration failed. Please check details.');
     } finally {
       setLoading(false);
     }
@@ -53,9 +87,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       padding: '24px',
       position: 'relative'
     }}>
-      <div className="card" style={{ width: '100%', maxWidth: '440px', padding: '36px' }}>
+      <div className="card" style={{ width: '100%', maxWidth: '480px', padding: '36px' }}>
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -83,6 +117,54 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           </div>
         </div>
 
+        {/* Tab Toggle: Sign In vs Register (KYC) */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          background: 'var(--bg-subtle)',
+          borderRadius: 'var(--radius-md)',
+          padding: '4px',
+          marginBottom: '24px',
+          border: '1px solid var(--border-color)'
+        }}>
+          <button
+            type="button"
+            onClick={() => { setIsRegistering(false); setError(null); }}
+            style={{
+              padding: '8px 12px',
+              borderRadius: 'var(--radius-sm)',
+              border: 'none',
+              background: !isRegistering ? 'var(--bg-card)' : 'transparent',
+              color: !isRegistering ? 'var(--text-primary)' : 'var(--text-muted)',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              boxShadow: !isRegistering ? '0 2px 8px rgba(0,0,0,0.2)' : 'none',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            Doctor Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => { setIsRegistering(true); setError(null); }}
+            style={{
+              padding: '8px 12px',
+              borderRadius: 'var(--radius-sm)',
+              border: 'none',
+              background: isRegistering ? 'var(--bg-card)' : 'transparent',
+              color: isRegistering ? 'var(--text-primary)' : 'var(--text-muted)',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              boxShadow: isRegistering ? '0 2px 8px rgba(0,0,0,0.2)' : 'none',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            New Clinic Onboarding
+          </button>
+        </div>
+
         {error && (
           <div style={{
             background: 'rgba(244, 63, 94, 0.15)',
@@ -97,49 +179,163 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <div className="input-group">
-            <label className="input-label">Doctor Email</label>
-            <div style={{ position: 'relative' }}>
-              <Mail size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
-              <input
-                type="email"
-                required
-                className="input-field"
-                style={{ paddingLeft: '42px' }}
-                placeholder="doctor@praxirence.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+        {/* ----------------- SIGN IN FORM ----------------- */}
+        {!isRegistering ? (
+          <form onSubmit={handleLoginSubmit}>
+            <div className="input-group">
+              <label className="input-label">Doctor Email</label>
+              <div style={{ position: 'relative' }}>
+                <Mail size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  type="email"
+                  required
+                  className="input-field"
+                  style={{ paddingLeft: '42px' }}
+                  placeholder="doctor@praxirence.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="input-group">
-            <label className="input-label">Password</label>
-            <div style={{ position: 'relative' }}>
-              <Lock size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
-              <input
-                type="password"
-                required
-                className="input-field"
-                style={{ paddingLeft: '42px' }}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+            <div className="input-group">
+              <label className="input-label">Password</label>
+              <div style={{ position: 'relative' }}>
+                <Lock size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  type="password"
+                  required
+                  className="input-field"
+                  style={{ paddingLeft: '42px' }}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn btn-primary"
-            style={{ width: '100%', marginTop: '12px', padding: '12px' }}
-          >
-            <span>{loading ? 'Authenticating...' : 'Sign In as Doctor'}</span>
-            <ArrowRight size={18} />
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn btn-primary"
+              style={{ width: '100%', marginTop: '12px', padding: '12px' }}
+            >
+              <span>{loading ? 'Authenticating...' : 'Sign In as Doctor'}</span>
+              <ArrowRight size={18} />
+            </button>
+          </form>
+        ) : (
+          /* ----------------- REGISTRATION FORM (KYC) ----------------- */
+          <form onSubmit={handleRegisterSubmit}>
+            <div className="input-group">
+              <label className="input-label">Doctor Full Name (with Title)</label>
+              <div style={{ position: 'relative' }}>
+                <UserCheck size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  type="text"
+                  required
+                  className="input-field"
+                  style={{ paddingLeft: '42px' }}
+                  placeholder="Dr. Aryan Sharma"
+                  value={regName}
+                  onChange={(e) => setRegName(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="input-group">
+                <label className="input-label">Medical Reg / Council No</label>
+                <div style={{ position: 'relative' }}>
+                  <ShieldCheck size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <input
+                    type="text"
+                    required
+                    className="input-field"
+                    style={{ paddingLeft: '42px' }}
+                    placeholder="MCI-2024-84920"
+                    value={regRegNumber}
+                    onChange={(e) => setRegRegNumber(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">Specialty</label>
+                <div style={{ position: 'relative' }}>
+                  <Award size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <input
+                    type="text"
+                    required
+                    className="input-field"
+                    style={{ paddingLeft: '42px' }}
+                    placeholder="MBBS, MD Physician"
+                    value={regSpecialty}
+                    onChange={(e) => setRegSpecialty(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="input-group">
+              <label className="input-label">Clinic / Hospital Name</label>
+              <div style={{ position: 'relative' }}>
+                <Building size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  type="text"
+                  required
+                  className="input-field"
+                  style={{ paddingLeft: '42px' }}
+                  placeholder="City Health Care & Diagnostics"
+                  value={regClinicName}
+                  onChange={(e) => setRegClinicName(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="input-group">
+              <label className="input-label">Official Doctor Email</label>
+              <div style={{ position: 'relative' }}>
+                <Mail size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  type="email"
+                  required
+                  className="input-field"
+                  style={{ paddingLeft: '42px' }}
+                  placeholder="doctor@clinic.com"
+                  value={regEmail}
+                  onChange={(e) => setRegEmail(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="input-group">
+              <label className="input-label">Password</label>
+              <div style={{ position: 'relative' }}>
+                <Lock size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  type="password"
+                  required
+                  className="input-field"
+                  style={{ paddingLeft: '42px' }}
+                  placeholder="Minimum 8 characters"
+                  value={regPassword}
+                  onChange={(e) => setRegPassword(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn btn-primary"
+              style={{ width: '100%', marginTop: '12px', padding: '12px' }}
+            >
+              <span>{loading ? 'Creating Clinic Account...' : 'Complete Doctor Registration'}</span>
+              <ArrowRight size={18} />
+            </button>
+          </form>
+        )}
 
         <div style={{
           position: 'relative',
@@ -157,7 +353,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             fontSize: '0.75rem',
             color: 'var(--text-muted)'
           }}>
-            OR QUICK DEMO ACCESS
+            OR QUICK ACCESS
           </span>
         </div>
 
@@ -173,7 +369,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           }}
         >
           <Sparkles size={16} color="var(--purple-500)" />
-          <span>Instant 1-Click Doctor Demo</span>
+          <span>Instant 1-Click Doctor Demo (Dr. Mayank Raj)</span>
         </button>
       </div>
     </div>

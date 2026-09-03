@@ -10,11 +10,13 @@ import {
   Sparkles,
   Save,
   MessageSquare,
-  AlertCircle
+  AlertCircle,
+  Printer
 } from 'lucide-react';
 import { Visit, MedicineItem, ReminderItem, Patient } from '../types';
 import { api } from '../services/api';
 import { WhatsAppPreviewModal } from './WhatsAppPreviewModal';
+import { PrescriptionModal } from './PrescriptionModal';
 
 interface CarePlanEditorProps {
   visit: Visit;
@@ -35,6 +37,7 @@ export const CarePlanEditor: React.FC<CarePlanEditorProps> = ({
   const [approvalResult, setApprovalResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showWhatsAppPreview, setShowWhatsAppPreview] = useState(false);
+  const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
 
   // Add new medicine row
   const handleAddMedicine = () => {
@@ -497,7 +500,18 @@ export const CarePlanEditor: React.FC<CarePlanEditorProps> = ({
             title="Preview patient WhatsApp message format"
           >
             <MessageSquare size={16} color="#25D366" />
-            <span>{isApprovedOrSent ? 'View Sent WhatsApp Message' : 'Preview WhatsApp Message'}</span>
+            <span>{isApprovedOrSent ? 'View WhatsApp' : 'Preview WhatsApp'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowPrescriptionModal(true)}
+            className="btn btn-secondary"
+            style={{ borderColor: 'rgba(6, 182, 212, 0.4)', gap: '6px' }}
+            title="Official Printable Legal Prescription"
+          >
+            <Printer size={16} color="#06b6d4" />
+            <span>Print Rx PDF</span>
           </button>
         </div>
 
@@ -530,6 +544,19 @@ export const CarePlanEditor: React.FC<CarePlanEditorProps> = ({
         patient={patient}
         isOpen={showWhatsAppPreview}
         onClose={() => setShowWhatsAppPreview(false)}
+      />
+
+      {/* Official Legal Printable Prescription Modal */}
+      <PrescriptionModal
+        visit={{
+          ...visit,
+          diagnosis,
+          medicines,
+          reminders,
+        }}
+        patient={patient}
+        isOpen={showPrescriptionModal}
+        onClose={() => setShowPrescriptionModal(false)}
       />
     </div>
   );

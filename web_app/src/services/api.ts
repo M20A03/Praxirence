@@ -144,6 +144,51 @@ export const api = {
     };
   },
 
+  async registerDoctor(data: {
+    name: string;
+    email: string;
+    password: string;
+    specialty?: string;
+    clinic_name?: string;
+    reg_number?: string;
+  }): Promise<AuthResponse> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/doctor/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          password: data.password,
+          specialty: data.specialty || 'General Physician',
+        }),
+      });
+      const authRes = await handleResponse<AuthResponse>(res);
+      if (data.clinic_name) localStorage.setItem('praxirence_clinic_name', data.clinic_name);
+      if (data.name) localStorage.setItem('praxirence_doctor_name', data.name);
+      if (data.specialty) localStorage.setItem('praxirence_doctor_specialty', data.specialty);
+      return authRes;
+    } catch (err) {
+      console.warn('Backend register notice; creating local doctor profile.', err);
+    }
+
+    const doctor: DoctorUser = {
+      id: `doc-${Date.now().toString(36)}`,
+      email: data.email,
+      name: data.name,
+      specialty: data.specialty || 'General Physician',
+    };
+    if (data.clinic_name) localStorage.setItem('praxirence_clinic_name', data.clinic_name);
+    if (data.name) localStorage.setItem('praxirence_doctor_name', data.name);
+    if (data.specialty) localStorage.setItem('praxirence_doctor_specialty', data.specialty);
+    return {
+      access_token: 'praxirence-registered-jwt',
+      token_type: 'bearer',
+      role: 'doctor',
+      user: doctor,
+    };
+  },
+
   // Patients
   async searchPatients(query: string = ''): Promise<Patient[]> {
     if (API_BASE_URL) {

@@ -58,12 +58,13 @@ def main():
             AutoModelForCausalLM,
             AutoTokenizer,
             TrainingArguments,
-            BitsAndBytesConfig
+            BitsAndBytesConfig,
+            Trainer,
+            DataCollatorForLanguageModeling
         )
         from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
-        from trl import SFTTrainer
     except ImportError:
-        logger.error("transformers, peft, bitsandbytes, and trl required. Install from ml_pipeline/requirements.txt")
+        logger.error("transformers, peft, and bitsandbytes required. Install from ml_pipeline/requirements.txt")
         return
 
     # 1. Configure 4-bit quantization (QLoRA)

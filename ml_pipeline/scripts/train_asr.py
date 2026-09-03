@@ -167,13 +167,19 @@ def main():
         report_to="none"
     )
 
-    trainer = Seq2SeqTrainer(
+    trainer_kwargs = dict(
         args=training_args,
         model=model,
         train_dataset=train_dataset,
         data_collator=DataCollatorSpeechSeq2Seq(),
-        tokenizer=processor.feature_extractor,
     )
+    try:
+        trainer = Seq2SeqTrainer(processing_class=processor.feature_extractor, **trainer_kwargs)
+    except TypeError:
+        try:
+            trainer = Seq2SeqTrainer(tokenizer=processor.feature_extractor, **trainer_kwargs)
+        except TypeError:
+            trainer = Seq2SeqTrainer(**trainer_kwargs)
 
     logger.info("Starting Seq2SeqTrainer for Whisper LoRA...")
     trainer.train()

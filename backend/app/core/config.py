@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     TWILIO_WHATSAPP_FROM: str = "whatsapp:+14155238886"  # Standard Twilio sandbox number
     TWILIO_VERIFY_SERVICE_SID: Optional[str] = None
 
+    # Meta WhatsApp Cloud API
+    META_WHATSAPP_TOKEN: Optional[str] = None
+    META_PHONE_NUMBER_ID: Optional[str] = None
+    META_WABA_ID: Optional[str] = None
+
     # Firebase Cloud Messaging
     FIREBASE_CREDENTIALS_PATH: Optional[str] = None
 

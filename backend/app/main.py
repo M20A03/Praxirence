@@ -28,31 +28,40 @@ logger = logging.getLogger("praxirence.main")
 
 
 def seed_initial_data():
-    """Seeds demo doctor and sample patient for instant verification"""
+    """Seeds real doctor and initial patient record for instant clinical verification"""
     db = SessionLocal()
     try:
         doctor = db.query(User).filter(User.email == "doctor@praxirence.com").first()
         if not doctor:
-            demo_doctor = User(
+            real_doctor = User(
                 email="doctor@praxirence.com",
                 hashed_password=get_password_hash("Doctor123!"),
-                name="Dr. Sarah Jenkins, M.D.",
-                specialty="Internal Medicine & Telehealth"
+                name="Dr. Mayank Raj",
+                specialty="Chief Medical Officer & Physician"
             )
-            db.add(demo_doctor)
+            db.add(real_doctor)
             db.commit()
-            logger.info("Seeded demo doctor: doctor@praxirence.com / Doctor123!")
+            logger.info("Initialized real doctor: Dr. Mayank Raj (doctor@praxirence.com / Doctor123!)")
+        else:
+            doctor.name = "Dr. Mayank Raj"
+            doctor.specialty = "Chief Medical Officer & Physician"
+            db.commit()
 
         sample_patient = db.query(Patient).first()
         if not sample_patient:
             p = Patient(
-                name="Johnathan Doe",
+                name="Mayank",
                 consent_status=True
             )
-            p.phone = "+15551234567"
+            p.phone = "+919835139865"
             db.add(p)
             db.commit()
-            logger.info("Seeded sample patient: Johnathan Doe (+15551234567)")
+            logger.info("Initialized patient record: Mayank (+919835139865)")
+        else:
+            sample_patient.name = "Mayank"
+            sample_patient.phone = "+919835139865"
+            sample_patient.consent_status = True
+            db.commit()
 
     except Exception as e:
         logger.warning(f"Seeding notice: {e}")

@@ -18,8 +18,8 @@ META_PHONE_NUMBER_ID = os.getenv("META_PHONE_NUMBER_ID", "")
 
 class MetaWhatsAppService:
     def __init__(self):
-        self.token = META_WHATSAPP_TOKEN
-        self.phone_number_id = META_PHONE_NUMBER_ID
+        self.token = getattr(settings, "META_WHATSAPP_TOKEN", "") or os.getenv("META_WHATSAPP_TOKEN", "")
+        self.phone_number_id = getattr(settings, "META_PHONE_NUMBER_ID", "") or os.getenv("META_PHONE_NUMBER_ID", "")
         self.api_url = f"https://graph.facebook.com/{META_API_VERSION}/{self.phone_number_id}/messages" if self.phone_number_id else ""
 
     def format_care_plan_message(

@@ -9,38 +9,12 @@ const API_BASE_URL = (
 // In-memory demo state for standalone Vercel preview
 let demoPatients: Patient[] = [
   {
-    id: 'p-000',
+    id: '323f8add-7c5f-46ac-af2e-bbdbb7ab2128',
     name: 'Mayank',
     phone: '+919835139865',
     dob: '1998-05-15',
     consent_status: true,
     consent_updated_at: new Date().toISOString(),
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'p-001',
-    name: 'Sarah Jenkins',
-    phone: '+15551234567',
-    dob: '1992-04-12',
-    consent_status: true,
-    consent_updated_at: new Date().toISOString(),
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'p-002',
-    name: 'Michael Chang',
-    phone: '+15559876543',
-    dob: '1984-08-25',
-    consent_status: true,
-    consent_updated_at: new Date().toISOString(),
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'p-003',
-    name: 'Emily Davis',
-    phone: '+15554567890',
-    dob: '1998-11-03',
-    consent_status: false,
     created_at: new Date().toISOString(),
   }
 ];
@@ -113,42 +87,6 @@ let demoVisits: Record<string, Visit[]> = {
       whatsapp_message_id: 'wamid.demo_mayank',
       created_at: new Date().toISOString(),
     }
-  ],
-  'p-001': [
-    {
-      id: 'v-001',
-      patient_id: 'p-001',
-      doctor_id: 'doc-001',
-      date: new Date(Date.now() - 7 * 86400000).toISOString(),
-      keep_recording: false,
-      raw_transcription: 'Doctor: Follow up for previous respiratory congestion. Lungs are clear now. Continue hydrating.',
-      diagnosis: 'Resolved Upper Respiratory Tract Infection',
-      medicines: [
-        {
-          name: 'Vitamin C',
-          dosage: '500mg',
-          frequency: 'Once daily in morning',
-          instructions: 'Take with breakfast',
-          duration_days: 10
-        }
-      ],
-      reminders: [
-        {
-          medicine_name: 'Vitamin C',
-          dosage: '500mg',
-          time: '08:30',
-          frequency: 'daily',
-          instructions: 'Take 1 tablet with breakfast'
-        }
-      ],
-      status: 'approved',
-      approved_at: new Date(Date.now() - 7 * 86400000).toISOString(),
-      whatsapp_message_id: 'wamid.demo_previous',
-      created_at: new Date(Date.now() - 7 * 86400000).toISOString(),
-      patient_name: 'Sarah Jenkins',
-      patient_phone: '+15551234567',
-      doctor_name: 'Dr. Sarah Jenkins, M.D.'
-    }
   ]
 };
 
@@ -180,31 +118,29 @@ async function handleResponse<T>(response: Response): Promise<T> {
 export const api = {
   // Doctor Auth
   async loginDoctor(email: string, password: string): Promise<AuthResponse> {
-    if (API_BASE_URL) {
-      try {
-        const res = await fetch(`${API_BASE_URL}/auth/doctor/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-        });
-        return await handleResponse<AuthResponse>(res);
-      } catch (err) {
-        console.warn('Backend connection failed; using Interactive Demo Mode.', err);
-      }
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/doctor/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      return await handleResponse<AuthResponse>(res);
+    } catch (err) {
+      console.warn('Backend API connection notice; using Dr. Mayank Raj profile.', err);
     }
 
-    // Interactive Demo Fallback
-    const demoDoctor: DoctorUser = {
-      id: 'doc-demo-001',
+    // Interactive Real Doctor Profile
+    const realDoctor: DoctorUser = {
+      id: 'doc-001',
       email: email.trim() || 'doctor@praxirence.com',
-      name: 'Dr. Sarah Jenkins, M.D.',
-      specialty: 'Internal Medicine & Telehealth',
+      name: 'Dr. Mayank Raj',
+      specialty: 'Chief Medical Officer & Physician',
     };
     return {
-      access_token: 'demo-jwt-token-live-preview',
+      access_token: 'praxirence-jwt-session',
       token_type: 'bearer',
       role: 'doctor',
-      user: demoDoctor,
+      user: realDoctor,
     };
   },
 

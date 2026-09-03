@@ -320,6 +320,14 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
         selectedPreset
       );
 
+      window.dispatchEvent(new CustomEvent('praxirence_toast', {
+        detail: {
+          type: 'success',
+          title: 'AI Care Plan Generated',
+          message: `Consultation with ${patient.name} processed into prescription & alarms.`,
+        }
+      }));
+
       onCarePlanGenerated(visit);
     } catch (err: any) {
       setError(err.message || 'AI Care Plan generation failed.');

@@ -101,6 +101,14 @@ export const CarePlanEditor: React.FC<CarePlanEditorProps> = ({
         medicines,
         reminders,
       });
+
+      window.dispatchEvent(new CustomEvent('praxirence_toast', {
+        detail: {
+          type: 'info',
+          title: 'Draft Saved',
+          message: 'Prescription changes saved successfully.',
+        }
+      }));
     } catch (err: any) {
       setError(err.message || 'Failed to save changes.');
     } finally {
@@ -125,6 +133,14 @@ export const CarePlanEditor: React.FC<CarePlanEditorProps> = ({
       const res = await api.approveVisit(visit.id);
       setApprovalResult(res.message);
       setShowWhatsAppPreview(true);
+
+      window.dispatchEvent(new CustomEvent('praxirence_toast', {
+        detail: {
+          type: 'success',
+          title: 'Care Plan Dispatched via WhatsApp',
+          message: `Digital prescription & reminder alarms sent to ${patient.name} (${patient.phone}).`,
+        }
+      }));
 
       const refreshed = await api.getVisit(visit.id);
       onVisitApproved(refreshed);
@@ -297,7 +313,7 @@ export const CarePlanEditor: React.FC<CarePlanEditorProps> = ({
           )}
         </div>
 
-        <div className="table-container">
+        <div className="table-container desktop-only">
           <table className="styled-table">
             <thead>
               <tr>
@@ -390,6 +406,109 @@ export const CarePlanEditor: React.FC<CarePlanEditorProps> = ({
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Touch-Optimized Medication Cards */}
+        <div className="mobile-only" style={{ flexDirection: 'column', gap: '12px' }}>
+          {medicines.map((med, idx) => (
+            <div
+              key={idx}
+              style={{
+                background: 'var(--bg-subtle)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--radius-md)',
+                padding: '14px',
+                position: 'relative',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span className="badge badge-cyan" style={{ fontSize: '0.7rem' }}>
+                  Rx #{idx + 1}
+                </span>
+                {!isApprovedOrSent && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveMedicine(idx)}
+                    className="btn-icon"
+                    style={{ color: '#fb7185', padding: '4px' }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
+
+              <div className="input-group" style={{ marginBottom: '8px' }}>
+                <label className="input-label" style={{ fontSize: '0.75rem' }}>Medicine Name</label>
+                <input
+                  type="text"
+                  className="input-field"
+                  style={{ padding: '8px 12px', fontSize: '0.9rem', fontWeight: 600 }}
+                  value={med.name}
+                  onChange={(e) => handleMedicineChange(idx, 'name', e.target.value)}
+                  placeholder="e.g. Metformin"
+                  disabled={isApprovedOrSent}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                <div>
+                  <label className="input-label" style={{ fontSize: '0.75rem' }}>Dosage</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    style={{ padding: '8px 12px', fontSize: '0.875rem' }}
+                    value={med.dosage}
+                    onChange={(e) => handleMedicineChange(idx, 'dosage', e.target.value)}
+                    placeholder="500mg"
+                    disabled={isApprovedOrSent}
+                  />
+                </div>
+                <div>
+                  <label className="input-label" style={{ fontSize: '0.75rem' }}>Days</label>
+                  <input
+                    type="number"
+                    className="input-field"
+                    style={{ padding: '8px 12px', fontSize: '0.875rem' }}
+                    value={med.duration_days || 5}
+                    onChange={(e) => handleMedicineChange(idx, 'duration_days', parseInt(e.target.value) || 1)}
+                    disabled={isApprovedOrSent}
+                  />
+                </div>
+              </div>
+
+              <div className="input-group" style={{ marginBottom: '8px' }}>
+                <label className="input-label" style={{ fontSize: '0.75rem' }}>Frequency</label>
+                <input
+                  type="text"
+                  className="input-field"
+                  style={{ padding: '8px 12px', fontSize: '0.875rem' }}
+                  value={med.frequency}
+                  onChange={(e) => handleMedicineChange(idx, 'frequency', e.target.value)}
+                  placeholder="1-0-1 After food"
+                  disabled={isApprovedOrSent}
+                />
+              </div>
+
+              <div className="input-group" style={{ marginBottom: 0 }}>
+                <label className="input-label" style={{ fontSize: '0.75rem' }}>Instructions</label>
+                <input
+                  type="text"
+                  className="input-field"
+                  style={{ padding: '8px 12px', fontSize: '0.875rem' }}
+                  value={med.instructions || ''}
+                  onChange={(e) => handleMedicineChange(idx, 'instructions', e.target.value)}
+                  placeholder="Take with warm water"
+                  disabled={isApprovedOrSent}
+                />
+              </div>
+            </div>
+          ))}
+
+          {medicines.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '16px', color: 'var(--text-muted)' }}>
+              No medications listed.
+            </div>
+          )}
         </div>
       </div>
 

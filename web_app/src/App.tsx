@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { DoctorProfileModal } from './components/DoctorProfileModal';
+import { ToastContainer, ToastMessage } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { DoctorUser } from './types';
 
@@ -31,6 +33,17 @@ const getInitialToken = (): string | null => {
 export const AppContent: React.FC = () => {
   const [token, setToken] = useState<string | null>(getInitialToken);
   const [doctor, setDoctor] = useState<DoctorUser | null>(getInitialDoctor);
+  const [isDoctorProfileOpen, setIsDoctorProfileOpen] = useState(false);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const addToast = (toast: Omit<ToastMessage, 'id'>) => {
+    const id = Date.now().toString(36) + Math.random().toString(36).substring(2);
+    setToasts((prev) => [...prev, { ...toast, id }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
 
   useEffect(() => {
     const handleAuthChange = () => {
@@ -38,8 +51,18 @@ export const AppContent: React.FC = () => {
       setDoctor(getInitialDoctor());
     };
 
+    const handleCustomToast = (e: any) => {
+      if (e.detail) {
+        addToast(e.detail);
+      }
+    };
+
     window.addEventListener('auth_change', handleAuthChange);
-    return () => window.removeEventListener('auth_change', handleAuthChange);
+    window.addEventListener('praxirence_toast' as any, handleCustomToast);
+    return () => {
+      window.removeEventListener('auth_change', handleAuthChange);
+      window.removeEventListener('praxirence_toast' as any, handleCustomToast);
+    };
   }, []);
 
   const handleLoginSuccess = (newToken: string, newDoctor: DoctorUser) => {
@@ -51,6 +74,11 @@ export const AppContent: React.FC = () => {
     }
     setToken(newToken);
     setDoctor(newDoctor);
+    addToast({
+      type: 'success',
+      title: 'Welcome, ' + newDoctor.name,
+      message: 'Authenticated securely with Praxirence Clinical Portal.',
+    });
   };
 
   const handleLogout = () => {
@@ -62,16 +90,50 @@ export const AppContent: React.FC = () => {
     }
     setToken(null);
     setDoctor(null);
+    addToast({
+      type: 'info',
+      title: 'Signed Out',
+      message: 'You have been safely signed out.',
+    });
   };
 
   if (!token || !doctor) {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <>
+        <LoginPage onLoginSuccess={handleLoginSuccess} />
+        <ToastContainer toasts={toasts} onDismiss={removeToast} />
+      </>
+    );
   }
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Navbar doctor={doctor} onLogout={handleLogout} />
+      <Navbar
+        doctor={doctor}
+        onLogout={handleLogout}
+        onOpenDoctorProfile={() => setIsDoctorProfileOpen(true)}
+      />
+
       <DashboardPage />
+
+      {/* Doctor & Clinic Profile Settings Modal */}
+      <DoctorProfileModal
+        doctor={doctor}
+        isOpen={isDoctorProfileOpen}
+        onClose={() => setIsDoctorProfileOpen(false)}
+        onProfileUpdated={(updated) => {
+          setDoctor(updated);
+          localStorage.setItem('praxirence_doctor', JSON.stringify(updated));
+          addToast({
+            type: 'success',
+            title: 'Profile Updated',
+            message: 'Clinical credentials and prescription letterhead updated.',
+          });
+        }}
+      />
+
+      {/* Global Floating Toasts */}
+      <ToastContainer toasts={toasts} onDismiss={removeToast} />
     </div>
   );
 };

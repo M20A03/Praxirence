@@ -37,23 +37,29 @@ export const Navbar: React.FC<NavbarProps> = ({ doctor, onLogout }) => {
     }}>
       <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         {/* Brand Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <div style={{
-            width: '42px',
-            height: '42px',
+            width: '44px',
+            height: '44px',
             borderRadius: '12px',
-            background: 'linear-gradient(135deg, #10b981, #06b6d4)',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 4px 14px rgba(16, 185, 129, 0.25)'
+            padding: '4px',
+            boxShadow: '0 4px 16px rgba(6, 182, 212, 0.2)'
           }}>
-            <Stethoscope size={24} color="#ffffff" />
+            <img 
+              src="/logo-icon.png" 
+              alt="Praxirence Logo" 
+              style={{ width: '36px', height: '36px', objectFit: 'contain' }} 
+            />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--text-primary)' }}>
-                Praxirence
+              <span style={{ fontSize: '1.3rem', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--text-primary)' }}>
+                prax<span style={{ color: '#06b6d4' }}>i</span>rence
               </span>
               <span className="badge badge-success" style={{ fontSize: '0.65rem' }}>
                 <ShieldCheck size={12} /> Clinical Portal

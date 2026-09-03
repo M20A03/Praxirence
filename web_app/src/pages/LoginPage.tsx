@@ -57,25 +57,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div style={{
-            width: '56px',
-            height: '56px',
-            borderRadius: '16px',
-            background: 'linear-gradient(135deg, var(--emerald-500), var(--cyan-500))',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            marginBottom: '16px',
-            boxShadow: '0 6px 20px rgba(16, 185, 129, 0.4)'
+            marginBottom: '14px',
+            padding: '12px 20px',
+            borderRadius: '20px',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            boxShadow: '0 8px 30px rgba(6, 182, 212, 0.15)'
           }}>
-            <Stethoscope size={30} color="#ffffff" />
+            <img 
+              src="/logo.png" 
+              alt="Praxirence" 
+              style={{ width: '180px', height: 'auto', maxHeight: '56px', objectFit: 'contain' }} 
+            />
           </div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }}>Praxirence</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '4px' }}>
-            Doctor Clinical Consultation Portal
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '4px', fontWeight: 500 }}>
+            Doctor Clinical Consultation & Care Plan Portal
           </p>
-          <div style={{ marginTop: '8px' }}>
+          <div style={{ marginTop: '10px' }}>
             <span className="badge badge-success">
-              <ShieldCheck size={12} /> HIPAA-Ready & AES-256 Encrypted
+              <ShieldCheck size={12} /> HIPAA Compliant • DPDP 2023 Ready
             </span>
           </div>
         </div>

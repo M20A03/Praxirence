@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "praxirence": {
+      "command": "python3",
+      "args": [
+        "/home/mayank-raj/Desktop/Praxirence/mcp_server/praxirence_mcp.py"
+      ],
+      "env": {
+        "PYTHONPATH": "/home/mayank-raj/Desktop/Praxirence"
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "Rules": [
+    {
+      "ID": "PurgeAudioRecordingsAfter24Hours",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": "recordings/"
+      },
+      "Expiration": {
+        "Days": 1
+      },
+      "NoncurrentVersionExpiration": {
+        "NoncurrentDays": 1
+      },
+      "AbortIncompleteMultipartUpload": {
+        "DaysAfterInitiation": 1
+      }
+    }
+  ]
+}

@@ -16,6 +16,7 @@ class DoctorRegisterRequest(BaseModel):
 
 class PatientOTPRequest(BaseModel):
     phone: str
+    channel: Optional[str] = "whatsapp"  # "whatsapp" or "sms"
 
 
 class PatientOTPVerifyRequest(BaseModel):

@@ -148,4 +148,65 @@ class MetaWhatsAppService:
         }
 
 
+    async def send_otp_whatsapp(self, to_phone: str, otp_code: str) -> Dict[str, Any]:
+        """
+        Dispatches a secure 6-digit verification OTP directly to the patient's WhatsApp.
+        """
+        clean_phone = "".join(c for c in to_phone if c.isdigit())
+        message_body = (
+            "🔐 *PRAXIRENCE CLINICAL VERIFICATION*\n\n"
+            f"Your one-time verification OTP is: *{otp_code}*\n\n"
+            "⏳ This code is valid for 5 minutes.\n"
+            "🔒 For your medical privacy, never share this code with anyone.\n\n"
+            "🏥 _Praxirence Digital Health Platform_"
+        )
+
+        if self.token and self.phone_number_id:
+            try:
+                headers = {
+                    "Authorization": f"Bearer {self.token}",
+                    "Content-Type": "application/json"
+                }
+                payload = {
+                    "messaging_product": "whatsapp",
+                    "recipient_type": "individual",
+                    "to": clean_phone,
+                    "type": "text",
+                    "text": {
+                        "preview_url": False,
+                        "body": message_body
+                    }
+                }
+
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    resp = await client.post(self.api_url, json=payload, headers=headers)
+                    if resp.status_code in (200, 201):
+                        data = resp.json()
+                        msg_id = data.get("messages", [{}])[0].get("id", "wamid.meta_otp")
+                        logger.info(f"Meta WhatsApp OTP successfully delivered to {clean_phone}: {msg_id}")
+                        return {"success": True, "message_id": msg_id, "provider": "Meta WhatsApp Cloud API", "status": "sent"}
+                    else:
+                        logger.error(f"Meta WhatsApp OTP error {resp.status_code}: {resp.text}")
+                        return {"success": False, "error": resp.text}
+
+            except Exception as e:
+                logger.error(f"Failed to send WhatsApp OTP: {e}")
+                return {"success": False, "error": str(e)}
+
+        # Dev Mode Mock
+        logger.info(
+            f"[META WHATSAPP OTP (DEV MOCK)]\n"
+            f"To: +{clean_phone}\n"
+            f"OTP Code: {otp_code}\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        )
+        return {
+            "success": True,
+            "message_id": f"wamid.mock_otp_{clean_phone[-4:]}",
+            "status": "delivered_mock",
+            "provider": "Meta WhatsApp Cloud API (Dev Mode)",
+            "code": otp_code
+        }
+
+
 meta_whatsapp_service = MetaWhatsAppService()

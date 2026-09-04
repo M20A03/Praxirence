@@ -219,3 +219,71 @@ def test_model_loader_resilience():
     assert any(m["name"] == "Sumatriptan" for m in plan["medicines"])
     assert len(plan["reminders"]) >= 1
 
+
+def test_check_phone_number_endpoint():
+    # Doctor phone check
+    res = client.post("/auth/check-phone", json={"phone": "+919876543210"})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["registered"] is True
+    assert data["role"] == "doctor"
+
+    # Patient phone check
+    res_pat = client.post("/auth/check-phone", json={"phone": "+919835139865"})
+    assert res_pat.status_code == 200
+    pat_data = res_pat.json()
+    assert pat_data["registered"] is True
+    assert pat_data["role"] == "patient"
+
+
+def test_doctor_google_auth_and_register():
+    # Google OAuth doctor login
+    res = client.post(
+        "/auth/doctor/google",
+        json={"email": "dr.google@hospital.org", "name": "Dr. Google Test", "google_id": "goog-12345"}
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["role"] == "doctor"
+    assert "access_token" in data
+
+    # Doctor register
+    reg_res = client.post(
+        "/auth/doctor/register",
+        json={
+            "name": "Dr. Sarah Connor",
+            "email": "sarah.connor@clinics.org",
+            "password": "Password123!",
+            "phone": "+919811122233",
+            "specialty": "Neurologist",
+            "clinic_name": "Apex Neuro Clinic",
+            "reg_number": "NMC-998877"
+        }
+    )
+    assert reg_res.status_code == 200
+    reg_data = reg_res.json()
+    assert reg_data["role"] == "doctor"
+    assert reg_data["user"]["name"] == "Dr. Sarah Connor"
+
+
+def test_auth_directory_and_me():
+    # Directory inspection
+    res = client.get("/auth/directory")
+    assert res.status_code == 200
+    d = res.json()
+    assert "doctors" in d
+    assert "patients" in d
+    assert len(d["doctors"]) >= 1
+
+    # /auth/me for doctor
+    login_res = client.post(
+        "/auth/doctor/login",
+        json={"email": "testdoc@praxirence.com", "password": "DocPass123!"}
+    )
+    token = login_res.json()["access_token"]
+    me_res = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert me_res.status_code == 200
+    me_data = me_res.json()
+    assert me_data["role"] == "doctor"
+
+

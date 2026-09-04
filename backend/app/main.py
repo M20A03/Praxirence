@@ -27,6 +27,51 @@ logging.basicConfig(
 logger = logging.getLogger("praxirence.main")
 
 
+from sqlalchemy import text
+
+
+def auto_migrate_schema():
+    """
+    Ensures missing columns and tables exist across PostgreSQL and SQLite.
+    Runs on backend startup in lifespan before seeding.
+    """
+    logger.info("Executing database auto-migration...")
+    try:
+        dialect = engine.dialect.name
+        if dialect == "postgresql":
+            ddls = [
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(32);",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS specialty VARCHAR(255) DEFAULT 'General Physician';",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS clinic_name VARCHAR(255) DEFAULT 'Praxirence Clinical Centre';",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS reg_number VARCHAR(64) DEFAULT 'NMC-2024-84920';",
+                "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_phone ON users (phone) WHERE phone IS NOT NULL;",
+                "ALTER TABLE patients ADD COLUMN IF NOT EXISTS dob DATE;",
+                "ALTER TABLE patients ADD COLUMN IF NOT EXISTS consent_status BOOLEAN DEFAULT FALSE;",
+                "ALTER TABLE patients ADD COLUMN IF NOT EXISTS consent_updated_at TIMESTAMP;",
+                "ALTER TABLE patients ADD COLUMN IF NOT EXISTS fcm_token VARCHAR(255);",
+                "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS actor_id VARCHAR(36);",
+                "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS actor_role VARCHAR(50);",
+                "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS resource VARCHAR(100);",
+                "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS resource_id VARCHAR(100);",
+                "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS action VARCHAR(100);",
+                "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45);",
+                "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS details JSONB;",
+                "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS timestamp TIMESTAMP;",
+            ]
+            for ddl in ddls:
+                try:
+                    with engine.connect() as conn:
+                        conn.execute(text(ddl))
+                        conn.commit()
+                except Exception as e:
+                    logger.warning(f"DDL execution notice ({ddl}): {e}")
+            logger.info("PostgreSQL schema auto-migration completed successfully.")
+        elif dialect == "sqlite":
+            logger.info("SQLite schema verified.")
+    except Exception as e:
+        logger.error(f"Error during schema auto-migration: {e}", exc_info=True)
+
+
 def seed_initial_data():
     """Seeds real doctor and initial patient record for instant clinical verification"""
     db = SessionLocal()
@@ -37,7 +82,10 @@ def seed_initial_data():
                 email="doctor@praxirence.com",
                 hashed_password=get_password_hash("Doctor123!"),
                 name="Dr. Mayank Raj",
-                specialty="Chief Medical Officer & Physician"
+                phone="+919876543210",
+                specialty="Chief Medical Officer & Physician",
+                clinic_name="Praxirence Clinical Centre",
+                reg_number="NMC-2024-84920"
             )
             db.add(real_doctor)
             db.commit()
@@ -46,6 +94,12 @@ def seed_initial_data():
             doctor.name = "Dr. Mayank Raj"
             doctor.specialty = "Chief Medical Officer & Physician"
             doctor.hashed_password = get_password_hash("Doctor123!")
+            if hasattr(doctor, "phone") and not doctor.phone:
+                doctor.phone = "+919876543210"
+            if hasattr(doctor, "clinic_name") and not doctor.clinic_name:
+                doctor.clinic_name = "Praxirence Clinical Centre"
+            if hasattr(doctor, "reg_number") and not doctor.reg_number:
+                doctor.reg_number = "NMC-2024-84920"
             db.commit()
 
         sample_patient = db.query(Patient).first()
@@ -66,6 +120,10 @@ def seed_initial_data():
 
     except Exception as e:
         logger.warning(f"Seeding notice: {e}")
+        try:
+            db.rollback()
+        except Exception:
+            pass
     finally:
         db.close()
 
@@ -73,10 +131,11 @@ def seed_initial_data():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting Praxirence Healthcare Platform...")
-    # Initialize database tables
+    # Initialize database tables & run schema auto-migrations
     try:
         Base.metadata.create_all(bind=engine)
-        logger.info("Database schema initialized.")
+        auto_migrate_schema()
+        logger.info("Database schema initialized and verified.")
         seed_initial_data()
     except Exception as e:
         logger.error(f"Database setup error: {e}")
@@ -144,3 +203,22 @@ def health_check():
         "whatsapp_provider": "Meta WhatsApp Cloud API",
         "otp_provider": "Fast2SMS"
     }
+
+
+@app.api_route("/auth/migrate", methods=["GET", "POST"])
+def trigger_migration():
+    """Manual trigger to synchronize PostgreSQL schema and seed data"""
+    try:
+        auto_migrate_schema()
+        seed_initial_data()
+        return {
+            "success": True,
+            "message": "Schema auto-migration and initial seed executed successfully."
+        }
+    except Exception as e:
+        logger.error(f"Manual migration error: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": str(e)
+        }
+

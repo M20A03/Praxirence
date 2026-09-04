@@ -84,6 +84,7 @@ export interface Visit {
   patient_name?: string;
   patient_phone?: string;
   doctor_name?: string;
+  clinic_name?: string;
   care_plan?: any;
 }
 

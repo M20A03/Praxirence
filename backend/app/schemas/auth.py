@@ -52,11 +52,16 @@ class PatientRegisterRequest(BaseModel):
     gender: Optional[str] = "Other"
 
 
+class CheckPhoneRequest(BaseModel):
+    phone: str
+
+
 class CheckPhoneResponse(BaseModel):
     registered: bool
     role: Optional[str] = None  # "doctor" | "patient" | None
     name: Optional[str] = None
     message: str
+
 
 
 class DirectoryResponse(BaseModel):

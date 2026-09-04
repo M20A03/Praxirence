@@ -41,8 +41,35 @@ export const PrescriptionModal: React.FC<PrescriptionModalProps> = ({
     year: 'numeric',
   });
 
+  const [copied, setCopied] = React.useState(false);
+
   const handlePrint = () => {
-    window.print();
+    try {
+      window.print();
+    } catch (e) {
+      console.warn('Print trigger notice:', e);
+    }
+  };
+
+  const handleCopyText = () => {
+    const lines = [
+      `PRAXIRENCE CLINICAL PRESCRIPTION`,
+      `Doctor: ${doctorName} (${doctorSpecialty})`,
+      `Reg No: ${regNumber} | Clinic: ${clinicName}`,
+      `Date: ${consultationDate}`,
+      `Patient: ${patient.name} (${patient.phone})`,
+      `Diagnosis: ${visit.diagnosis || 'Clinical Consultation'}`,
+      `---------------------------------`,
+      `MEDICINES:`,
+      ...(visit.medicines || []).map((m, i) => `${i + 1}. ${m.name} (${m.dosage}) - ${m.frequency} for ${m.duration_days || 5} days. ${m.instructions || ''}`),
+      `---------------------------------`,
+      `ADVICE: ${visit.care_plan?.diet || 'Drink plenty of water and rest well.'}`,
+      `Emergency Contact: +91 98351 39865`,
+    ];
+    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    }).catch(() => {});
   };
 
   return (
@@ -52,65 +79,126 @@ export const PrescriptionModal: React.FC<PrescriptionModalProps> = ({
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(15, 23, 42, 0.75)',
+        backgroundColor: 'rgba(15, 23, 42, 0.82)',
         backdropFilter: 'blur(8px)',
         zIndex: 9999,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '16px'
+        padding: '12px'
       }}
     >
+      {/* Floating Screen-Level Close Button for Mobile & Desktop */}
+      <button
+        type="button"
+        onClick={onClose}
+        className="no-print"
+        aria-label="Close Prescription"
+        style={{
+          position: 'fixed',
+          top: '12px',
+          right: '12px',
+          zIndex: 10001,
+          background: '#ef4444',
+          color: '#ffffff',
+          border: '2px solid #ffffff',
+          borderRadius: '50%',
+          width: '42px',
+          height: '42px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 14px rgba(0,0,0,0.5)',
+          cursor: 'pointer'
+        }}
+      >
+        <X size={22} strokeWidth={2.5} />
+      </button>
+
       <div
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
         style={{
           maxWidth: '750px',
           width: '100%',
-          maxHeight: '90vh',
+          maxHeight: '92vh',
           overflowY: 'auto',
-          padding: '24px',
+          padding: '20px',
           background: '#ffffff',
           color: '#0f172a',
           borderRadius: '16px',
+          position: 'relative',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.4)'
         }}
       >
-        {/* Top Control Bar (Hidden during print) */}
+        {/* Sticky Top Control Bar (Never scrolls away) */}
         <div 
           className="no-print"
           style={{
+            position: 'sticky',
+            top: '-20px',
+            zIndex: 50,
+            background: '#ffffff',
+            margin: '-20px -20px 16px -20px',
+            padding: '14px 20px',
+            borderBottom: '2px solid #e2e8f0',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: '24px',
-            paddingBottom: '16px',
-            borderBottom: '1px solid #e2e8f0',
+            flexWrap: 'wrap',
+            gap: '10px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>
-              <ShieldCheck size={14} /> Official Medical Document
+              <ShieldCheck size={14} /> Official Medical Prescription
             </span>
-            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-              Compliant with Telemedicine Guidelines
+            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+              DPDP 2023 Compliant
             </span>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <button
+              type="button"
+              onClick={handleCopyText}
+              className="btn btn-secondary"
+              style={{ padding: '7px 12px', fontSize: '0.8rem', gap: '6px', color: '#0f172a', borderColor: '#cbd5e1' }}
+            >
+              {copied ? <CheckCircle2 size={15} color="#10b981" /> : <Download size={15} />}
+              <span>{copied ? 'Copied!' : 'Copy Plan'}</span>
+            </button>
+
+            <button
+              type="button"
               onClick={handlePrint}
               className="btn btn-primary"
-              style={{ padding: '8px 16px', fontSize: '0.875rem', gap: '8px' }}
+              style={{ padding: '7px 14px', fontSize: '0.825rem', gap: '6px' }}
             >
-              <Printer size={16} />
-              <span>Print / Save PDF</span>
+              <Printer size={15} />
+              <span>Print / PDF</span>
             </button>
+
+            {/* High-Visibility Primary Close Button */}
             <button
+              type="button"
               onClick={onClose}
-              className="btn-icon"
-              style={{ width: '36px', height: '36px', borderRadius: '8px', color: '#64748b' }}
+              className="btn"
+              style={{
+                padding: '7px 14px',
+                fontSize: '0.825rem',
+                gap: '6px',
+                background: '#fee2e2',
+                color: '#991b1b',
+                border: '1.5px solid #f87171',
+                borderRadius: '8px',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
             >
-              <X size={20} />
+              <X size={16} strokeWidth={2.5} />
+              <span>Close (बंद करें)</span>
             </button>
           </div>
         </div>
@@ -336,38 +424,50 @@ export const PrescriptionModal: React.FC<PrescriptionModalProps> = ({
           style={{
             marginTop: '24px',
             paddingTop: '16px',
-            borderTop: '1px solid #e2e8f0',
+            borderTop: '2px solid #e2e8f0',
             display: 'flex',
             gap: '12px',
-            justifyContent: 'flex-end'
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap'
           }}
         >
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn btn-secondary"
-            style={{
-              padding: '10px 20px',
-              fontSize: '0.9rem',
-              color: '#475569',
-              borderColor: '#cbd5e1'
-            }}
-          >
-            Close Window
-          </button>
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="btn btn-primary"
-            style={{
-              padding: '10px 20px',
-              fontSize: '0.9rem',
-              gap: '8px'
-            }}
-          >
-            <Printer size={16} />
-            <span>Print / Save PDF</span>
-          </button>
+          <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+            Tap <b>Close</b> when done, or save as PDF for your records.
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn"
+              style={{
+                padding: '10px 20px',
+                fontSize: '0.9rem',
+                fontWeight: 700,
+                color: '#991b1b',
+                background: '#fee2e2',
+                border: '1.5px solid #f87171',
+                borderRadius: '8px',
+                cursor: 'pointer'
+              }}
+            >
+              ✕ Close (बंद करें)
+            </button>
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="btn btn-primary"
+              style={{
+                padding: '10px 20px',
+                fontSize: '0.9rem',
+                gap: '8px'
+              }}
+            >
+              <Printer size={16} />
+              <span>Print / Save PDF</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,9 +1,34 @@
+export type UserRole = 'doctor' | 'patient';
+
+export interface DoctorUser {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  specialty: string;
+  clinic_name: string;
+  reg_number: string;
+  role: 'doctor';
+}
+
 export interface PatientUser {
   id: string;
   name: string;
   phone: string;
   consent_status: boolean;
   consent_updated_at?: string;
+  role?: 'patient';
+}
+
+export type ActiveUser = DoctorUser | PatientUser;
+
+export interface PatientSummary {
+  id: string;
+  name: string;
+  phone: string;
+  consent_status: boolean;
+  role: 'patient';
+  created_at?: string;
 }
 
 export interface MedicineItem {
@@ -32,6 +57,8 @@ export interface Visit {
   reminders: ReminderItem[];
   status: 'draft' | 'approved' | 'sent';
   doctor_name?: string;
+  patient_name?: string;
+  patient_phone?: string;
 }
 
 export interface ConsentDocument {
@@ -43,3 +70,4 @@ export interface ConsentDocument {
   consent_status: boolean;
   consent_updated_at?: string;
 }
+

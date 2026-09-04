@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors } from '../theme/colors';
+import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
 
 interface BrandLogoMobileProps {
   size?: 'sm' | 'md' | 'lg';
@@ -82,17 +82,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emblemBox: {
-    backgroundColor: '#0c1626',
+    backgroundColor: '#0F172A',
     borderWidth: 1.5,
-    borderColor: 'rgba(6, 182, 212, 0.45)',
+    borderColor: 'rgba(13, 148, 136, 0.45)',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    shadowColor: '#06b6d4',
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
-    elevation: 6,
+    elevation: 4,
     marginBottom: 12,
   },
   leafAccent: {
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#10b981',
+    backgroundColor: Colors.primaryLight,
   },
   textColumn: {
     alignItems: 'center',
@@ -130,24 +130,24 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
   },
   brandText: {
-    fontWeight: '800',
-    color: '#f8fafc',
-    letterSpacing: -0.5,
+    fontFamily: FontFamily.extraBold,
+    color: Colors.text,
+    letterSpacing: LetterSpacing.tighter,
   },
   brandTextCyan: {
-    fontWeight: '900',
-    color: '#06b6d4',
+    fontFamily: FontFamily.extraBold,
+    color: Colors.cyan,
   },
   brandTextEmerald: {
-    fontWeight: '800',
-    color: '#10b981',
-    letterSpacing: -0.5,
+    fontFamily: FontFamily.extraBold,
+    color: Colors.primary,
+    letterSpacing: LetterSpacing.tighter,
   },
   brandSubtitle: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.caption,
     color: Colors.textSecondary,
-    letterSpacing: 0.5,
+    letterSpacing: LetterSpacing.wider,
     marginTop: 4,
     textTransform: 'uppercase',
   },

@@ -7,7 +7,7 @@ import {
   RefreshControl,
   TouchableOpacity,
 } from 'react-native';
-import { Colors } from '../theme/colors';
+import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
 import { PatientUser, Visit } from '../types';
 import { mobileApi } from '../services/api';
 
@@ -23,7 +23,15 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
 
   useEffect(() => {
     loadVisits();
-  }, []);
+
+    const unsubscribe = mobileApi.startRealtimeSync(user.id, (freshVisits, isLive) => {
+      if (isLive && freshVisits.length > 0) {
+        setVisits(freshVisits);
+      }
+    }, 8000);
+
+    return () => unsubscribe();
+  }, [user.id]);
 
   const loadVisits = async () => {
     try {
@@ -37,6 +45,7 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
       setRefreshing(false);
     }
   };
+
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
@@ -162,12 +171,15 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.xl,
+    lineHeight: 28,
+    letterSpacing: LetterSpacing.tight,
     color: Colors.text,
   },
   subtitle: {
-    fontSize: 13,
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.sm,
     color: Colors.textSecondary,
     marginTop: 4,
   },
@@ -186,12 +198,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   visitDate: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.md,
+    letterSpacing: LetterSpacing.tight,
     color: Colors.text,
   },
   doctorName: {
-    fontSize: 13,
+    fontFamily: FontFamily.medium,
+    fontSize: FontSize.sm,
     color: Colors.cyan,
     marginTop: 2,
   },
@@ -202,22 +216,24 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   statusText: {
+    fontFamily: FontFamily.bold,
     color: '#25D366',
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: FontSize.caption,
+    letterSpacing: LetterSpacing.wide,
   },
   diagnosisSection: {
     marginBottom: 12,
   },
   diagnosisLabel: {
-    fontSize: 10,
-    fontWeight: '800',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.caption,
     color: Colors.textMuted,
-    letterSpacing: 0.5,
+    letterSpacing: LetterSpacing.wider,
+    textTransform: 'uppercase',
   },
   diagnosisText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontFamily: FontFamily.medium,
+    fontSize: FontSize.base,
     color: Colors.text,
     marginTop: 3,
   },
@@ -230,14 +246,14 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.border,
   },
   medsCount: {
-    fontSize: 13,
+    fontFamily: FontFamily.semiBold,
+    fontSize: FontSize.sm,
     color: Colors.textSecondary,
-    fontWeight: '600',
   },
   expandPrompt: {
-    fontSize: 12,
+    fontFamily: FontFamily.semiBold,
+    fontSize: FontSize.xs,
     color: Colors.cyan,
-    fontWeight: '600',
   },
   expandedContent: {
     marginTop: 14,
@@ -246,11 +262,11 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.border,
   },
   expandedTitle: {
-    fontSize: 12,
-    fontWeight: '800',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.xs,
     color: Colors.textSecondary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: LetterSpacing.wider,
     marginBottom: 8,
   },
   medDetailRow: {
@@ -263,24 +279,26 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   medDetailName: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.base,
     color: Colors.text,
   },
   medDetailFreq: {
-    fontSize: 12,
+    fontFamily: FontFamily.medium,
+    fontSize: FontSize.xs,
     color: Colors.primaryLight,
     marginTop: 2,
   },
   medDetailInst: {
-    fontSize: 11,
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.caption,
     color: Colors.textMuted,
     marginTop: 2,
   },
   medDetailDuration: {
-    fontSize: 12,
+    fontFamily: FontFamily.semiBold,
+    fontSize: FontSize.xs,
     color: Colors.cyan,
-    fontWeight: '600',
   },
   emptyCard: {
     backgroundColor: Colors.card,
@@ -295,12 +313,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   emptyTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.md,
     color: Colors.text,
   },
   emptySubtitle: {
-    fontSize: 13,
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.sm,
     color: Colors.textMuted,
     textAlign: 'center',
     marginTop: 6,

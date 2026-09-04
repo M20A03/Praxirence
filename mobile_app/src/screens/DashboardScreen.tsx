@@ -9,7 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Colors } from '../theme/colors';
+import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
 import { PatientUser, Visit, MedicineItem, ReminderItem } from '../types';
 import { mobileApi } from '../services/api';
 import { registerForPushNotificationsAsync } from '../services/notifications';
@@ -17,23 +17,54 @@ import { registerForPushNotificationsAsync } from '../services/notifications';
 interface DashboardScreenProps {
   user: PatientUser;
   onNavigateToConsent: () => void;
+  onSwitchToDoctorRole?: () => void;
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   user,
   onNavigateToConsent,
+  onSwitchToDoctorRole,
 }) => {
+
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [takenReminders, setTakenReminders] = useState<Record<string, boolean>>({});
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [isOfflineCached, setIsOfflineCached] = useState(false);
+  const [isLive, setIsLive] = useState(false);
+  const [latencyMs, setLatencyMs] = useState<number>(-1);
+  const [lastSyncedTime, setLastSyncedTime] = useState<string>('Just now');
+  const [newPlanAlert, setNewPlanAlert] = useState<string | null>(null);
 
   useEffect(() => {
     loadDashboardData();
     checkPushPermissions();
-  }, []);
+    measureLatency();
+
+    // SRE Real-time sync engine (polls every 6 seconds)
+    const unsubscribe = mobileApi.startRealtimeSync(user.id, (freshVisits, liveStatus) => {
+      setIsLive(liveStatus);
+      if (liveStatus && freshVisits.length > 0) {
+        setVisits((prev) => {
+          if (prev.length > 0 && freshVisits.length > prev.length) {
+            setNewPlanAlert(`New consultation received from Dr. ${freshVisits[0].doctor_name || 'Provider'}`);
+          }
+          return freshVisits;
+        });
+        setLastSyncedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        setIsOfflineCached(false);
+      }
+    }, 6000);
+
+    return () => unsubscribe();
+  }, [user.id]);
+
+  const measureLatency = async () => {
+    const health = await mobileApi.checkHealth();
+    setIsLive(health.healthy);
+    setLatencyMs(health.latencyMs);
+  };
 
   const checkPushPermissions = async () => {
     const token = await registerForPushNotificationsAsync();
@@ -52,8 +83,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         await AsyncStorage.setItem(cacheKey, JSON.stringify(data));
       }
       setIsOfflineCached(false);
+      setIsLive(true);
+      setLastSyncedTime('Just now');
     } catch (err) {
       console.log('Network error loading care plan, checking local offline cache:', err);
+      setIsLive(false);
       try {
         const cached = await AsyncStorage.getItem(cacheKey);
         if (cached) {
@@ -88,6 +122,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           refreshing={refreshing}
           onRefresh={() => {
             setRefreshing(true);
+            measureLatency();
             loadDashboardData();
           }}
           tintColor={Colors.primary}
@@ -96,26 +131,64 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     >
       {/* Patient Greeting & Status Header */}
       <View style={styles.header}>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.greeting}>Welcome back,</Text>
           <Text style={styles.patientName}>{user.name}</Text>
         </View>
 
-        <TouchableOpacity
-          style={[
-            styles.consentBadge,
-            { backgroundColor: user.consent_status ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)' }
-          ]}
-          onPress={onNavigateToConsent}
-        >
-          <Text style={[
-            styles.consentBadgeText,
-            { color: user.consent_status ? Colors.primaryLight : Colors.amber }
-          ]}>
-            {user.consent_status ? '✓ Consent Active' : '⚠️ Consent Pending'}
-          </Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+          {onSwitchToDoctorRole && (
+            <TouchableOpacity
+              style={styles.switchRoleBadge}
+              onPress={onSwitchToDoctorRole}
+            >
+              <Text style={styles.switchRoleBadgeText}>Doctor 👨‍⚕️</Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            style={[
+              styles.consentBadge,
+              { backgroundColor: user.consent_status ? 'rgba(13, 148, 136, 0.12)' : 'rgba(217, 119, 6, 0.12)' }
+            ]}
+            onPress={onNavigateToConsent}
+          >
+            <Text style={[
+              styles.consentBadgeText,
+              { color: user.consent_status ? Colors.primaryDark : Colors.amber }
+            ]}>
+              {user.consent_status ? '✓ Consent' : '⚠️ Consent'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
+
+
+      {/* SRE Real-time Cloud Connection & Latency Bar */}
+      <View style={styles.cloudStatusBar}>
+        <View style={styles.cloudStatusLeft}>
+          <View style={[styles.pulseDot, { backgroundColor: isLive ? '#10b981' : '#f59e0b' }]} />
+          <Text style={styles.cloudStatusText}>
+            {isLive ? `Live Sync Active • ${latencyMs > 0 ? latencyMs + 'ms' : 'Railway Cloud'}` : isOfflineCached ? 'Offline • Cached Vault Mode' : 'Connecting to Vault...'}
+          </Text>
+        </View>
+        <Text style={styles.cloudSyncTime}>Synced: {lastSyncedTime}</Text>
+      </View>
+
+      {/* New Care Plan Live Alert */}
+      {newPlanAlert && (
+        <TouchableOpacity
+          style={styles.newPlanBanner}
+          onPress={() => setNewPlanAlert(null)}
+        >
+          <Text style={styles.newPlanIcon}>✨</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.newPlanTitle}>New Care Plan Received!</Text>
+            <Text style={styles.newPlanSubtitle}>{newPlanAlert}</Text>
+          </View>
+          <Text style={styles.newPlanDismiss}>✕</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Push Notification Banner */}
       {!notificationsEnabled && (
@@ -141,6 +214,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           </View>
         </View>
       )}
+
 
       {/* Next Upcoming Reminder Card */}
       {upcomingReminders.length > 0 && (
@@ -258,24 +332,110 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   greeting: {
-    fontSize: 14,
+    fontFamily: FontFamily.medium,
+    fontSize: FontSize.sm,
     color: Colors.textSecondary,
   },
   patientName: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.xxl,
+    lineHeight: 28,
+    letterSpacing: LetterSpacing.tight,
     color: Colors.text,
+  },
+  switchRoleBadge: {
+    backgroundColor: 'rgba(13, 148, 136, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(13, 148, 136, 0.3)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  switchRoleBadgeText: {
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.caption,
+    letterSpacing: LetterSpacing.wide,
+    color: Colors.primary,
   },
   consentBadge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: Colors.border,
   },
   consentBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.xs,
+    letterSpacing: LetterSpacing.wide,
+  },
+  cloudStatusBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+
+  cloudStatusLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  pulseDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  cloudStatusText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: FontSize.xs,
+    color: Colors.text,
+  },
+  cloudSyncTime: {
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.caption,
+    color: Colors.textMuted,
+  },
+  newPlanBanner: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.4)',
+    borderRadius: 14,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  newPlanIcon: {
+    fontSize: 22,
+  },
+  newPlanTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.base,
+    color: Colors.primaryLight,
+  },
+  newPlanSubtitle: {
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  newPlanDismiss: {
+    fontSize: 14,
+    color: Colors.textMuted,
+    padding: 4,
   },
   notificationBanner: {
     backgroundColor: 'rgba(6, 182, 212, 0.1)',
@@ -292,12 +452,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   bannerTitle: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.base,
     color: Colors.cyan,
   },
   bannerSubtitle: {
-    fontSize: 12,
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginTop: 2,
   },
@@ -313,12 +474,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   offlineTitle: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.sm,
     color: Colors.amber,
   },
   offlineSubtitle: {
-    fontSize: 12,
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginTop: 2,
   },
@@ -337,23 +499,28 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   nextDoseLabel: {
-    fontSize: 11,
-    fontWeight: '800',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.caption,
     color: Colors.primaryLight,
-    letterSpacing: 0.5,
+    letterSpacing: LetterSpacing.wider,
+    textTransform: 'uppercase',
   },
   nextDoseTime: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontFamily: FontFamily.extraBold,
+    fontSize: FontSize.lg,
     color: Colors.cyan,
+    letterSpacing: LetterSpacing.tight,
   },
   nextDoseMedicine: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.xl,
+    lineHeight: 26,
+    letterSpacing: LetterSpacing.tight,
     color: Colors.text,
   },
   nextDoseInstructions: {
-    fontSize: 13,
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.sm,
     color: Colors.textSecondary,
     marginTop: 4,
     marginBottom: 16,
@@ -368,9 +535,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.cardSubtle,
   },
   takenButtonText: {
+    fontFamily: FontFamily.bold,
     color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: FontSize.body,
+    letterSpacing: LetterSpacing.wide,
   },
   section: {
     marginBottom: 24,
@@ -382,8 +550,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.lg,
+    letterSpacing: LetterSpacing.tight,
     color: Colors.text,
     marginBottom: 12,
   },
@@ -395,19 +564,21 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   diagnosisLabel: {
-    fontSize: 10,
-    fontWeight: '800',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.caption,
     color: Colors.textMuted,
-    letterSpacing: 0.5,
+    letterSpacing: LetterSpacing.wider,
+    textTransform: 'uppercase',
   },
   diagnosisText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.md,
     color: Colors.text,
     marginTop: 4,
   },
   doctorInfo: {
-    fontSize: 12,
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginTop: 6,
   },
@@ -426,8 +597,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   medName: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.md,
+    letterSpacing: LetterSpacing.tight,
     color: Colors.text,
   },
   dosageBadge: {
@@ -437,23 +609,25 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   dosageText: {
+    fontFamily: FontFamily.bold,
     color: Colors.primaryLight,
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: FontSize.xs,
   },
   medTiming: {
-    fontSize: 13,
+    fontFamily: FontFamily.semiBold,
+    fontSize: FontSize.sm,
     color: Colors.cyan,
-    fontWeight: '600',
     marginTop: 2,
   },
   medInstructions: {
-    fontSize: 12,
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginTop: 4,
   },
   medDuration: {
-    fontSize: 11,
+    fontFamily: FontFamily.medium,
+    fontSize: FontSize.caption,
     color: Colors.textMuted,
     marginTop: 4,
   },
@@ -466,12 +640,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.body,
     color: Colors.textSecondary,
   },
   emptySubtext: {
-    fontSize: 12,
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.xs,
     color: Colors.textMuted,
     textAlign: 'center',
     marginTop: 4,
@@ -494,17 +669,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   reminderTimeText: {
+    fontFamily: FontFamily.bold,
     color: Colors.cyan,
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: FontSize.base,
   },
   reminderMedName: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontFamily: FontFamily.semiBold,
+    fontSize: FontSize.base,
     color: Colors.text,
   },
   reminderMedInst: {
-    fontSize: 12,
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.xs,
     color: Colors.textMuted,
   },
 });

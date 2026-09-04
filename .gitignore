@@ -71,7 +71,9 @@ backend/audio_recordings/
 .vercel
 .env*
 
-# Model Weights & Large Binaries
+# Model Weights & Builds & Binaries
+*.apk
+*.aab
 *.safetensors
 *.bin
 *.pt

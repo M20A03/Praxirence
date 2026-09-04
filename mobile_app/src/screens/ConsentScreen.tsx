@@ -9,6 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { Colors } from '../theme/colors';
+import { FontFamily, FontSize, LetterSpacing } from '../theme/typography';
 import { PatientUser, ConsentDocument } from '../types';
 import { mobileApi } from '../services/api';
 
@@ -172,12 +173,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.xxl,
     color: Colors.text,
+    letterSpacing: LetterSpacing.tight,
   },
   subtitle: {
-    fontSize: 13,
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.sm,
     color: Colors.textSecondary,
     marginTop: 4,
     marginBottom: 16,
@@ -186,14 +189,16 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: Colors.border,
   },
   statusCardTitle: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.body,
+    letterSpacing: LetterSpacing.tight,
   },
   statusCardDesc: {
-    fontSize: 12,
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginTop: 4,
     lineHeight: 18,
@@ -207,23 +212,25 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   docHeading: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.md,
     color: Colors.text,
     marginBottom: 10,
+    letterSpacing: LetterSpacing.tight,
   },
   plainText: {
-    fontSize: 14,
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.base,
     color: Colors.textSecondary,
-    lineHeight: 20,
+    lineHeight: 22,
     marginBottom: 18,
   },
   bulletHeading: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: Colors.cyan,
+    fontFamily: FontFamily.extraBold,
+    fontSize: FontSize.xs,
+    color: Colors.primaryDark,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: LetterSpacing.wider,
     marginBottom: 12,
   },
   bulletRow: {
@@ -233,14 +240,15 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   bulletDot: {
-    fontSize: 14,
+    fontSize: FontSize.base,
     marginTop: 2,
   },
   bulletText: {
     flex: 1,
-    fontSize: 13,
+    fontFamily: FontFamily.medium,
+    fontSize: FontSize.sm,
     color: Colors.text,
-    lineHeight: 18,
+    lineHeight: 19,
   },
   securityNote: {
     backgroundColor: Colors.cardSubtle,
@@ -248,10 +256,11 @@ const styles = StyleSheet.create({
     padding: 12,
     marginTop: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: Colors.border,
   },
   securityNoteText: {
-    fontSize: 11,
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.caption,
     color: Colors.textMuted,
     lineHeight: 16,
   },
@@ -269,17 +278,19 @@ const styles = StyleSheet.create({
   },
   acceptBtnText: {
     color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.md,
+    letterSpacing: LetterSpacing.wide,
   },
   declineBtn: {
-    backgroundColor: 'rgba(244, 63, 94, 0.15)',
+    backgroundColor: 'rgba(244, 63, 94, 0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(244, 63, 94, 0.3)',
+    borderColor: 'rgba(244, 63, 94, 0.25)',
   },
   declineBtnText: {
-    color: '#fb7185',
-    fontSize: 15,
-    fontWeight: '700',
+    color: Colors.rose,
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.body,
+    letterSpacing: LetterSpacing.wide,
   },
 });

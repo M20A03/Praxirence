@@ -27,7 +27,7 @@ import { DirectoryAccount, DirectoryResponse, CheckPhoneResponse } from '../type
 import { BrandLogo } from '../components/BrandLogo';
 
 type PersonaTab = 'doctor' | 'patient' | 'register';
-type DoctorAuthMode = 'otp' | 'password';
+type DoctorAuthMode = 'otp' | 'password' | 'google';
 type RegisterPersona = 'doctor' | 'patient';
 
 export const LoginPage: React.FC = () => {
@@ -158,18 +158,21 @@ export const LoginPage: React.FC = () => {
     setSuccessMsg(null);
     if (acc.role === 'doctor') {
       setActiveTab('doctor');
-      if (acc.email) {
-        setDocEmail(acc.email);
-        setDocPassword('Doctor123!');
-      }
+      setDoctorAuthMode('otp');
       if (acc.phone) {
         setDocPhone(acc.phone);
         inspectPhone(acc.phone);
       }
+      if (acc.email) {
+        setDocEmail(acc.email);
+        setDocPassword('Doctor123!');
+      }
+      setSuccessMsg(`Selected clinician ${acc.name}. Ready for 1-Tap WhatsApp OTP or Password login.`);
     } else {
       setActiveTab('patient');
       setPatPhone(acc.phone);
       inspectPhone(acc.phone);
+      setSuccessMsg(`Selected patient ${acc.name}. Ready for WhatsApp OTP login.`);
     }
   };
 
@@ -555,76 +558,41 @@ export const LoginPage: React.FC = () => {
         {/* ============================================================ */}
         {activeTab === 'doctor' && (
           <div>
-            {/* Quick Google Doctor Verification */}
-            <button
-              type="button"
-              onClick={handleGoogleDoctorLogin}
-              disabled={loading}
-              className="btn"
-              style={{
-                width: '100%',
-                background: 'var(--bg-card)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border-color)',
-                padding: '11px 16px',
-                borderRadius: 'var(--radius-md)',
-                marginBottom: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '10px',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.borderColor = '#06b6d4'}
-              onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-              </svg>
-              <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>
-                Verify & Sign In with Google (Doctor)
-              </span>
-            </button>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-              <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }} />
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
-                or use clinic phone / email
-              </span>
-              <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }} />
-            </div>
-
-            {/* Sub-toggle: WhatsApp OTP vs Email Password */}
+            {/* Doctor Auth Mode Selection Tabs */}
             <div style={{
-              display: 'flex',
-              gap: '8px',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '6px',
+              background: 'var(--bg-subtle)',
+              borderRadius: 'var(--radius-md)',
+              padding: '4px',
               marginBottom: '18px',
-              borderBottom: '1px solid var(--border-color)',
-              paddingBottom: '10px'
+              border: '1px solid var(--border-color)'
             }}>
               <button
                 type="button"
                 onClick={() => { setDoctorAuthMode('otp'); setError(null); }}
                 style={{
-                  background: doctorMode === 'otp' ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
-                  color: doctorMode === 'otp' ? '#06b6d4' : 'var(--text-muted)',
-                  border: doctorMode === 'otp' ? '1px solid rgba(6, 182, 212, 0.4)' : '1px solid transparent',
-                  padding: '6px 14px',
-                  borderRadius: '20px',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
+                  padding: '9px 4px',
+                  borderRadius: 'var(--radius-sm)',
+                  border: 'none',
+                  background: doctorMode === 'otp' ? 'linear-gradient(135deg, rgba(37, 211, 102, 0.18), rgba(6, 182, 212, 0.18))' : 'transparent',
+                  color: doctorMode === 'otp' ? '#10b981' : 'var(--text-muted)',
+                  fontWeight: 700,
+                  fontSize: '0.78rem',
                   cursor: 'pointer',
+                  borderWidth: doctorMode === 'otp' ? '1px' : '0px',
+                  borderStyle: 'solid',
+                  borderColor: doctorMode === 'otp' ? 'rgba(37, 211, 102, 0.45)' : 'transparent',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px'
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxShadow: doctorMode === 'otp' ? '0 2px 8px rgba(37, 211, 102, 0.15)' : 'none',
+                  transition: 'all 0.2s ease'
                 }}
               >
-                <Smartphone size={14} />
+                <Smartphone size={14} color={doctorMode === 'otp' ? '#25D366' : 'currentColor'} />
                 <span>WhatsApp OTP</span>
               </button>
 
@@ -632,126 +600,239 @@ export const LoginPage: React.FC = () => {
                 type="button"
                 onClick={() => { setDoctorAuthMode('password'); setError(null); }}
                 style={{
-                  background: doctorMode === 'password' ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
-                  color: doctorMode === 'password' ? '#06b6d4' : 'var(--text-muted)',
-                  border: doctorMode === 'password' ? '1px solid rgba(6, 182, 212, 0.4)' : '1px solid transparent',
-                  padding: '6px 14px',
-                  borderRadius: '20px',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
+                  padding: '9px 4px',
+                  borderRadius: 'var(--radius-sm)',
+                  border: 'none',
+                  background: doctorMode === 'password' ? 'var(--bg-card)' : 'transparent',
+                  color: doctorMode === 'password' ? 'var(--text-primary)' : 'var(--text-muted)',
+                  fontWeight: 700,
+                  fontSize: '0.78rem',
                   cursor: 'pointer',
+                  borderWidth: doctorMode === 'password' ? '1px' : '0px',
+                  borderStyle: 'solid',
+                  borderColor: doctorMode === 'password' ? 'var(--border-color)' : 'transparent',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px'
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxShadow: doctorMode === 'password' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
+                  transition: 'all 0.2s ease'
                 }}
               >
-                <Lock size={14} />
-                <span>Email & Password</span>
+                <Lock size={14} color={doctorMode === 'password' ? '#06b6d4' : 'currentColor'} />
+                <span>Password</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setDoctorAuthMode('google'); setError(null); }}
+                style={{
+                  padding: '9px 4px',
+                  borderRadius: 'var(--radius-sm)',
+                  border: 'none',
+                  background: doctorMode === 'google' ? 'var(--bg-card)' : 'transparent',
+                  color: doctorMode === 'google' ? 'var(--text-primary)' : 'var(--text-muted)',
+                  fontWeight: 700,
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                  borderWidth: doctorMode === 'google' ? '1px' : '0px',
+                  borderStyle: 'solid',
+                  borderColor: doctorMode === 'google' ? 'var(--border-color)' : 'transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxShadow: doctorMode === 'google' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                </svg>
+                <span>Google</span>
               </button>
             </div>
 
-            {/* Doctor WhatsApp OTP Flow */}
-            {doctorMode === 'otp' ? (
-              <form onSubmit={handleDoctorVerifyOtp}>
-                <div className="input-group">
-                  <label className="input-label">Registered Doctor Mobile (WhatsApp)</label>
-                  <div style={{ position: 'relative' }}>
-                    <Smartphone size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
-                    <input
-                      type="tel"
-                      required
-                      className="input-field"
-                      style={{ paddingLeft: '42px' }}
-                      placeholder="+919876543210"
-                      value={docPhone}
-                      onChange={(e) => {
-                        setDocPhone(e.target.value);
-                        inspectPhone(e.target.value);
-                      }}
-                    />
-                  </div>
-                  {/* Live Number Recognition Badge */}
-                  {checkedStatus && (
-                    <div style={{
-                      marginTop: '6px',
-                      fontSize: '0.75rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      color: checkedStatus.registered ? '#10b981' : '#f59e0b'
-                    }}>
-                      {checkedStatus.registered ? <CheckCircle2 size={13} /> : <AlertCircle size={13} />}
-                      <span>{checkedStatus.message}</span>
-                    </div>
-                  )}
+            {/* Sub-Mode 1: WhatsApp OTP Flow */}
+            {doctorMode === 'otp' && (
+              <div>
+                <div style={{
+                  background: 'rgba(37, 211, 102, 0.08)',
+                  border: '1px solid rgba(37, 211, 102, 0.25)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '10px 14px',
+                  marginBottom: '16px',
+                  fontSize: '0.8rem',
+                  color: 'var(--text-secondary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <Smartphone size={16} color="#25D366" />
+                  <span>
+                    <strong>Doctor WhatsApp Access:</strong> Enter your mobile number to receive instant 6-digit access code via WhatsApp.
+                  </span>
                 </div>
 
-                {!docOtpSent ? (
-                  <button
-                    type="button"
-                    onClick={handleDoctorRequestOtp}
-                    disabled={loading || !docPhone}
-                    className="btn btn-primary"
-                    style={{ width: '100%', padding: '12px', marginTop: '10px' }}
-                  >
-                    <span>{loading ? 'Sending WhatsApp OTP...' : 'Send Doctor Access Code via WhatsApp'}</span>
-                    <ArrowRight size={18} />
-                  </button>
-                ) : (
-                  <div>
-                    <div className="input-group" style={{ marginTop: '14px' }}>
-                      <label className="input-label">Enter 6-Digit WhatsApp OTP</label>
-                      <div style={{ position: 'relative' }}>
-                        <Lock size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
-                        <input
-                          type="text"
-                          required
-                          maxLength={6}
-                          autoFocus
-                          className="input-field"
-                          style={{ paddingLeft: '42px', letterSpacing: '4px', fontSize: '1.1rem', fontWeight: 700 }}
-                          placeholder="123456"
-                          value={docOtpCode}
-                          onChange={(e) => setDocOtpCode(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '8px 0 14px' }}>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        {docOtpCountdown > 0 ? `Resend in ${docOtpCountdown}s` : 'Did not receive code?'}
-                      </span>
+                <form onSubmit={handleDoctorVerifyOtp}>
+                  <div className="input-group">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <label className="input-label" style={{ marginBottom: 0 }}>Doctor Mobile Number (WhatsApp)</label>
                       <button
                         type="button"
-                        disabled={docOtpCountdown > 0 || loading}
-                        onClick={handleDoctorRequestOtp}
+                        onClick={() => {
+                          setDocPhone('+919876543210');
+                          inspectPhone('+919876543210');
+                        }}
                         style={{
                           background: 'none',
                           border: 'none',
-                          color: docOtpCountdown > 0 ? 'var(--text-muted)' : '#06b6d4',
-                          fontSize: '0.75rem',
+                          color: '#06b6d4',
+                          fontSize: '0.72rem',
                           fontWeight: 600,
-                          cursor: docOtpCountdown > 0 ? 'not-allowed' : 'pointer'
+                          cursor: 'pointer',
+                          textDecoration: 'underline'
                         }}
                       >
-                        Resend WhatsApp OTP
+                        Auto-fill Demo Doctor
                       </button>
                     </div>
 
+                    <div style={{ position: 'relative' }}>
+                      <Smartphone size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+                      <input
+                        type="tel"
+                        required
+                        className="input-field"
+                        style={{ paddingLeft: '42px' }}
+                        placeholder="+919876543210"
+                        value={docPhone}
+                        onChange={(e) => {
+                          setDocPhone(e.target.value);
+                          inspectPhone(e.target.value);
+                        }}
+                      />
+                    </div>
+                    {/* Live Number Recognition Badge */}
+                    {checkedStatus && (
+                      <div style={{
+                        marginTop: '6px',
+                        fontSize: '0.75rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        color: checkedStatus.registered ? '#10b981' : '#06b6d4'
+                      }}>
+                        {checkedStatus.registered ? <CheckCircle2 size={13} /> : <Sparkles size={13} />}
+                        <span>{checkedStatus.message}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {!docOtpSent ? (
                     <button
-                      type="submit"
-                      disabled={loading || docOtpCode.length < 4}
+                      type="button"
+                      onClick={handleDoctorRequestOtp}
+                      disabled={loading || !docPhone}
                       className="btn btn-primary"
-                      style={{ width: '100%', padding: '12px' }}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        marginTop: '10px',
+                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                        borderColor: '#10b981'
+                      }}
                     >
-                      <span>{loading ? 'Authenticating Doctor...' : 'Verify & Open Clinical Console'}</span>
+                      <Smartphone size={18} />
+                      <span>{loading ? 'Sending WhatsApp OTP...' : 'Send Doctor Access Code via WhatsApp'}</span>
                       <ArrowRight size={18} />
                     </button>
-                  </div>
-                )}
-              </form>
-            ) : (
-              /* Doctor Password Flow */
+                  ) : (
+                    <div>
+                      <div className="input-group" style={{ marginTop: '14px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label className="input-label" style={{ marginBottom: 0 }}>Enter 6-Digit WhatsApp OTP</label>
+                          {demoCodeHint && (
+                            <button
+                              type="button"
+                              onClick={() => setDocOtpCode(demoCodeHint)}
+                              style={{
+                                background: 'rgba(6, 182, 212, 0.12)',
+                                border: '1px solid rgba(6, 182, 212, 0.3)',
+                                borderRadius: '4px',
+                                padding: '2px 6px',
+                                color: '#06b6d4',
+                                fontSize: '0.72rem',
+                                fontWeight: 600,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Auto-fill: {demoCodeHint}
+                            </button>
+                          )}
+                        </div>
+                        <div style={{ position: 'relative' }}>
+                          <Lock size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+                          <input
+                            type="text"
+                            required
+                            maxLength={6}
+                            autoFocus
+                            className="input-field"
+                            style={{ paddingLeft: '42px', letterSpacing: '4px', fontSize: '1.1rem', fontWeight: 700 }}
+                            placeholder="123456"
+                            value={docOtpCode}
+                            onChange={(e) => setDocOtpCode(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '8px 0 14px' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          {docOtpCountdown > 0 ? `Resend code in ${docOtpCountdown}s` : 'Did not receive code?'}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={docOtpCountdown > 0 || loading}
+                          onClick={handleDoctorRequestOtp}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: docOtpCountdown > 0 ? 'var(--text-muted)' : '#06b6d4',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            cursor: docOtpCountdown > 0 ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          Resend WhatsApp OTP
+                        </button>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={loading || docOtpCode.length < 4}
+                        className="btn btn-primary"
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          background: 'linear-gradient(135deg, #10b981, #0891b2)',
+                          borderColor: '#10b981'
+                        }}
+                      >
+                        <span>{loading ? 'Authenticating Doctor...' : 'Verify & Open Clinical EHR'}</span>
+                        <ArrowRight size={18} />
+                      </button>
+                    </div>
+                  )}
+                </form>
+              </div>
+            )}
+
+            {/* Sub-Mode 2: Password Flow */}
+            {doctorMode === 'password' && (
               <form onSubmit={handleDoctorPasswordSubmit}>
                 <div className="input-group">
                   <label className="input-label">Official Doctor Email</label>
@@ -797,8 +878,60 @@ export const LoginPage: React.FC = () => {
               </form>
             )}
 
-            {/* Quick Demo Doctor Button */}
-            <div style={{ position: 'relative', textAlign: 'center', margin: '20px 0' }}>
+            {/* Sub-Mode 3: Google Flow */}
+            {doctorMode === 'google' && (
+              <div>
+                <div style={{
+                  background: 'rgba(66, 133, 244, 0.08)',
+                  border: '1px solid rgba(66, 133, 244, 0.25)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '12px 14px',
+                  marginBottom: '16px',
+                  fontSize: '0.825rem',
+                  color: 'var(--text-secondary)'
+                }}>
+                  🌐 <strong>Google Clinician Identity:</strong> Authenticate instantly with your institutional Google Workspace or Gmail medical profile.
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGoogleDoctorLogin}
+                  disabled={loading}
+                  className="btn"
+                  style={{
+                    width: '100%',
+                    background: 'var(--bg-card)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-color)',
+                    padding: '13px 16px',
+                    borderRadius: 'var(--radius-md)',
+                    marginBottom: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.borderColor = '#4285F4'}
+                  onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                  </svg>
+                  <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>
+                    {loading ? 'Verifying with Google...' : 'Verify & Sign In with Google'}
+                  </span>
+                </button>
+              </div>
+            )}
+
+            {/* Quick Demo Doctor Buttons */}
+            <div style={{ position: 'relative', textAlign: 'center', margin: '20px 0 14px' }}>
               <hr style={{ borderColor: 'var(--border-color)' }} />
               <span style={{
                 position: 'absolute',
@@ -807,28 +940,50 @@ export const LoginPage: React.FC = () => {
                 transform: 'translate(-50%, -50%)',
                 background: 'var(--bg-card)',
                 padding: '0 12px',
-                fontSize: '0.75rem',
-                color: 'var(--text-muted)'
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                color: 'var(--text-muted)',
+                letterSpacing: '0.04em'
               }}>
-                OR 1-CLICK ACCESS
+                OR 1-CLICK CLINICAL DEMO
               </span>
             </div>
 
-            <button
-              type="button"
-              onClick={() => loginDoctorPassword('doctor@praxirence.com', 'Doctor123!')}
-              disabled={loading}
-              className="btn btn-secondary"
-              style={{
-                width: '100%',
-                background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(139, 92, 246, 0.12))',
-                borderColor: 'rgba(6, 182, 212, 0.35)',
-                padding: '11px'
-              }}
-            >
-              <Sparkles size={16} color="#06b6d4" />
-              <span>Instant Clinician Demo (Dr. Mayank Raj)</span>
-            </button>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => loginDoctorOtp('+919876543210', '123456')}
+                disabled={loading}
+                className="btn btn-secondary"
+                style={{
+                  width: '100%',
+                  background: 'linear-gradient(135deg, rgba(37, 211, 102, 0.12), rgba(6, 182, 212, 0.12))',
+                  borderColor: 'rgba(37, 211, 102, 0.35)',
+                  padding: '10px 8px',
+                  fontSize: '0.78rem'
+                }}
+              >
+                <Smartphone size={15} color="#25D366" />
+                <span>1-Click WhatsApp Demo</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => loginDoctorPassword('doctor@praxirence.com', 'Doctor123!')}
+                disabled={loading}
+                className="btn btn-secondary"
+                style={{
+                  width: '100%',
+                  background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(139, 92, 246, 0.12))',
+                  borderColor: 'rgba(6, 182, 212, 0.35)',
+                  padding: '10px 8px',
+                  fontSize: '0.78rem'
+                }}
+              >
+                <Lock size={15} color="#06b6d4" />
+                <span>1-Click Password Demo</span>
+              </button>
+            </div>
           </div>
         )}
 

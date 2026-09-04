@@ -287,3 +287,44 @@ def test_auth_directory_and_me():
     assert me_data["role"] == "doctor"
 
 
+def test_doctor_whatsapp_otp():
+    # 1. Doctor WhatsApp OTP Request
+    otp_req = client.post(
+        "/auth/doctor/otp/request",
+        json={"phone": "+919876543210", "channel": "whatsapp"}
+    )
+    assert otp_req.status_code == 200
+    data = otp_req.json()
+    assert data["success"] is True
+    assert "demo_code" in data
+    assert data["channel"] == "whatsapp"
+
+    # 2. Doctor WhatsApp OTP Verify
+    otp_verify = client.post(
+        "/auth/doctor/otp/verify",
+        json={"phone": "+919876543210", "code": "123456"}
+    )
+    assert otp_verify.status_code == 200
+    v_data = otp_verify.json()
+    assert v_data["role"] == "doctor"
+    assert "access_token" in v_data
+    assert v_data["user"]["name"] is not None
+
+    # 3. New doctor phone WhatsApp OTP request & verify (auto-provisioning)
+    new_phone = "+919899887766"
+    new_req = client.post(
+        "/auth/doctor/otp/request",
+        json={"phone": new_phone, "channel": "whatsapp"}
+    )
+    assert new_req.status_code == 200
+    new_verify = client.post(
+        "/auth/doctor/otp/verify",
+        json={"phone": new_phone, "code": "123456"}
+    )
+    assert new_verify.status_code == 200
+    nv_data = new_verify.json()
+    assert nv_data["role"] == "doctor"
+    assert "access_token" in nv_data
+
+
+

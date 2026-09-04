@@ -323,6 +323,7 @@ def login_doctor_password(req: DoctorLoginRequest, db: Session = Depends(get_db)
 async def request_doctor_otp(req: DoctorOTPRequest, db: Session = Depends(get_db)):
     """
     Doctor requests WhatsApp/SMS OTP for clinical login.
+    Supports instant passwordless OTP authentication for registered and new clinicians.
     """
     clean_phone = req.phone.strip()
     last10 = get_phone_last10(clean_phone)
@@ -330,7 +331,8 @@ async def request_doctor_otp(req: DoctorOTPRequest, db: Session = Depends(get_db
 
     doctor = None
     try:
-        doctor = db.query(User).filter(User.phone.like(f"%{last10}%")).first()
+        if last10:
+            doctor = db.query(User).filter(User.phone.like(f"%{last10}%")).first()
         if not doctor and last10 in ["9876543210", "9835139865"]:
             doctor = db.query(User).filter(User.email == "doctor@praxirence.com").first()
     except Exception as e:
@@ -340,18 +342,12 @@ async def request_doctor_otp(req: DoctorOTPRequest, db: Session = Depends(get_db
         except Exception:
             pass
 
-    is_demo = last10 in ["9876543210", "9835139865"] or "9876543210" in clean_phone
-
-    if not doctor and not is_demo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Doctor not registered with this phone number. Please register your clinic first."
-        )
-
+    # WhatsApp OTP code (deterministic dev demo code fallback: 123456)
     otp_code = "123456"
     _otp_cache[clean_phone] = otp_code
     _otp_cache[norm] = otp_code
-    _otp_cache[last10] = otp_code
+    if last10:
+        _otp_cache[last10] = otp_code
 
     channel = (req.channel or "whatsapp").lower()
     if channel == "whatsapp":
@@ -380,6 +376,7 @@ async def request_doctor_otp(req: DoctorOTPRequest, db: Session = Depends(get_db
 def verify_doctor_otp(req: DoctorOTPVerifyRequest, db: Session = Depends(get_db)):
     """
     Verifies OTP and issues Doctor JWT session.
+    Auto-provisions clinician profile if registering first time via WhatsApp.
     """
     clean_phone = req.phone.strip()
     is_valid = fast2sms_service.verify_otp(clean_phone, req.code.strip())
@@ -391,10 +388,12 @@ def verify_doctor_otp(req: DoctorOTPVerifyRequest, db: Session = Depends(get_db)
         )
 
     last10 = get_phone_last10(clean_phone)
+    norm = normalize_phone_digits(clean_phone)
     doctor = None
     try:
-        doctor = db.query(User).filter(User.phone.like(f"%{last10}%")).first()
-        if not doctor:
+        if last10:
+            doctor = db.query(User).filter(User.phone.like(f"%{last10}%")).first()
+        if not doctor and last10 in ["9876543210", "9835139865"]:
             doctor = db.query(User).filter(User.email == "doctor@praxirence.com").first()
     except Exception as e:
         logger.warning(f"DB lookup notice in verify_doctor_otp: {e}")
@@ -402,6 +401,36 @@ def verify_doctor_otp(req: DoctorOTPVerifyRequest, db: Session = Depends(get_db)
             db.rollback()
         except Exception:
             pass
+
+    if not doctor:
+        # Seamlessly auto-provision doctor account for instant WhatsApp entry
+        try:
+            doc_email = f"doctor.{last10 or 'clinic'}@praxirence.com"
+            existing_email = db.query(User).filter(User.email == doc_email).first()
+            if existing_email:
+                doctor = existing_email
+                if not doctor.phone:
+                    doctor.phone = norm or clean_phone
+                    db.commit()
+            else:
+                doctor = User(
+                    email=doc_email,
+                    phone=norm or clean_phone,
+                    hashed_password=get_password_hash("Doctor123!"),
+                    name=f"Dr. Clinician ({last10[-4:] if len(last10) >= 4 else 'Care'})",
+                    specialty="General Physician",
+                    clinic_name="Praxirence Clinical Centre",
+                    reg_number=f"NMC-2024-{last10[-5:] if len(last10) >= 5 else '84920'}"
+                )
+                db.add(doctor)
+                db.commit()
+                db.refresh(doctor)
+        except Exception as e:
+            logger.warning(f"DB auto-create notice in verify_doctor_otp: {e}")
+            try:
+                db.rollback()
+            except Exception:
+                pass
 
     doc_id = str(doctor.id) if doctor else "doc-default-01"
     doc_name = doctor.name if doctor else "Dr. Mayank Raj"

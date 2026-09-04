@@ -14,6 +14,7 @@ from app.models.visit import Visit
 from app.models.patient import Patient
 from app.models.audit_log import AuditLog
 from app.schemas.visit import (
+    VisitCreate,
     VisitResponse,
     VisitUpdate,
     VisitApproveResponse
@@ -27,7 +28,67 @@ router = APIRouter(prefix="/visits", tags=["Visits & Consultations"])
 logger = logging.getLogger("praxirence.routes.visits")
 
 
+@router.post("", response_model=VisitResponse)
+def create_structured_visit(
+    req: VisitCreate,
+    db: Session = Depends(get_db),
+    current_doctor = Depends(get_current_doctor)
+):
+    """
+    Directly creates a consultation visit with structured care plan
+    from doctor mobile app or web interface.
+    """
+    patient = db.query(Patient).filter(Patient.id == req.patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    visit = Visit(
+        patient_id=patient.id,
+        doctor_id=current_doctor.id,
+        diagnosis=req.diagnosis,
+        medicines=[m.model_dump() for m in req.medicines],
+        reminders=[r.model_dump() for r in req.reminders],
+        raw_transcription=req.raw_transcription or "Direct Clinical Consultation",
+        status="draft"
+    )
+    db.add(visit)
+    db.commit()
+    db.refresh(visit)
+
+    audit = AuditLog(
+        actor_id=current_doctor.id,
+        actor_role="doctor",
+        action="create_structured_visit",
+        resource="visit",
+        resource_id=visit.id,
+        details={"medicines_count": len(req.medicines)}
+    )
+    db.add(audit)
+    db.commit()
+
+    return VisitResponse(
+        id=visit.id,
+        patient_id=visit.patient_id,
+        doctor_id=visit.doctor_id,
+        date=visit.date,
+        audio_file_path=visit.audio_file_path,
+        keep_recording=visit.keep_recording,
+        raw_transcription=visit.raw_transcription,
+        diagnosis=visit.diagnosis,
+        medicines=visit.medicines or [],
+        reminders=visit.reminders or [],
+        status=visit.status,
+        approved_at=visit.approved_at,
+        whatsapp_message_id=visit.whatsapp_message_id,
+        created_at=visit.created_at,
+        patient_name=patient.name,
+        patient_phone=patient.phone,
+        doctor_name=current_doctor.name
+    )
+
+
 @router.post("/upload-audio", response_model=VisitResponse)
+
 async def upload_consultation_audio(
     patient_id: str = Form(...),
     keep_recording: bool = Form(False),

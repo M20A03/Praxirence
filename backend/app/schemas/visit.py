@@ -25,11 +25,20 @@ class CarePlanStructure(BaseModel):
     reminders: List[ReminderItem] = Field(default_factory=list)
 
 
+class VisitCreate(BaseModel):
+    patient_id: str
+    diagnosis: str = "Clinical Assessment"
+    medicines: List[MedicineItem] = Field(default_factory=list)
+    reminders: List[ReminderItem] = Field(default_factory=list)
+    raw_transcription: Optional[str] = None
+
+
 class VisitUpdate(BaseModel):
     diagnosis: Optional[str] = None
     medicines: Optional[List[MedicineItem]] = None
     reminders: Optional[List[ReminderItem]] = None
     keep_recording: Optional[bool] = None
+
 
 
 class VisitResponse(BaseModel):

@@ -104,6 +104,51 @@ def create_patient(
     return patient
 
 
+@router.get("/me/portal")
+def get_my_patient_portal(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user_or_patient)
+):
+    """
+    Returns full patient portal data for the currently authenticated patient:
+    Profile, Visits with Prescriptions, and Consent Status.
+    """
+    patient_id = getattr(current_user, "id", None)
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient record not found")
+
+    visits = db.query(Visit).filter(Visit.patient_id == patient.id).order_by(Visit.date.desc()).all()
+    visits_data = []
+    for v in visits:
+        visits_data.append({
+            "id": v.id,
+            "date": v.date.isoformat() if v.date else None,
+            "status": v.status,
+            "raw_transcript": v.raw_transcript,
+            "prescription_structured": v.prescription_structured,
+            "care_plan": v.care_plan,
+            "doctor": {
+                "name": v.doctor.name if v.doctor else "Dr. Mayank Raj",
+                "specialty": v.doctor.specialty if v.doctor else "General Physician",
+                "clinic_name": getattr(v.doctor, "clinic_name", "Praxirence Clinical Centre") if v.doctor else "Praxirence Clinical Centre"
+            }
+        })
+
+    return {
+        "patient": {
+            "id": patient.id,
+            "name": patient.name,
+            "phone": patient.phone,
+            "consent_status": patient.consent_status,
+            "consent_updated_at": patient.consent_updated_at.isoformat() if patient.consent_updated_at else None,
+        },
+        "visits": visits_data,
+        "active_prescription": visits_data[0]["prescription_structured"] if visits_data and visits_data[0].get("prescription_structured") else None,
+        "active_care_plan": visits_data[0]["care_plan"] if visits_data and visits_data[0].get("care_plan") else None
+    }
+
+
 @router.get("/{patient_id}", response_model=PatientResponse)
 def get_patient(
     patient_id: str,

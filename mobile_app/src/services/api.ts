@@ -1,7 +1,8 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PatientUser, Visit, ConsentDocument } from '../types';
 
-// In local mobile development with Expo, adjust to your host machine's IP (e.g. 10.0.2.2 for Android emulator or LAN IP)
-const API_BASE_URL = 'http://localhost:8000';
+// Production Railway Backend for Android devices, emulators, and Expo Go
+const API_BASE_URL = 'https://praxirence-production.up.railway.app';
 
 let authToken: string | null = null;
 
@@ -21,6 +22,44 @@ const getHeaders = () => {
 };
 
 export const mobileApi = {
+  async restoreSession(): Promise<PatientUser | null> {
+    try {
+      const token = await AsyncStorage.getItem('praxirence_mobile_token');
+      const userStr = await AsyncStorage.getItem('praxirence_mobile_user');
+      if (!token || !userStr) return null;
+
+      setAuthToken(token);
+      // Validate session with live backend
+      const res = await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!res.ok) {
+        await this.clearSession();
+        return null;
+      }
+
+      const verified = await res.json();
+      return verified.user;
+    } catch (e) {
+      console.warn('Session restoration failed:', e);
+      return null;
+    }
+  },
+
+  async clearSession(): Promise<void> {
+    try {
+      await AsyncStorage.removeItem('praxirence_mobile_token');
+      await AsyncStorage.removeItem('praxirence_mobile_user');
+    } catch (e) {
+      console.warn('Error clearing session:', e);
+    }
+    setAuthToken(null);
+  },
+
   async requestOtp(phone: string): Promise<{ success: boolean; message: string; demo_code?: string }> {
     const res = await fetch(`${API_BASE_URL}/auth/otp/request`, {
       method: 'POST',
@@ -46,6 +85,12 @@ export const mobileApi = {
     }
     const data = await res.json();
     setAuthToken(data.access_token);
+    try {
+      await AsyncStorage.setItem('praxirence_mobile_token', data.access_token);
+      await AsyncStorage.setItem('praxirence_mobile_user', JSON.stringify(data.user));
+    } catch (e) {
+      console.warn('Failed to persist mobile session:', e);
+    }
     return data;
   },
 

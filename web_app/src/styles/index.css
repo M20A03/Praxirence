@@ -551,8 +551,39 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   .btn {
-    padding: 9px 14px;
+    padding: 10px 14px;
     font-size: 0.85rem;
+    min-height: 42px;
+  }
+
+  /* Prevent any horizontal screen bleed */
+  body, #root {
+    overflow-x: hidden;
+    width: 100vw;
+  }
+}
+
+@media (max-width: 360px) {
+  .kpi-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+  
+  .container {
+    padding: 0 10px !important;
+  }
+}
+
+/* Tablet Optimizations (768px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .container {
+    padding: 0 20px !important;
+    max-width: 960px;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 14px !important;
   }
 }
 

@@ -15,6 +15,20 @@ export const PrescriptionModal: React.FC<PrescriptionModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const doctorName = localStorage.getItem('praxirence_doctor_name') || 'Dr. Mayank Raj';
@@ -32,13 +46,30 @@ export const PrescriptionModal: React.FC<PrescriptionModalProps> = ({
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div 
+      className="modal-backdrop" 
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: 'rgba(15, 23, 42, 0.75)',
+        backdropFilter: 'blur(8px)',
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px'
+      }}
+    >
       <div
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
         style={{
           maxWidth: '750px',
-          padding: '32px',
+          width: '100%',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          padding: '24px',
           background: '#ffffff',
           color: '#0f172a',
           borderRadius: '16px',
@@ -98,7 +129,7 @@ export const PrescriptionModal: React.FC<PrescriptionModalProps> = ({
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <img 
-                src="/logo-icon.png" 
+                src="/logo-icon.svg" 
                 alt="Praxirence" 
                 style={{ width: '48px', height: '48px', objectFit: 'contain' }} 
               />
@@ -297,6 +328,46 @@ export const PrescriptionModal: React.FC<PrescriptionModalProps> = ({
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Bottom Modal Actions (Hidden during print) */}
+        <div 
+          className="no-print"
+          style={{
+            marginTop: '24px',
+            paddingTop: '16px',
+            borderTop: '1px solid #e2e8f0',
+            display: 'flex',
+            gap: '12px',
+            justifyContent: 'flex-end'
+          }}
+        >
+          <button
+            type="button"
+            onClick={onClose}
+            className="btn btn-secondary"
+            style={{
+              padding: '10px 20px',
+              fontSize: '0.9rem',
+              color: '#475569',
+              borderColor: '#cbd5e1'
+            }}
+          >
+            Close Window
+          </button>
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="btn btn-primary"
+            style={{
+              padding: '10px 20px',
+              fontSize: '0.9rem',
+              gap: '8px'
+            }}
+          >
+            <Printer size={16} />
+            <span>Print / Save PDF</span>
+          </button>
         </div>
       </div>
     </div>

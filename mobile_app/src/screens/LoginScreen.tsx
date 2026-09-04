@@ -13,13 +13,14 @@ import {
 import { Colors } from '../theme/colors';
 import { mobileApi } from '../services/api';
 import { PatientUser } from '../types';
+import { BrandLogoMobile } from '../components/BrandLogoMobile';
 
 interface LoginScreenProps {
   onLoginSuccess: (user: PatientUser) => void;
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
-  const [phone, setPhone] = useState('+15551234567');
+  const [phone, setPhone] = useState('+919835139865');
   const [code, setCode] = useState('123456');
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -68,13 +69,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header Badge */}
-        <View style={styles.logoContainer}>
-          <View style={styles.logoIcon}>
-            <Text style={{ fontSize: 32 }}>🏥</Text>
-          </View>
-          <Text style={styles.appName}>Praxirence</Text>
-          <Text style={styles.tagline}>Patient Health & Care Plan Portal</Text>
+        {/* Brand Header */}
+        <View style={styles.logoWrapper}>
+          <BrandLogoMobile size="lg" showSubtitle={true} />
         </View>
 
         {error && (
@@ -168,40 +165,42 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 28,
   },
-  logoContainer: {
+  logoWrapper: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 28,
+    maxWidth: 440,
+    width: '100%',
+    alignSelf: 'center',
   },
-  logoIcon: {
-    width: 68,
-    height: 68,
-    borderRadius: 20,
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+  errorBox: {
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    maxWidth: 440,
+    width: '100%',
+    alignSelf: 'center',
   },
-  appName: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: Colors.text,
-    letterSpacing: -0.5,
-  },
-  tagline: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginTop: 4,
+  errorText: {
+    color: '#ef4444',
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   card: {
     backgroundColor: Colors.card,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: Colors.border,
-    padding: 24,
+    padding: 22,
+    maxWidth: 440,
+    width: '100%',
+    alignSelf: 'center',
   },
   cardTitle: {
     fontSize: 20,
@@ -265,18 +264,5 @@ const styles = StyleSheet.create({
     color: Colors.cyan,
     fontSize: 14,
     fontWeight: '600',
-  },
-  errorBox: {
-    backgroundColor: 'rgba(244, 63, 94, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(244, 63, 94, 0.3)',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-  },
-  errorText: {
-    color: '#fb7185',
-    fontSize: 14,
-    textAlign: 'center',
   },
 });

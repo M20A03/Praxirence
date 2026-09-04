@@ -1,44 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { PatientPortalPage } from './pages/PatientPortalPage';
 import { DoctorProfileModal } from './components/DoctorProfileModal';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { DoctorUser } from './types';
-
-const getInitialDoctor = (): DoctorUser | null => {
-  try {
-    const saved = localStorage.getItem('praxirence_doctor');
-    if (!saved || saved === 'undefined' || saved === 'null') return null;
-    return JSON.parse(saved);
-  } catch (e) {
-    console.warn('Failed to parse saved doctor session; clearing corrupt storage.', e);
-    localStorage.removeItem('praxirence_doctor');
-    localStorage.removeItem('praxirence_token');
-    return null;
-  }
-};
-
-const getInitialToken = (): string | null => {
-  try {
-    const token = localStorage.getItem('praxirence_token');
-    if (!token || token === 'undefined' || token === 'null') return null;
-    // Automatically purge old mock/in-memory tokens that cause 401 on production Railway backend
-    if (token === 'praxirence-jwt-session' || token === 'praxirence-registered-jwt') {
-      localStorage.removeItem('praxirence_token');
-      localStorage.removeItem('praxirence_doctor');
-      return null;
-    }
-    return token;
-  } catch (e) {
-    return null;
-  }
-};
+import { Activity } from 'lucide-react';
 
 export const AppContent: React.FC = () => {
-  const [token, setToken] = useState<string | null>(getInitialToken);
-  const [doctor, setDoctor] = useState<DoctorUser | null>(getInitialDoctor);
+  const { user, role, isAuthenticated, loading, logout, updateUser } = useAuth();
   const [isDoctorProfileOpen, setIsDoctorProfileOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
@@ -52,61 +24,52 @@ export const AppContent: React.FC = () => {
   };
 
   useEffect(() => {
-    const handleAuthChange = () => {
-      setToken(getInitialToken());
-      setDoctor(getInitialDoctor());
-    };
-
     const handleCustomToast = (e: any) => {
       if (e.detail) {
         addToast(e.detail);
       }
     };
-
-    window.addEventListener('auth_change', handleAuthChange);
     window.addEventListener('praxirence_toast' as any, handleCustomToast);
     return () => {
-      window.removeEventListener('auth_change', handleAuthChange);
       window.removeEventListener('praxirence_toast' as any, handleCustomToast);
     };
   }, []);
 
-  const handleLoginSuccess = (newToken: string, newDoctor: DoctorUser) => {
-    try {
-      localStorage.setItem('praxirence_token', newToken);
-      localStorage.setItem('praxirence_doctor', JSON.stringify(newDoctor));
-    } catch (e) {
-      console.warn('Unable to write to localStorage:', e);
-    }
-    setToken(newToken);
-    setDoctor(newDoctor);
-    addToast({
-      type: 'success',
-      title: 'Welcome, ' + newDoctor.name,
-      message: 'Authenticated securely with Praxirence Clinical Portal.',
-    });
-  };
+  // Hydration loader
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--bg-app)'
+      }}>
+        <div style={{
+          width: '56px',
+          height: '56px',
+          borderRadius: '50%',
+          background: 'rgba(6, 182, 212, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '16px'
+        }}>
+          <Activity size={28} color="#06b6d4" className="animate-spin" />
+        </div>
+        <div style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.95rem' }}>
+          Verifying Clinical Session...
+        </div>
+      </div>
+    );
+  }
 
-  const handleLogout = () => {
-    try {
-      localStorage.removeItem('praxirence_token');
-      localStorage.removeItem('praxirence_doctor');
-    } catch (e) {
-      console.warn('Unable to clear localStorage:', e);
-    }
-    setToken(null);
-    setDoctor(null);
-    addToast({
-      type: 'info',
-      title: 'Signed Out',
-      message: 'You have been safely signed out.',
-    });
-  };
-
-  if (!token || !doctor) {
+  // Unauthenticated -> Show Unified Login Page
+  if (!isAuthenticated || !user || !role) {
     return (
       <>
-        <LoginPage onLoginSuccess={handleLoginSuccess} />
+        <LoginPage />
         <ToastContainer toasts={toasts} onDismiss={removeToast} />
       </>
     );
@@ -115,28 +78,35 @@ export const AppContent: React.FC = () => {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar
-        doctor={doctor}
-        onLogout={handleLogout}
+        user={user}
+        role={role}
+        onLogout={logout}
         onOpenDoctorProfile={() => setIsDoctorProfileOpen(true)}
       />
 
-      <DashboardPage />
+      {/* Role-Based Active View */}
+      {role === 'doctor' ? (
+        <DashboardPage />
+      ) : (
+        <PatientPortalPage />
+      )}
 
       {/* Doctor & Clinic Profile Settings Modal */}
-      <DoctorProfileModal
-        doctor={doctor}
-        isOpen={isDoctorProfileOpen}
-        onClose={() => setIsDoctorProfileOpen(false)}
-        onProfileUpdated={(updated) => {
-          setDoctor(updated);
-          localStorage.setItem('praxirence_doctor', JSON.stringify(updated));
-          addToast({
-            type: 'success',
-            title: 'Profile Updated',
-            message: 'Clinical credentials and prescription letterhead updated.',
-          });
-        }}
-      />
+      {role === 'doctor' && (
+        <DoctorProfileModal
+          doctor={user}
+          isOpen={isDoctorProfileOpen}
+          onClose={() => setIsDoctorProfileOpen(false)}
+          onProfileUpdated={(updated) => {
+            updateUser(updated);
+            addToast({
+              type: 'success',
+              title: 'Profile Updated',
+              message: 'Clinical credentials and prescription letterhead updated.',
+            });
+          }}
+        />
+      )}
 
       {/* Global Floating Toasts */}
       <ToastContainer toasts={toasts} onDismiss={removeToast} />
@@ -147,7 +117,9 @@ export const AppContent: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <ErrorBoundary>
-      <AppContent />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </ErrorBoundary>
   );
 };

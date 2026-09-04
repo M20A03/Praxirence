@@ -77,3 +77,4 @@ backend/audio_recordings/
 *.pt
 ml_pipeline/models/
 *.zip
+Praxirence/

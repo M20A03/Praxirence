@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet, StatusBar, ActivityIndicator } from 'react-native';
 import { Colors } from './src/theme/colors';
 import { PatientUser } from './src/types';
 import { LoginScreen } from './src/screens/LoginScreen';
@@ -7,18 +7,37 @@ import { DashboardScreen } from './src/screens/DashboardScreen';
 import { VisitsScreen } from './src/screens/VisitsScreen';
 import { ConsentScreen } from './src/screens/ConsentScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
+import { mobileApi } from './src/services/api';
 
 type TabType = 'today' | 'visits' | 'consent' | 'profile';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<PatientUser | null>(null);
+  const [loadingSession, setLoadingSession] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<TabType>('today');
+
+  useEffect(() => {
+    const restore = async () => {
+      try {
+        const user = await mobileApi.restoreSession();
+        if (user) {
+          setCurrentUser(user);
+        }
+      } catch (err) {
+        console.warn('Failed to restore mobile session:', err);
+      } finally {
+        setLoadingSession(false);
+      }
+    };
+    restore();
+  }, []);
 
   const handleLoginSuccess = (user: PatientUser) => {
     setCurrentUser(user);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await mobileApi.clearSession();
     setCurrentUser(null);
     setActiveTab('today');
   };
@@ -31,6 +50,18 @@ export default function App() {
       });
     }
   };
+
+  if (loadingSession) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { justifyContent: 'center', alignItems: 'center' }]}>
+        <StatusBar barStyle="light-content" backgroundColor={Colors.background} />
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={{ color: Colors.textSecondary, marginTop: 12, fontSize: 13 }}>
+          Verifying Clinical Vault Session...
+        </Text>
+      </SafeAreaView>
+    );
+  }
 
   if (!currentUser) {
     return (
@@ -66,54 +97,56 @@ export default function App() {
         </View>
 
         {/* Intuitive Bottom Navigation Tab Bar */}
-        <View style={styles.tabBar}>
-          <TouchableOpacity
-            style={styles.tabItem}
-            onPress={() => setActiveTab('today')}
-          >
-            <Text style={[styles.tabIcon, activeTab === 'today' && styles.activeTabIcon]}>
-              💊
-            </Text>
-            <Text style={[styles.tabLabel, activeTab === 'today' && styles.activeTabLabel]}>
-              Today
-            </Text>
-          </TouchableOpacity>
+        <View style={styles.tabBarWrapper}>
+          <View style={styles.tabBar}>
+            <TouchableOpacity
+              style={styles.tabItem}
+              onPress={() => setActiveTab('today')}
+            >
+              <Text style={[styles.tabIcon, activeTab === 'today' && styles.activeTabIcon]}>
+                💊
+              </Text>
+              <Text style={[styles.tabLabel, activeTab === 'today' && styles.activeTabLabel]}>
+                Today
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.tabItem}
-            onPress={() => setActiveTab('visits')}
-          >
-            <Text style={[styles.tabIcon, activeTab === 'visits' && styles.activeTabIcon]}>
-              📋
-            </Text>
-            <Text style={[styles.tabLabel, activeTab === 'visits' && styles.activeTabLabel]}>
-              Visits
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.tabItem}
+              onPress={() => setActiveTab('visits')}
+            >
+              <Text style={[styles.tabIcon, activeTab === 'visits' && styles.activeTabIcon]}>
+                📋
+              </Text>
+              <Text style={[styles.tabLabel, activeTab === 'visits' && styles.activeTabLabel]}>
+                Visits
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.tabItem}
-            onPress={() => setActiveTab('consent')}
-          >
-            <Text style={[styles.tabIcon, activeTab === 'consent' && styles.activeTabIcon]}>
-              🛡️
-            </Text>
-            <Text style={[styles.tabLabel, activeTab === 'consent' && styles.activeTabLabel]}>
-              Consent
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.tabItem}
+              onPress={() => setActiveTab('consent')}
+            >
+              <Text style={[styles.tabIcon, activeTab === 'consent' && styles.activeTabIcon]}>
+                🛡️
+              </Text>
+              <Text style={[styles.tabLabel, activeTab === 'consent' && styles.activeTabLabel]}>
+                Consent
+              </Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.tabItem}
-            onPress={() => setActiveTab('profile')}
-          >
-            <Text style={[styles.tabIcon, activeTab === 'profile' && styles.activeTabIcon]}>
-              👤
-            </Text>
-            <Text style={[styles.tabLabel, activeTab === 'profile' && styles.activeTabLabel]}>
-              Profile
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.tabItem}
+              onPress={() => setActiveTab('profile')}
+            >
+              <Text style={[styles.tabIcon, activeTab === 'profile' && styles.activeTabIcon]}>
+                👤
+              </Text>
+              <Text style={[styles.tabLabel, activeTab === 'profile' && styles.activeTabLabel]}>
+                Profile
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -132,11 +165,17 @@ const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
   },
-  tabBar: {
-    flexDirection: 'row',
+  tabBarWrapper: {
     backgroundColor: Colors.card,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
+    alignItems: 'center',
+    width: '100%',
+  },
+  tabBar: {
+    flexDirection: 'row',
+    width: '100%',
+    maxWidth: 680,
     paddingVertical: 10,
     paddingBottom: 14,
   },

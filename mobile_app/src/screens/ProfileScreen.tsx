@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { Colors } from '../theme/colors';
 import { PatientUser } from '../types';
 
@@ -17,7 +17,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, onLogout }) 
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{user.name.charAt(0).toUpperCase()}</Text>
@@ -61,7 +61,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ user, onLogout }) 
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogoutPress}>
         <Text style={styles.logoutButtonText}>Sign Out</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -69,7 +69,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
-    padding: 20,
+  },
+  content: {
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    paddingBottom: 40,
+    maxWidth: 680,
+    width: '100%',
+    alignSelf: 'center',
   },
   header: {
     alignItems: 'center',

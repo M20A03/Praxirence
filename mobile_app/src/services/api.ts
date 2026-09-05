@@ -120,6 +120,38 @@ export const mobileApi = {
     return res.json();
   },
 
+  async verifyUnifiedOtp(phone: string, code: string): Promise<{ access_token?: string; role?: UserRole; user?: ActiveUser; verified: boolean }> {
+    // 1. Try Doctor OTP verify
+    try {
+      const docRes = await resilientFetch(`${API_BASE_URL}/auth/doctor/otp/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, code }),
+      }, 0);
+      if (docRes.ok) {
+        const data = await docRes.json();
+        return { access_token: data.access_token, role: 'doctor', user: data.user, verified: true };
+      }
+    } catch {
+      // Continue to patient verify
+    }
+
+    // 2. Try Patient OTP verify
+    const patRes = await resilientFetch(`${API_BASE_URL}/auth/otp/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, code }),
+    }, 0);
+
+    if (!patRes.ok) {
+      const err = await patRes.json().catch(() => ({}));
+      throw new Error(err.detail || 'Invalid or expired OTP code');
+    }
+
+    const data = await patRes.json();
+    return { access_token: data.access_token, role: 'patient', user: data.user, verified: true };
+  },
+
   async verifyDoctorOtp(phone: string, code: string): Promise<{ access_token: string; user: DoctorUser }> {
     const res = await resilientFetch(`${API_BASE_URL}/auth/doctor/otp/verify`, {
       method: 'POST',
@@ -134,6 +166,7 @@ export const mobileApi = {
     await this.saveSession('doctor', data.access_token, data.user);
     return data;
   },
+
 
   async verifyPatientOtp(phone: string, code: string): Promise<{ access_token: string; user: PatientUser }> {
     const res = await resilientFetch(`${API_BASE_URL}/auth/otp/verify`, {

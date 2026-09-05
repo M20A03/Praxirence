@@ -11,6 +11,7 @@ import {
 import { Colors } from './src/theme/colors';
 import { FontFamily, FontSize, LetterSpacing } from './src/theme/typography';
 import { UserRole, ActiveUser, DoctorUser, PatientUser, PatientSummary } from './src/types';
+import { SplashScreen } from './src/screens/SplashScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { RoleSelectScreen } from './src/screens/RoleSelectScreen';
 
@@ -31,9 +32,11 @@ type PatientTab = 'today' | 'visits' | 'consent' | 'profile';
 type DoctorTab = 'overview' | 'patients' | 'new_consult' | 'profile';
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState<boolean>(true);
   const [currentUser, setCurrentUser] = useState<ActiveUser | null>(null);
   const [activeRole, setActiveRole] = useState<UserRole>('patient');
   const [loadingSession, setLoadingSession] = useState<boolean>(true);
+
 
   // Authentication Navigation Stages: 'login' | 'role_select' | 'authenticated'
   const [authStage, setAuthStage] = useState<'login' | 'role_select' | 'authenticated'>('login');
@@ -144,17 +147,11 @@ export default function App() {
     setDoctorTab('new_consult');
   };
 
-  if (loadingSession) {
-    return (
-      <SafeAreaView style={[styles.safeArea, { justifyContent: 'center', alignItems: 'center' }]}>
-        <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={{ color: Colors.textSecondary, marginTop: 12, fontSize: FontSize.sm, fontFamily: FontFamily.semiBold }}>
-          Verifying Clinical Vault Session...
-        </Text>
-      </SafeAreaView>
-    );
+  // Opening Loading / Splash Page
+  if (showSplash || loadingSession) {
+    return <SplashScreen onFinish={() => setShowSplash(false)} />;
   }
+
 
   // Stage 1: Phone + OTP Sign-in
   if (authStage === 'login') {

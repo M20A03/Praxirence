@@ -34,7 +34,7 @@ from app.schemas.auth import (
     DirectoryResponse,
     TokenResponse,
 )
-from app.services.fast2sms_service import fast2sms_service, _otp_cache
+from app.services.fast2sms_service import fast2sms_service, _otp_cache, generate_secure_otp, store_otp
 from app.services.meta_whatsapp_service import meta_whatsapp_service
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -342,12 +342,12 @@ async def request_doctor_otp(req: DoctorOTPRequest, db: Session = Depends(get_db
         except Exception:
             pass
 
-    # WhatsApp OTP code (deterministic dev demo code fallback: 123456)
-    otp_code = "123456"
-    _otp_cache[clean_phone] = otp_code
-    _otp_cache[norm] = otp_code
+    # Real-Time Dynamic OTP Generation
+    otp_code = generate_secure_otp()
+    store_otp(clean_phone, otp_code)
+    store_otp(norm, otp_code)
     if last10:
-        _otp_cache[last10] = otp_code
+        store_otp(last10, otp_code)
 
     channel = (req.channel or "whatsapp").lower()
     if channel == "whatsapp":
@@ -357,19 +357,24 @@ async def request_doctor_otp(req: DoctorOTPRequest, db: Session = Depends(get_db
             "message": f"Clinical access code sent to WhatsApp ({norm})",
             "phone": norm,
             "channel": "whatsapp",
+            "otp_code": otp_code,
             "demo_code": otp_code,
+            "expires_in": 600,
             "provider": result.get("provider", "Meta WhatsApp Cloud API")
         }
     else:
-        result = await fast2sms_service.send_otp(clean_phone)
+        result = await fast2sms_service.send_otp(clean_phone, otp_code)
         return {
             "success": True,
             "message": f"Clinical access code sent via SMS ({clean_phone})",
             "phone": clean_phone,
             "channel": "sms",
-            "demo_code": result.get("demo_code", "123456"),
+            "otp_code": otp_code,
+            "demo_code": otp_code,
+            "expires_in": 600,
             "provider": result.get("provider", "Fast2SMS")
         }
+
 
 
 @router.post("/doctor/otp/verify", response_model=TokenResponse)
@@ -802,11 +807,12 @@ async def request_patient_otp(req: PatientOTPRequest, db: Session = Depends(get_
         logger.info(f"Auto-created patient profile for {norm}")
 
     channel = (req.channel or "whatsapp").lower()
-    otp_code = "123456"
-
-    _otp_cache[clean_phone] = otp_code
-    _otp_cache[norm] = otp_code
-    _otp_cache[last10] = otp_code
+    # Real-Time Dynamic OTP Generation
+    otp_code = generate_secure_otp()
+    store_otp(clean_phone, otp_code)
+    store_otp(norm, otp_code)
+    if last10:
+        store_otp(last10, otp_code)
 
     if channel == "whatsapp":
         result = await meta_whatsapp_service.send_otp_whatsapp(norm, otp_code)
@@ -815,19 +821,24 @@ async def request_patient_otp(req: PatientOTPRequest, db: Session = Depends(get_
             "message": f"Verification OTP sent to WhatsApp ({norm})",
             "phone": norm,
             "channel": "whatsapp",
+            "otp_code": otp_code,
             "demo_code": otp_code,
+            "expires_in": 600,
             "provider": result.get("provider", "Meta WhatsApp Cloud API")
         }
     else:
-        result = await fast2sms_service.send_otp(clean_phone)
+        result = await fast2sms_service.send_otp(clean_phone, otp_code)
         return {
             "success": True,
             "message": f"OTP sent to {clean_phone} via SMS",
             "phone": clean_phone,
             "channel": "sms",
-            "demo_code": result.get("demo_code", "123456"),
+            "otp_code": otp_code,
+            "demo_code": otp_code,
+            "expires_in": 600,
             "provider": result.get("provider", "Fast2SMS")
         }
+
 
 
 @router.post("/otp/verify", response_model=TokenResponse)

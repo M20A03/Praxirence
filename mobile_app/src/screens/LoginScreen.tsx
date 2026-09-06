@@ -27,9 +27,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
   // Active Persona Tab: 'patient' (Only WhatsApp) or 'doctor' (Google + WhatsApp)
   const [activeTab, setActiveTab] = useState<PersonaTab>('patient');
 
-  // Input states
-  const [patientPhone, setPatientPhone] = useState('+919835139865');
-  const [doctorPhone, setDoctorPhone] = useState('+919876543210');
+  // Phone input states (10-digit number; country code +91 is handled by dedicated UI)
+  const [patientPhoneRaw, setPatientPhoneRaw] = useState('9835139865');
+  const [doctorPhoneRaw, setDoctorPhoneRaw] = useState('9876543210');
 
   // OTP Verification States
   const [code, setCode] = useState('');
@@ -40,25 +40,29 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const currentPhone = activeTab === 'patient' ? patientPhone : doctorPhone;
+  const cleanPatientDigits = patientPhoneRaw.replace(/\D/g, '').slice(-10);
+  const cleanDoctorDigits = doctorPhoneRaw.replace(/\D/g, '').slice(-10);
+
+  const fullPatientPhone = `+91${cleanPatientDigits}`;
+  const fullDoctorPhone = `+91${cleanDoctorDigits}`;
 
   // ==================== PATIENT: WHATSAPP ONLY ====================
   const handleRequestPatientWhatsAppOtp = async () => {
-    if (!patientPhone.trim()) {
-      setError('Please enter your WhatsApp mobile number.');
+    if (!cleanPatientDigits || cleanPatientDigits.length < 10) {
+      setError('Please enter a valid 10-digit mobile number.');
       return;
     }
     setError(null);
     setSuccessMessage(null);
     setLoading(true);
     try {
-      const res: any = await mobileApi.requestPatientOtp(patientPhone.trim(), 'whatsapp');
+      const res: any = await mobileApi.requestPatientOtp(fullPatientPhone, 'whatsapp');
       setOtpSent(true);
       const generatedCode = res.otp_code || res.demo_code;
       if (generatedCode) {
         setServerOtp(generatedCode);
       }
-      setSuccessMessage(`WhatsApp OTP sent to ${patientPhone.trim()}`);
+      setSuccessMessage(`WhatsApp OTP code sent to ${fullPatientPhone}`);
       setCode('');
     } catch (err: any) {
       setError(err.message || 'Failed to dispatch WhatsApp OTP. Please try again.');
@@ -79,11 +83,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
     const isMatch = (serverOtp && cleanCode === serverOtp) || cleanCode === '123456';
 
     try {
-      const res = await mobileApi.verifyPatientOtp(patientPhone.trim(), cleanCode);
+      const res = await mobileApi.verifyPatientOtp(fullPatientPhone, cleanCode);
       if (onAuthenticated && res.user) {
         onAuthenticated('patient', res.user);
       } else {
-        onOtpVerified(patientPhone.trim());
+        onOtpVerified(fullPatientPhone);
       }
     } catch (err: any) {
       if (isMatch) {
@@ -91,7 +95,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
         const fallbackPatient: PatientUser = {
           id: 'pat-mayank-01',
           name: 'Mayank Raj',
-          phone: patientPhone.trim(),
+          phone: fullPatientPhone,
           consent_status: true,
           role: 'patient',
         };
@@ -99,7 +103,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
         if (onAuthenticated) {
           onAuthenticated('patient', fallbackPatient);
         } else {
-          onOtpVerified(patientPhone.trim());
+          onOtpVerified(fullPatientPhone);
         }
       } else {
         setError(err.message || 'Invalid or expired WhatsApp OTP code. Please retry.');
@@ -135,21 +139,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
 
   // ==================== DOCTOR: WHATSAPP OTP ====================
   const handleRequestDoctorWhatsAppOtp = async () => {
-    if (!doctorPhone.trim()) {
-      setError('Please enter your clinician mobile number.');
+    if (!cleanDoctorDigits || cleanDoctorDigits.length < 10) {
+      setError('Please enter a valid 10-digit clinician mobile number.');
       return;
     }
     setError(null);
     setSuccessMessage(null);
     setLoading(true);
     try {
-      const res: any = await mobileApi.requestDoctorOtp(doctorPhone.trim(), 'whatsapp');
+      const res: any = await mobileApi.requestDoctorOtp(fullDoctorPhone, 'whatsapp');
       setOtpSent(true);
       const generatedCode = res.otp_code || res.demo_code;
       if (generatedCode) {
         setServerOtp(generatedCode);
       }
-      setSuccessMessage(`Doctor WhatsApp OTP sent to ${doctorPhone.trim()}`);
+      setSuccessMessage(`Clinician WhatsApp OTP sent to ${fullDoctorPhone}`);
       setCode('');
     } catch (err: any) {
       setError(err.message || 'Failed to dispatch Doctor WhatsApp verification code.');
@@ -170,11 +174,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
     const isMatch = (serverOtp && cleanCode === serverOtp) || cleanCode === '123456';
 
     try {
-      const res = await mobileApi.verifyDoctorOtp(doctorPhone.trim(), cleanCode);
+      const res = await mobileApi.verifyDoctorOtp(fullDoctorPhone, cleanCode);
       if (onAuthenticated && res.user) {
         onAuthenticated('doctor', res.user);
       } else {
-        onOtpVerified(doctorPhone.trim());
+        onOtpVerified(fullDoctorPhone);
       }
     } catch (err: any) {
       if (isMatch) {
@@ -183,7 +187,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
           id: 'doc-mayank-01',
           name: 'Dr. Mayank Raj',
           email: 'doctor@praxirence.com',
-          phone: doctorPhone.trim(),
+          phone: fullDoctorPhone,
           specialty: 'Chief Medical Officer & Physician',
           clinic_name: 'Praxirence Clinical Centre',
           reg_number: 'NMC-2024-84920',
@@ -193,7 +197,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
         if (onAuthenticated) {
           onAuthenticated('doctor', fallbackDoc);
         } else {
-          onOtpVerified(doctorPhone.trim());
+          onOtpVerified(fullDoctorPhone);
         }
       } else {
         setError(err.message || 'Invalid or expired Doctor OTP code. Please retry.');
@@ -214,10 +218,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {/* Brand Header */}
         <View style={styles.logoWrapper}>
           <BrandLogoMobile size="lg" showSubtitle={true} />
@@ -226,20 +234,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
         {/* Global Error Banner */}
         {error && (
           <View style={styles.errorBox}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Ionicons name="alert-circle" size={16} color={Colors.rose} />
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
+            <Ionicons name="alert-circle" size={16} color={Colors.rose} />
+            <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
 
         {/* Global Success Banner */}
         {successMessage && (
           <View style={styles.successBox}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Ionicons name="checkmark-circle" size={16} color={Colors.whatsapp} />
-              <Text style={styles.successText}>{successMessage}</Text>
-            </View>
+            <Ionicons name="checkmark-circle" size={16} color="#047857" />
+            <Text style={styles.successText}>{successMessage}</Text>
           </View>
         )}
 
@@ -253,30 +257,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                 activeTab === 'patient' && styles.tabButtonActivePatient,
               ]}
               onPress={() => handleTabSwitch('patient')}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
-              <View style={styles.tabButtonInner}>
-                <View style={[styles.tabIconCircle, activeTab === 'patient' && styles.tabIconCircleActivePatient]}>
-                  <Ionicons
-                    name="person"
-                    size={14}
-                    color={activeTab === 'patient' ? '#047857' : Colors.textMuted}
-                  />
-                </View>
-                <View>
-                  <Text
-                    style={[
-                      styles.tabText,
-                      activeTab === 'patient' && styles.tabTextActivePatient,
-                    ]}
-                  >
-                    Patient
-                  </Text>
-                  <Text style={[styles.tabSubtext, activeTab === 'patient' && { color: '#059669' }]}>
-                    WhatsApp Only
-                  </Text>
-                </View>
-              </View>
+              <Ionicons
+                name="person-circle"
+                size={18}
+                color={activeTab === 'patient' ? '#047857' : Colors.textMuted}
+              />
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === 'patient' && styles.tabTextActivePatient,
+                ]}
+              >
+                Patient Access
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -285,40 +280,31 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                 activeTab === 'doctor' && styles.tabButtonActiveDoctor,
               ]}
               onPress={() => handleTabSwitch('doctor')}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
-              <View style={styles.tabButtonInner}>
-                <View style={[styles.tabIconCircle, activeTab === 'doctor' && styles.tabIconCircleActiveDoctor]}>
-                  <Ionicons
-                    name="medkit"
-                    size={14}
-                    color={activeTab === 'doctor' ? Colors.primary : Colors.textMuted}
-                  />
-                </View>
-                <View>
-                  <Text
-                    style={[
-                      styles.tabText,
-                      activeTab === 'doctor' && styles.tabTextActiveDoctor,
-                    ]}
-                  >
-                    Doctor
-                  </Text>
-                  <Text style={[styles.tabSubtext, activeTab === 'doctor' && { color: Colors.primaryDark }]}>
-                    Google & OTP
-                  </Text>
-                </View>
-              </View>
+              <Ionicons
+                name="medkit"
+                size={16}
+                color={activeTab === 'doctor' ? Colors.primaryDark : Colors.textMuted}
+              />
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === 'doctor' && styles.tabTextActiveDoctor,
+                ]}
+              >
+                Doctor Portal
+              </Text>
             </TouchableOpacity>
           </View>
 
           {/* ==================== PATIENT MODE (ONLY WHATSAPP) ==================== */}
           {activeTab === 'patient' && (
-            <>
+            <View style={styles.contentArea}>
               <View style={styles.headerArea}>
                 <View style={styles.badgeRow}>
                   <View style={styles.whatsappBadge}>
-                    <Ionicons name="logo-whatsapp" size={12} color="#FFFFFF" />
+                    <Ionicons name="logo-whatsapp" size={12} color="#047857" />
                     <Text style={styles.whatsappBadgeText}>WhatsApp Only Verification</Text>
                   </View>
                 </View>
@@ -327,24 +313,27 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                 </Text>
                 <Text style={styles.cardSubtitle}>
                   {otpSent
-                    ? `Enter the 6-digit code delivered to ${patientPhone} on WhatsApp`
-                    : 'Fast & encrypted passwordless patient authentication via WhatsApp'}
+                    ? `Enter the 6-digit code delivered to +91 ${cleanPatientDigits} on WhatsApp`
+                    : 'Encrypted passwordless patient login delivered directly to your WhatsApp'}
                 </Text>
               </View>
 
               {!otpSent ? (
-                <>
-                  <Text style={styles.inputLabel}>WhatsApp Mobile Number</Text>
-                  <View style={styles.inputWithIcon}>
-                    <Ionicons name="logo-whatsapp" size={18} color={Colors.whatsapp} style={styles.inputLeadingIcon} />
+                <View>
+                  <Text style={styles.inputLabel}>Mobile Number</Text>
+                  <View style={styles.phoneInputRow}>
+                    <View style={styles.countryCodeBox}>
+                      <Text style={styles.flagEmoji}>🇮🇳</Text>
+                      <Text style={styles.countryCodeText}>+91</Text>
+                    </View>
                     <TextInput
-                      style={styles.textInputWithIcon}
-                      placeholder="+919835139865"
+                      style={styles.phoneNumberInput}
+                      placeholder="98351 39865"
                       placeholderTextColor={Colors.textMuted}
-                      value={patientPhone}
-                      onChangeText={setPatientPhone}
+                      value={patientPhoneRaw}
+                      onChangeText={(text) => setPatientPhoneRaw(text.replace(/\D/g, '').slice(0, 10))}
                       keyboardType="phone-pad"
-                      autoCapitalize="none"
+                      maxLength={10}
                     />
                   </View>
 
@@ -355,9 +344,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                     activeOpacity={0.85}
                   >
                     {loading ? (
-                      <ActivityIndicator color="#FFFFFF" />
+                      <ActivityIndicator color="#FFFFFF" size="small" />
                     ) : (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <View style={styles.buttonContentRow}>
                         <Ionicons name="logo-whatsapp" size={18} color="#FFFFFF" />
                         <Text style={styles.whatsappButtonText}>Send WhatsApp OTP Code →</Text>
                       </View>
@@ -366,53 +355,42 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
 
                   {/* Patient Quick Fill Demo Badge */}
                   <View style={styles.quickFillSection}>
-                    <Text style={styles.quickFillLabel}>VERIFIED PATIENT PROFILE</Text>
+                    <Text style={styles.quickFillLabel}>QUICK TEST PROFILE</Text>
                     <TouchableOpacity
-                      style={[styles.quickFillBadge, { backgroundColor: 'rgba(37, 211, 102, 0.08)', borderColor: 'rgba(37, 211, 102, 0.3)' }]}
-                      onPress={() => setPatientPhone('+919835139865')}
+                      style={styles.patientQuickFillBadge}
+                      onPress={() => setPatientPhoneRaw('9835139865')}
+                      activeOpacity={0.8}
                     >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Ionicons name="person" size={14} color={Colors.whatsapp} />
-                        <Text style={[styles.quickFillText, { color: '#047857' }]}>
-                          Patient Mayank (+919835139865)
+                      <View style={styles.quickFillContentRow}>
+                        <Ionicons name="person" size={14} color="#047857" />
+                        <Text style={styles.patientQuickFillText}>
+                          Patient Mayank (+91 98351 39865)
                         </Text>
                       </View>
+                      <Ionicons name="arrow-forward-circle" size={16} color="#047857" />
                     </TouchableOpacity>
                   </View>
-                </>
+                </View>
               ) : (
-                <>
-                  {/* Real-time Server OTP Banner */}
+                <View>
+                  {/* Real-time Server OTP Compact Chip */}
                   {serverOtp && (
-                    <View style={[styles.otpSecurityBanner, { borderColor: 'rgba(37, 211, 102, 0.4)' }]}>
-                      <View style={styles.otpHeaderRow}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                          <Ionicons name="shield-checkmark" size={13} color={Colors.whatsapp} />
-                          <Text style={[styles.otpSecurityBadge, { color: '#047857' }]}>WHATSAPP CLOUD VERIFICATION</Text>
-                        </View>
-                        <Text style={styles.otpExpiryText}>Expires in 10m</Text>
-                      </View>
-                      <Text style={[styles.otpCodeHighlight, { color: '#059669' }]}>
-                        Code: {serverOtp}
+                    <TouchableOpacity
+                      style={styles.compactOtpChipPatient}
+                      onPress={() => setCode(serverOtp)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="key" size={14} color="#047857" />
+                      <Text style={styles.compactOtpTextPatient}>
+                        Test Code: <Text style={{ fontFamily: FontFamily.bold }}>{serverOtp}</Text> • Tap to Auto-Fill
                       </Text>
-                      <Text style={styles.otpSecurityNote}>
-                        Delivered to your WhatsApp. Enter below to unlock your health records.
-                      </Text>
-                      <TouchableOpacity
-                        style={[styles.autoFillButton, { borderColor: 'rgba(37, 211, 102, 0.4)' }]}
-                        onPress={() => setCode(serverOtp)}
-                      >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                          <Ionicons name="flash" size={12} color={Colors.whatsapp} />
-                          <Text style={[styles.autoFillText, { color: '#047857' }]}>Quick Auto-Fill ({serverOtp})</Text>
-                        </View>
-                      </TouchableOpacity>
-                    </View>
+                      <Ionicons name="flash" size={13} color="#047857" />
+                    </TouchableOpacity>
                   )}
 
                   <Text style={styles.inputLabel}>6-Digit WhatsApp Code</Text>
                   <TextInput
-                    style={[styles.input, styles.otpInput]}
+                    style={styles.otpInput}
                     placeholder="• • • • • •"
                     placeholderTextColor={Colors.textMuted}
                     value={code}
@@ -429,9 +407,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                     activeOpacity={0.85}
                   >
                     {loading ? (
-                      <ActivityIndicator color="#FFFFFF" />
+                      <ActivityIndicator color="#FFFFFF" size="small" />
                     ) : (
-                      <Text style={styles.whatsappButtonText}>Verify & Enter Patient Vault →</Text>
+                      <Text style={styles.whatsappButtonText}>Verify & Access Patient Vault →</Text>
                     )}
                   </TouchableOpacity>
 
@@ -439,8 +417,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                     <TouchableOpacity
                       onPress={handleRequestPatientWhatsAppOtp}
                       disabled={loading}
+                      style={styles.actionButtonTouch}
                     >
-                      <Text style={styles.resendText}>Resend WhatsApp Code</Text>
+                      <Text style={styles.resendText}>Resend Code</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -450,37 +429,38 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                         setServerOtp(null);
                         setError(null);
                       }}
+                      style={styles.actionButtonTouch}
                     >
                       <Text style={styles.changePhoneText}>← Change Number</Text>
                     </TouchableOpacity>
                   </View>
-                </>
+                </View>
               )}
-            </>
+            </View>
           )}
 
           {/* ==================== DOCTOR MODE (GOOGLE + WHATSAPP OTP) ==================== */}
           {activeTab === 'doctor' && (
-            <>
+            <View style={styles.contentArea}>
               <View style={styles.headerArea}>
                 <View style={styles.badgeRow}>
                   <View style={styles.doctorBadge}>
-                    <Ionicons name="shield-checkmark" size={12} color="#FFFFFF" />
-                    <Text style={styles.doctorBadgeText}>Verified Clinical Authentication</Text>
+                    <Ionicons name="shield-checkmark" size={12} color={Colors.primaryDark} />
+                    <Text style={styles.doctorBadgeText}>Verified Clinical Access</Text>
                   </View>
                 </View>
                 <Text style={styles.cardTitle}>
-                  {otpSent ? 'Doctor WhatsApp OTP' : 'Doctor Clinical Access'}
+                  {otpSent ? 'Doctor Verification Code' : 'Clinician Sign-In'}
                 </Text>
                 <Text style={styles.cardSubtitle}>
                   {otpSent
-                    ? `Enter the clinician code sent to ${doctorPhone} on WhatsApp`
-                    : 'Institutional Google Account Verification & Clinical WhatsApp OTP'}
+                    ? `Enter the clinician access code sent to +91 ${cleanDoctorDigits} on WhatsApp`
+                    : 'Institutional Google Workspace SSO or verified clinician WhatsApp OTP'}
                 </Text>
               </View>
 
               {!otpSent ? (
-                <>
+                <View>
                   {/* Option 1: GOOGLE ACCOUNT VERIFICATION BUTTON */}
                   <TouchableOpacity
                     style={styles.googleButton}
@@ -489,17 +469,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                     activeOpacity={0.85}
                   >
                     {googleLoading ? (
-                      <ActivityIndicator color="#4285F4" />
+                      <ActivityIndicator color="#4285F4" size="small" />
                     ) : (
                       <View style={styles.googleButtonContent}>
                         <View style={styles.googleIconContainer}>
                           <Ionicons name="logo-google" size={18} color="#4285F4" />
                         </View>
-                        <View style={{ flex: 1 }}>
+                        <View style={styles.googleTextCol}>
                           <Text style={styles.googleButtonTitle}>Continue with Google</Text>
                           <Text style={styles.googleButtonSubtitle}>Google Workspace Medical Sign-In</Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
+                        <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
                       </View>
                     )}
                   </TouchableOpacity>
@@ -507,22 +487,25 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                   {/* Divider: OR WHATSAPP OTP */}
                   <View style={styles.dividerRow}>
                     <View style={styles.dividerLine} />
-                    <Text style={styles.dividerText}>OR WHATSAPP OTP VERIFICATION</Text>
+                    <Text style={styles.dividerText}>or sign in with WhatsApp</Text>
                     <View style={styles.dividerLine} />
                   </View>
 
                   {/* Option 2: DOCTOR WHATSAPP OTP */}
                   <Text style={styles.inputLabel}>Registered Clinician WhatsApp</Text>
-                  <View style={styles.inputWithIcon}>
-                    <Ionicons name="logo-whatsapp" size={18} color={Colors.whatsapp} style={styles.inputLeadingIcon} />
+                  <View style={styles.phoneInputRow}>
+                    <View style={styles.countryCodeBox}>
+                      <Text style={styles.flagEmoji}>🇮🇳</Text>
+                      <Text style={styles.countryCodeText}>+91</Text>
+                    </View>
                     <TextInput
-                      style={styles.textInputWithIcon}
-                      placeholder="+919876543210"
+                      style={styles.phoneNumberInput}
+                      placeholder="98765 43210"
                       placeholderTextColor={Colors.textMuted}
-                      value={doctorPhone}
-                      onChangeText={setDoctorPhone}
+                      value={doctorPhoneRaw}
+                      onChangeText={(text) => setDoctorPhoneRaw(text.replace(/\D/g, '').slice(0, 10))}
                       keyboardType="phone-pad"
-                      autoCapitalize="none"
+                      maxLength={10}
                     />
                   </View>
 
@@ -533,9 +516,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                     activeOpacity={0.85}
                   >
                     {loading ? (
-                      <ActivityIndicator color="#FFFFFF" />
+                      <ActivityIndicator color="#FFFFFF" size="small" />
                     ) : (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <View style={styles.buttonContentRow}>
                         <Ionicons name="logo-whatsapp" size={18} color="#FFFFFF" />
                         <Text style={styles.doctorButtonText}>Send Doctor WhatsApp Code →</Text>
                       </View>
@@ -544,53 +527,42 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
 
                   {/* Quick Demo Doctor Badge */}
                   <View style={styles.quickFillSection}>
-                    <Text style={styles.quickFillLabel}>VERIFIED CHIEF CLINICIAN PROFILE</Text>
+                    <Text style={styles.quickFillLabel}>VERIFIED CHIEF CLINICIAN</Text>
                     <TouchableOpacity
-                      style={styles.quickFillBadge}
-                      onPress={() => setDoctorPhone('+919876543210')}
+                      style={styles.doctorQuickFillBadge}
+                      onPress={() => setDoctorPhoneRaw('9876543210')}
+                      activeOpacity={0.8}
                     >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Ionicons name="medkit" size={14} color={Colors.primary} />
-                        <Text style={styles.quickFillText}>
-                          Dr. Mayank Raj (+919876543210)
+                      <View style={styles.quickFillContentRow}>
+                        <Ionicons name="medkit" size={14} color={Colors.primaryDark} />
+                        <Text style={styles.doctorQuickFillText}>
+                          Dr. Mayank Raj (+91 98765 43210)
                         </Text>
                       </View>
+                      <Ionicons name="arrow-forward-circle" size={16} color={Colors.primaryDark} />
                     </TouchableOpacity>
                   </View>
-                </>
+                </View>
               ) : (
-                <>
-                  {/* Real-time Server OTP Banner for Doctor */}
+                <View>
+                  {/* Real-time Server OTP Compact Chip for Doctor */}
                   {serverOtp && (
-                    <View style={styles.otpSecurityBanner}>
-                      <View style={styles.otpHeaderRow}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                          <Ionicons name="shield-checkmark" size={13} color={Colors.primary} />
-                          <Text style={styles.otpSecurityBadge}>CLINICAL VAULT VERIFICATION</Text>
-                        </View>
-                        <Text style={styles.otpExpiryText}>Expires in 10m</Text>
-                      </View>
-                      <Text style={styles.otpCodeHighlight}>
-                        Code: {serverOtp}
+                    <TouchableOpacity
+                      style={styles.compactOtpChipDoctor}
+                      onPress={() => setCode(serverOtp)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="key" size={14} color={Colors.primaryDark} />
+                      <Text style={styles.compactOtpTextDoctor}>
+                        Live Code: <Text style={{ fontFamily: FontFamily.bold }}>{serverOtp}</Text> • Tap to Auto-Fill
                       </Text>
-                      <Text style={styles.otpSecurityNote}>
-                        Dispatched to Dr. Mayank Raj on WhatsApp. Enter below to access Clinical Console.
-                      </Text>
-                      <TouchableOpacity
-                        style={styles.autoFillButton}
-                        onPress={() => setCode(serverOtp)}
-                      >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                          <Ionicons name="flash" size={12} color={Colors.primary} />
-                          <Text style={styles.autoFillText}>Quick Auto-Fill ({serverOtp})</Text>
-                        </View>
-                      </TouchableOpacity>
-                    </View>
+                      <Ionicons name="flash" size={13} color={Colors.primaryDark} />
+                    </TouchableOpacity>
                   )}
 
-                  <Text style={styles.inputLabel}>6-Digit Doctor Verification Code</Text>
+                  <Text style={styles.inputLabel}>6-Digit Clinician Access Code</Text>
                   <TextInput
-                    style={[styles.input, styles.otpInput]}
+                    style={styles.otpInput}
                     placeholder="• • • • • •"
                     placeholderTextColor={Colors.textMuted}
                     value={code}
@@ -607,7 +579,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                     activeOpacity={0.85}
                   >
                     {loading ? (
-                      <ActivityIndicator color="#FFFFFF" />
+                      <ActivityIndicator color="#FFFFFF" size="small" />
                     ) : (
                       <Text style={styles.doctorButtonText}>Verify & Enter Clinical EHR →</Text>
                     )}
@@ -617,8 +589,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                     <TouchableOpacity
                       onPress={handleRequestDoctorWhatsAppOtp}
                       disabled={loading}
+                      style={styles.actionButtonTouch}
                     >
-                      <Text style={[styles.resendText, { color: Colors.primaryDark }]}>Resend WhatsApp Code</Text>
+                      <Text style={[styles.resendText, { color: Colors.primaryDark }]}>Resend Code</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -628,24 +601,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                         setServerOtp(null);
                         setError(null);
                       }}
+                      style={styles.actionButtonTouch}
                     >
                       <Text style={styles.changePhoneText}>← Change Number</Text>
                     </TouchableOpacity>
                   </View>
-                </>
+                </View>
               )}
-            </>
+            </View>
           )}
         </View>
 
         {/* Security & Compliance Footer */}
         <View style={styles.footer}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            <Ionicons name="lock-closed" size={13} color={Colors.textMuted} />
-            <Text style={styles.footerText}>
-              Protected by Praxirence Clinical Vault • DPDP Act 2023 Compliant
-            </Text>
-          </View>
+          <Ionicons name="shield-checkmark" size={14} color={Colors.textMuted} />
+          <Text style={styles.footerText}>
+            Protected by Praxirence Vault • ABDM & DPDP Compliant
+          </Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -659,120 +631,105 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 18,
-    paddingVertical: 24,
-    maxWidth: 520,
-    width: '100%',
-    alignSelf: 'center',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'android' ? 24 : 16,
+    paddingBottom: 36,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
   },
   logoWrapper: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 18,
   },
   errorBox: {
+    width: '100%',
+    maxWidth: 440,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     backgroundColor: 'rgba(225, 29, 72, 0.08)',
     borderWidth: 1,
     borderColor: 'rgba(225, 29, 72, 0.25)',
     borderRadius: 12,
-    padding: 12,
-    marginBottom: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 12,
   },
   errorText: {
     fontFamily: FontFamily.medium,
     color: Colors.rose,
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
     flex: 1,
   },
   successBox: {
-    backgroundColor: 'rgba(37, 211, 102, 0.08)',
+    width: '100%',
+    maxWidth: 440,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(37, 211, 102, 0.25)',
+    borderColor: 'rgba(16, 185, 129, 0.25)',
     borderRadius: 12,
-    padding: 12,
-    marginBottom: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 12,
   },
   successText: {
     fontFamily: FontFamily.medium,
     color: '#047857',
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
     flex: 1,
   },
   card: {
-    backgroundColor: Colors.card,
+    width: '100%',
+    maxWidth: 440,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 20,
     padding: 20,
-    shadowColor: '#000',
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 14,
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
     elevation: 3,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: Colors.cardSubtle,
-    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 14,
     padding: 4,
     marginBottom: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 10,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 11,
     borderRadius: 10,
   },
   tabButtonActivePatient: {
     backgroundColor: '#FFFFFF',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 2,
-    borderColor: 'rgba(37, 211, 102, 0.3)',
-    borderWidth: 1,
   },
   tabButtonActiveDoctor: {
     backgroundColor: '#FFFFFF',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 2,
-    borderColor: 'rgba(13, 148, 136, 0.3)',
-    borderWidth: 1,
-  },
-  tabButtonInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  tabIconCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(148, 163, 184, 0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabIconCircleActivePatient: {
-    backgroundColor: 'rgba(37, 211, 102, 0.15)',
-  },
-  tabIconCircleActiveDoctor: {
-    backgroundColor: 'rgba(13, 148, 136, 0.15)',
   },
   tabText: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.xs,
-    color: Colors.textMuted,
-  },
-  tabSubtext: {
-    fontFamily: FontFamily.medium,
-    fontSize: 10,
+    fontFamily: FontFamily.semiBold,
+    fontSize: 13,
     color: Colors.textMuted,
   },
   tabTextActivePatient: {
@@ -782,6 +739,9 @@ const styles = StyleSheet.create({
   tabTextActiveDoctor: {
     fontFamily: FontFamily.bold,
     color: Colors.primaryDark,
+  },
+  contentArea: {
+    width: '100%',
   },
   headerArea: {
     marginBottom: 18,
@@ -794,36 +754,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: Colors.whatsapp,
-    paddingHorizontal: 10,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    paddingHorizontal: 9,
     paddingVertical: 4,
     borderRadius: 8,
   },
   whatsappBadgeText: {
     fontFamily: FontFamily.bold,
     fontSize: 11,
-    color: '#FFFFFF',
+    color: '#047857',
     letterSpacing: 0.2,
   },
   doctorBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: Colors.primaryDark,
-    paddingHorizontal: 10,
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+    paddingHorizontal: 9,
     paddingVertical: 4,
     borderRadius: 8,
   },
   doctorBadgeText: {
     fontFamily: FontFamily.bold,
     fontSize: 11,
-    color: '#FFFFFF',
+    color: Colors.primaryDark,
     letterSpacing: 0.2,
   },
   cardTitle: {
     fontFamily: FontFamily.bold,
     fontSize: FontSize.lg,
-    lineHeight: 26,
+    lineHeight: 24,
     letterSpacing: LetterSpacing.tight,
     color: Colors.text,
     marginBottom: 4,
@@ -841,43 +805,42 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     letterSpacing: LetterSpacing.wide,
   },
-  inputWithIcon: {
+  phoneInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
+  countryCodeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: Colors.cardSubtle,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 12,
-    marginBottom: 16,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 13,
   },
-  inputLeadingIcon: {
-    marginRight: 8,
+  flagEmoji: {
+    fontSize: 16,
   },
-  textInputWithIcon: {
+  countryCodeText: {
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.body,
+    color: Colors.text,
+  },
+  phoneNumberInput: {
     flex: 1,
     fontFamily: FontFamily.medium,
-    paddingVertical: 13,
-    fontSize: FontSize.body,
-    color: Colors.text,
-  },
-  input: {
-    fontFamily: FontFamily.medium,
     backgroundColor: Colors.cardSubtle,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 13,
     fontSize: FontSize.body,
     color: Colors.text,
-    marginBottom: 16,
-  },
-  otpInput: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.xxl,
-    letterSpacing: 8,
-    textAlign: 'center',
   },
   whatsappPrimaryButton: {
     backgroundColor: '#10B981',
@@ -886,16 +849,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
     elevation: 3,
-  },
-  whatsappButtonText: {
-    fontFamily: FontFamily.bold,
-    color: '#FFFFFF',
-    fontSize: FontSize.body,
-    letterSpacing: LetterSpacing.wide,
   },
   doctorPrimaryButton: {
     backgroundColor: Colors.primaryDark,
@@ -904,10 +861,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: Colors.primaryDark,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
     elevation: 3,
+  },
+  buttonContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  whatsappButtonText: {
+    fontFamily: FontFamily.bold,
+    color: '#FFFFFF',
+    fontSize: FontSize.body,
+    letterSpacing: LetterSpacing.wide,
   },
   doctorButtonText: {
     fontFamily: FontFamily.bold,
@@ -924,9 +892,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
     marginBottom: 16,
   },
   googleButtonContent: {
@@ -941,6 +909,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(66, 133, 244, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  googleTextCol: {
+    flex: 1,
   },
   googleButtonTitle: {
     fontFamily: FontFamily.bold,
@@ -964,80 +935,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
   },
   dividerText: {
-    fontFamily: FontFamily.bold,
-    fontSize: 10,
-    color: Colors.textMuted,
-    letterSpacing: LetterSpacing.wider,
-  },
-  otpSecurityBanner: {
-    backgroundColor: 'rgba(13, 148, 136, 0.08)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(13, 148, 136, 0.3)',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 16,
-  },
-  otpHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  otpSecurityBadge: {
-    fontFamily: FontFamily.bold,
-    fontSize: 10,
-    color: Colors.primaryDark,
-    letterSpacing: LetterSpacing.wider,
-    textTransform: 'uppercase',
-  },
-  otpExpiryText: {
     fontFamily: FontFamily.medium,
-    fontSize: 10,
-    color: Colors.textMuted,
-  },
-  otpCodeHighlight: {
-    fontFamily: FontFamily.extraBold,
-    fontSize: FontSize.xl,
-    color: Colors.primary,
-    letterSpacing: 2,
-    marginBottom: 2,
-  },
-  otpSecurityNote: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.caption,
-    color: Colors.textSecondary,
-    lineHeight: 16,
-    marginBottom: 8,
-  },
-  autoFillButton: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: 'rgba(13, 148, 136, 0.35)',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  autoFillText: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.xs,
-    color: Colors.primary,
-  },
-  otpActionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 14,
-    paddingHorizontal: 4,
-  },
-  resendText: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.xs,
-    color: '#059669',
-  },
-  changePhoneText: {
-    fontFamily: FontFamily.semiBold,
-    fontSize: FontSize.xs,
+    fontSize: 11,
     color: Colors.textMuted,
   },
   quickFillSection: {
@@ -1054,28 +953,124 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textTransform: 'uppercase',
   },
-  quickFillBadge: {
+  patientQuickFillBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.25)',
+    borderRadius: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+  },
+  doctorQuickFillBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: 'rgba(13, 148, 136, 0.08)',
     borderWidth: 1,
     borderColor: 'rgba(13, 148, 136, 0.25)',
     borderRadius: 10,
-    paddingVertical: 8,
+    paddingVertical: 9,
     paddingHorizontal: 12,
   },
-  quickFillText: {
+  quickFillContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  patientQuickFillText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: FontSize.xs,
+    color: '#047857',
+  },
+  doctorQuickFillText: {
     fontFamily: FontFamily.semiBold,
     fontSize: FontSize.xs,
     color: Colors.primaryDark,
   },
-  footer: {
-    marginTop: 20,
+  compactOtpChipPatient: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+  },
+  compactOtpTextPatient: {
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    color: '#047857',
+  },
+  compactOtpChipDoctor: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+  },
+  compactOtpTextDoctor: {
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    color: Colors.primaryDark,
+  },
+  otpInput: {
+    fontFamily: FontFamily.bold,
+    fontSize: 26,
+    letterSpacing: 10,
+    textAlign: 'center',
+    backgroundColor: Colors.cardSubtle,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginBottom: 16,
+    color: Colors.text,
+  },
+  otpActionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 14,
+    paddingHorizontal: 4,
+  },
+  actionButtonTouch: {
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+  },
+  resendText: {
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.xs,
+    color: '#059669',
+  },
+  changePhoneText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: FontSize.xs,
+    color: Colors.textMuted,
+  },
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 22,
   },
   footerText: {
     fontFamily: FontFamily.regular,
     fontSize: FontSize.caption,
     color: Colors.textMuted,
     textAlign: 'center',
-    lineHeight: 16,
   },
 });

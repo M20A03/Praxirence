@@ -96,6 +96,53 @@ export const mobileApi = {
     return { registered: false, role: null, name: null, message: '' };
   },
 
+  async requestDoctorOtp(phone: string, channel: 'whatsapp' | 'sms' = 'whatsapp'): Promise<{ success: boolean; message: string; demo_code?: string }> {
+    const res = await resilientFetch(`${API_BASE_URL}/auth/doctor/otp/request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, channel }),
+    }, 0);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to dispatch Doctor WhatsApp verification code');
+    }
+    return res.json();
+  },
+
+  async requestPatientOtp(phone: string, channel: 'whatsapp' | 'sms' = 'whatsapp'): Promise<{ success: boolean; message: string; demo_code?: string }> {
+    const res = await resilientFetch(`${API_BASE_URL}/auth/otp/request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, channel }),
+    }, 0);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to dispatch Patient WhatsApp verification code');
+    }
+    return res.json();
+  },
+
+  async loginDoctorGoogle(params?: { email?: string; name?: string; google_id?: string }): Promise<{ access_token: string; role: 'doctor'; user: DoctorUser }> {
+    const cleanEmail = params?.email?.toLowerCase().trim() || 'doctor@praxirence.com';
+    const cleanName = params?.name?.trim() || 'Dr. Mayank Raj';
+    const res = await resilientFetch(`${API_BASE_URL}/auth/doctor/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: cleanEmail,
+        name: cleanName,
+        google_id: params?.google_id || 'google-oauth2-verified-doc',
+      }),
+    }, 0);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Google Doctor verification failed');
+    }
+    const data = await res.json();
+    await this.saveSession('doctor', data.access_token, data.user);
+    return data;
+  },
+
   async requestUnifiedOtp(phone: string, channel: 'whatsapp' | 'sms' = 'whatsapp'): Promise<{ success: boolean; message: string; demo_code?: string }> {
     // Try Doctor OTP endpoint first, fall back to Patient OTP endpoint
     try {

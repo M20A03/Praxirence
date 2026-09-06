@@ -41,21 +41,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [verifyingNmc, setVerifyingNmc] = useState(false);
 
   const handleLogoutPress = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out from Praxirence Clinical Vault?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign Out', style: 'destructive', onPress: onLogout },
-    ]);
+    onLogout();
   };
 
   const handleSwitchAccountPress = () => {
-    Alert.alert(
-      'Switch Account',
-      'This will close your current session and allow you to sign in or register with another mobile number.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Switch Account', onPress: onLogout },
-      ]
-    );
+    onLogout();
   };
 
   const handleVerifyNmcLicense = async () => {

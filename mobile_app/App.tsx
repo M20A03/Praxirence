@@ -161,7 +161,10 @@ export default function App() {
     return (
       <SafeAreaView style={styles.safeArea}>
         <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
-        <LoginScreen onOtpVerified={handleOtpVerified} />
+        <LoginScreen
+          onOtpVerified={handleOtpVerified}
+          onAuthenticated={handleRoleSelected}
+        />
       </SafeAreaView>
     );
   }

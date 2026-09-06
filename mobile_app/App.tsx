@@ -130,8 +130,8 @@ export default function App() {
 
   const handleLogout = async () => {
     await mobileApi.clearSession();
-    setCurrentUser(null);
     setAuthStage('login');
+    setCurrentUser(null);
     setPatientTab('today');
     setDoctorTab('overview');
   };
@@ -184,6 +184,18 @@ export default function App() {
   }
 
   // Stage 3: Authenticated Portals
+  if (authStage !== 'authenticated' || !currentUser) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
+        <LoginScreen
+          onOtpVerified={handleOtpVerified}
+          onAuthenticated={handleRoleSelected}
+        />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />

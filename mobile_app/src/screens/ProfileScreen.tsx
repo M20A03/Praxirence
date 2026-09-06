@@ -30,11 +30,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onLogout,
   onDoctorVerified,
 }) => {
+  if (!user) {
+    return null;
+  }
+
   const isDoctor = role === 'doctor';
 
   // NMC Clinician Verification Modal State (For patients who are doctors)
   const [showNmcModal, setShowNmcModal] = useState(false);
-  const [docName, setDocName] = useState(user.name || '');
+  const [docName, setDocName] = useState(user?.name || '');
   const [docSpecialty, setDocSpecialty] = useState('General Physician');
   const [docClinic, setDocClinic] = useState('Praxirence Clinical Centre');
   const [docRegNum, setDocRegNum] = useState('NMC-2024-84920');

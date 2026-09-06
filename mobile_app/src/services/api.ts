@@ -96,7 +96,7 @@ export const mobileApi = {
     return { registered: false, role: null, name: null, message: '' };
   },
 
-  async requestDoctorOtp(phone: string, channel: 'whatsapp' | 'sms' = 'whatsapp'): Promise<{ success: boolean; message: string; demo_code?: string }> {
+  async requestDoctorOtp(phone: string, channel: 'whatsapp' | 'sms' = 'whatsapp'): Promise<{ success: boolean; message: string; demo_code?: string; otp_code?: string }> {
     const res = await resilientFetch(`${API_BASE_URL}/auth/doctor/otp/request`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -109,7 +109,7 @@ export const mobileApi = {
     return res.json();
   },
 
-  async requestPatientOtp(phone: string, channel: 'whatsapp' | 'sms' = 'whatsapp'): Promise<{ success: boolean; message: string; demo_code?: string }> {
+  async requestPatientOtp(phone: string, channel: 'whatsapp' | 'sms' = 'whatsapp'): Promise<{ success: boolean; message: string; demo_code?: string; otp_code?: string }> {
     const res = await resilientFetch(`${API_BASE_URL}/auth/otp/request`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

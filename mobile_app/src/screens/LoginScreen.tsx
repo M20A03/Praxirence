@@ -35,6 +35,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
   // OTP Verification States
   const [code, setCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+  const [activeOtpNotice, setActiveOtpNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -62,9 +63,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
     setSuccessMessage(null);
     setLoading(true);
     try {
-      await mobileApi.requestPatientOtp(fullPatientPhone, 'whatsapp');
+      const res: any = await mobileApi.requestPatientOtp(fullPatientPhone, 'whatsapp');
       setOtpSent(true);
-      setSuccessMessage(`WhatsApp OTP sent to ${fullPatientPhone}`);
+      const codeFound = res?.otp_code || res?.demo_code;
+      if (codeFound) {
+        setActiveOtpNotice(codeFound);
+        setSuccessMessage(`WhatsApp code dispatched for ${fullPatientPhone}`);
+      } else {
+        setSuccessMessage(`WhatsApp OTP sent to ${fullPatientPhone}`);
+      }
       setCode('');
     } catch (err: any) {
       setError(err.message || 'Failed to dispatch WhatsApp OTP. Please check your network.');
@@ -139,9 +146,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
     setSuccessMessage(null);
     setLoading(true);
     try {
-      await mobileApi.requestDoctorOtp(fullDoctorPhone, 'whatsapp');
+      const res: any = await mobileApi.requestDoctorOtp(fullDoctorPhone, 'whatsapp');
       setOtpSent(true);
-      setSuccessMessage(`Clinician WhatsApp OTP sent to ${fullDoctorPhone}`);
+      const codeFound = res?.otp_code || res?.demo_code;
+      if (codeFound) {
+        setActiveOtpNotice(codeFound);
+        setSuccessMessage(`Clinician code dispatched for ${fullDoctorPhone}`);
+      } else {
+        setSuccessMessage(`Clinician WhatsApp OTP sent to ${fullDoctorPhone}`);
+      }
       setCode('');
     } catch (err: any) {
       setError(err.message || 'Failed to dispatch Doctor WhatsApp verification code.');
@@ -176,6 +189,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
   const handleTabSwitch = (tab: PersonaTab) => {
     setActiveTab(tab);
     setOtpSent(false);
+    setActiveOtpNotice(null);
     setCode('');
     setError(null);
     setSuccessMessage(null);
@@ -322,6 +336,26 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
               ) : (
                 <View>
                   <Text style={styles.inputLabel}>6-Digit WhatsApp Code</Text>
+
+                  {activeOtpNotice && (
+                    <TouchableOpacity
+                      style={styles.otpNoticeBanner}
+                      activeOpacity={0.8}
+                      onPress={() => setCode(activeOtpNotice)}
+                    >
+                      <View style={styles.otpNoticeHeader}>
+                        <Ionicons name="key-outline" size={15} color="#047857" />
+                        <Text style={styles.otpNoticeTitle}>Instant Verification Code:</Text>
+                        <View style={styles.otpNoticeBadge}>
+                          <Text style={styles.otpNoticeBadgeText}>{activeOtpNotice}</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.otpNoticeSubtext}>
+                        Tap to auto-fill • Real-time server session
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
                   <TextInput
                     style={styles.otpInput}
                     placeholder="• • • • • •"
@@ -358,6 +392,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                     <TouchableOpacity
                       onPress={() => {
                         setOtpSent(false);
+                        setActiveOtpNotice(null);
                         setCode('');
                         setError(null);
                       }}
@@ -456,6 +491,26 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
               ) : (
                 <View>
                   <Text style={styles.inputLabel}>6-Digit Clinician Access Code</Text>
+
+                  {activeOtpNotice && (
+                    <TouchableOpacity
+                      style={[styles.otpNoticeBanner, styles.otpNoticeBannerDoctor]}
+                      activeOpacity={0.8}
+                      onPress={() => setCode(activeOtpNotice)}
+                    >
+                      <View style={styles.otpNoticeHeader}>
+                        <Ionicons name="key-outline" size={15} color={Colors.primaryDark} />
+                        <Text style={[styles.otpNoticeTitle, { color: Colors.primaryDark }]}>Instant Verification Code:</Text>
+                        <View style={[styles.otpNoticeBadge, styles.otpNoticeBadgeDoctor]}>
+                          <Text style={[styles.otpNoticeBadgeText, { color: Colors.primaryDark }]}>{activeOtpNotice}</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.otpNoticeSubtext}>
+                        Tap to auto-fill • Real-time clinical session
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
                   <TextInput
                     style={styles.otpInput}
                     placeholder="• • • • • •"
@@ -492,6 +547,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                     <TouchableOpacity
                       onPress={() => {
                         setOtpSent(false);
+                        setActiveOtpNotice(null);
                         setCode('');
                         setError(null);
                       }}
@@ -939,6 +995,53 @@ const styles = StyleSheet.create({
   changePhoneText: {
     fontFamily: FontFamily.semiBold,
     fontSize: FontSize.xs,
+    color: Colors.textMuted,
+  },
+  otpNoticeBanner: {
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1.5,
+    borderColor: '#A7F3D0',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginBottom: 14,
+  },
+  otpNoticeBannerDoctor: {
+    backgroundColor: '#EEF2FF',
+    borderColor: '#C7D2FE',
+  },
+  otpNoticeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 3,
+  },
+  otpNoticeTitle: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: FontSize.xs,
+    color: '#047857',
+  },
+  otpNoticeBadge: {
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#6EE7B7',
+  },
+  otpNoticeBadgeDoctor: {
+    backgroundColor: '#E0E7FF',
+    borderColor: '#A5B4FC',
+  },
+  otpNoticeBadgeText: {
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.sm,
+    color: '#065F46',
+    letterSpacing: 1.5,
+  },
+  otpNoticeSubtext: {
+    fontFamily: FontFamily.medium,
+    fontSize: 11,
     color: Colors.textMuted,
   },
   footer: {

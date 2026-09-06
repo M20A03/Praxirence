@@ -15,6 +15,7 @@
     },
     "android": {
       "adaptiveIcon": {
+        "foregroundImage": "./assets/logo-icon.png",
         "backgroundColor": "#090d16"
       },
       "package": "com.praxirence.patient",

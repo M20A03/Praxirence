@@ -20,6 +20,8 @@ import { DashboardScreen } from './src/screens/DashboardScreen';
 import { VisitsScreen } from './src/screens/VisitsScreen';
 import { ConsentScreen } from './src/screens/ConsentScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
+import { ChatbotScreen } from './src/screens/ChatbotScreen';
+import { DoctorSearchScreen } from './src/screens/DoctorSearchScreen';
 
 // Doctor Portal Screens
 import { DoctorDashboardScreen } from './src/screens/doctor/DoctorDashboardScreen';
@@ -28,7 +30,7 @@ import { DoctorNewConsultationScreen } from './src/screens/doctor/DoctorNewConsu
 
 import { mobileApi } from './src/services/api';
 
-type PatientTab = 'today' | 'visits' | 'consent' | 'profile';
+type PatientTab = 'today' | 'visits' | 'chatbot' | 'doctors' | 'consent' | 'profile';
 type DoctorTab = 'overview' | 'patients' | 'new_consult' | 'profile';
 
 export default function App() {
@@ -287,10 +289,26 @@ export default function App() {
                 <DashboardScreen
                   user={currentUser as PatientUser}
                   onNavigateToConsent={() => setPatientTab('consent')}
+                  onNavigateToChatbot={() => setPatientTab('chatbot')}
+                  onNavigateToDoctors={() => setPatientTab('doctors')}
+                  onNavigateToVisits={() => setPatientTab('visits')}
                   onSwitchToDoctorRole={handleSwitchRole}
                 />
               )}
               {patientTab === 'visits' && <VisitsScreen user={currentUser as PatientUser} />}
+              {patientTab === 'chatbot' && (
+                <ChatbotScreen
+                  user={currentUser as PatientUser}
+                  onNavigateToDoctors={() => setPatientTab('doctors')}
+                  onNavigateToVisits={() => setPatientTab('visits')}
+                />
+              )}
+              {patientTab === 'doctors' && (
+                <DoctorSearchScreen
+                  user={currentUser as PatientUser}
+                  onSelectDoctorForVisit={() => setPatientTab('today')}
+                />
+              )}
               {patientTab === 'consent' && (
                 <ConsentScreen
                   user={currentUser as PatientUser}
@@ -336,13 +354,25 @@ export default function App() {
 
                 <TouchableOpacity
                   style={styles.tabItem}
-                  onPress={() => setPatientTab('consent')}
+                  onPress={() => setPatientTab('chatbot')}
                 >
-                  <Text style={[styles.tabIcon, patientTab === 'consent' && styles.activeTabIcon]}>
-                    🛡️
+                  <Text style={[styles.tabIcon, patientTab === 'chatbot' && styles.activeTabIcon]}>
+                    🤖
                   </Text>
-                  <Text style={[styles.tabLabel, patientTab === 'consent' && styles.activeTabLabel]}>
-                    Consent
+                  <Text style={[styles.tabLabel, patientTab === 'chatbot' && styles.activeTabLabel]}>
+                    AI Bot
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.tabItem}
+                  onPress={() => setPatientTab('doctors')}
+                >
+                  <Text style={[styles.tabIcon, patientTab === 'doctors' && styles.activeTabIcon]}>
+                    👨‍⚕️
+                  </Text>
+                  <Text style={[styles.tabLabel, patientTab === 'doctors' && styles.activeTabLabel]}>
+                    Doctors
                   </Text>
                 </TouchableOpacity>
 
@@ -350,10 +380,10 @@ export default function App() {
                   style={styles.tabItem}
                   onPress={() => setPatientTab('profile')}
                 >
-                  <Text style={[styles.tabIcon, patientTab === 'profile' && styles.activeTabIcon]}>
+                  <Text style={[styles.tabIcon, (patientTab === 'profile' || patientTab === 'consent') && styles.activeTabIcon]}>
                     👤
                   </Text>
-                  <Text style={[styles.tabLabel, patientTab === 'profile' && styles.activeTabLabel]}>
+                  <Text style={[styles.tabLabel, (patientTab === 'profile' || patientTab === 'consent') && styles.activeTabLabel]}>
                     Profile
                   </Text>
                 </TouchableOpacity>

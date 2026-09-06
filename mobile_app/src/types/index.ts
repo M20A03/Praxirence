@@ -71,3 +71,31 @@ export interface ConsentDocument {
   consent_updated_at?: string;
 }
 
+export interface VitalsRecord {
+  bloodPressureSystolic: number;
+  bloodPressureDiastolic: number;
+  heartRate: number;
+  spo2: number;
+  bloodSugar?: number;
+  recordedAt: string;
+  statusNote?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  sender: 'user' | 'assistant';
+  text: string;
+  timestamp: string;
+  language?: string;
+  medicinesReferenced?: MedicineItem[];
+  recommendedDoctors?: {
+    id: string;
+    name: string;
+    specialty: string;
+    clinic_name: string;
+    reg_number: string;
+    phone?: string;
+  }[];
+  quickSuggestions?: string[];
+}
+

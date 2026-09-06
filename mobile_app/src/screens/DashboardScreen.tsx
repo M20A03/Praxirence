@@ -7,23 +7,32 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
+  Modal,
+  TextInput,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
-import { PatientUser, Visit, MedicineItem, ReminderItem } from '../types';
+import { PatientUser, Visit, MedicineItem, ReminderItem, VitalsRecord } from '../types';
 import { mobileApi } from '../services/api';
 import { registerForPushNotificationsAsync } from '../services/notifications';
+import { BrandLogoMobile } from '../components/BrandLogoMobile';
 
 interface DashboardScreenProps {
   user: PatientUser;
   onNavigateToConsent: () => void;
   onSwitchToDoctorRole?: () => void;
+  onNavigateToChatbot?: () => void;
+  onNavigateToDoctors?: () => void;
+  onNavigateToVisits?: () => void;
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   user,
   onNavigateToConsent,
   onSwitchToDoctorRole,
+  onNavigateToChatbot,
+  onNavigateToDoctors,
+  onNavigateToVisits,
 }) => {
 
   const [visits, setVisits] = useState<Visit[]>([]);
@@ -37,8 +46,26 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const [lastSyncedTime, setLastSyncedTime] = useState<string>('Just now');
   const [newPlanAlert, setNewPlanAlert] = useState<string | null>(null);
 
+  // Real Vitals Tracking State
+  const [vitals, setVitals] = useState<VitalsRecord>({
+    bloodPressureSystolic: 120,
+    bloodPressureDiastolic: 80,
+    heartRate: 72,
+    spo2: 98,
+    bloodSugar: 96,
+    recordedAt: 'Today',
+    statusNote: 'Optimal / Steady',
+  });
+  const [showVitalsModal, setShowVitalsModal] = useState<boolean>(false);
+  const [inputSys, setInputSys] = useState<string>('120');
+  const [inputDia, setInputDia] = useState<string>('80');
+  const [inputHr, setInputHr] = useState<string>('72');
+  const [inputSpo2, setInputSpo2] = useState<string>('98');
+  const [inputSugar, setInputSugar] = useState<string>('96');
+
   useEffect(() => {
     loadDashboardData();
+    loadVitalsData();
     checkPushPermissions();
     measureLatency();
 
@@ -104,6 +131,48 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     }
   };
 
+  const loadVitalsData = async () => {
+    try {
+      const v = await mobileApi.getVitals(user.id);
+      setVitals(v);
+      setInputSys(String(v.bloodPressureSystolic));
+      setInputDia(String(v.bloodPressureDiastolic));
+      setInputHr(String(v.heartRate));
+      setInputSpo2(String(v.spo2));
+      if (v.bloodSugar) setInputSugar(String(v.bloodSugar));
+    } catch (e) {
+      console.log('Error loading vitals:', e);
+    }
+  };
+
+  const handleSaveVitals = async () => {
+    const sys = parseInt(inputSys, 10) || 120;
+    const dia = parseInt(inputDia, 10) || 80;
+    const hr = parseInt(inputHr, 10) || 72;
+    const o2 = parseInt(inputSpo2, 10) || 98;
+    const sugar = parseInt(inputSugar, 10) || 96;
+
+    let note = 'Normal / Steady';
+    if (sys >= 140 || dia >= 90) note = 'Elevated BP Alert';
+    else if (o2 < 95) note = 'Low SpO2 Alert';
+    else if (sugar > 140) note = 'Elevated Glucose';
+
+    const updated: VitalsRecord = {
+      bloodPressureSystolic: sys,
+      bloodPressureDiastolic: dia,
+      heartRate: hr,
+      spo2: o2,
+      bloodSugar: sugar,
+      recordedAt: 'Just now',
+      statusNote: note,
+    };
+
+    setVitals(updated);
+    await mobileApi.saveVitals(user.id, updated);
+    setShowVitalsModal(false);
+    Alert.alert('Vitals Recorded! 🩺', `Status: ${note}. Your health trends have been updated.`);
+  };
+
   const latestVisit = visits.length > 0 ? visits[0] : null;
   const activeMedicines: MedicineItem[] = latestVisit?.medicines || [];
   const upcomingReminders: ReminderItem[] = latestVisit?.reminders || [];
@@ -114,8 +183,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   };
 
   return (
-    <ScrollView
-      style={styles.container}
+    <View style={{ flex: 1, backgroundColor: Colors.background }}>
+      <ScrollView
+        style={styles.container}
       contentContainerStyle={styles.content}
       refreshControl={
         <RefreshControl
@@ -129,14 +199,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         />
       }
     >
-      {/* Patient Greeting & Status Header */}
-      <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.greeting}>Welcome back,</Text>
-          <Text style={styles.patientName}>{user.name}</Text>
-        </View>
-
-        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+      {/* Brand Logo Top Header */}
+      <View style={styles.topBrandBar}>
+        <BrandLogoMobile variant="header" size="sm" subtitleText="Patient Care Portal" />
+        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
           {onSwitchToDoctorRole && (
             <TouchableOpacity
               style={styles.switchRoleBadge}
@@ -157,9 +223,116 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               styles.consentBadgeText,
               { color: user.consent_status ? Colors.primaryDark : Colors.amber }
             ]}>
-              {user.consent_status ? '✓ Consent' : '⚠️ Consent'}
+              {user.consent_status ? '✓ Protected' : '⚠️ Consent'}
             </Text>
           </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Patient Greeting */}
+      <View style={styles.greetingBox}>
+        <Text style={styles.greetingSub}>Today's Clinical Summary</Text>
+        <Text style={styles.patientName}>Hello, {user.name}</Text>
+      </View>
+
+      {/* Quick Action Navigation Grid */}
+      <View style={styles.quickActionsGrid}>
+        <TouchableOpacity
+          style={[styles.quickActionCard, { backgroundColor: 'rgba(13, 148, 136, 0.08)', borderColor: 'rgba(13, 148, 136, 0.25)' }]}
+          onPress={onNavigateToChatbot}
+        >
+          <Text style={styles.quickActionIcon}>🤖</Text>
+          <Text style={styles.quickActionTitle}>AI Health Bot</Text>
+          <Text style={styles.quickActionSub}>Prescription Q&A</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.quickActionCard, { backgroundColor: 'rgba(37, 99, 235, 0.08)', borderColor: 'rgba(37, 99, 235, 0.25)' }]}
+          onPress={onNavigateToDoctors}
+        >
+          <Text style={styles.quickActionIcon}>👨‍⚕️</Text>
+          <Text style={styles.quickActionTitle}>Find Doctors</Text>
+          <Text style={styles.quickActionSub}>Verified Clinics</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.quickActionCard, { backgroundColor: 'rgba(16, 185, 129, 0.08)', borderColor: 'rgba(16, 185, 129, 0.25)' }]}
+          onPress={onNavigateToVisits}
+        >
+          <Text style={styles.quickActionIcon}>📋</Text>
+          <Text style={styles.quickActionTitle}>Active Rx</Text>
+          <Text style={styles.quickActionSub}>Download PDF</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.quickActionCard, { backgroundColor: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.25)' }]}
+          onPress={onNavigateToConsent}
+        >
+          <Text style={styles.quickActionIcon}>🛡️</Text>
+          <Text style={styles.quickActionTitle}>Data Vault</Text>
+          <Text style={styles.quickActionSub}>ABDM / HIPAA</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Real Interactive Vitals Tracker Card */}
+      <View style={styles.vitalsCard}>
+        <View style={styles.vitalsHeaderRow}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={styles.vitalsHeaderIcon}>🩺</Text>
+            <Text style={styles.vitalsHeaderTitle}>Vitals Monitoring</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.logVitalsButton}
+            onPress={() => setShowVitalsModal(true)}
+          >
+            <Text style={styles.logVitalsButtonText}>+ Log Vitals</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.vitalsGrid}>
+          {/* BP */}
+          <View style={styles.vitalBox}>
+            <Text style={styles.vitalLabel}>Blood Pressure</Text>
+            <Text style={styles.vitalValue}>{vitals.bloodPressureSystolic}/{vitals.bloodPressureDiastolic}</Text>
+            <Text style={styles.vitalUnit}>mmHg</Text>
+            <View style={styles.vitalStatusPill}>
+              <Text style={styles.vitalStatusText}>
+                {vitals.bloodPressureSystolic < 130 ? '✓ Optimal' : '⚠️ Elevated'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Pulse */}
+          <View style={styles.vitalBox}>
+            <Text style={styles.vitalLabel}>Heart Rate</Text>
+            <Text style={styles.vitalValue}>{vitals.heartRate}</Text>
+            <Text style={styles.vitalUnit}>bpm</Text>
+            <View style={styles.vitalStatusPill}>
+              <Text style={styles.vitalStatusText}>Steady ❤️</Text>
+            </View>
+          </View>
+
+          {/* SpO2 */}
+          <View style={styles.vitalBox}>
+            <Text style={styles.vitalLabel}>Blood Oxygen</Text>
+            <Text style={styles.vitalValue}>{vitals.spo2}%</Text>
+            <Text style={styles.vitalUnit}>SpO2</Text>
+            <View style={styles.vitalStatusPill}>
+              <Text style={styles.vitalStatusText}>
+                {vitals.spo2 >= 95 ? '✓ Normal' : '⚠️ Low'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Sugar */}
+          <View style={styles.vitalBox}>
+            <Text style={styles.vitalLabel}>Blood Glucose</Text>
+            <Text style={styles.vitalValue}>{vitals.bloodSugar || 96}</Text>
+            <Text style={styles.vitalUnit}>mg/dL</Text>
+            <View style={styles.vitalStatusPill}>
+              <Text style={styles.vitalStatusText}>Fasting</Text>
+            </View>
+          </View>
         </View>
       </View>
 
@@ -309,6 +482,94 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </View>
       )}
     </ScrollView>
+
+    {/* Modal to Log Daily Vitals */}
+    <Modal
+      visible={showVitalsModal}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setShowVitalsModal(false)}
+    >
+      <View style={styles.modalBackdrop}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Record Daily Vitals 🩺</Text>
+          <Text style={styles.modalSubtitle}>Update your current physiological readings for your care team.</Text>
+
+          <View style={styles.modalInputRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>Systolic BP (mmHg)</Text>
+              <TextInput
+                style={styles.modalInput}
+                keyboardType="numeric"
+                value={inputSys}
+                onChangeText={setInputSys}
+                placeholder="120"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>Diastolic BP (mmHg)</Text>
+              <TextInput
+                style={styles.modalInput}
+                keyboardType="numeric"
+                value={inputDia}
+                onChangeText={setInputDia}
+                placeholder="80"
+              />
+            </View>
+          </View>
+
+          <View style={styles.modalInputRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>Heart Rate (bpm)</Text>
+              <TextInput
+                style={styles.modalInput}
+                keyboardType="numeric"
+                value={inputHr}
+                onChangeText={setInputHr}
+                placeholder="72"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>SpO2 Oxygen (%)</Text>
+              <TextInput
+                style={styles.modalInput}
+                keyboardType="numeric"
+                value={inputSpo2}
+                onChangeText={setInputSpo2}
+                placeholder="98"
+              />
+            </View>
+          </View>
+
+          <View style={{ marginBottom: 16 }}>
+            <Text style={styles.inputLabel}>Blood Glucose (mg/dL)</Text>
+            <TextInput
+              style={styles.modalInput}
+              keyboardType="numeric"
+              value={inputSugar}
+              onChangeText={setInputSugar}
+              placeholder="96"
+            />
+          </View>
+
+          <View style={styles.modalActionsRow}>
+            <TouchableOpacity
+              style={styles.modalCancelButton}
+              onPress={() => setShowVitalsModal(false)}
+            >
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalSaveButton}
+              onPress={handleSaveVitals}
+            >
+              <Text style={styles.modalSaveText}>Save Vitals ✓</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  </View>
   );
 };
 
@@ -682,5 +943,223 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
     color: Colors.textMuted,
+  },
+  topBrandBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    marginBottom: 16,
+    borderRadius: 16,
+  },
+  greetingBox: {
+    marginBottom: 16,
+  },
+  greetingSub: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: FontSize.caption,
+    color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: LetterSpacing.wide,
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 18,
+  },
+  quickActionCard: {
+    flex: 1,
+    minWidth: '46%',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+  },
+  quickActionIcon: {
+    fontSize: 22,
+    marginBottom: 4,
+  },
+  quickActionTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.body,
+    color: Colors.text,
+  },
+  quickActionSub: {
+    fontFamily: FontFamily.regular,
+    fontSize: 11,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  vitalsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 18,
+    borderWidth: 1.5,
+    borderColor: 'rgba(13, 148, 136, 0.2)',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  vitalsHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  vitalsHeaderIcon: {
+    fontSize: 18,
+  },
+  vitalsHeaderTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.lg,
+    color: Colors.text,
+  },
+  logVitalsButton: {
+    backgroundColor: 'rgba(13, 148, 136, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(13, 148, 136, 0.25)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+  },
+  logVitalsButtonText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 12,
+    color: Colors.primaryDark,
+  },
+  vitalsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  vitalBox: {
+    flex: 1,
+    minWidth: '46%',
+    backgroundColor: Colors.background,
+    borderRadius: 12,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  vitalLabel: {
+    fontFamily: FontFamily.medium,
+    fontSize: 11,
+    color: Colors.textSecondary,
+    marginBottom: 2,
+  },
+  vitalValue: {
+    fontFamily: FontFamily.extraBold,
+    fontSize: 18,
+    color: Colors.text,
+  },
+  vitalUnit: {
+    fontFamily: FontFamily.regular,
+    fontSize: 10,
+    color: Colors.textMuted,
+  },
+  vitalStatusPill: {
+    marginTop: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  vitalStatusText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 10,
+    color: '#059669',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 420,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.xl,
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  modalSubtitle: {
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.caption,
+    color: Colors.textSecondary,
+    marginBottom: 16,
+  },
+  modalInputRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  inputLabel: {
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  modalInput: {
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.body,
+    color: Colors.text,
+  },
+  modalActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+    marginTop: 8,
+  },
+  modalCancelButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  modalCancelText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: FontSize.body,
+    color: Colors.textSecondary,
+  },
+  modalSaveButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 10,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  modalSaveText: {
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.body,
+    color: '#FFFFFF',
   },
 });

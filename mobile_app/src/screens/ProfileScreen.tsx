@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
 import { ActiveUser, UserRole } from '../types';
+import { BrandLogoMobile } from '../components/BrandLogoMobile';
 
 interface ProfileScreenProps {
   user: ActiveUser;
@@ -27,6 +28,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={{ marginBottom: 16 }}>
+        <BrandLogoMobile variant="header" size="sm" subtitleText="Account & Compliance Settings" />
+      </View>
+
       {/* Profile Header */}
       <View style={styles.header}>
         <View style={styles.avatar}>

@@ -12,6 +12,7 @@ import { Colors } from '../theme/colors';
 import { FontFamily, FontSize, LetterSpacing } from '../theme/typography';
 import { PatientUser, ConsentDocument } from '../types';
 import { mobileApi } from '../services/api';
+import { BrandLogoMobile } from '../components/BrandLogoMobile';
 
 interface ConsentScreenProps {
   user: PatientUser;
@@ -73,6 +74,10 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={{ marginBottom: 16 }}>
+        <BrandLogoMobile variant="header" size="sm" subtitleText="HIPAA & ABDM Data Vault" />
+      </View>
+
       {/* Title & Status Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Patient Consent Agreement</Text>

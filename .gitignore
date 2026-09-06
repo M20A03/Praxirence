@@ -3,6 +3,9 @@
 .env.local
 .env.*.local
 *.env
+.gemini/
+logs/
+
 
 # Python
 __pycache__/

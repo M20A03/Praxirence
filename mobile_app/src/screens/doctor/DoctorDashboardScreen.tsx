@@ -11,6 +11,7 @@ import {
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../../theme';
 import { DoctorUser, PatientSummary, Visit } from '../../types';
 import { mobileApi } from '../../services/api';
+import { BrandLogoMobile } from '../../components/BrandLogoMobile';
 
 interface DoctorDashboardScreenProps {
   doctor: DoctorUser;
@@ -75,6 +76,11 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
         />
       }
     >
+      {/* Brand Logo Top Header */}
+      <View style={{ marginBottom: 16 }}>
+        <BrandLogoMobile variant="header" size="sm" subtitleText="Clinician Intelligence Suite" />
+      </View>
+
       {/* Clinician Profile Header */}
       <View style={styles.header}>
         <View style={{ flex: 1 }}>

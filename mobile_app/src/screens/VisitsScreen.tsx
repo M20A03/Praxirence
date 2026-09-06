@@ -10,6 +10,7 @@ import {
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
 import { PatientUser, Visit } from '../types';
 import { mobileApi } from '../services/api';
+import { BrandLogoMobile } from '../components/BrandLogoMobile';
 
 interface VisitsScreenProps {
   user: PatientUser;
@@ -66,8 +67,12 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
         />
       }
     >
+      <View style={{ marginBottom: 16 }}>
+        <BrandLogoMobile variant="header" size="sm" subtitleText="Clinical Consultation History" />
+      </View>
+
       <View style={styles.header}>
-        <Text style={styles.title}>Consultation History</Text>
+        <Text style={styles.title}>Prescription Vault</Text>
         <Text style={styles.subtitle}>All your clinical care plans and prescriptions</Text>
       </View>
 

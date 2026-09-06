@@ -355,16 +355,17 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       </View>
 
 
-      {/* SRE Real-time Cloud Connection & Latency Bar */}
-      <View style={styles.cloudStatusBar}>
-        <View style={styles.cloudStatusLeft}>
-          <View style={[styles.pulseDot, { backgroundColor: isLive ? '#10b981' : '#f59e0b' }]} />
-          <Text style={styles.cloudStatusText}>
-            {isLive ? `Live Sync Active • ${latencyMs > 0 ? latencyMs + 'ms' : 'Railway Cloud'}` : isOfflineCached ? 'Offline • Cached Vault Mode' : 'Connecting to Vault...'}
-          </Text>
+      {/* Offline Status Notice (Only visible when disconnected) */}
+      {!isLive && isOfflineCached && (
+        <View style={styles.cloudStatusBar}>
+          <View style={styles.cloudStatusLeft}>
+            <Ionicons name="cloud-offline-outline" size={16} color="#D97706" />
+            <Text style={[styles.cloudStatusText, { color: '#B45309' }]}>
+              Offline Mode • Showing cached records
+            </Text>
+          </View>
         </View>
-        <Text style={styles.cloudSyncTime}>Synced: {lastSyncedTime}</Text>
-      </View>
+      )}
 
       {/* New Care Plan Live Alert */}
       {newPlanAlert && (

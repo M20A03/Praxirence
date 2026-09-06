@@ -95,16 +95,17 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
         </View>
       </View>
 
-      {/* SRE Live Cloud Status Bar */}
-      <View style={styles.cloudStatusBar}>
-        <View style={styles.cloudStatusLeft}>
-          <View style={[styles.pulseDot, { backgroundColor: isLive ? '#10b981' : '#f59e0b' }]} />
-          <Text style={styles.cloudStatusText}>
-            {isLive ? `Live Sync Active • ${latencyMs > 0 ? latencyMs + 'ms' : 'Railway Cloud'}` : 'Offline Cached Mode'}
-          </Text>
+      {/* Offline Status Notice (Only visible when disconnected) */}
+      {!isLive && (
+        <View style={styles.cloudStatusBar}>
+          <View style={styles.cloudStatusLeft}>
+            <Ionicons name="cloud-offline-outline" size={16} color="#D97706" />
+            <Text style={[styles.cloudStatusText, { color: '#B45309' }]}>
+              Offline Mode • Showing cached patient records
+            </Text>
+          </View>
         </View>
-        <Text style={styles.cloudSyncTime}>Clinical Vault Connected</Text>
-      </View>
+      )}
 
       {/* Quick Action: Start Consultation */}
       <TouchableOpacity
@@ -140,7 +141,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
           <Text style={styles.statLabel}>WhatsApp Delivery</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 }}>
             <Ionicons name="checkmark-circle" size={12} color={Colors.whatsapp} />
-            <Text style={[styles.statLink, { color: Colors.whatsapp }]}>Meta Cloud API</Text>
+            <Text style={[styles.statLink, { color: Colors.whatsapp }]}>Direct Rx Delivery</Text>
           </View>
         </View>
       </View>

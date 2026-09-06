@@ -29,56 +29,40 @@ export const RoleSelectScreen: React.FC<RoleSelectScreenProps> = ({
   const [loading, setLoading] = useState(false);
 
   // Doctor Profile Form
-  const [doctorName, setDoctorName] = useState('Dr. Mayank Raj');
-  const [specialty, setSpecialty] = useState('Chief Medical Officer & Physician');
-  const [clinicName, setClinicName] = useState('Praxirence Clinical Centre');
-  const [regNumber, setRegNumber] = useState('NMC-2024-84920');
+  const [doctorName, setDoctorName] = useState('');
+  const [specialty, setSpecialty] = useState('');
+  const [clinicName, setClinicName] = useState('');
+  const [regNumber, setRegNumber] = useState('');
 
   // Patient Profile Form
-  const [patientName, setPatientName] = useState('Mayank');
+  const [patientName, setPatientName] = useState('');
 
   const handleProceedDoctor = async () => {
     if (!doctorName.trim()) {
       Alert.alert('Required', 'Please enter your full name');
       return;
     }
+    if (!specialty.trim()) {
+      Alert.alert('Required', 'Please enter your medical specialty');
+      return;
+    }
+    if (!regNumber.trim()) {
+      Alert.alert('Required', 'Please enter your NMC / Medical Registration Number');
+      return;
+    }
     setLoading(true);
     try {
-      // First try to verify with existing doctor profile on backend
-      try {
-        const docRes = await mobileApi.verifyDoctorOtp(verifiedPhone, '123456');
-        if (docRes && docRes.user) {
-          onRoleSelected('doctor', docRes.user);
-          return;
-        }
-      } catch {
-        // Register new doctor profile
-      }
-
       const registered = await mobileApi.registerDoctor({
         name: doctorName.trim(),
-        email: `${doctorName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'doctor'}@praxirence.com`,
+        email: `${doctorName.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '.') || 'doctor'}@praxirence.com`,
         phone: verifiedPhone,
-        specialty: specialty.trim() || 'General Physician',
-        clinic_name: clinicName.trim() || 'Praxirence Clinical Centre',
-        reg_number: regNumber.trim() || 'NMC-2024-84920',
+        specialty: specialty.trim(),
+        clinic_name: clinicName.trim() || 'Independent Practice',
+        reg_number: regNumber.trim(),
       });
       onRoleSelected('doctor', registered.user);
     } catch (err: any) {
-      console.warn('Doctor setup notice, using verified clinical credentials:', err);
-      // Fallback: create verified doctor profile
-      const fallbackDoc: DoctorUser = {
-        id: 'doc-default-01',
-        name: doctorName.trim(),
-        email: 'doctor@praxirence.com',
-        phone: verifiedPhone,
-        specialty: specialty.trim() || 'General Physician',
-        clinic_name: clinicName.trim() || 'Praxirence Clinical Centre',
-        reg_number: regNumber.trim() || 'NMC-2024-84920',
-        role: 'doctor',
-      };
-      await mobileApi.saveSession('doctor', 'fallback_token_doc', fallbackDoc);
-      onRoleSelected('doctor', fallbackDoc);
+      Alert.alert('Registration Failed', err.message || 'Unable to register your doctor profile. Please try again or sign in with Google.');
     } finally {
       setLoading(false);
     }
@@ -91,21 +75,26 @@ export const RoleSelectScreen: React.FC<RoleSelectScreenProps> = ({
     }
     setLoading(true);
     try {
-      const patRes = await mobileApi.verifyPatientOtp(verifiedPhone, '123456');
-      if (patRes && patRes.user) {
-        onRoleSelected('patient', { ...patRes.user, name: patientName.trim() });
-      }
-    } catch (err) {
-      console.warn('Patient setup notice, using verified patient profile:', err);
-      const fallbackPatient: PatientUser = {
-        id: 'pat-default-01',
+      // Patient was already OTP-verified to reach this screen, create profile on backend
+      const patRes = await mobileApi.createPatient({
         name: patientName.trim(),
         phone: verifiedPhone,
-        consent_status: true,
-        role: 'patient',
-      };
-      await mobileApi.saveSession('patient', 'fallback_token_pat', fallbackPatient);
-      onRoleSelected('patient', fallbackPatient);
+      });
+      if (patRes) {
+        const patientUser: PatientUser = {
+          id: patRes.id || `pat-${Date.now()}`,
+          name: patientName.trim(),
+          phone: verifiedPhone,
+          consent_status: false,
+          role: 'patient',
+        };
+        await mobileApi.saveSession('patient', `pat_session_${Date.now()}`, patientUser);
+        onRoleSelected('patient', patientUser);
+      } else {
+        Alert.alert('Error', 'Unable to create patient profile. Please try again.');
+      }
+    } catch (err: any) {
+      Alert.alert('Registration Failed', err.message || 'Unable to register your patient profile. Please try again.');
     } finally {
       setLoading(false);
     }

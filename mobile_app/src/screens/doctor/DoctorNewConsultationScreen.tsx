@@ -154,7 +154,7 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
 
       Alert.alert(
         'Care Plan Delivered!',
-        'Consultation recorded and official care plan delivered to patient WhatsApp via Meta Cloud API.',
+        'Consultation recorded and care plan delivered to patient via WhatsApp.',
         [{ text: 'View Dashboard', onPress: onConsultationSaved }]
       );
     } catch (err: any) {

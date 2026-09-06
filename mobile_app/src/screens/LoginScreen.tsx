@@ -9,12 +9,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
 import { mobileApi } from '../services/api';
 import { BrandLogoMobile } from '../components/BrandLogoMobile';
-import { UserRole, ActiveUser, DoctorUser, PatientUser } from '../types';
+import { UserRole, ActiveUser } from '../types';
 
 interface LoginScreenProps {
   onOtpVerified: (phone: string) => void;
@@ -27,18 +28,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
   // Active Persona Tab: 'patient' (Only WhatsApp) or 'doctor' (Google + WhatsApp)
   const [activeTab, setActiveTab] = useState<PersonaTab>('patient');
 
-  // Phone input states (10-digit number; country code +91 is handled by dedicated UI)
-  const [patientPhoneRaw, setPatientPhoneRaw] = useState('9835139865');
-  const [doctorPhoneRaw, setDoctorPhoneRaw] = useState('9876543210');
+  // Phone input states (Real 10-digit number; country code +91 is handled by dedicated UI)
+  const [patientPhoneRaw, setPatientPhoneRaw] = useState('');
+  const [doctorPhoneRaw, setDoctorPhoneRaw] = useState('');
 
   // OTP Verification States
   const [code, setCode] = useState('');
-  const [serverOtp, setServerOtp] = useState<string | null>(null);
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Google Doctor Verification Sheet
+  const [googleModalVisible, setGoogleModalVisible] = useState(false);
+  const [googleEmail, setGoogleEmail] = useState('');
+  const [googleDoctorName, setGoogleDoctorName] = useState('');
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
 
   const cleanPatientDigits = patientPhoneRaw.replace(/\D/g, '').slice(-10);
   const cleanDoctorDigits = doctorPhoneRaw.replace(/\D/g, '').slice(-10);
@@ -49,23 +55,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
   // ==================== PATIENT: WHATSAPP ONLY ====================
   const handleRequestPatientWhatsAppOtp = async () => {
     if (!cleanPatientDigits || cleanPatientDigits.length < 10) {
-      setError('Please enter a valid 10-digit mobile number.');
+      setError('Please enter your 10-digit mobile number.');
       return;
     }
     setError(null);
     setSuccessMessage(null);
     setLoading(true);
     try {
-      const res: any = await mobileApi.requestPatientOtp(fullPatientPhone, 'whatsapp');
+      await mobileApi.requestPatientOtp(fullPatientPhone, 'whatsapp');
       setOtpSent(true);
-      const generatedCode = res.otp_code || res.demo_code;
-      if (generatedCode) {
-        setServerOtp(generatedCode);
-      }
-      setSuccessMessage(`WhatsApp OTP code sent to ${fullPatientPhone}`);
+      setSuccessMessage(`WhatsApp OTP sent to ${fullPatientPhone}`);
       setCode('');
     } catch (err: any) {
-      setError(err.message || 'Failed to dispatch WhatsApp OTP. Please try again.');
+      setError(err.message || 'Failed to dispatch WhatsApp OTP. Please check your network.');
     } finally {
       setLoading(false);
     }
@@ -80,8 +82,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
     setError(null);
     setLoading(true);
 
-    const isMatch = (serverOtp && cleanCode === serverOtp) || cleanCode === '123456';
-
     try {
       const res = await mobileApi.verifyPatientOtp(fullPatientPhone, cleanCode);
       if (onAuthenticated && res.user) {
@@ -90,48 +90,40 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
         onOtpVerified(fullPatientPhone);
       }
     } catch (err: any) {
-      if (isMatch) {
-        console.warn('Patient session proceeding with verified active OTP:', err);
-        const fallbackPatient: PatientUser = {
-          id: 'pat-mayank-01',
-          name: 'Mayank Raj',
-          phone: fullPatientPhone,
-          consent_status: true,
-          role: 'patient',
-        };
-        await mobileApi.saveSession('patient', 'token_patient_verified', fallbackPatient);
-        if (onAuthenticated) {
-          onAuthenticated('patient', fallbackPatient);
-        } else {
-          onOtpVerified(fullPatientPhone);
-        }
-      } else {
-        setError(err.message || 'Invalid or expired WhatsApp OTP code. Please retry.');
-      }
+      setError(err.message || 'Invalid or expired WhatsApp OTP code. Please check your WhatsApp message.');
     } finally {
       setLoading(false);
     }
   };
 
   // ==================== DOCTOR: GOOGLE ACCOUNT VERIFICATION ====================
-  const handleDoctorGoogleLogin = async () => {
-    setError(null);
-    setSuccessMessage(null);
+  const handleDoctorGoogleOpen = () => {
+    setGoogleError(null);
+    setGoogleModalVisible(true);
+  };
+
+  const handleDoctorGoogleSubmit = async () => {
+    const trimmedEmail = googleEmail.trim().toLowerCase();
+    if (!trimmedEmail || !trimmedEmail.includes('@')) {
+      setGoogleError('Please enter a valid Google Workspace or Gmail address.');
+      return;
+    }
+    setGoogleError(null);
     setGoogleLoading(true);
     try {
       const res = await mobileApi.loginDoctorGoogle({
-        email: 'doctor@praxirence.com',
-        name: 'Dr. Mayank Raj',
-        google_id: 'google-oauth2-verified-doc',
+        email: trimmedEmail,
+        name: googleDoctorName.trim() || 'Dr. Medical Clinician',
+        google_id: 'google_oauth_' + Math.random().toString(36).substring(2, 10),
       });
-      setSuccessMessage('Google Clinician Account Verified!');
+      setGoogleModalVisible(false);
       if (onAuthenticated && res.user) {
         onAuthenticated('doctor', res.user);
       } else {
         onOtpVerified(res.user?.phone || '+919876543210');
       }
     } catch (err: any) {
-      setError(err.message || 'Google Doctor verification failed. Please try again.');
+      setGoogleError(err.message || 'Google Clinician verification failed. Please try again.');
     } finally {
       setGoogleLoading(false);
     }
@@ -140,19 +132,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
   // ==================== DOCTOR: WHATSAPP OTP ====================
   const handleRequestDoctorWhatsAppOtp = async () => {
     if (!cleanDoctorDigits || cleanDoctorDigits.length < 10) {
-      setError('Please enter a valid 10-digit clinician mobile number.');
+      setError('Please enter your 10-digit clinician mobile number.');
       return;
     }
     setError(null);
     setSuccessMessage(null);
     setLoading(true);
     try {
-      const res: any = await mobileApi.requestDoctorOtp(fullDoctorPhone, 'whatsapp');
+      await mobileApi.requestDoctorOtp(fullDoctorPhone, 'whatsapp');
       setOtpSent(true);
-      const generatedCode = res.otp_code || res.demo_code;
-      if (generatedCode) {
-        setServerOtp(generatedCode);
-      }
       setSuccessMessage(`Clinician WhatsApp OTP sent to ${fullDoctorPhone}`);
       setCode('');
     } catch (err: any) {
@@ -171,8 +159,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
     setError(null);
     setLoading(true);
 
-    const isMatch = (serverOtp && cleanCode === serverOtp) || cleanCode === '123456';
-
     try {
       const res = await mobileApi.verifyDoctorOtp(fullDoctorPhone, cleanCode);
       if (onAuthenticated && res.user) {
@@ -181,27 +167,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
         onOtpVerified(fullDoctorPhone);
       }
     } catch (err: any) {
-      if (isMatch) {
-        console.warn('Doctor session proceeding with verified active OTP:', err);
-        const fallbackDoc: DoctorUser = {
-          id: 'doc-mayank-01',
-          name: 'Dr. Mayank Raj',
-          email: 'doctor@praxirence.com',
-          phone: fullDoctorPhone,
-          specialty: 'Chief Medical Officer & Physician',
-          clinic_name: 'Praxirence Clinical Centre',
-          reg_number: 'NMC-2024-84920',
-          role: 'doctor',
-        };
-        await mobileApi.saveSession('doctor', 'token_doctor_verified', fallbackDoc);
-        if (onAuthenticated) {
-          onAuthenticated('doctor', fallbackDoc);
-        } else {
-          onOtpVerified(fullDoctorPhone);
-        }
-      } else {
-        setError(err.message || 'Invalid or expired Doctor OTP code. Please retry.');
-      }
+      setError(err.message || 'Invalid or expired Doctor OTP code. Please retry.');
     } finally {
       setLoading(false);
     }
@@ -211,7 +177,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
     setActiveTab(tab);
     setOtpSent(false);
     setCode('');
-    setServerOtp(null);
     setError(null);
     setSuccessMessage(null);
   };
@@ -328,12 +293,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                     </View>
                     <TextInput
                       style={styles.phoneNumberInput}
-                      placeholder="98351 39865"
+                      placeholder="Enter 10-digit number"
                       placeholderTextColor={Colors.textMuted}
                       value={patientPhoneRaw}
                       onChangeText={(text) => setPatientPhoneRaw(text.replace(/\D/g, '').slice(0, 10))}
                       keyboardType="phone-pad"
                       maxLength={10}
+                      autoFocus={true}
                     />
                   </View>
 
@@ -352,42 +318,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                       </View>
                     )}
                   </TouchableOpacity>
-
-                  {/* Patient Quick Fill Demo Badge */}
-                  <View style={styles.quickFillSection}>
-                    <Text style={styles.quickFillLabel}>QUICK TEST PROFILE</Text>
-                    <TouchableOpacity
-                      style={styles.patientQuickFillBadge}
-                      onPress={() => setPatientPhoneRaw('9835139865')}
-                      activeOpacity={0.8}
-                    >
-                      <View style={styles.quickFillContentRow}>
-                        <Ionicons name="person" size={14} color="#047857" />
-                        <Text style={styles.patientQuickFillText}>
-                          Patient Mayank (+91 98351 39865)
-                        </Text>
-                      </View>
-                      <Ionicons name="arrow-forward-circle" size={16} color="#047857" />
-                    </TouchableOpacity>
-                  </View>
                 </View>
               ) : (
                 <View>
-                  {/* Real-time Server OTP Compact Chip */}
-                  {serverOtp && (
-                    <TouchableOpacity
-                      style={styles.compactOtpChipPatient}
-                      onPress={() => setCode(serverOtp)}
-                      activeOpacity={0.8}
-                    >
-                      <Ionicons name="key" size={14} color="#047857" />
-                      <Text style={styles.compactOtpTextPatient}>
-                        Test Code: <Text style={{ fontFamily: FontFamily.bold }}>{serverOtp}</Text> • Tap to Auto-Fill
-                      </Text>
-                      <Ionicons name="flash" size={13} color="#047857" />
-                    </TouchableOpacity>
-                  )}
-
                   <Text style={styles.inputLabel}>6-Digit WhatsApp Code</Text>
                   <TextInput
                     style={styles.otpInput}
@@ -426,7 +359,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                       onPress={() => {
                         setOtpSent(false);
                         setCode('');
-                        setServerOtp(null);
                         setError(null);
                       }}
                       style={styles.actionButtonTouch}
@@ -464,24 +396,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                   {/* Option 1: GOOGLE ACCOUNT VERIFICATION BUTTON */}
                   <TouchableOpacity
                     style={styles.googleButton}
-                    onPress={handleDoctorGoogleLogin}
+                    onPress={handleDoctorGoogleOpen}
                     disabled={googleLoading}
                     activeOpacity={0.85}
                   >
-                    {googleLoading ? (
-                      <ActivityIndicator color="#4285F4" size="small" />
-                    ) : (
-                      <View style={styles.googleButtonContent}>
-                        <View style={styles.googleIconContainer}>
-                          <Ionicons name="logo-google" size={18} color="#4285F4" />
-                        </View>
-                        <View style={styles.googleTextCol}>
-                          <Text style={styles.googleButtonTitle}>Continue with Google</Text>
-                          <Text style={styles.googleButtonSubtitle}>Google Workspace Medical Sign-In</Text>
-                        </View>
-                        <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+                    <View style={styles.googleButtonContent}>
+                      <View style={styles.googleIconContainer}>
+                        <Ionicons name="logo-google" size={18} color="#4285F4" />
                       </View>
-                    )}
+                      <View style={styles.googleTextCol}>
+                        <Text style={styles.googleButtonTitle}>Continue with Google</Text>
+                        <Text style={styles.googleButtonSubtitle}>Google Workspace Medical Sign-In</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+                    </View>
                   </TouchableOpacity>
 
                   {/* Divider: OR WHATSAPP OTP */}
@@ -500,7 +428,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                     </View>
                     <TextInput
                       style={styles.phoneNumberInput}
-                      placeholder="98765 43210"
+                      placeholder="Enter 10-digit number"
                       placeholderTextColor={Colors.textMuted}
                       value={doctorPhoneRaw}
                       onChangeText={(text) => setDoctorPhoneRaw(text.replace(/\D/g, '').slice(0, 10))}
@@ -524,42 +452,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                       </View>
                     )}
                   </TouchableOpacity>
-
-                  {/* Quick Demo Doctor Badge */}
-                  <View style={styles.quickFillSection}>
-                    <Text style={styles.quickFillLabel}>VERIFIED CHIEF CLINICIAN</Text>
-                    <TouchableOpacity
-                      style={styles.doctorQuickFillBadge}
-                      onPress={() => setDoctorPhoneRaw('9876543210')}
-                      activeOpacity={0.8}
-                    >
-                      <View style={styles.quickFillContentRow}>
-                        <Ionicons name="medkit" size={14} color={Colors.primaryDark} />
-                        <Text style={styles.doctorQuickFillText}>
-                          Dr. Mayank Raj (+91 98765 43210)
-                        </Text>
-                      </View>
-                      <Ionicons name="arrow-forward-circle" size={16} color={Colors.primaryDark} />
-                    </TouchableOpacity>
-                  </View>
                 </View>
               ) : (
                 <View>
-                  {/* Real-time Server OTP Compact Chip for Doctor */}
-                  {serverOtp && (
-                    <TouchableOpacity
-                      style={styles.compactOtpChipDoctor}
-                      onPress={() => setCode(serverOtp)}
-                      activeOpacity={0.8}
-                    >
-                      <Ionicons name="key" size={14} color={Colors.primaryDark} />
-                      <Text style={styles.compactOtpTextDoctor}>
-                        Live Code: <Text style={{ fontFamily: FontFamily.bold }}>{serverOtp}</Text> • Tap to Auto-Fill
-                      </Text>
-                      <Ionicons name="flash" size={13} color={Colors.primaryDark} />
-                    </TouchableOpacity>
-                  )}
-
                   <Text style={styles.inputLabel}>6-Digit Clinician Access Code</Text>
                   <TextInput
                     style={styles.otpInput}
@@ -598,7 +493,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
                       onPress={() => {
                         setOtpSent(false);
                         setCode('');
-                        setServerOtp(null);
                         setError(null);
                       }}
                       style={styles.actionButtonTouch}
@@ -620,6 +514,80 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified, onAuthe
           </Text>
         </View>
       </ScrollView>
+
+      {/* Google Clinician Sign-In Modal */}
+      <Modal
+        visible={googleModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setGoogleModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View style={styles.googleModalIconBox}>
+                  <Ionicons name="logo-google" size={20} color="#4285F4" />
+                </View>
+                <View>
+                  <Text style={styles.modalTitle}>Sign in with Google</Text>
+                  <Text style={styles.modalSubtitle}>Hospital & Practice Google Workspace</Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => setGoogleModalVisible(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Ionicons name="close" size={24} color={Colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            {googleError && (
+              <View style={styles.modalErrorBox}>
+                <Ionicons name="alert-circle" size={14} color={Colors.rose} />
+                <Text style={styles.modalErrorText}>{googleError}</Text>
+              </View>
+            )}
+
+            <Text style={styles.inputLabel}>Google Account Email</Text>
+            <TextInput
+              style={styles.modalTextInput}
+              placeholder="doctor@hospital.org or name@gmail.com"
+              placeholderTextColor={Colors.textMuted}
+              value={googleEmail}
+              onChangeText={setGoogleEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoFocus={true}
+            />
+
+            <Text style={styles.inputLabel}>Doctor Full Name</Text>
+            <TextInput
+              style={styles.modalTextInput}
+              placeholder="e.g. Dr. Jane Smith"
+              placeholderTextColor={Colors.textMuted}
+              value={googleDoctorName}
+              onChangeText={setGoogleDoctorName}
+            />
+
+            <TouchableOpacity
+              style={styles.googleSubmitButton}
+              onPress={handleDoctorGoogleSubmit}
+              disabled={googleLoading}
+              activeOpacity={0.85}
+            >
+              {googleLoading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="shield-checkmark" size={18} color="#FFFFFF" />
+                  <Text style={styles.googleSubmitButtonText}>Authenticate Clinician Profile →</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -939,93 +907,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: Colors.textMuted,
   },
-  quickFillSection: {
-    marginTop: 18,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: Colors.borderSubtle,
-  },
-  quickFillLabel: {
-    fontFamily: FontFamily.bold,
-    fontSize: 10,
-    color: Colors.textMuted,
-    letterSpacing: LetterSpacing.wider,
-    marginBottom: 8,
-    textTransform: 'uppercase',
-  },
-  patientQuickFillBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(16, 185, 129, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.25)',
-    borderRadius: 10,
-    paddingVertical: 9,
-    paddingHorizontal: 12,
-  },
-  doctorQuickFillBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(13, 148, 136, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(13, 148, 136, 0.25)',
-    borderRadius: 10,
-    paddingVertical: 9,
-    paddingHorizontal: 12,
-  },
-  quickFillContentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  patientQuickFillText: {
-    fontFamily: FontFamily.semiBold,
-    fontSize: FontSize.xs,
-    color: '#047857',
-  },
-  doctorQuickFillText: {
-    fontFamily: FontFamily.semiBold,
-    fontSize: FontSize.xs,
-    color: Colors.primaryDark,
-  },
-  compactOtpChipPatient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#ECFDF5',
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginBottom: 16,
-  },
-  compactOtpTextPatient: {
-    fontFamily: FontFamily.medium,
-    fontSize: 12,
-    color: '#047857',
-  },
-  compactOtpChipDoctor: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#F0FDFA',
-    borderWidth: 1,
-    borderColor: '#99F6E4',
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginBottom: 16,
-  },
-  compactOtpTextDoctor: {
-    fontFamily: FontFamily.medium,
-    fontSize: 12,
-    color: Colors.primaryDark,
-  },
   otpInput: {
     fontFamily: FontFamily.bold,
     fontSize: 26,
@@ -1072,5 +953,99 @@ const styles = StyleSheet.create({
     fontSize: FontSize.caption,
     color: Colors.textMuted,
     textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    paddingBottom: 14,
+  },
+  googleModalIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(66, 133, 244, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.md,
+    color: Colors.text,
+  },
+  modalSubtitle: {
+    fontFamily: FontFamily.regular,
+    fontSize: 11,
+    color: Colors.textMuted,
+    marginTop: 1,
+  },
+  modalErrorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(225, 29, 72, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(225, 29, 72, 0.25)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 14,
+  },
+  modalErrorText: {
+    fontFamily: FontFamily.medium,
+    color: Colors.rose,
+    fontSize: FontSize.xs,
+    flex: 1,
+  },
+  modalTextInput: {
+    fontFamily: FontFamily.medium,
+    backgroundColor: Colors.cardSubtle,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: FontSize.body,
+    color: Colors.text,
+    marginBottom: 14,
+  },
+  googleSubmitButton: {
+    backgroundColor: '#4285F4',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
+    shadowColor: '#4285F4',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  googleSubmitButtonText: {
+    fontFamily: FontFamily.bold,
+    color: '#FFFFFF',
+    fontSize: FontSize.body,
+    letterSpacing: LetterSpacing.wide,
   },
 });

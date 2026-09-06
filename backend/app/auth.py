@@ -494,8 +494,12 @@ def google_auth_doctor(req: DoctorGoogleAuthRequest, db: Session = Depends(get_d
     Authenticate or verify doctor using Google OAuth Verification.
     Provisions clinician account if first time.
     """
-    clean_email = req.email.lower().strip() if req.email else "doctor@praxirence.com"
-    clean_name = req.name.strip() if req.name else "Dr. Mayank Raj"
+    clean_email = req.email.lower().strip() if req.email else None
+    if not clean_email:
+        raise HTTPException(status_code=400, detail="A valid email address is required.")
+    clean_name = req.name.strip() if req.name else None
+    if not clean_name:
+        raise HTTPException(status_code=400, detail="Doctor name is required.")
     if not clean_name.startswith("Dr."):
         clean_name = f"Dr. {clean_name}"
 
@@ -507,10 +511,10 @@ def google_auth_doctor(req: DoctorGoogleAuthRequest, db: Session = Depends(get_d
                 email=clean_email,
                 hashed_password=get_password_hash(f"GoogleOAuthVerified_{req.google_id or 'verified'}"),
                 name=clean_name,
-                specialty="Chief Medical Officer & Physician",
-                clinic_name="Praxirence Clinical Centre",
-                reg_number="NMC-2024-84920",
-                phone="+919876543210"
+                specialty=None,
+                clinic_name=None,
+                reg_number=None,
+                phone=None
             )
             db.add(doctor)
             db.commit()
@@ -522,12 +526,15 @@ def google_auth_doctor(req: DoctorGoogleAuthRequest, db: Session = Depends(get_d
         except Exception:
             pass
 
-    doc_id = str(doctor.id) if doctor else "doc-default-01"
-    doc_name = doctor.name if doctor else clean_name
-    doc_specialty = getattr(doctor, "specialty", "Chief Medical Officer & Physician") or "Chief Medical Officer & Physician" if doctor else "Chief Medical Officer & Physician"
-    doc_clinic = getattr(doctor, "clinic_name", "Praxirence Clinical Centre") or "Praxirence Clinical Centre" if doctor else "Praxirence Clinical Centre"
-    doc_reg = getattr(doctor, "reg_number", "NMC-2024-84920") or "NMC-2024-84920" if doctor else "NMC-2024-84920"
-    doc_phone = getattr(doctor, "phone", "+919876543210") or "+919876543210" if doctor else "+919876543210"
+    if not doctor:
+        raise HTTPException(status_code=500, detail="Failed to create or retrieve doctor profile. Please try again.")
+
+    doc_id = str(doctor.id)
+    doc_name = doctor.name or clean_name
+    doc_specialty = getattr(doctor, "specialty", None) or ""
+    doc_clinic = getattr(doctor, "clinic_name", None) or ""
+    doc_reg = getattr(doctor, "reg_number", None) or ""
+    doc_phone = getattr(doctor, "phone", None) or ""
 
     token = create_access_token(
         subject=doc_id,

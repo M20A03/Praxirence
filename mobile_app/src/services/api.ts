@@ -122,16 +122,22 @@ export const mobileApi = {
     return res.json();
   },
 
-  async loginDoctorGoogle(params?: { email?: string; name?: string; google_id?: string }): Promise<{ access_token: string; role: 'doctor'; user: DoctorUser }> {
-    const cleanEmail = params?.email?.toLowerCase().trim() || 'doctor@praxirence.com';
-    const cleanName = params?.name?.trim() || 'Dr. Mayank Raj';
+  async loginDoctorGoogle(params: { email: string; name: string; google_id?: string }): Promise<{ access_token: string; role: 'doctor'; user: DoctorUser }> {
+    const cleanEmail = params.email.toLowerCase().trim();
+    const cleanName = params.name.trim();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      throw new Error('A valid Google email address is required.');
+    }
+    if (!cleanName) {
+      throw new Error('Doctor name is required.');
+    }
     const res = await resilientFetch(`${API_BASE_URL}/auth/doctor/google`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: cleanEmail,
         name: cleanName,
-        google_id: params?.google_id || 'google-oauth2-verified-doc',
+        google_id: params.google_id || `google_${Date.now()}`,
       }),
     }, 0);
     if (!res.ok) {

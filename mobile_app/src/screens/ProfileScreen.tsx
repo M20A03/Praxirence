@@ -188,8 +188,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <Text style={styles.infoValue}>{user.phone}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Cloud Node</Text>
-          <Text style={styles.infoValue}>Railway Production (Live)</Text>
+          <Text style={styles.infoLabel}>Account Status</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Ionicons name="checkmark-circle" size={14} color="#059669" />
+            <Text style={[styles.infoValue, { color: '#059669', fontFamily: FontFamily.semiBold }]}>Active & Verified</Text>
+          </View>
         </View>
       </View>
 
@@ -216,8 +219,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <Text style={[styles.infoValue, { color: Colors.primaryDark }]}>Certified HIP/HIU</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>WhatsApp Care Line</Text>
-          <Text style={styles.infoValue}>Meta Cloud API Active</Text>
+          <Text style={styles.infoLabel}>Data Protection</Text>
+          <Text style={[styles.infoValue, { color: Colors.primaryDark, fontFamily: FontFamily.semiBold }]}>End-to-End Encrypted</Text>
         </View>
       </View>
 

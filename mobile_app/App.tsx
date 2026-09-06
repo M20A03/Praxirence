@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Colors } from './src/theme/colors';
 import { FontFamily, FontSize, LetterSpacing } from './src/theme/typography';
+import { Ionicons } from '@expo/vector-icons';
 import { UserRole, ActiveUser, DoctorUser, PatientUser, PatientSummary } from './src/types';
 import { SplashScreen } from './src/screens/SplashScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
@@ -197,7 +198,6 @@ export default function App() {
                     setDoctorTab('new_consult');
                   }}
                   onNavigateToPatients={() => setDoctorTab('patients')}
-                  onSwitchToPatientRole={handleSwitchRole}
                 />
               )}
               {doctorTab === 'patients' && (
@@ -217,22 +217,23 @@ export default function App() {
                 <ProfileScreen
                   user={currentUser!}
                   role="doctor"
-                  onSwitchRole={handleSwitchRole}
                   onLogout={handleLogout}
                 />
               )}
             </View>
 
-            {/* Doctor Navigation Tab Bar */}
+            {/* Doctor Navigation Tab Bar with Vector Icons */}
             <View style={styles.tabBarWrapper}>
               <View style={styles.tabBar}>
                 <TouchableOpacity
                   style={styles.tabItem}
                   onPress={() => setDoctorTab('overview')}
                 >
-                  <Text style={[styles.tabIcon, doctorTab === 'overview' && styles.activeTabIcon]}>
-                    📊
-                  </Text>
+                  <Ionicons
+                    name={doctorTab === 'overview' ? 'stats-chart' : 'stats-chart-outline'}
+                    size={21}
+                    color={doctorTab === 'overview' ? Colors.primary : Colors.textMuted}
+                  />
                   <Text style={[styles.tabLabel, doctorTab === 'overview' && styles.activeTabLabel]}>
                     Overview
                   </Text>
@@ -242,9 +243,11 @@ export default function App() {
                   style={styles.tabItem}
                   onPress={() => setDoctorTab('patients')}
                 >
-                  <Text style={[styles.tabIcon, doctorTab === 'patients' && styles.activeTabIcon]}>
-                    👥
-                  </Text>
+                  <Ionicons
+                    name={doctorTab === 'patients' ? 'people' : 'people-outline'}
+                    size={21}
+                    color={doctorTab === 'patients' ? Colors.primary : Colors.textMuted}
+                  />
                   <Text style={[styles.tabLabel, doctorTab === 'patients' && styles.activeTabLabel]}>
                     Patients
                   </Text>
@@ -257,9 +260,11 @@ export default function App() {
                     setDoctorTab('new_consult');
                   }}
                 >
-                  <Text style={[styles.tabIcon, doctorTab === 'new_consult' && styles.activeTabIcon]}>
-                    ➕
-                  </Text>
+                  <Ionicons
+                    name={doctorTab === 'new_consult' ? 'add-circle' : 'add-circle-outline'}
+                    size={23}
+                    color={doctorTab === 'new_consult' ? Colors.primary : Colors.textMuted}
+                  />
                   <Text style={[styles.tabLabel, doctorTab === 'new_consult' && styles.activeTabLabel]}>
                     New Visit
                   </Text>
@@ -269,11 +274,13 @@ export default function App() {
                   style={styles.tabItem}
                   onPress={() => setDoctorTab('profile')}
                 >
-                  <Text style={[styles.tabIcon, doctorTab === 'profile' && styles.activeTabIcon]}>
-                    👨‍⚕️
-                  </Text>
+                  <Ionicons
+                    name={doctorTab === 'profile' ? 'settings' : 'settings-outline'}
+                    size={21}
+                    color={doctorTab === 'profile' ? Colors.primary : Colors.textMuted}
+                  />
                   <Text style={[styles.tabLabel, doctorTab === 'profile' && styles.activeTabLabel]}>
-                    Profile
+                    Settings
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -292,7 +299,6 @@ export default function App() {
                   onNavigateToChatbot={() => setPatientTab('chatbot')}
                   onNavigateToDoctors={() => setPatientTab('doctors')}
                   onNavigateToVisits={() => setPatientTab('visits')}
-                  onSwitchToDoctorRole={handleSwitchRole}
                 />
               )}
               {patientTab === 'visits' && <VisitsScreen user={currentUser as PatientUser} />}
@@ -319,22 +325,28 @@ export default function App() {
                 <ProfileScreen
                   user={currentUser!}
                   role="patient"
-                  onSwitchRole={handleSwitchRole}
                   onLogout={handleLogout}
+                  onDoctorVerified={(docUser) => {
+                    setCurrentUser(docUser);
+                    setActiveRole('doctor');
+                    setDoctorTab('overview');
+                  }}
                 />
               )}
             </View>
 
-            {/* Patient Navigation Tab Bar */}
+            {/* Patient Navigation Tab Bar with Vector Icons */}
             <View style={styles.tabBarWrapper}>
               <View style={styles.tabBar}>
                 <TouchableOpacity
                   style={styles.tabItem}
                   onPress={() => setPatientTab('today')}
                 >
-                  <Text style={[styles.tabIcon, patientTab === 'today' && styles.activeTabIcon]}>
-                    💊
-                  </Text>
+                  <Ionicons
+                    name={patientTab === 'today' ? 'calendar' : 'calendar-outline'}
+                    size={21}
+                    color={patientTab === 'today' ? Colors.primary : Colors.textMuted}
+                  />
                   <Text style={[styles.tabLabel, patientTab === 'today' && styles.activeTabLabel]}>
                     Today
                   </Text>
@@ -344,9 +356,11 @@ export default function App() {
                   style={styles.tabItem}
                   onPress={() => setPatientTab('visits')}
                 >
-                  <Text style={[styles.tabIcon, patientTab === 'visits' && styles.activeTabIcon]}>
-                    📋
-                  </Text>
+                  <Ionicons
+                    name={patientTab === 'visits' ? 'document-text' : 'document-text-outline'}
+                    size={21}
+                    color={patientTab === 'visits' ? Colors.primary : Colors.textMuted}
+                  />
                   <Text style={[styles.tabLabel, patientTab === 'visits' && styles.activeTabLabel]}>
                     Visits
                   </Text>
@@ -356,9 +370,11 @@ export default function App() {
                   style={styles.tabItem}
                   onPress={() => setPatientTab('chatbot')}
                 >
-                  <Text style={[styles.tabIcon, patientTab === 'chatbot' && styles.activeTabIcon]}>
-                    🤖
-                  </Text>
+                  <Ionicons
+                    name={patientTab === 'chatbot' ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline'}
+                    size={21}
+                    color={patientTab === 'chatbot' ? Colors.primary : Colors.textMuted}
+                  />
                   <Text style={[styles.tabLabel, patientTab === 'chatbot' && styles.activeTabLabel]}>
                     AI Bot
                   </Text>
@@ -368,9 +384,11 @@ export default function App() {
                   style={styles.tabItem}
                   onPress={() => setPatientTab('doctors')}
                 >
-                  <Text style={[styles.tabIcon, patientTab === 'doctors' && styles.activeTabIcon]}>
-                    👨‍⚕️
-                  </Text>
+                  <Ionicons
+                    name={patientTab === 'doctors' ? 'medkit' : 'medkit-outline'}
+                    size={21}
+                    color={patientTab === 'doctors' ? Colors.primary : Colors.textMuted}
+                  />
                   <Text style={[styles.tabLabel, patientTab === 'doctors' && styles.activeTabLabel]}>
                     Doctors
                   </Text>
@@ -380,11 +398,13 @@ export default function App() {
                   style={styles.tabItem}
                   onPress={() => setPatientTab('profile')}
                 >
-                  <Text style={[styles.tabIcon, (patientTab === 'profile' || patientTab === 'consent') && styles.activeTabIcon]}>
-                    👤
-                  </Text>
+                  <Ionicons
+                    name={(patientTab === 'profile' || patientTab === 'consent') ? 'person' : 'person-outline'}
+                    size={21}
+                    color={(patientTab === 'profile' || patientTab === 'consent') ? Colors.primary : Colors.textMuted}
+                  />
                   <Text style={[styles.tabLabel, (patientTab === 'profile' || patientTab === 'consent') && styles.activeTabLabel]}>
-                    Profile
+                    Settings
                   </Text>
                 </TouchableOpacity>
               </View>

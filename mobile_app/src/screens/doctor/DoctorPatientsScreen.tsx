@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../../theme';
 import { PatientSummary } from '../../types';
 import { mobileApi } from '../../services/api';
@@ -102,7 +103,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
 
         {/* Search Input */}
         <View style={styles.searchBox}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Ionicons name="search" size={16} color={Colors.textMuted} style={{ marginRight: 6 }} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search by patient name or phone..."
@@ -112,7 +113,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => handleSearch('')}>
-              <Text style={styles.clearSearch}>✕</Text>
+              <Ionicons name="close-circle" size={16} color={Colors.textMuted} />
             </TouchableOpacity>
           )}
         </View>
@@ -137,7 +138,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
           <ActivityIndicator size="small" color={Colors.primary} style={{ marginTop: 24 }} />
         ) : patients.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyIcon}>👥</Text>
+            <Ionicons name="people-outline" size={48} color={Colors.textMuted} style={{ marginBottom: 12 }} />
             <Text style={styles.emptyTitle}>No Patients Found</Text>
             <Text style={styles.emptySubtitle}>
               Tap "+ Add Patient" above to register a new clinical record.
@@ -154,19 +155,34 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
                   <Text style={styles.patientName}>{pat.name}</Text>
                   <Text style={styles.patientPhone}>{pat.phone}</Text>
                   <View style={styles.consentTagRow}>
-                    <Text
+                    <View
                       style={[
                         styles.consentTag,
                         {
-                          color: pat.consent_status ? Colors.primaryDark : Colors.amber,
                           backgroundColor: pat.consent_status
                             ? 'rgba(16, 185, 129, 0.1)'
                             : 'rgba(245, 158, 11, 0.1)',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 4,
                         },
                       ]}
                     >
-                      {pat.consent_status ? '✓ DPDP Consent Active' : '⚠️ Consent Pending'}
-                    </Text>
+                      <Ionicons
+                        name={pat.consent_status ? "shield-checkmark" : "warning"}
+                        size={11}
+                        color={pat.consent_status ? Colors.primaryDark : Colors.amber}
+                      />
+                      <Text
+                        style={{
+                          fontSize: FontSize.caption,
+                          fontFamily: FontFamily.bold,
+                          color: pat.consent_status ? Colors.primaryDark : Colors.amber,
+                        }}
+                      >
+                        {pat.consent_status ? 'DPDP Consent Active' : 'Consent Pending'}
+                      </Text>
+                    </View>
                   </View>
                 </View>
               </View>
@@ -175,7 +191,10 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
                 style={styles.consultBtn}
                 onPress={() => onSelectPatientForConsultation(pat)}
               >
-                <Text style={styles.consultBtnText}>Start Consultation 📝</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <Ionicons name="create-outline" size={15} color="#ffffff" />
+                  <Text style={styles.consultBtnText}>Start Consultation</Text>
+                </View>
               </TouchableOpacity>
             </View>
           ))
@@ -189,7 +208,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Register New Patient</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Text style={styles.modalClose}>✕</Text>
+                <Ionicons name="close" size={22} color={Colors.text} />
               </TouchableOpacity>
             </View>
 

@@ -6,7 +6,9 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
+  Image,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
 import { PatientUser, Visit } from '../types';
 import { mobileApi } from '../services/api';
@@ -47,7 +49,6 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
     }
   };
 
-
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
   };
@@ -71,14 +72,20 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
         <BrandLogoMobile variant="header" size="sm" subtitleText="Clinical Consultation History" />
       </View>
 
+      {/* Header with Bespoke Visits Emblem */}
       <View style={styles.header}>
-        <Text style={styles.title}>Prescription Vault</Text>
-        <Text style={styles.subtitle}>All your clinical care plans and prescriptions</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flex: 1, paddingRight: 12 }}>
+            <Text style={styles.title}>Prescription Vault</Text>
+            <Text style={styles.subtitle}>All your clinical care plans and prescriptions</Text>
+          </View>
+          <Image source={require('../../assets/features/visits.png')} style={{ width: 50, height: 50 }} resizeMode="contain" />
+        </View>
       </View>
 
       {visits.length === 0 ? (
         <View style={styles.emptyCard}>
-          <Text style={styles.emptyIcon}>📋</Text>
+          <Image source={require('../../assets/features/visits.png')} style={{ width: 64, height: 64, marginBottom: 16, opacity: 0.8 }} resizeMode="contain" />
           <Text style={styles.emptyTitle}>No Past Consultations</Text>
           <Text style={styles.emptySubtitle}>
             When your doctor completes a consultation and approves your care plan, it will be safely recorded here.
@@ -106,7 +113,10 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
                   <Text style={styles.doctorName}>Dr. {visit.doctor_name || 'Care Provider'}</Text>
                 </View>
                 <View style={styles.statusBadge}>
-                  <Text style={styles.statusText}>✓ WhatsApp Delivered</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Ionicons name="checkmark-circle" size={13} color={Colors.whatsapp} />
+                    <Text style={styles.statusText}>WhatsApp Delivered</Text>
+                  </View>
                 </View>
               </View>
 
@@ -120,12 +130,18 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
               {/* Medicines Summary */}
               {visit.medicines && visit.medicines.length > 0 && (
                 <View style={styles.medsSummary}>
-                  <Text style={styles.medsCount}>
-                    💊 {visit.medicines.length} Medication{visit.medicines.length > 1 ? 's' : ''} Prescribed
-                  </Text>
-                  <Text style={styles.expandPrompt}>
-                    {isExpanded ? 'Hide Details ▲' : 'View Care Plan ▼'}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Ionicons name="medkit-outline" size={16} color={Colors.primary} />
+                    <Text style={styles.medsCount}>
+                      {visit.medicines.length} Medication{visit.medicines.length > 1 ? 's' : ''} Prescribed
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Text style={styles.expandPrompt}>
+                      {isExpanded ? 'Hide Details' : 'View Care Plan'}
+                    </Text>
+                    <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.primary} />
+                  </View>
                 </View>
               )}
 

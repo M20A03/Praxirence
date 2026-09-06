@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
 import { mobileApi } from '../services/api';
 import { BrandLogoMobile } from '../components/BrandLogoMobile';
@@ -92,7 +93,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified }) => {
 
         {error && (
           <View style={styles.errorBox}>
-            <Text style={styles.errorText}>⚠️ {error}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="alert-circle" size={16} color={Colors.rose} />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
           </View>
         )}
 
@@ -129,9 +133,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified }) => {
                   ]}
                   onPress={() => setChannel('whatsapp')}
                 >
-                  <Text style={[styles.channelText, channel === 'whatsapp' && styles.channelTextActive]}>
-                    📲 WhatsApp OTP
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Ionicons
+                      name="logo-whatsapp"
+                      size={15}
+                      color={channel === 'whatsapp' ? Colors.whatsapp : Colors.textSecondary}
+                    />
+                    <Text style={[styles.channelText, channel === 'whatsapp' && styles.channelTextActive]}>
+                      WhatsApp OTP
+                    </Text>
+                  </View>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -141,9 +152,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified }) => {
                   ]}
                   onPress={() => setChannel('sms')}
                 >
-                  <Text style={[styles.channelText, channel === 'sms' && styles.channelTextActive]}>
-                    💬 SMS OTP
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Ionicons
+                      name="chatbubble-ellipses-outline"
+                      size={15}
+                      color={channel === 'sms' ? Colors.primary : Colors.textSecondary}
+                    />
+                    <Text style={[styles.channelText, channel === 'sms' && styles.channelTextActive]}>
+                      SMS OTP
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               </View>
 
@@ -169,14 +187,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified }) => {
                     style={styles.quickFillBadge}
                     onPress={() => setPhone('+919876543210')}
                   >
-                    <Text style={styles.quickFillText}>👨‍⚕️ Dr. Mayank Raj (+919876543210)</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <Ionicons name="medkit" size={13} color={Colors.primaryDark} />
+                      <Text style={styles.quickFillText}>Dr. Mayank Raj (+919876543210)</Text>
+                    </View>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     style={[styles.quickFillBadge, { backgroundColor: 'rgba(2, 132, 199, 0.1)', borderColor: 'rgba(2, 132, 199, 0.3)' }]}
                     onPress={() => setPhone('+919835139865')}
                   >
-                    <Text style={[styles.quickFillText, { color: Colors.cyan }]}>👤 Patient Mayank (+919835139865)</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <Ionicons name="person" size={13} color={Colors.cyan} />
+                      <Text style={[styles.quickFillText, { color: Colors.cyan }]}>Patient Mayank (+919835139865)</Text>
+                    </View>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -187,7 +211,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified }) => {
               {serverOtp && (
                 <View style={styles.otpSecurityBanner}>
                   <View style={styles.otpHeaderRow}>
-                    <Text style={styles.otpSecurityBadge}>🔐 BACKEND SECURITY VERIFICATION</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <Ionicons name="shield-checkmark" size={13} color={Colors.primary} />
+                      <Text style={styles.otpSecurityBadge}>BACKEND SECURITY VERIFICATION</Text>
+                    </View>
                     <Text style={styles.otpExpiryText}>Expires in 10m</Text>
                   </View>
                   <Text style={styles.otpCodeHighlight}>
@@ -200,7 +227,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified }) => {
                     style={styles.autoFillButton}
                     onPress={() => setCode(serverOtp)}
                   >
-                    <Text style={styles.autoFillText}>⚡ Quick Auto-Fill ({serverOtp})</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                      <Ionicons name="flash" size={12} color={Colors.primary} />
+                      <Text style={styles.autoFillText}>Quick Auto-Fill ({serverOtp})</Text>
+                    </View>
                   </TouchableOpacity>
                 </View>
               )}
@@ -246,9 +276,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onOtpVerified }) => {
 
         {/* Security & DPDP Compliance Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            🔒 Protected by Praxirence Clinical Vault • DPDP Act 2023 Compliant
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <Ionicons name="lock-closed" size={13} color={Colors.textMuted} />
+            <Text style={styles.footerText}>
+              Protected by Praxirence Clinical Vault • DPDP Act 2023 Compliant
+            </Text>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

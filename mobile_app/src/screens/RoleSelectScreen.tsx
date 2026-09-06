@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
+import { Ionicons } from '@expo/vector-icons';
 import { UserRole, DoctorUser, PatientUser } from '../types';
 import { mobileApi } from '../services/api';
 
@@ -133,7 +134,7 @@ export const RoleSelectScreen: React.FC<RoleSelectScreenProps> = ({
           activeOpacity={0.85}
         >
           <View style={styles.roleIconCircle}>
-            <Text style={styles.roleIcon}>👨‍⚕️</Text>
+            <Ionicons name="medkit" size={24} color={Colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <View style={styles.roleTitleRow}>
@@ -156,7 +157,7 @@ export const RoleSelectScreen: React.FC<RoleSelectScreenProps> = ({
           activeOpacity={0.85}
         >
           <View style={[styles.roleIconCircle, { backgroundColor: 'rgba(2, 132, 199, 0.1)' }]}>
-            <Text style={styles.roleIcon}>👤</Text>
+            <Ionicons name="person" size={24} color={Colors.cyan} />
           </View>
           <View style={{ flex: 1 }}>
             <View style={styles.roleTitleRow}>

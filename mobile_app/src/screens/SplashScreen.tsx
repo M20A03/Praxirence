@@ -9,6 +9,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
+import { Ionicons } from '@expo/vector-icons';
 
 interface SplashScreenProps {
   onFinish: () => void;
@@ -141,9 +142,12 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
       {/* DPDP Compliance & Secure Footer */}
       <Animated.View style={[styles.footer, { opacity: contentFade }]}>
-        <Text style={styles.footerText}>
-          🔒 Praxirence Clinical Vault • DPDP Act 2023
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+          <Ionicons name="lock-closed" size={12} color={Colors.textMuted} />
+          <Text style={styles.footerText}>
+            Praxirence Clinical Vault • DPDP Act 2023
+          </Text>
+        </View>
         <Text style={styles.versionText}>v1.0.0 Production</Text>
       </Animated.View>
     </View>

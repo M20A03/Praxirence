@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../../theme';
 import { PatientSummary, MedicineItem, ReminderItem, DoctorUser } from '../../types';
 import { mobileApi } from '../../services/api';
@@ -152,7 +153,7 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
       }
 
       Alert.alert(
-        'Care Plan Delivered! 🚀',
+        'Care Plan Delivered!',
         'Consultation recorded and official care plan delivered to patient WhatsApp via Meta Cloud API.',
         [{ text: 'View Dashboard', onPress: onConsultationSaved }]
       );
@@ -187,14 +188,21 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
               ]}
               onPress={() => setSelectedPatientId(pat.id)}
             >
-              <Text
-                style={[
-                  styles.patientChipText,
-                  selectedPatientId === pat.id && styles.patientChipTextActive,
-                ]}
-              >
-                👤 {pat.name} ({pat.phone.slice(-4)})
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                <Ionicons
+                  name="person"
+                  size={13}
+                  color={selectedPatientId === pat.id ? '#ffffff' : Colors.primaryDark}
+                />
+                <Text
+                  style={[
+                    styles.patientChipText,
+                    selectedPatientId === pat.id && styles.patientChipTextActive,
+                  ]}
+                >
+                  {pat.name} ({pat.phone.slice(-4)})
+                </Text>
+              </View>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -276,7 +284,7 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
                 )}
               </View>
               <TouchableOpacity onPress={() => handleRemoveMedicine(idx)} style={styles.removeBtn}>
-                <Text style={styles.removeBtnText}>✕</Text>
+                <Ionicons name="close-circle" size={18} color={Colors.rose} />
               </TouchableOpacity>
             </View>
           </View>
@@ -293,7 +301,10 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
           {submitting ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.submitBtnText}>Approve & Send via WhatsApp 📲</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <Ionicons name="logo-whatsapp" size={17} color="#ffffff" />
+              <Text style={styles.submitBtnText}>Approve & Dispatch via WhatsApp</Text>
+            </View>
           )}
         </TouchableOpacity>
 

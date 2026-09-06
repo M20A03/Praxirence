@@ -547,8 +547,8 @@ export const mobileApi = {
         medicines_referenced: [],
         recommended_doctors: [],
         quick_suggestions: isHindi
-          ? ['दुष्प्रभाव क्या हैं? ⚠️', 'खुराक छूट जाने पर क्या करें?', 'डॉक्टर से बात करें 👨‍⚕️']
-          : ['What are potential side effects? ⚠️', 'What if I miss a dose?', 'Contact Doctor 👨‍⚕️'],
+          ? ['दुष्प्रभाव क्या हैं?', 'खुराक छूट जाने पर क्या करें?', 'डॉक्टर से बात करें']
+          : ['What are potential side effects?', 'What if I miss a dose?', 'Contact Doctor'],
       };
     }
 
@@ -583,8 +583,8 @@ export const mobileApi = {
       medicines_referenced: [],
       recommended_doctors: [],
       quick_suggestions: isHindi
-        ? ['मेरी दवाएं समझाइए 💊', 'डॉक्टर खोजें 👨‍⚕️', 'प्रिस्क्रिप्शन डाउनलोड कैसे करें? 📄']
-        : ['Explain my medication schedule 💊', 'Find a Doctor 👨‍⚕️', 'How to download prescription? 📄'],
+        ? ['मेरी दवाएं समझाइए', 'डॉक्टर खोजें', 'प्रिस्क्रिप्शन डाउनलोड कैसे करें?']
+        : ['Explain my medication schedule', 'Find a Doctor', 'How to download prescription?'],
     };
   },
 

@@ -9,7 +9,9 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
 import { DoctorUser, PatientUser } from '../types';
 import { mobileApi } from '../services/api';
@@ -95,15 +97,18 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Top Clinical Header with Brand Logo */}
+      {/* Top Clinical Header with Brand Logo and Doctors Emblem */}
       <View style={styles.topHeader}>
-        <BrandLogoMobile variant="header" size="sm" subtitleText="Verified Clinician Directory" />
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <BrandLogoMobile variant="header" size="sm" subtitleText="Verified Clinician Directory" />
+          <Image source={require('../../assets/features/doctors.png')} style={{ width: 44, height: 44 }} resizeMode="contain" />
+        </View>
       </View>
 
       {/* Live Search Input Bar */}
       <View style={styles.searchBarWrapper}>
         <View style={styles.searchBar}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Ionicons name="search" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search doctors, specialty, hospital..."
@@ -113,7 +118,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Text style={styles.clearSearchIcon}>✕</Text>
+              <Ionicons name="close-circle" size={18} color={Colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -176,7 +181,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
           </View>
         ) : filteredDoctors.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyIcon}>🩺</Text>
+            <Image source={require('../../assets/features/doctors.png')} style={{ width: 64, height: 64, marginBottom: 16, opacity: 0.7 }} resizeMode="contain" />
             <Text style={styles.emptyTitle}>No Clinicians Found</Text>
             <Text style={styles.emptySubtitle}>
               Try adjusting your specialty filter or search keywords.
@@ -186,9 +191,9 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
           filteredDoctors.map((doc) => (
             <View key={doc.id} style={styles.doctorCard}>
               <View style={styles.doctorCardTop}>
-                {/* Doctor Avatar */}
+                {/* Doctor Avatar with Emblem */}
                 <View style={styles.doctorAvatarBox}>
-                  <Text style={styles.doctorAvatarText}>👨‍⚕️</Text>
+                  <Image source={require('../../assets/features/doctors.png')} style={{ width: 38, height: 38 }} resizeMode="contain" />
                 </View>
 
                 {/* Doctor Info */}
@@ -196,12 +201,16 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                   <View style={styles.nameRow}>
                     <Text style={styles.doctorName}>{doc.name}</Text>
                     <View style={styles.verifiedBadge}>
-                      <Text style={styles.verifiedBadgeText}>✓ Verified</Text>
+                      <Ionicons name="checkmark-circle" size={11} color={Colors.primary} style={{ marginRight: 3 }} />
+                      <Text style={styles.verifiedBadgeText}>Verified</Text>
                     </View>
                   </View>
 
                   <Text style={styles.doctorSpecialty}>{doc.specialty}</Text>
-                  <Text style={styles.doctorClinic}>🏥 {doc.clinic_name}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                    <Ionicons name="business-outline" size={13} color={Colors.textSecondary} />
+                    <Text style={styles.doctorClinic}>{doc.clinic_name}</Text>
+                  </View>
                   <Text style={styles.doctorReg}>NMC Reg: {doc.reg_number}</Text>
                 </View>
               </View>
@@ -209,14 +218,20 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
               {/* Consultation Features & Booking Actions */}
               <View style={styles.doctorCardFooter}>
                 <View style={styles.scheduleBadge}>
-                  <Text style={styles.scheduleText}>🕒 Mon-Sat: 09:00 - 18:00</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Ionicons name="time-outline" size={13} color={Colors.textSecondary} />
+                    <Text style={styles.scheduleText}>Mon-Sat: 09:00 - 18:00</Text>
+                  </View>
                 </View>
 
                 <TouchableOpacity
                   style={styles.bookButton}
                   onPress={() => handleBookConsultation(doc)}
                 >
-                  <Text style={styles.bookButtonText}>Book Encounter 📅</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <Ionicons name="calendar-outline" size={14} color="#ffffff" />
+                    <Text style={styles.bookButtonText}>Book Encounter</Text>
+                  </View>
                 </TouchableOpacity>
               </View>
             </View>

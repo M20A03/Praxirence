@@ -8,6 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../../theme';
 import { DoctorUser, PatientSummary, Visit } from '../../types';
 import { mobileApi } from '../../services/api';
@@ -17,14 +18,12 @@ interface DoctorDashboardScreenProps {
   doctor: DoctorUser;
   onNavigateToNewVisit: (patientId?: string) => void;
   onNavigateToPatients: () => void;
-  onSwitchToPatientRole: () => void;
 }
 
 export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
   doctor,
   onNavigateToNewVisit,
   onNavigateToPatients,
-  onSwitchToPatientRole,
 }) => {
   const [patients, setPatients] = useState<PatientSummary[]>([]);
   const [recentVisits, setRecentVisits] = useState<Visit[]>([]);
@@ -90,12 +89,10 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
           <Text style={styles.regBadge}>REG: {doctor.reg_number}</Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.switchRoleBtn}
-          onPress={onSwitchToPatientRole}
-        >
-          <Text style={styles.switchRoleText}>Switch to Patient 👤</Text>
-        </TouchableOpacity>
+        <View style={styles.verifiedDoctorBadge}>
+          <Ionicons name="checkmark-circle" size={14} color={Colors.primary} />
+          <Text style={styles.verifiedDoctorText}>NMC Verified</Text>
+        </View>
       </View>
 
       {/* SRE Live Cloud Status Bar */}
@@ -116,7 +113,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
         activeOpacity={0.88}
       >
         <View style={styles.newConsultIconCircle}>
-          <Text style={styles.newConsultIcon}>➕</Text>
+          <Ionicons name="add" size={20} color="#ffffff" />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.newConsultTitle}>Start New Consultation</Text>
@@ -141,7 +138,10 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
         <View style={[styles.statCard, { borderLeftColor: Colors.whatsapp }]}>
           <Text style={[styles.statNumber, { color: Colors.whatsapp }]}>100%</Text>
           <Text style={styles.statLabel}>WhatsApp Delivery</Text>
-          <Text style={[styles.statLink, { color: Colors.whatsapp }]}>Meta Cloud API ✓</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 }}>
+            <Ionicons name="checkmark-circle" size={12} color={Colors.whatsapp} />
+            <Text style={[styles.statLink, { color: Colors.whatsapp }]}>Meta Cloud API</Text>
+          </View>
         </View>
       </View>
 
@@ -150,7 +150,10 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Patient Care Plans</Text>
           <TouchableOpacity onPress={() => loadClinicalData()}>
-            <Text style={styles.refreshText}>↻ Refresh</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Ionicons name="refresh" size={13} color={Colors.primary} />
+              <Text style={styles.refreshText}>Refresh</Text>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -158,7 +161,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
           <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 20 }} />
         ) : recentVisits.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyIcon}>📋</Text>
+            <Ionicons name="document-text-outline" size={40} color={Colors.textMuted} style={{ marginBottom: 8 }} />
             <Text style={styles.emptyTitle}>No Consultations Recorded Yet</Text>
             <Text style={styles.emptySubtitle}>
               Tap "Start New Consultation" above to create your first clinical prescription.
@@ -179,7 +182,10 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
                   </Text>
                 </View>
                 <View style={styles.statusBadge}>
-                  <Text style={styles.statusText}>✓ WhatsApp Sent</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Ionicons name="checkmark-circle" size={12} color={Colors.whatsapp} />
+                    <Text style={styles.statusText}>WhatsApp Sent</Text>
+                  </View>
                 </View>
               </View>
 
@@ -191,8 +197,9 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
               {visit.medicines && visit.medicines.length > 0 && (
                 <View style={styles.medsPillRow}>
                   {visit.medicines.map((m, i) => (
-                    <View key={i} style={styles.medPill}>
-                      <Text style={styles.medPillText}>💊 {m.name} ({m.dosage})</Text>
+                    <View key={i} style={[styles.medPill, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+                      <Ionicons name="medkit-outline" size={12} color={Colors.primary} />
+                      <Text style={styles.medPillText}>{m.name} ({m.dosage})</Text>
                     </View>
                   ))}
                 </View>
@@ -260,18 +267,22 @@ const styles = StyleSheet.create({
     letterSpacing: LetterSpacing.wide,
     marginTop: 4,
   },
-  switchRoleBtn: {
-    backgroundColor: 'rgba(2, 132, 199, 0.1)',
+  verifiedDoctorBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(13, 148, 136, 0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(2, 132, 199, 0.25)',
+    borderColor: 'rgba(13, 148, 136, 0.25)',
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 10,
+    borderRadius: 20,
   },
-  switchRoleText: {
+  verifiedDoctorText: {
     fontFamily: FontFamily.bold,
     fontSize: FontSize.caption,
-    color: Colors.cyan,
+    color: Colors.primary,
+    letterSpacing: LetterSpacing.wide,
   },
   cloudStatusBar: {
     flexDirection: 'row',

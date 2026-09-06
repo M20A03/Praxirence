@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/colors';
 import { FontFamily, FontSize, LetterSpacing } from '../theme/typography';
 import { PatientUser, ConsentDocument } from '../types';
@@ -78,21 +80,33 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({
         <BrandLogoMobile variant="header" size="sm" subtitleText="HIPAA & ABDM Data Vault" />
       </View>
 
-      {/* Title & Status Header */}
+      {/* Title & Status Header with Bespoke Vault Emblem */}
       <View style={styles.header}>
-        <Text style={styles.title}>Patient Consent Agreement</Text>
-        <Text style={styles.subtitle}>Plain-Language Clinical Data & Notification Policy</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <View style={{ flex: 1, paddingRight: 12 }}>
+            <Text style={styles.title}>Patient Consent Agreement</Text>
+            <Text style={styles.subtitle}>Plain-Language Clinical Data & Notification Policy</Text>
+          </View>
+          <Image source={require('../../assets/features/vault.png')} style={{ width: 52, height: 52 }} resizeMode="contain" />
+        </View>
 
         <View style={[
           styles.statusCard,
           { backgroundColor: consentStatus ? 'rgba(16, 185, 129, 0.12)' : 'rgba(244, 63, 94, 0.12)' }
         ]}>
-          <Text style={[
-            styles.statusCardTitle,
-            { color: consentStatus ? Colors.primaryLight : Colors.rose }
-          ]}>
-            {consentStatus ? '✓ Current Status: Consent Granted' : '⚠️ Current Status: Consent Not Granted'}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <Ionicons
+              name={consentStatus ? "shield-checkmark" : "alert-circle"}
+              size={18}
+              color={consentStatus ? Colors.primaryLight : Colors.rose}
+            />
+            <Text style={[
+              styles.statusCardTitle,
+              { color: consentStatus ? Colors.primaryLight : Colors.rose }
+            ]}>
+              {consentStatus ? 'Current Status: Consent Active' : 'Current Status: Consent Revoked'}
+            </Text>
+          </View>
           <Text style={styles.statusCardDesc}>
             {consentStatus
               ? 'You have agreed to receive care plans and reminders via WhatsApp and push notifications.'
@@ -113,15 +127,18 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({
 
         {doc?.bullet_points?.map((point, index) => (
           <View key={index} style={styles.bulletRow}>
-            <Text style={styles.bulletDot}>🛡️</Text>
+            <Ionicons name="shield-checkmark" size={15} color={Colors.primary} style={{ marginTop: 2, marginRight: 8 }} />
             <Text style={styles.bulletText}>{point}</Text>
           </View>
         ))}
 
         <View style={styles.securityNote}>
-          <Text style={styles.securityNoteText}>
-            🔒 Security Notice: Your phone number ({user.phone}) is encrypted at rest using AES-256. Voice recordings are wiped immediately from storage after transcription unless expressly retained for your legal medical history.
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
+            <Ionicons name="lock-closed" size={14} color={Colors.primaryDark} style={{ marginTop: 2 }} />
+            <Text style={[styles.securityNoteText, { flex: 1 }]}>
+              Security Notice: Your phone number ({user.phone}) is encrypted at rest using AES-256. Voice recordings are wiped immediately from storage after transcription unless expressly retained for your legal medical history.
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -136,7 +153,10 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({
             {submitting ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={styles.acceptBtnText}>✓ Accept & Grant Consent</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Ionicons name="checkmark-circle" size={18} color="#ffffff" />
+                <Text style={styles.acceptBtnText}>Accept & Grant Consent</Text>
+              </View>
             )}
           </TouchableOpacity>
         ) : (
@@ -148,7 +168,10 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({
             {submitting ? (
               <ActivityIndicator color="#fb7185" />
             ) : (
-              <Text style={styles.declineBtnText}>✕ Revoke My Consent</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Ionicons name="close-circle" size={18} color="#fb7185" />
+                <Text style={styles.declineBtnText}>Revoke My Consent</Text>
+              </View>
             )}
           </TouchableOpacity>
         )}

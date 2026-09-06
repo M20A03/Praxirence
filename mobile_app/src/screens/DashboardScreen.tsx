@@ -9,8 +9,10 @@ import {
   Alert,
   Modal,
   TextInput,
+  Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
 import { PatientUser, Visit, MedicineItem, ReminderItem, VitalsRecord } from '../types';
 import { mobileApi } from '../services/api';
@@ -20,7 +22,6 @@ import { BrandLogoMobile } from '../components/BrandLogoMobile';
 interface DashboardScreenProps {
   user: PatientUser;
   onNavigateToConsent: () => void;
-  onSwitchToDoctorRole?: () => void;
   onNavigateToChatbot?: () => void;
   onNavigateToDoctors?: () => void;
   onNavigateToVisits?: () => void;
@@ -29,7 +30,6 @@ interface DashboardScreenProps {
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   user,
   onNavigateToConsent,
-  onSwitchToDoctorRole,
   onNavigateToChatbot,
   onNavigateToDoctors,
   onNavigateToVisits,
@@ -179,7 +179,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
   const handleMarkTaken = (key: string) => {
     setTakenReminders((prev) => ({ ...prev, [key]: true }));
-    Alert.alert('Dose Logged', 'Great job staying on track with your medication schedule! 👍');
+    Alert.alert('Dose Logged', 'Great job staying on track with your medication schedule!');
   };
 
   return (
@@ -203,15 +203,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       <View style={styles.topBrandBar}>
         <BrandLogoMobile variant="header" size="sm" subtitleText="Patient Care Portal" />
         <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-          {onSwitchToDoctorRole && (
-            <TouchableOpacity
-              style={styles.switchRoleBadge}
-              onPress={onSwitchToDoctorRole}
-            >
-              <Text style={styles.switchRoleBadgeText}>Doctor 👨‍⚕️</Text>
-            </TouchableOpacity>
-          )}
-
           <TouchableOpacity
             style={[
               styles.consentBadge,
@@ -219,29 +210,42 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             ]}
             onPress={onNavigateToConsent}
           >
-            <Text style={[
-              styles.consentBadgeText,
-              { color: user.consent_status ? Colors.primaryDark : Colors.amber }
-            ]}>
-              {user.consent_status ? '✓ Protected' : '⚠️ Consent'}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Ionicons
+                name={user.consent_status ? "shield-checkmark" : "warning"}
+                size={13}
+                color={user.consent_status ? Colors.primaryDark : Colors.amber}
+              />
+              <Text style={[
+                styles.consentBadgeText,
+                { color: user.consent_status ? Colors.primaryDark : Colors.amber }
+              ]}>
+                {user.consent_status ? 'ABDM Vault Active' : 'Consent Pending'}
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Patient Greeting */}
+      {/* Patient Greeting with Today Emblem */}
       <View style={styles.greetingBox}>
-        <Text style={styles.greetingSub}>Today's Clinical Summary</Text>
-        <Text style={styles.patientName}>Hello, {user.name}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View>
+            <Text style={styles.greetingSub}>Today's Clinical Summary</Text>
+            <Text style={styles.patientName}>Hello, {user.name}</Text>
+          </View>
+          <Image source={require('../../assets/features/today.png')} style={{ width: 44, height: 44 }} resizeMode="contain" />
+        </View>
       </View>
 
-      {/* Quick Action Navigation Grid */}
+      {/* Quick Action Navigation Grid with Bespoke Feature Emblems */}
       <View style={styles.quickActionsGrid}>
         <TouchableOpacity
           style={[styles.quickActionCard, { backgroundColor: 'rgba(13, 148, 136, 0.08)', borderColor: 'rgba(13, 148, 136, 0.25)' }]}
           onPress={onNavigateToChatbot}
+          activeOpacity={0.8}
         >
-          <Text style={styles.quickActionIcon}>🤖</Text>
+          <Image source={require('../../assets/features/chatbot.png')} style={styles.featureAssetIcon} resizeMode="contain" />
           <Text style={styles.quickActionTitle}>AI Health Bot</Text>
           <Text style={styles.quickActionSub}>Prescription Q&A</Text>
         </TouchableOpacity>
@@ -249,8 +253,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         <TouchableOpacity
           style={[styles.quickActionCard, { backgroundColor: 'rgba(37, 99, 235, 0.08)', borderColor: 'rgba(37, 99, 235, 0.25)' }]}
           onPress={onNavigateToDoctors}
+          activeOpacity={0.8}
         >
-          <Text style={styles.quickActionIcon}>👨‍⚕️</Text>
+          <Image source={require('../../assets/features/doctors.png')} style={styles.featureAssetIcon} resizeMode="contain" />
           <Text style={styles.quickActionTitle}>Find Doctors</Text>
           <Text style={styles.quickActionSub}>Verified Clinics</Text>
         </TouchableOpacity>
@@ -258,8 +263,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         <TouchableOpacity
           style={[styles.quickActionCard, { backgroundColor: 'rgba(16, 185, 129, 0.08)', borderColor: 'rgba(16, 185, 129, 0.25)' }]}
           onPress={onNavigateToVisits}
+          activeOpacity={0.8}
         >
-          <Text style={styles.quickActionIcon}>📋</Text>
+          <Image source={require('../../assets/features/visits.png')} style={styles.featureAssetIcon} resizeMode="contain" />
           <Text style={styles.quickActionTitle}>Active Rx</Text>
           <Text style={styles.quickActionSub}>Download PDF</Text>
         </TouchableOpacity>
@@ -267,8 +273,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         <TouchableOpacity
           style={[styles.quickActionCard, { backgroundColor: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.25)' }]}
           onPress={onNavigateToConsent}
+          activeOpacity={0.8}
         >
-          <Text style={styles.quickActionIcon}>🛡️</Text>
+          <Image source={require('../../assets/features/vault.png')} style={styles.featureAssetIcon} resizeMode="contain" />
           <Text style={styles.quickActionTitle}>Data Vault</Text>
           <Text style={styles.quickActionSub}>ABDM / HIPAA</Text>
         </TouchableOpacity>
@@ -278,7 +285,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       <View style={styles.vitalsCard}>
         <View style={styles.vitalsHeaderRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={styles.vitalsHeaderIcon}>🩺</Text>
+            <Ionicons name="pulse" size={20} color={Colors.primary} />
             <Text style={styles.vitalsHeaderTitle}>Vitals Monitoring</Text>
           </View>
           <TouchableOpacity
@@ -295,9 +302,14 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             <Text style={styles.vitalLabel}>Blood Pressure</Text>
             <Text style={styles.vitalValue}>{vitals.bloodPressureSystolic}/{vitals.bloodPressureDiastolic}</Text>
             <Text style={styles.vitalUnit}>mmHg</Text>
-            <View style={styles.vitalStatusPill}>
+            <View style={[styles.vitalStatusPill, { flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
+              <Ionicons
+                name={vitals.bloodPressureSystolic < 130 ? "checkmark-circle" : "warning"}
+                size={11}
+                color={vitals.bloodPressureSystolic < 130 ? Colors.primaryDark : Colors.amber}
+              />
               <Text style={styles.vitalStatusText}>
-                {vitals.bloodPressureSystolic < 130 ? '✓ Optimal' : '⚠️ Elevated'}
+                {vitals.bloodPressureSystolic < 130 ? 'Optimal' : 'Elevated'}
               </Text>
             </View>
           </View>
@@ -307,8 +319,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             <Text style={styles.vitalLabel}>Heart Rate</Text>
             <Text style={styles.vitalValue}>{vitals.heartRate}</Text>
             <Text style={styles.vitalUnit}>bpm</Text>
-            <View style={styles.vitalStatusPill}>
-              <Text style={styles.vitalStatusText}>Steady ❤️</Text>
+            <View style={[styles.vitalStatusPill, { flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
+              <Ionicons name="heart" size={11} color="#EF4444" />
+              <Text style={styles.vitalStatusText}>Steady</Text>
             </View>
           </View>
 
@@ -317,9 +330,14 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             <Text style={styles.vitalLabel}>Blood Oxygen</Text>
             <Text style={styles.vitalValue}>{vitals.spo2}%</Text>
             <Text style={styles.vitalUnit}>SpO2</Text>
-            <View style={styles.vitalStatusPill}>
+            <View style={[styles.vitalStatusPill, { flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
+              <Ionicons
+                name={vitals.spo2 >= 95 ? "checkmark-circle" : "warning"}
+                size={11}
+                color={vitals.spo2 >= 95 ? Colors.primaryDark : Colors.amber}
+              />
               <Text style={styles.vitalStatusText}>
-                {vitals.spo2 >= 95 ? '✓ Normal' : '⚠️ Low'}
+                {vitals.spo2 >= 95 ? 'Normal' : 'Low'}
               </Text>
             </View>
           </View>
@@ -354,12 +372,12 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           style={styles.newPlanBanner}
           onPress={() => setNewPlanAlert(null)}
         >
-          <Text style={styles.newPlanIcon}>✨</Text>
+          <Ionicons name="sparkles" size={20} color={Colors.primaryDark} style={{ marginRight: 8 }} />
           <View style={{ flex: 1 }}>
             <Text style={styles.newPlanTitle}>New Care Plan Received!</Text>
             <Text style={styles.newPlanSubtitle}>{newPlanAlert}</Text>
           </View>
-          <Text style={styles.newPlanDismiss}>✕</Text>
+          <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
         </TouchableOpacity>
       )}
 
@@ -369,7 +387,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           style={styles.notificationBanner}
           onPress={checkPushPermissions}
         >
-          <Text style={styles.bannerIcon}>🔔</Text>
+          <Ionicons name="notifications" size={20} color={Colors.primary} style={{ marginRight: 10 }} />
           <View style={{ flex: 1 }}>
             <Text style={styles.bannerTitle}>Enable Push Notifications</Text>
             <Text style={styles.bannerSubtitle}>Receive timely alerts so you never miss a dose.</Text>
@@ -380,7 +398,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       {/* Offline Mode Indicator Banner */}
       {isOfflineCached && (
         <View style={styles.offlineBanner}>
-          <Text style={styles.bannerIcon}>📡</Text>
+          <Ionicons name="cloud-offline" size={20} color={Colors.amber} style={{ marginRight: 10 }} />
           <View style={{ flex: 1 }}>
             <Text style={styles.offlineTitle}>Offline Mode Active</Text>
             <Text style={styles.offlineSubtitle}>Viewing locally cached care plan & active medications.</Text>
@@ -393,7 +411,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       {upcomingReminders.length > 0 && (
         <View style={styles.nextDoseCard}>
           <View style={styles.nextDoseHeader}>
-            <Text style={styles.nextDoseLabel}>⏰ NEXT SCHEDULED DOSE</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Ionicons name="alarm-outline" size={13} color={Colors.primary} />
+              <Text style={styles.nextDoseLabel}>NEXT SCHEDULED DOSE</Text>
+            </View>
             <Text style={styles.nextDoseTime}>{upcomingReminders[0].time}</Text>
           </View>
 
@@ -412,9 +433,12 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             onPress={() => handleMarkTaken(`0`)}
             disabled={takenReminders[`0`]}
           >
-            <Text style={styles.takenButtonText}>
-              {takenReminders[`0`] ? '✓ Marked as Taken' : 'Mark as Taken'}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+              {takenReminders[`0`] && <Ionicons name="checkmark-circle" size={14} color="#ffffff" />}
+              <Text style={styles.takenButtonText}>
+                {takenReminders[`0`] ? 'Marked as Taken' : 'Mark as Taken'}
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
       )}
@@ -452,12 +476,21 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 </View>
               </View>
 
-              <Text style={styles.medTiming}>🕒 {med.frequency}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                <Ionicons name="time-outline" size={13} color={Colors.textSecondary} />
+                <Text style={styles.medTiming}>{med.frequency}</Text>
+              </View>
               {med.instructions && (
-                <Text style={styles.medInstructions}>📝 {med.instructions}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
+                  <Ionicons name="document-text-outline" size={13} color={Colors.textSecondary} />
+                  <Text style={styles.medInstructions}>{med.instructions}</Text>
+                </View>
               )}
               {med.duration_days && (
-                <Text style={styles.medDuration}>📅 Duration: {med.duration_days} days</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
+                  <Ionicons name="calendar-outline" size={13} color={Colors.textSecondary} />
+                  <Text style={styles.medDuration}>Duration: {med.duration_days} days</Text>
+                </View>
               )}
             </View>
           ))
@@ -492,7 +525,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     >
       <View style={styles.modalBackdrop}>
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Record Daily Vitals 🩺</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <Ionicons name="pulse" size={20} color={Colors.primary} />
+            <Text style={styles.modalTitle}>Record Daily Vitals</Text>
+          </View>
           <Text style={styles.modalSubtitle}>Update your current physiological readings for your care team.</Text>
 
           <View style={styles.modalInputRow}>
@@ -563,7 +599,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               style={styles.modalSaveButton}
               onPress={handleSaveVitals}
             >
-              <Text style={styles.modalSaveText}>Save Vitals ✓</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                <Ionicons name="checkmark-circle" size={15} color="#ffffff" />
+                <Text style={styles.modalSaveText}>Save Vitals</Text>
+              </View>
             </TouchableOpacity>
           </View>
         </View>
@@ -982,6 +1021,11 @@ const styles = StyleSheet.create({
   quickActionIcon: {
     fontSize: 22,
     marginBottom: 4,
+  },
+  featureAssetIcon: {
+    width: 36,
+    height: 36,
+    marginBottom: 8,
   },
   quickActionTitle: {
     fontFamily: FontFamily.bold,

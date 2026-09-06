@@ -10,8 +10,10 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
+import { Ionicons } from '@expo/vector-icons';
 import { PatientUser, Visit, ChatMessage } from '../types';
 import { mobileApi } from '../services/api';
 import { BrandLogoMobile } from '../components/BrandLogoMobile';
@@ -23,14 +25,14 @@ interface ChatbotScreenProps {
 }
 
 const SUPPORTED_LANGUAGES = [
-  { code: 'English', label: 'English 🇬🇧' },
-  { code: 'Hindi', label: 'हिन्दी 🇮🇳' },
-  { code: 'Bengali', label: 'বাংলা 🇮🇳' },
-  { code: 'Tamil', label: 'தமிழ் 🇮🇳' },
-  { code: 'Telugu', label: 'తెలుగు 🇮🇳' },
-  { code: 'Marathi', label: 'मराठी 🇮🇳' },
-  { code: 'Gujarati', label: 'ગુજરાતી 🇮🇳' },
-  { code: 'Hinglish', label: 'Hinglish 💬' },
+  { code: 'English', label: 'English' },
+  { code: 'Hindi', label: 'हिन्दी (Hindi)' },
+  { code: 'Bengali', label: 'বাংলা (Bengali)' },
+  { code: 'Tamil', label: 'தமிழ் (Tamil)' },
+  { code: 'Telugu', label: 'తెలుగు (Telugu)' },
+  { code: 'Marathi', label: 'मराठी (Marathi)' },
+  { code: 'Gujarati', label: 'ગુજરાતી (Gujarati)' },
+  { code: 'Hinglish', label: 'Hinglish' },
 ];
 
 export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
@@ -74,8 +76,8 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       language: lang,
       quickSuggestions: isHindi
-        ? ['मेरी दवाएं समझाइए 💊', 'दुष्प्रभाव क्या हैं? ⚠️', 'डॉक्टर खोजें 👨‍⚕️', 'प्रिस्क्रिप्शन डाउनलोड करें 📄']
-        : ['Explain my medication schedule 💊', 'What are side effects? ⚠️', 'Find a Specialist 👨‍⚕️', 'How to download prescription? 📄'],
+        ? ['मेरी दवाएं और खुराक समझाइए', 'दवा के दुष्प्रभाव क्या हैं?', 'सत्यापित डॉक्टर खोजें', 'प्रिस्क्रिप्शन डाउनलोड करें']
+        : ['Explain my medication schedule', 'What are potential side effects?', 'Find a verified specialist', 'How to download prescription PDF?'],
     };
     setMessages([welcomeMsg]);
   };
@@ -149,16 +151,20 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
     >
-      {/* Top Clinical Header with Brand Logo */}
+      {/* Top Clinical Header with Brand Logo and Chatbot Emblem */}
       <View style={styles.topHeader}>
-        <BrandLogoMobile variant="header" size="sm" subtitleText="AI Health Assistant" />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Image source={require('../../assets/features/chatbot.png')} style={{ width: 34, height: 34 }} resizeMode="contain" />
+          <BrandLogoMobile variant="header" size="sm" subtitleText="AI Health Assistant" />
+        </View>
 
         {/* Language Selection Pill */}
         <TouchableOpacity
           style={styles.languagePill}
           onPress={() => setShowLanguagePicker(!showLanguagePicker)}
         >
-          <Text style={styles.languagePillText}>🌐 {selectedLanguage}</Text>
+          <Ionicons name="globe-outline" size={13} color={Colors.primary} style={{ marginRight: 4 }} />
+          <Text style={styles.languagePillText}>{selectedLanguage}</Text>
         </TouchableOpacity>
       </View>
 
@@ -192,7 +198,7 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
 
       {/* Clinical Disclaimer Banner */}
       <View style={styles.safetyBanner}>
-        <Text style={styles.safetyIcon}>🛡️</Text>
+        <Ionicons name="shield-checkmark" size={16} color={Colors.primary} style={{ marginRight: 6 }} />
         <Text style={styles.safetyText}>
           Trained Clinical Assistant • For emergency care, call 108 / 112 immediately.
         </Text>
@@ -247,15 +253,15 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
                         onPress={onNavigateToDoctors}
                       >
                         <View style={styles.doctorCardAvatar}>
-                          <Text style={{ fontSize: 20 }}>👨‍⚕️</Text>
+                          <Ionicons name="medkit" size={20} color={Colors.primary} />
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={styles.doctorCardName}>{doc.name}</Text>
                           <Text style={styles.doctorCardSpecialty}>{doc.specialty}</Text>
-                          <Text style={styles.doctorCardClinic}>📍 {doc.clinic_name}</Text>
+                          <Text style={styles.doctorCardClinic}>{doc.clinic_name}</Text>
                           <Text style={styles.doctorCardNmc}>NMC: {doc.reg_number}</Text>
                         </View>
-                        <Text style={styles.doctorCardArrow}>→</Text>
+                        <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -326,7 +332,7 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
           onPress={() => handleSendMessage()}
           disabled={!inputMessage.trim() || loading}
         >
-          <Text style={styles.sendButtonText}>➤</Text>
+          <Ionicons name="arrow-up" size={18} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

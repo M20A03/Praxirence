@@ -101,7 +101,7 @@ export default function App() {
   if (!currentDoctor) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="light-content" backgroundColor="#090d16" />
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
         <DoctorLoginScreen onAuthenticated={handleAuthenticated} />
       </SafeAreaView>
     );
@@ -109,7 +109,7 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#090d16" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* Main Content Area */}
       <View style={styles.container}>
@@ -156,7 +156,7 @@ export default function App() {
         )}
       </View>
 
-      {/* Bottom Navigation Bar for Doctor App */}
+      {/* Bottom Navigation Bar for Doctor App - Clean Light Theme */}
       <View style={styles.bottomNav}>
         <TouchableOpacity
           style={styles.navItem}
@@ -165,7 +165,7 @@ export default function App() {
           <Ionicons
             name={activeTab === 'schedule' ? 'calendar' : 'calendar-outline'}
             size={22}
-            color={activeTab === 'schedule' ? '#0ea5e9' : Colors.textSecondary}
+            color={activeTab === 'schedule' ? '#0284C7' : '#64748B'}
           />
           <Text style={[styles.navLabel, activeTab === 'schedule' && styles.navLabelActive]}>
             Schedule
@@ -180,7 +180,7 @@ export default function App() {
           <Ionicons
             name={activeTab === 'patients' ? 'people' : 'people-outline'}
             size={22}
-            color={activeTab === 'patients' ? '#0ea5e9' : Colors.textSecondary}
+            color={activeTab === 'patients' ? '#0284C7' : '#64748B'}
           />
           <Text style={[styles.navLabel, activeTab === 'patients' && styles.navLabelActive]}>
             Care Plans
@@ -213,7 +213,7 @@ export default function App() {
           <Ionicons
             name={activeTab === 'profile' ? 'person-circle' : 'person-circle-outline'}
             size={22}
-            color={activeTab === 'profile' ? '#0ea5e9' : Colors.textSecondary}
+            color={activeTab === 'profile' ? '#0284C7' : '#64748B'}
           />
           <Text style={[styles.navLabel, activeTab === 'profile' && styles.navLabelActive]}>
             Doctor ID
@@ -228,20 +228,26 @@ export default function App() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#090d16',
+    backgroundColor: '#FFFFFF',
   },
   container: {
     flex: 1,
+    backgroundColor: '#F8FAFC',
   },
   bottomNav: {
     flexDirection: 'row',
-    backgroundColor: '#0f172a',
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+    borderTopColor: '#E2E8F0',
     paddingVertical: 8,
-    paddingBottom: 16,
+    paddingBottom: 14,
     justifyContent: 'space-around',
     alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 8,
   },
   navItem: {
     flex: 1,
@@ -253,12 +259,12 @@ const styles = StyleSheet.create({
   navLabel: {
     fontFamily: FontFamily.sans,
     fontSize: FontSize.xs,
-    color: Colors.textSecondary,
+    color: '#64748B',
     marginTop: 3,
     fontWeight: '500',
   },
   navLabelActive: {
-    color: '#0ea5e9',
+    color: '#0284C7',
     fontWeight: '700',
   },
   navActiveBar: {
@@ -266,15 +272,20 @@ const styles = StyleSheet.create({
     top: -8,
     width: 28,
     height: 3,
-    backgroundColor: '#0ea5e9',
+    backgroundColor: '#0284C7',
     borderRadius: 2,
   },
   consultNavBubble: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#0ea5e9',
+    backgroundColor: '#0284C7',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
 });

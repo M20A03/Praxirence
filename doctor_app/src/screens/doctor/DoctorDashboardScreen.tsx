@@ -159,12 +159,12 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
         </View>
       </View>
 
-      {/* Connectivity Banner */}
+      {/* Connectivity Banner - Clean Hospital Grade */}
       <View style={styles.cloudStatusBar}>
         <View style={styles.cloudStatusLeft}>
           <View style={[styles.statusDot, { backgroundColor: isLive ? '#10b981' : '#f59e0b' }]} />
           <Text style={styles.cloudStatusText}>
-            {isLive ? `Live Railway SRE Sync (${latencyMs}ms)` : 'Offline Clinical Vault Active'}
+            {isLive ? 'Clinical Network Active • Real-time Sync' : 'Offline Clinical Vault Active'}
           </Text>
         </View>
         <Text style={styles.dateLabel}>{scheduleData?.date || 'Today'}</Text>
@@ -193,7 +193,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
             <Ionicons name="shield-checkmark" size={18} color="#10b981" />
           </View>
           <Text style={styles.statNumber}>100%</Text>
-          <Text style={styles.statLabel}>Audio Shredded</Text>
+          <Text style={styles.statLabel}>Data Protected</Text>
         </View>
       </View>
 
@@ -459,13 +459,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: '#F0FDF4',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: '#BBF7D0',
   },
   cloudStatusLeft: {
     flexDirection: 'row',
@@ -480,12 +480,14 @@ const styles = StyleSheet.create({
   cloudStatusText: {
     fontFamily: FontFamily.mono,
     fontSize: FontSize.xs,
-    color: Colors.textSecondary,
+    color: '#15803D',
+    fontWeight: '600',
   },
   dateLabel: {
     fontFamily: FontFamily.mono,
     fontSize: FontSize.xs,
-    color: Colors.textSecondary,
+    color: '#15803D',
+    fontWeight: '600',
   },
   statsRow: {
     flexDirection: 'row',
@@ -652,12 +654,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   complaintBox: {
-    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    backgroundColor: '#F0F9FF',
     borderRadius: 10,
     padding: 10,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: '#BAE6FD',
   },
   complaintHeader: {
     flexDirection: 'row',
@@ -703,11 +705,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: '#F1F5F9',
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#CBD5E1',
   },
   patientHistoryBtnText: {
     fontFamily: FontFamily.sans,
@@ -790,16 +792,21 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
     justifyContent: 'center',
     padding: 20,
   },
   modalContent: {
-    backgroundColor: '#0f172a',
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -821,7 +828,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   input: {
-    backgroundColor: '#1e293b',
+    backgroundColor: '#F8FAFC',
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -829,7 +836,7 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.sans,
     fontSize: FontSize.sm,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#CBD5E1',
   },
   triageSelectRow: {
     flexDirection: 'row',
@@ -842,9 +849,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: 'center',
-    backgroundColor: '#1e293b',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#CBD5E1',
   },
   triageOptionBtnActive: {
     backgroundColor: Colors.primary,

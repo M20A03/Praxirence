@@ -590,11 +590,16 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalCard: {
-    backgroundColor: '#0f172a',
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 22,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -624,12 +629,12 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   erasureConsequencesBox: {
-    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+    backgroundColor: '#FEF2F2',
     borderRadius: 10,
     padding: 12,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: '#FECACA',
     gap: 4,
   },
   consequencesTitle: {
@@ -642,7 +647,7 @@ const styles = StyleSheet.create({
   consequencesItem: {
     fontFamily: FontFamily.sans,
     fontSize: FontSize.xs,
-    color: Colors.textSecondary,
+    color: '#991B1B',
     lineHeight: 16,
   },
   confirmErasureBtn: {

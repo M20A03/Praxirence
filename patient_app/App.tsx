@@ -89,7 +89,7 @@ export default function App() {
   if (!currentPatient) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="light-content" backgroundColor="#090d16" />
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
         <PatientLoginScreen onAuthenticated={handleAuthenticated} />
       </SafeAreaView>
     );
@@ -97,7 +97,7 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#090d16" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* Main Content Area */}
       <View style={styles.container}>
@@ -148,7 +148,7 @@ export default function App() {
         )}
       </View>
 
-      {/* Bottom Navigation Bar for Patient App */}
+      {/* Bottom Navigation Bar for Patient App - Clean Light Theme */}
       <View style={styles.bottomNav}>
         <TouchableOpacity
           style={styles.navItem}
@@ -157,7 +157,7 @@ export default function App() {
           <Ionicons
             name={activeTab === 'today' ? 'today' : 'today-outline'}
             size={22}
-            color={activeTab === 'today' ? '#10b981' : Colors.textSecondary}
+            color={activeTab === 'today' ? '#059669' : '#64748B'}
           />
           <Text style={[styles.navLabel, activeTab === 'today' && styles.navLabelActive]}>
             Today
@@ -172,7 +172,7 @@ export default function App() {
           <Ionicons
             name={activeTab === 'visits' ? 'document-text' : 'document-text-outline'}
             size={22}
-            color={activeTab === 'visits' ? '#10b981' : Colors.textSecondary}
+            color={activeTab === 'visits' ? '#059669' : '#64748B'}
           />
           <Text style={[styles.navLabel, activeTab === 'visits' && styles.navLabelActive]}>
             Vault
@@ -187,7 +187,7 @@ export default function App() {
           <Ionicons
             name={activeTab === 'chatbot' ? 'chatbubbles' : 'chatbubbles-outline'}
             size={22}
-            color={activeTab === 'chatbot' ? '#10b981' : Colors.textSecondary}
+            color={activeTab === 'chatbot' ? '#059669' : '#64748B'}
           />
           <Text style={[styles.navLabel, activeTab === 'chatbot' && styles.navLabelActive]}>
             AI Care
@@ -202,7 +202,7 @@ export default function App() {
           <Ionicons
             name={activeTab === 'doctors' ? 'medkit' : 'medkit-outline'}
             size={22}
-            color={activeTab === 'doctors' ? '#10b981' : Colors.textSecondary}
+            color={activeTab === 'doctors' ? '#059669' : '#64748B'}
           />
           <Text style={[styles.navLabel, activeTab === 'doctors' && styles.navLabelActive]}>
             Doctors
@@ -218,7 +218,7 @@ export default function App() {
           <Ionicons
             name={activeTab === 'consent' ? 'shield-checkmark' : 'shield-checkmark-outline'}
             size={22}
-            color={activeTab === 'consent' ? '#10b981' : Colors.textSecondary}
+            color={activeTab === 'consent' ? '#059669' : '#64748B'}
           />
           <Text style={[styles.navLabel, activeTab === 'consent' && styles.navLabelActive]}>
             Privacy
@@ -233,7 +233,7 @@ export default function App() {
           <Ionicons
             name={activeTab === 'profile' ? 'person' : 'person-outline'}
             size={22}
-            color={activeTab === 'profile' ? '#10b981' : Colors.textSecondary}
+            color={activeTab === 'profile' ? '#059669' : '#64748B'}
           />
           <Text style={[styles.navLabel, activeTab === 'profile' && styles.navLabelActive]}>
             Profile
@@ -248,20 +248,26 @@ export default function App() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#090d16',
+    backgroundColor: '#FFFFFF',
   },
   container: {
     flex: 1,
+    backgroundColor: '#F8FAFC',
   },
   bottomNav: {
     flexDirection: 'row',
-    backgroundColor: '#0f172a',
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+    borderTopColor: '#E2E8F0',
     paddingVertical: 8,
-    paddingBottom: 16,
+    paddingBottom: 14,
     justifyContent: 'space-around',
     alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 8,
   },
   navItem: {
     flex: 1,
@@ -273,12 +279,12 @@ const styles = StyleSheet.create({
   navLabel: {
     fontFamily: FontFamily.sans,
     fontSize: 10,
-    color: Colors.textSecondary,
+    color: '#64748B',
     marginTop: 3,
     fontWeight: '500',
   },
   navLabelActive: {
-    color: '#10b981',
+    color: '#059669',
     fontWeight: '700',
   },
   navActiveBar: {
@@ -286,7 +292,7 @@ const styles = StyleSheet.create({
     top: -8,
     width: 24,
     height: 3,
-    backgroundColor: '#10b981',
+    backgroundColor: '#059669',
     borderRadius: 2,
   },
 });

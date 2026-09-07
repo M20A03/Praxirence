@@ -320,12 +320,12 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1e293b',
+    backgroundColor: '#F8FAFC',
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#CBD5E1',
     marginBottom: 8,
   },
   phoneInputRow: {
@@ -334,13 +334,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   countryCodeBox: {
-    backgroundColor: '#1e293b',
+    backgroundColor: '#F8FAFC',
     borderRadius: 12,
     paddingHorizontal: 14,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#CBD5E1',
   },
   countryCodeText: {
     fontFamily: FontFamily.mono,
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: '#E2E8F0',
   },
   dividerText: {
     fontFamily: FontFamily.mono,

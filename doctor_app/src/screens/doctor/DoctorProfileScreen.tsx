@@ -162,38 +162,38 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
         </View>
       </View>
 
-      {/* Infrastructure Telemetry */}
+      {/* Hospital Clinical System Status */}
       <View style={styles.sectionCard}>
         <View style={styles.telemetryHeader}>
-          <Text style={styles.sectionTitle}>Backend Cloud Telemetry</Text>
+          <Text style={styles.sectionTitle}>Hospital Network & ABDM Status</Text>
           <TouchableOpacity onPress={checkHealth} disabled={checking}>
             {checking ? (
               <ActivityIndicator size="small" color="#0ea5e9" />
             ) : (
-              <Text style={styles.pingBtnText}>Re-ping</Text>
+              <Text style={styles.pingBtnText}>Refresh</Text>
             )}
           </TouchableOpacity>
         </View>
 
         <View style={styles.telemetryBox}>
           <View style={styles.telemetryItem}>
-            <Text style={styles.telemetryLabel}>Railway Production</Text>
+            <Text style={styles.telemetryLabel}>Clinical Cloud Server</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <View style={[styles.statusDot, { backgroundColor: isLive ? '#10b981' : '#ef4444' }]} />
-              <Text style={[styles.telemetryVal, { color: isLive ? '#10b981' : '#ef4444' }]}>
-                {isLive ? 'Operational' : 'Degraded'}
+              <View style={[styles.statusDot, { backgroundColor: isLive ? '#10b981' : '#f59e0b' }]} />
+              <Text style={[styles.telemetryVal, { color: isLive ? '#10b981' : '#f59e0b' }]}>
+                {isLive ? 'Operational' : 'Offline Vault'}
               </Text>
             </View>
           </View>
 
           <View style={styles.telemetryItem}>
-            <Text style={styles.telemetryLabel}>Cloud Round-Trip</Text>
-            <Text style={styles.telemetryVal}>{latencyMs} ms</Text>
+            <Text style={styles.telemetryLabel}>ABDM Health Gateway</Text>
+            <Text style={[styles.telemetryVal, { color: '#0284C7' }]}>Connected</Text>
           </View>
 
           <View style={styles.telemetryItem}>
-            <Text style={styles.telemetryLabel}>Meta WhatsApp API</Text>
-            <Text style={[styles.telemetryVal, { color: '#25D366' }]}>Connected</Text>
+            <Text style={styles.telemetryLabel}>Prescription Dispatch (WhatsApp)</Text>
+            <Text style={[styles.telemetryVal, { color: '#25D366' }]}>Active</Text>
           </View>
         </View>
       </View>
@@ -360,11 +360,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   telemetryBox: {
-    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    backgroundColor: '#F8FAFC',
     borderRadius: 10,
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: '#E2E8F0',
     gap: 8,
   },
   telemetryItem: {

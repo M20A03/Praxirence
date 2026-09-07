@@ -7,7 +7,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "backgroundColor": "#090d16"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": true,
@@ -16,7 +16,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo-icon.png",
-        "backgroundColor": "#090d16"
+        "backgroundColor": "#FFFFFF"
       },
       "package": "com.praxirence.patient",
       "permissions": [

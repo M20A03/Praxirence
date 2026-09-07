@@ -48,9 +48,15 @@ web_app/dist/
 web_app/dist-ssr/
 *.local
 
-# Expo / React Native
+# Expo / React Native & Android
 .expo/
 .expo-shared/
+.gradle/
+*.keystore
+local.properties
+**/android/app/build/
+**/android/.gradle/
+**/android/.idea/
 *.jks
 *.p8
 *.p12

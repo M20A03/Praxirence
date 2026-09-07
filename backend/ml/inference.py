@@ -231,6 +231,8 @@ class ModelLoader:
 
                     return {
                         "diagnosis": data.get("diagnosis", "Clinical Assessment"),
+                        "patient_summary": data.get("patient_summary") or f"During your consultation, your doctor evaluated your symptoms and diagnosed {data.get('diagnosis', 'your condition')}. Please take your prescribed medicines regularly and follow all home care instructions.",
+                        "doctor_advice": data.get("doctor_advice") or "Drink plenty of warm fluids, rest well, and follow prescribed dosages. Reach out if symptoms persist.",
                         "medicines": meds if meds else self._default_meds(),
                         "reminders": rems if rems else self._default_reminders()
                     }
@@ -249,16 +251,28 @@ class ModelLoader:
         # Diagnosis detection
         if "bronchitis" in t_lower:
             diagnosis = "Acute Bronchitis with Mild Pyrexia & Wheezing"
+            summary = "Your doctor found signs of chest congestion and bronchial wheezing, leading to a diagnosis of Acute Bronchitis. Antibiotics and cough syrup have been prescribed to clear your airway and relieve coughing."
+            advice = "Take steam inhalation twice daily. Drink warm water throughout the day. Avoid cold or iced foods and drinks. Rest in an upright or elevated pillow position."
         elif "diabetes" in t_lower or "sugar" in t_lower:
             diagnosis = "Type 2 Diabetes Mellitus with Suboptimal Control"
+            summary = "Your blood sugar levels are elevated. Your doctor reviewed your glycemic readings and prescribed diabetes medication to maintain stable glucose levels."
+            advice = "Follow a low glycemic index, high-fiber diet. Avoid refined sugars, sweets, and processed carbohydrates. Walk for 30 minutes daily and check fasting blood sugar weekly."
         elif "migraine" in t_lower or "headache" in t_lower:
             diagnosis = "Acute Migraine Headache with Photophobia"
+            summary = "Your severe episodic headache and light sensitivity were diagnosed as an acute migraine. Specific migraine relief tablets and anti-nausea medication have been prescribed."
+            advice = "Rest in a quiet, dark room during episodes. Maintain regular sleep hours. Avoid common triggers such as skipped meals, dehydration, and bright screen glare."
         elif "pharyngitis" in t_lower or "throat" in t_lower:
             diagnosis = "Acute Streptococcal Pharyngotonsillitis"
+            summary = "Your inflamed throat and difficulty swallowing were evaluated as throat infection (pharyngitis). Antibiotic and soothing gargle therapy were initiated."
+            advice = "Warm salt water gargles 3 times a day. Consume warm soothing soups and avoid spicy or oily foods. Complete the entire medication course."
         elif "hypertension" in t_lower or "blood pressure" in t_lower:
             diagnosis = "Primary Essential Hypertension (Stage 1)"
+            summary = "Your blood pressure reading was elevated during the consultation. Antihypertensive therapy has been prescribed to keep your heart and blood vessels protected."
+            advice = "Reduce salt intake strictly (< 5g per day). Avoid processed/canned foods. Check blood pressure 3 times a week and record in your Praxirence app."
         else:
             diagnosis = "Clinical Consultation & Health Assessment"
+            summary = "Your doctor reviewed your clinical history and current symptoms. Please follow the prescribed medication schedule and recommended home care."
+            advice = "Stay well hydrated with clean water. Ensure 7-8 hours of restful sleep and eat nutritious balanced meals."
 
         # Medicines extraction
         medicines = []
@@ -351,6 +365,8 @@ class ModelLoader:
 
         return {
             "diagnosis": diagnosis,
+            "patient_summary": summary,
+            "doctor_advice": advice,
             "medicines": medicines,
             "reminders": reminders
         }

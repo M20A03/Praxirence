@@ -21,8 +21,27 @@ class ReminderItem(BaseModel):
 
 class CarePlanStructure(BaseModel):
     diagnosis: str
+    patient_summary: Optional[str] = None
+    doctor_advice: Optional[str] = None
+    warning_signs: List[str] = Field(default_factory=list)
     medicines: List[MedicineItem] = Field(default_factory=list)
     reminders: List[ReminderItem] = Field(default_factory=list)
+
+
+class ConsultationSummarizeRequest(BaseModel):
+    conversation: str = Field(..., description="Dialogue or clinical notes between doctor and patient")
+    patient_name: Optional[str] = Field("Patient", description="Name of patient for personalized address")
+    doctor_name: Optional[str] = Field("Doctor", description="Name of doctor")
+
+
+class ConsultationSummarizeResponse(BaseModel):
+    patient_summary: str = Field(..., description="Plain-language, easy-to-understand explanation of what doctor told patient")
+    doctor_advice: str = Field(..., description="Dietary, lifestyle, hydration, and resting advice")
+    warning_signs: List[str] = Field(default_factory=list, description="Red flag symptoms when to contact doctor immediately")
+    diagnosis: str = Field(..., description="Clinical diagnostic term")
+    medicines: List[MedicineItem] = Field(default_factory=list)
+    reminders: List[ReminderItem] = Field(default_factory=list)
+    follow_up_days: Optional[int] = Field(5, description="Recommended follow-up days")
 
 
 class VisitCreate(BaseModel):
@@ -31,6 +50,8 @@ class VisitCreate(BaseModel):
     medicines: List[MedicineItem] = Field(default_factory=list)
     reminders: List[ReminderItem] = Field(default_factory=list)
     raw_transcription: Optional[str] = None
+    patient_summary: Optional[str] = None
+    doctor_advice: Optional[str] = None
 
 
 class VisitUpdate(BaseModel):
@@ -38,7 +59,8 @@ class VisitUpdate(BaseModel):
     medicines: Optional[List[MedicineItem]] = None
     reminders: Optional[List[ReminderItem]] = None
     keep_recording: Optional[bool] = None
-
+    patient_summary: Optional[str] = None
+    doctor_advice: Optional[str] = None
 
 
 class VisitResponse(BaseModel):
@@ -49,6 +71,8 @@ class VisitResponse(BaseModel):
     audio_file_path: Optional[str] = None
     keep_recording: bool = False
     raw_transcription: Optional[str] = None
+    patient_summary: Optional[str] = None
+    doctor_advice: Optional[str] = None
     diagnosis: Optional[str] = None
     medicines: List[Dict[str, Any]] = Field(default_factory=list)
     reminders: List[Dict[str, Any]] = Field(default_factory=list)
@@ -69,3 +93,5 @@ class VisitApproveResponse(BaseModel):
     whatsapp_status: str
     scheduled_reminders_count: int
     message: str
+    patient_summary: Optional[str] = None
+

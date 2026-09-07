@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "Praxirence Doctor",
+    "slug": "praxirence-doctor",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#090d16"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.praxirence.doctor"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo-icon.png",
+        "backgroundColor": "#090d16"
+      },
+      "package": "com.praxirence.doctor",
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "SCHEDULE_EXACT_ALARM",
+        "RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#0ea5e9",
+          "sounds": []
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "praxirence-doctor-app"
+      }
+    }
+  }
+}

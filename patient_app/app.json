@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "Praxirence Care",
+    "slug": "praxirence-care",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#090d16"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.praxirence.patient"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo-icon.png",
+        "backgroundColor": "#090d16"
+      },
+      "package": "com.praxirence.patient",
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "SCHEDULE_EXACT_ALARM"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#10b981",
+          "sounds": []
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "praxirence-patient-app"
+      }
+    }
+  }
+}

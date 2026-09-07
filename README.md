@@ -126,11 +126,23 @@ praxirence/
 │   ├── package.json
 │   └── Dockerfile
 │
-├── mobile_app/                    # Patient Mobile App (React Native Expo SDK 51)
+├── doctor_app/                    # Praxirence Doctor Android App (com.praxirence.doctor)
 │   ├── src/
-│   │   ├── screens/               # DashboardScreen, ConsentScreen, LoginScreen, VisitsScreen
-│   │   ├── services/              # Fast2SMS client, Expo Notifications & AsyncStorage
-│   │   └── theme/                 # Clean modern typography & palette
+│   │   ├── screens/               # DoctorDashboard (Upcoming Queue), DoctorPatients (Past Care Plans), DoctorNewConsultation (Mandatory Verification), DoctorLogin
+│   │   ├── services/              # Railway API sync, Clinical queue & structured visit dispatch
+│   │   └── theme/                 # Medical Plus Jakarta Sans styling
+│   ├── android/                   # Standalone Android Studio native project
+│   ├── open_android_studio.sh     # 1-click launcher for Android Studio
+│   ├── app.json
+│   └── package.json
+│
+├── patient_app/                   # Praxirence Care Patient Android App (com.praxirence.patient)
+│   ├── src/
+│   │   ├── screens/               # Dashboard (Pill Timings & Queue Token), Visits, Consent (DPDP Act Data Privacy Center), PatientLogin
+│   │   ├── services/              # WhatsApp OTP, Offline sync & DPDP preferences
+│   │   └── theme/                 # Patient-friendly emerald accessible typography
+│   ├── android/                   # Standalone Android Studio native project
+│   ├── open_android_studio.sh     # 1-click launcher for Android Studio
 │   ├── app.json
 │   └── package.json
 │

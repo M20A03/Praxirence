@@ -5,8 +5,9 @@ doctor editing, approval, and background WhatsApp delivery via Celery.
 """
 
 import logging
+import json
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Tuple
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -17,15 +18,74 @@ from app.schemas.visit import (
     VisitCreate,
     VisitResponse,
     VisitUpdate,
-    VisitApproveResponse
+    VisitApproveResponse,
+    ConsultationSummarizeRequest,
+    ConsultationSummarizeResponse,
+    MedicineItem,
+    ReminderItem
 )
 from app.services.storage_service import storage_service
+from app.services.ai_service import ai_service
 from ml.inference import model_loader
 from app.tasks import send_whatsapp_care_plan_celery, purge_voice_recording_celery, dispatch_task
 from app.routes.deps import get_current_doctor, get_current_user_or_patient
 
 router = APIRouter(prefix="/visits", tags=["Visits & Consultations"])
 logger = logging.getLogger("praxirence.routes.visits")
+
+
+def serialize_transcription_and_summary(
+    raw_transcription: Optional[str],
+    patient_summary: Optional[str] = None,
+    doctor_advice: Optional[str] = None
+) -> str:
+    payload = {
+        "raw": raw_transcription or "",
+        "patient_summary": patient_summary or "",
+        "doctor_advice": doctor_advice or ""
+    }
+    return json.dumps(payload)
+
+
+def parse_transcription_and_summary(raw_field: Optional[str]) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    if not raw_field:
+        return None, None, None
+    try:
+        data = json.loads(raw_field)
+        if isinstance(data, dict) and ("patient_summary" in data or "raw" in data):
+            return data.get("raw"), data.get("patient_summary"), data.get("doctor_advice")
+    except Exception:
+        pass
+    return raw_field, raw_field, None
+
+
+@router.post("/summarize", response_model=ConsultationSummarizeResponse)
+def summarize_consultation(
+    req: ConsultationSummarizeRequest,
+    current_doctor = Depends(get_current_doctor)
+):
+    """
+    Summarize doctor-patient conversation into a clear, plain-language
+    explanation for the patient alongside structured medical care plan.
+    """
+    doc_name = req.doctor_name or (current_doctor.name if current_doctor else "Doctor")
+    pat_name = req.patient_name or "Patient"
+
+    result = ai_service.summarize_consultation_for_patient(
+        conversation=req.conversation,
+        patient_name=pat_name,
+        doctor_name=doc_name
+    )
+
+    return ConsultationSummarizeResponse(
+        patient_summary=result["patient_summary"],
+        doctor_advice=result.get("doctor_advice", ""),
+        warning_signs=result.get("warning_signs", []),
+        diagnosis=result.get("diagnosis", "Clinical Consultation"),
+        medicines=[MedicineItem(**m) for m in result.get("medicines", [])],
+        reminders=[ReminderItem(**r) for r in result.get("reminders", [])],
+        follow_up_days=result.get("follow_up_days", 5)
+    )
 
 
 @router.post("", response_model=VisitResponse)
@@ -42,13 +102,19 @@ def create_structured_visit(
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
 
+    stored_transcription = serialize_transcription_and_summary(
+        raw_transcription=req.raw_transcription or f"Consultation with Dr. {current_doctor.name}",
+        patient_summary=req.patient_summary,
+        doctor_advice=req.doctor_advice
+    )
+
     visit = Visit(
         patient_id=patient.id,
         doctor_id=current_doctor.id,
         diagnosis=req.diagnosis,
         medicines=[m.model_dump() for m in req.medicines],
         reminders=[r.model_dump() for r in req.reminders],
-        raw_transcription=req.raw_transcription or "Direct Clinical Consultation",
+        raw_transcription=stored_transcription,
         status="draft"
     )
     db.add(visit)
@@ -66,6 +132,8 @@ def create_structured_visit(
     db.add(audit)
     db.commit()
 
+    raw_text, pat_summary, doc_advice = parse_transcription_and_summary(visit.raw_transcription)
+
     return VisitResponse(
         id=visit.id,
         patient_id=visit.patient_id,
@@ -73,7 +141,9 @@ def create_structured_visit(
         date=visit.date,
         audio_file_path=visit.audio_file_path,
         keep_recording=visit.keep_recording,
-        raw_transcription=visit.raw_transcription,
+        raw_transcription=raw_text,
+        patient_summary=pat_summary,
+        doctor_advice=doc_advice,
         diagnosis=visit.diagnosis,
         medicines=visit.medicines or [],
         reminders=visit.reminders or [],
@@ -115,24 +185,37 @@ async def upload_consultation_audio(
 
         # Step 2: Extract Care Plan with 7B LLM / Resilient Clinical Parser
         care_plan = model_loader.extract_care_plan(transcription)
+        summarized = ai_service.summarize_consultation_for_patient(
+            conversation=transcription,
+            patient_name=patient.name,
+            doctor_name=current_doctor.name
+        )
 
-        # Step 3: Handle Voice Recording Deletion Policy
+        # Step 3: Zero-Audio-Retention & Clinical Privacy Enforcement
+        # We permanently erase the voice recording immediately after transcription
+        # Only the transcribed text, care plan, diagnosis, and patient summary are retained
+        try:
+            storage_service.delete_audio_file(saved_path)
+            logger.info(f"Zero-Audio-Retention: Audio file {filename} permanently erased from disk after transcription.")
+        except Exception as e:
+            logger.warning(f"Audio cleanup warning for {filename}: {e}")
+
         stored_path = None
-        if keep_recording:
-            stored_path = saved_path
-            logger.info(f"Recording retained for legal/medical records: {saved_path}")
-        else:
-            # Trigger background deletion via Celery / storage service
-            dispatch_task(purge_voice_recording_celery, saved_path)
-            logger.info(f"Triggered automatic background purge for recording: {filename}")
+        retained_recording = False
+
+        stored_transcription = serialize_transcription_and_summary(
+            raw_transcription=transcription,
+            patient_summary=summarized.get("patient_summary"),
+            doctor_advice=summarized.get("doctor_advice")
+        )
 
         # Create draft visit
         visit = Visit(
             patient_id=patient.id,
             doctor_id=current_doctor.id,
             audio_file_path=stored_path,
-            keep_recording=keep_recording,
-            raw_transcription=transcription,
+            keep_recording=retained_recording,
+            raw_transcription=stored_transcription,
             diagnosis=care_plan.get("diagnosis", "Clinical Assessment"),
             medicines=care_plan.get("medicines", []),
             reminders=care_plan.get("reminders", []),
@@ -156,6 +239,8 @@ async def upload_consultation_audio(
         db.add(audit)
         db.commit()
 
+        raw_text, pat_summary, doc_advice = parse_transcription_and_summary(visit.raw_transcription)
+
         return VisitResponse(
             id=visit.id,
             patient_id=visit.patient_id,
@@ -163,7 +248,9 @@ async def upload_consultation_audio(
             date=visit.date,
             audio_file_path=visit.audio_file_path,
             keep_recording=visit.keep_recording,
-            raw_transcription=visit.raw_transcription,
+            raw_transcription=raw_text,
+            patient_summary=pat_summary,
+            doctor_advice=doc_advice,
             diagnosis=visit.diagnosis,
             medicines=visit.medicines,
             reminders=visit.reminders,
@@ -202,6 +289,8 @@ def get_visit(
     patient_phone = patient.phone if patient else ""
     doctor_name = visit.doctor.name if visit.doctor else "Doctor"
 
+    raw_text, pat_summary, doc_advice = parse_transcription_and_summary(visit.raw_transcription)
+
     return VisitResponse(
         id=visit.id,
         patient_id=visit.patient_id,
@@ -209,7 +298,9 @@ def get_visit(
         date=visit.date,
         audio_file_path=visit.audio_file_path,
         keep_recording=visit.keep_recording,
-        raw_transcription=visit.raw_transcription,
+        raw_transcription=raw_text,
+        patient_summary=pat_summary,
+        doctor_advice=doc_advice,
         diagnosis=visit.diagnosis,
         medicines=visit.medicines or [],
         reminders=visit.reminders or [],
@@ -243,6 +334,13 @@ def update_visit(
         visit.reminders = [r.model_dump() for r in req.reminders]
     if req.keep_recording is not None:
         visit.keep_recording = req.keep_recording
+    if req.patient_summary is not None or req.doctor_advice is not None:
+        raw_text, old_summary, old_advice = parse_transcription_and_summary(visit.raw_transcription)
+        visit.raw_transcription = serialize_transcription_and_summary(
+            raw_transcription=raw_text,
+            patient_summary=req.patient_summary if req.patient_summary is not None else old_summary,
+            doctor_advice=req.doctor_advice if req.doctor_advice is not None else old_advice
+        )
 
     db.commit()
     db.refresh(visit)
@@ -259,6 +357,8 @@ def update_visit(
     db.add(audit)
     db.commit()
 
+    raw_text, pat_summary, doc_advice = parse_transcription_and_summary(visit.raw_transcription)
+
     return VisitResponse(
         id=visit.id,
         patient_id=visit.patient_id,
@@ -266,7 +366,9 @@ def update_visit(
         date=visit.date,
         audio_file_path=visit.audio_file_path,
         keep_recording=visit.keep_recording,
-        raw_transcription=visit.raw_transcription,
+        raw_transcription=raw_text,
+        patient_summary=pat_summary,
+        doctor_advice=doc_advice,
         diagnosis=visit.diagnosis,
         medicines=visit.medicines or [],
         reminders=visit.reminders or [],
@@ -312,10 +414,13 @@ def approve_and_send_care_plan(
     db.add(audit)
     db.commit()
 
+    raw_text, pat_summary, doc_advice = parse_transcription_and_summary(visit.raw_transcription)
+
     return VisitApproveResponse(
         visit_id=visit.id,
         status="approved",
         whatsapp_status="dispatched_via_meta_cloud_api",
         scheduled_reminders_count=len(visit.reminders or []),
-        message="Care plan approved. Dispatched to patient via Meta WhatsApp Cloud API."
+        message="Care plan & consultation summary approved. Dispatched to patient via Meta WhatsApp Cloud API.",
+        patient_summary=pat_summary
     )

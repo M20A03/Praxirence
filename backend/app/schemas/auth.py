@@ -34,6 +34,16 @@ class DoctorGoogleAuthRequest(BaseModel):
     google_id: Optional[str] = None
 
 
+class DoctorEmailOTPRequest(BaseModel):
+    email: EmailStr
+    name: Optional[str] = None
+
+
+class DoctorEmailOTPVerifyRequest(BaseModel):
+    email: EmailStr
+    code: str
+
+
 
 class PatientOTPRequest(BaseModel):
     phone: str

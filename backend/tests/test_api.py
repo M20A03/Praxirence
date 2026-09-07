@@ -327,4 +327,138 @@ def test_doctor_whatsapp_otp():
     assert "access_token" in nv_data
 
 
+def test_summarize_consultation():
+    # Login doctor
+    login_res = client.post(
+        "/auth/doctor/login",
+        json={"email": "testdoc@praxirence.com", "password": "DocPass123!"}
+    )
+    token = login_res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Summarize conversation
+    conversation = (
+        "Doctor: Hello Ramesh, what brings you here today? "
+        "Patient: Doctor, I have had high fever, dry cough and body ache for 3 days. "
+        "Doctor: Your temperature is 101.4F and throat is congested. You have Acute Viral Bronchitis. "
+        "I am prescribing Paracetamol 650mg three times daily after food for fever, and Azithromycin 500mg once daily for 5 days. "
+        "Drink plenty of warm water, take steam inhalation twice daily, and avoid cold beverages. "
+        "Patient: When should I worry? "
+        "Doctor: If you feel breathlessness or fever stays above 102F after 3 days, visit emergency immediately. "
+        "Come back in 5 days for a checkup."
+    )
+    res = client.post(
+        "/visits/summarize",
+        headers=headers,
+        json={"conversation": conversation, "patient_name": "Ramesh Kumar"}
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert "patient_summary" in data
+    assert "doctor_advice" in data
+    assert len(data["patient_summary"]) > 20
+    assert len(data["doctor_advice"]) > 10
+    assert "diagnosis" in data
+    assert "medicines" in data
+
+
+def test_visit_with_patient_summary_and_portal():
+    # 1. Login doctor
+    login_res = client.post(
+        "/auth/doctor/login",
+        json={"email": "testdoc@praxirence.com", "password": "DocPass123!"}
+    )
+    token = login_res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 2. Create patient
+    p_res = client.post(
+        "/patients",
+        headers=headers,
+        json={"name": "Suresh Patel", "phone": "+919988776655", "dob": "1985-11-20"}
+    )
+    assert p_res.status_code == 201
+    patient_id = p_res.json()["id"]
+
+    # 3. Create structured visit with patient summary & doctor advice
+    summary_text = "Doctor confirmed Acute Bronchitis after observing throat congestion and mild fever. You were advised to complete your 5-day antibiotic course."
+    advice_text = "Drink warm fluids, perform steam inhalation twice daily, and rest adequately."
+    v_res = client.post(
+        "/visits",
+        headers=headers,
+        json={
+            "patient_id": patient_id,
+            "diagnosis": "Acute Bronchitis",
+            "patient_summary": summary_text,
+            "doctor_advice": advice_text,
+            "raw_transcription": "Doctor and patient conversation transcript here",
+            "medicines": [
+                {
+                    "name": "Paracetamol",
+                    "dosage": "650mg",
+                    "frequency": "TID",
+                    "timing": "After food",
+                    "duration_days": 3,
+                    "purpose": "Fever and body ache"
+                }
+            ],
+            "reminders": [
+                {
+                    "medicine_name": "Paracetamol",
+                    "dosage": "650mg",
+                    "time": "08:00",
+                    "frequency": "daily",
+                    "instructions": "Take after breakfast"
+                }
+            ]
+        }
+    )
+    assert v_res.status_code == 200
+    visit_data = v_res.json()
+    assert visit_data["patient_summary"] == summary_text
+    assert visit_data["doctor_advice"] == advice_text
+
+    # 4. Check get patient visits
+    pv_res = client.get(f"/patients/{patient_id}/visits", headers=headers)
+    assert pv_res.status_code == 200
+    visits = pv_res.json()
+    assert len(visits) >= 1
+    assert visits[0]["patient_summary"] == summary_text
+    assert visits[0]["doctor_advice"] == advice_text
+
+    # 5. Patient OTP login & check portal
+    client.post("/auth/otp/request", json={"phone": "+919988776655"})
+    p_login = client.post("/auth/otp/verify", json={"phone": "+919988776655", "code": "123456"})
+    p_token = p_login.json()["access_token"]
+    p_headers = {"Authorization": f"Bearer {p_token}"}
+
+    portal_res = client.get("/patients/me/portal", headers=p_headers)
+    assert portal_res.status_code == 200
+    p_portal = portal_res.json()
+    assert "visits" in p_portal
+    assert len(p_portal["visits"]) >= 1
+    assert p_portal["visits"][0]["patient_summary"] == summary_text
+    assert p_portal["visits"][0]["doctor_advice"] == advice_text
+
+
+def test_doctor_email_otp_flow():
+    # 1. Request verification code for email
+    email = "dr.sharma@apollohospital.org"
+    req_res = client.post(
+        "/auth/doctor/email-otp/request",
+        json={"email": email, "name": "Dr. Ramesh Sharma"}
+    )
+    assert req_res.status_code == 200
+    assert req_res.json()["success"] is True
+
+    # 2. Verify with OTP (using demo OTP 123456)
+    verify_res = client.post(
+        "/auth/doctor/email-otp/verify",
+        json={"email": email, "code": "123456"}
+    )
+    assert verify_res.status_code == 200
+    data = verify_res.json()
+    assert data["role"] == "doctor"
+    assert "access_token" in data
+    assert data["user"]["email"] == email
 

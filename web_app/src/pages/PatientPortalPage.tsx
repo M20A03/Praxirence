@@ -63,6 +63,9 @@ export const PatientPortalPage: React.FC = () => {
       precautionsTitle: 'Important Precautions',
       precautionsDesc: 'Complete the full medicine course. Rest adequately.',
       downloadRx: 'View & Download Prescription',
+      doctorExplanationTitle: 'What Your Doctor Explained During Your Visit',
+      diagnosisTitle: 'Diagnosis & Clinical Findings',
+      homeAdviceTitle: "Doctor's Home Advice & Recovery Tips",
       privacyTitle: 'Your Data Privacy (DPDP Act 2023)',
       privacyDesc: 'Your medical health records are private, encrypted, and secure.',
       consentActive: 'Consent Active & Protected',
@@ -75,6 +78,9 @@ export const PatientPortalPage: React.FC = () => {
       greeting: 'नमस्ते',
       welcomeSubtitle: 'यह आपके डॉक्टर द्वारा दी गई दैनिक दवाओं की सूची है।',
       attendingDoc: 'आपके चिकित्सक',
+      doctorExplanationTitle: 'डॉक्टर ने परामर्श में क्या समझाया',
+      diagnosisTitle: 'बीमारी का निदान (Diagnosis)',
+      homeAdviceTitle: 'घरेलू देखभाल और स्वास्थ्य सलाह',
       todayMedicines: 'आज की दवाओं का समय',
       takeAfterFood: 'भोजन के बाद लें',
       takeBeforeFood: 'भोजन से पहले लें',
@@ -332,6 +338,101 @@ export const PatientPortalPage: React.FC = () => {
           <FileText size={15} />
           <span>{t.downloadRx}</span>
         </button>
+      </div>
+
+      {/* ============================================================ */}
+      {/* SECTION: WHAT YOUR DOCTOR EXPLAINED (CONSULTATION SUMMARY)  */}
+      {/* ============================================================ */}
+      <div style={{
+        background: '#f0fdf4',
+        border: '1.5px solid #86efac',
+        borderRadius: '16px',
+        padding: '20px 24px',
+        marginBottom: '28px',
+        boxShadow: '0 2px 10px rgba(16, 185, 129, 0.05)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '10px',
+              background: '#dcfce7',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#15803d'
+            }}>
+              <Stethoscope size={20} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#166534', margin: 0 }}>
+                {t.doctorExplanationTitle}
+              </h2>
+              <span style={{ fontSize: '0.75rem', color: '#15803d', fontWeight: 600 }}>
+                {latestVisit?.date ? new Date(latestVisit.date).toLocaleDateString() : 'Recent Visit'} • Dr. {latestVisit?.doctor_name || 'Care Team'}
+              </span>
+            </div>
+          </div>
+          <span style={{
+            background: '#dcfce7',
+            color: '#15803d',
+            padding: '4px 10px',
+            borderRadius: '20px',
+            fontSize: '0.725rem',
+            fontWeight: 700
+          }}>
+            WhatsApp & App Synced
+          </span>
+        </div>
+
+        {/* Diagnosis Pill */}
+        <div style={{
+          display: 'inline-block',
+          background: '#ffffff',
+          border: '1px solid #bbf7d0',
+          borderRadius: '8px',
+          padding: '6px 12px',
+          fontSize: '0.85rem',
+          fontWeight: 700,
+          color: '#166534',
+          marginBottom: '12px'
+        }}>
+          📋 {t.diagnosisTitle}: {latestVisit?.diagnosis || 'Clinical Consultation'}
+        </div>
+
+        {/* Plain Language Summary */}
+        <p style={{
+          fontSize: '0.925rem',
+          color: '#1f2937',
+          lineHeight: '1.6',
+          marginBottom: '14px',
+          background: '#ffffff',
+          padding: '12px 16px',
+          borderRadius: '10px',
+          border: '1px solid #bbf7d0'
+        }}>
+          {latestVisit?.patient_summary || (lang === 'hi' 
+            ? 'आपके डॉक्टर ने परामर्श के दौरान आपके लक्षणों की जांच की और दवाएं निर्धारित की हैं। कृपया दवाओं के समय और आहार का पूरा ध्यान रखें।'
+            : 'During your consultation, your doctor evaluated your symptoms and prescribed a personalized clinical care plan. Please follow all dosage timings and home care advice.')}
+        </p>
+
+        {/* Home Advice Tile */}
+        {latestVisit?.doctor_advice && (
+          <div style={{
+            background: '#fef3c7',
+            border: '1px solid #fde68a',
+            borderRadius: '10px',
+            padding: '12px 16px',
+            fontSize: '0.85rem',
+            color: '#78350f'
+          }}>
+            <strong style={{ color: '#92400e', display: 'block', marginBottom: '4px' }}>
+              💡 {t.homeAdviceTitle}:
+            </strong>
+            {latestVisit.doctor_advice}
+          </div>
+        )}
       </div>
 
       {/* ============================================================ */}

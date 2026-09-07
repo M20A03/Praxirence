@@ -2,6 +2,12 @@
   "name": "praxirence-workspace",
   "private": true,
   "scripts": {
-    "build": "cd web_app && npm install && npm run build"
+    "build": "cd web_app && npm install && npm run build",
+    "doctor:start": "cd doctor_app && npm start",
+    "doctor:android": "cd doctor_app && npm run android",
+    "doctor:studio": "bash doctor_app/open_android_studio.sh",
+    "patient:start": "cd patient_app && npm start",
+    "patient:android": "cd patient_app && npm run android",
+    "patient:studio": "bash patient_app/open_android_studio.sh"
   }
 }

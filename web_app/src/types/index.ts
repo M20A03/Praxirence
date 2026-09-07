@@ -74,6 +74,8 @@ export interface Visit {
   audio_file_path?: string;
   keep_recording: boolean;
   raw_transcription?: string;
+  patient_summary?: string;
+  doctor_advice?: string;
   diagnosis?: string;
   medicines: MedicineItem[];
   reminders: ReminderItem[];

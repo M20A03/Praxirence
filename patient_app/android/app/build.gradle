@@ -123,20 +123,16 @@ android {
             storePassword 'praxirence2026'
             keyAlias 'praxirence'
             keyPassword 'praxirence2026'
-            enableV1Signing = true
-            enableV2Signing = true
-            enableV3Signing = true
-            enableV4Signing = false
+            v1SigningEnabled true
+            v2SigningEnabled true
         }
         release {
             storeFile file('praxirence-release.keystore')
             storePassword 'praxirence2026'
             keyAlias 'praxirence'
             keyPassword 'praxirence2026'
-            enableV1Signing = true
-            enableV2Signing = true
-            enableV3Signing = true
-            enableV4Signing = false
+            v1SigningEnabled true
+            v2SigningEnabled true
         }
     }
     buildTypes {

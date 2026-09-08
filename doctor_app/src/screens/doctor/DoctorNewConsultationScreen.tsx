@@ -272,6 +272,15 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
       return;
     }
 
+    if (!doctorVerified) {
+      const docDisplayName = doctor.name.startsWith('Dr.') ? doctor.name : `Dr. ${doctor.name}`;
+      Alert.alert(
+        'Physician Verification & Sign-Off Required',
+        `Under NMC Telemedicine Practice Guidelines and clinical safety protocols, attending physician ${docDisplayName} must review the clinical assessment and verify the care plan by checking the "Physician Clinical Verification & Legal Sign-Off" box before dispatching.`
+      );
+      return;
+    }
+
     setSubmitting(true);
     try {
       // 1. Create structured visit with patient summary & doctor advice
@@ -615,14 +624,19 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
           style={[styles.submitBtn, doctorVerified ? styles.submitBtnVerified : styles.submitBtnUnverified]}
           onPress={handleSaveAndDeliverWhatsApp}
           disabled={submitting}
+          activeOpacity={doctorVerified ? 0.8 : 0.6}
         >
           {submitting ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <Ionicons name="checkmark-done-circle" size={20} color="#ffffff" />
+              <Ionicons
+                name={doctorVerified ? 'checkmark-done-circle' : 'shield-outline'}
+                size={20}
+                color="#ffffff"
+              />
               <Text style={styles.submitBtnText}>
-                {doctorVerified ? 'Verify & Dispatch Care Plan' : 'Review, Verify & Dispatch'}
+                {doctorVerified ? 'Verify & Dispatch Care Plan' : 'Legal Sign-Off Required to Dispatch'}
               </Text>
             </View>
           )}
@@ -1057,9 +1071,16 @@ const styles = StyleSheet.create({
   },
   submitBtnVerified: {
     backgroundColor: '#10b981',
+    shadowColor: '#10b981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   submitBtnUnverified: {
-    backgroundColor: '#0ea5e9',
+    backgroundColor: '#94A3B8',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   sharePdfBtn: {
     flexDirection: 'row',

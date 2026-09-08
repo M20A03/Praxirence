@@ -11,7 +11,8 @@ import {
   Save,
   MessageSquare,
   AlertCircle,
-  Printer
+  Printer,
+  Shield
 } from 'lucide-react';
 import { Visit, MedicineItem, ReminderItem, Patient } from '../types';
 import { api } from '../services/api';
@@ -38,6 +39,7 @@ export const CarePlanEditor: React.FC<CarePlanEditorProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [showWhatsAppPreview, setShowWhatsAppPreview] = useState(false);
   const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
+  const [doctorVerified, setDoctorVerified] = useState(false);
 
   // Add new medicine row
   const handleAddMedicine = () => {
@@ -118,6 +120,11 @@ export const CarePlanEditor: React.FC<CarePlanEditorProps> = ({
 
   // Approve & Send via WhatsApp
   const handleApproveAndSend = async () => {
+    if (!doctorVerified) {
+      setError('Physician Verification & Sign-Off Required: Please review and verify the clinical assessment before dispatching via WhatsApp.');
+      return;
+    }
+
     try {
       setApproving(true);
       setError(null);
@@ -588,6 +595,65 @@ export const CarePlanEditor: React.FC<CarePlanEditorProps> = ({
         </div>
       </div>
 
+      {/* Physician Verification & Sign-Off (NMC Telemedicine Guidelines) */}
+      {!isApprovedOrSent && (
+        <div style={{
+          marginTop: '20px',
+          padding: '16px 20px',
+          borderRadius: 'var(--radius-lg, 12px)',
+          background: doctorVerified ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
+          border: `1.5px solid ${doctorVerified ? '#10b981' : '#f59e0b'}`,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              background: doctorVerified ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: doctorVerified ? '#10b981' : '#f59e0b'
+            }}>
+              <Shield size={18} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)' }}>
+                Physician Clinical Verification & Legal Sign-Off
+              </div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                NMC Telemedicine Practice Guidelines • Digital Care Plan Verification Gate
+              </div>
+            </div>
+          </div>
+          <label style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            cursor: 'pointer',
+            fontSize: '0.85rem',
+            color: 'var(--text-primary)',
+            background: 'var(--card-bg, #ffffff)',
+            padding: '10px 14px',
+            borderRadius: '8px',
+            border: '1px solid var(--border-color)'
+          }}>
+            <input
+              type="checkbox"
+              checked={doctorVerified}
+              onChange={(e) => setDoctorVerified(e.target.checked)}
+              style={{ width: '18px', height: '18px', accentColor: '#10b981', cursor: 'pointer' }}
+            />
+            <span>
+              I, attending physician, have verified that the clinical diagnosis, medication dosages, timings, and patient advice are accurate and approve immediate dispatch.
+            </span>
+          </label>
+        </div>
+      )}
+
       {/* Action Footer */}
       <div style={{
         display: 'flex',
@@ -639,10 +705,22 @@ export const CarePlanEditor: React.FC<CarePlanEditorProps> = ({
             type="button"
             onClick={handleApproveAndSend}
             disabled={approving || saving}
-            className="btn btn-whatsapp"
+            className={`btn ${doctorVerified ? 'btn-whatsapp' : 'btn-secondary'}`}
+            style={{
+              background: doctorVerified ? undefined : '#94A3B8',
+              borderColor: doctorVerified ? undefined : '#94A3B8',
+              color: '#ffffff',
+              gap: '8px'
+            }}
           >
-            <Send size={18} />
-            <span>{approving ? 'Approving & Sending...' : 'Approve & Send via WhatsApp'}</span>
+            {approving ? (
+              <span>Approving & Sending...</span>
+            ) : (
+              <>
+                {doctorVerified ? <Send size={18} /> : <Shield size={18} />}
+                <span>{doctorVerified ? 'Verify & Dispatch via WhatsApp' : 'Legal Sign-Off Required to Dispatch'}</span>
+              </>
+            )}
           </button>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--emerald-400)', fontSize: '0.9rem' }}>

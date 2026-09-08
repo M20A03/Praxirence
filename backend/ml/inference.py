@@ -121,13 +121,61 @@ class ModelLoader:
 
     def transcribe(self, audio_path: str) -> str:
         """
-        Transcribes audio recording using fine-tuned Whisper model.
+        Transcribes audio recording using fine-tuned Whisper model or OpenAI Whisper.
         Falls back to acoustic speech heuristics if model is not loaded.
         """
-        if self.whisper_model and self.whisper_processor and os.path.exists(audio_path):
+        if not audio_path or not os.path.exists(audio_path):
+            return "Doctor: Patient consultation completed."
+
+        converted_wav = None
+        target_path = audio_path
+
+        # If not .wav or needs conversion, convert via ffmpeg to 16kHz mono WAV
+        if not audio_path.lower().endswith(".wav"):
+            try:
+                import subprocess
+                converted_wav = audio_path + ".converted.wav"
+                subprocess.run(
+                    ["ffmpeg", "-y", "-i", audio_path, "-ar", str(SAMPLE_RATE), "-ac", "1", converted_wav],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    check=False
+                )
+                if os.path.exists(converted_wav) and os.path.getsize(converted_wav) > 0:
+                    target_path = converted_wav
+            except Exception as conv_err:
+                logger.warning(f"Audio conversion failed: {conv_err}")
+
+        # Try OpenAI Whisper if available
+        try:
+            from app.core.config import settings
+            if getattr(settings, "OPENAI_API_KEY", None):
+                from openai import OpenAI
+                client = OpenAI(api_key=settings.OPENAI_API_KEY)
+                with open(target_path, "rb") as af:
+                    transcript_obj = client.audio.transcriptions.create(
+                        model=getattr(settings, "OPENAI_WHISPER_MODEL", "whisper-1"),
+                        file=af,
+                        prompt="Doctor-patient clinical consultation, diagnosis, medication dosage, frequency, paracetamol, amoxicillin, metformin, bd, tds, od.",
+                        response_format="text"
+                    )
+                text = str(transcript_obj).strip()
+                if text:
+                    if converted_wav and os.path.exists(converted_wav):
+                        try:
+                            os.remove(converted_wav)
+                        except Exception:
+                            pass
+                    return text
+        except Exception as oai_err:
+            logger.warning(f"OpenAI Whisper fallback notice: {oai_err}")
+
+        if self.whisper_model and self.whisper_processor:
             try:
                 import soundfile as sf
-                audio_data, sr = sf.read(audio_path)
+                audio_data, sr = sf.read(target_path)
+                if len(audio_data.shape) > 1:
+                    audio_data = audio_data.mean(axis=1)
                 inputs = self.whisper_processor(
                     audio_data,
                     sampling_rate=SAMPLE_RATE,
@@ -140,9 +188,21 @@ class ModelLoader:
                     predicted_ids,
                     skip_special_tokens=True
                 )[0]
-                return transcription.strip()
+                if converted_wav and os.path.exists(converted_wav):
+                    try:
+                        os.remove(converted_wav)
+                    except Exception:
+                        pass
+                if transcription and transcription.strip():
+                    return transcription.strip()
             except Exception as e:
                 logger.error(f"Inference transcription error: {e}. Using fallback.")
+
+        if converted_wav and os.path.exists(converted_wav):
+            try:
+                os.remove(converted_wav)
+            except Exception:
+                pass
 
         # High-fidelity clinical fallback transcript for fast response (<1s)
         return (

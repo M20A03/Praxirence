@@ -7,6 +7,11 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    watch: {
+      usePolling: true,
+      interval: 800,
+      ignored: ['**/node_modules/**', '**/.git/**', '**/dist/**']
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:8000',

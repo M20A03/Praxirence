@@ -26,7 +26,7 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onOpenPortal }) =>
               <span style={{ fontWeight: 800, fontSize: '1.2rem', color: '#06b6d4' }}>P</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontWeight: 800, fontSize: '1.25rem', letterSpacing: '-0.03em', color: '#ffffff' }}>
+              <span style={{ fontWeight: 800, fontSize: '1.25rem', letterSpacing: '-0.03em', color: '#0f172a' }}>
                 prax<span style={{ color: '#06b6d4' }}>i</span><span style={{ color: '#10b981' }}>rence</span>
               </span>
             </div>
@@ -53,23 +53,24 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onOpenPortal }) =>
             <button
               onClick={onOpenPortal}
               style={{
-                background: 'transparent',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                color: '#94a3b8',
+                background: '#ffffff',
+                border: '1px solid #cbd5e1',
+                color: '#475569',
                 padding: '8px 16px',
                 borderRadius: '10px',
                 fontSize: '0.85rem',
                 fontWeight: 600,
                 cursor: 'pointer',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
                 transition: 'all 0.2s ease'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#ffffff';
-                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                e.currentTarget.style.color = '#0f172a';
+                e.currentTarget.style.borderColor = '#94a3b8';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#94a3b8';
-                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+                e.currentTarget.style.color = '#475569';
+                e.currentTarget.style.borderColor = '#cbd5e1';
               }}
             >
               Doctor Console

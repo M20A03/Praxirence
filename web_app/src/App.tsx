@@ -51,8 +51,8 @@ const MainWebsite: React.FC = () => {
         <div style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0, 0, 0, 0.85)',
-          backdropFilter: 'blur(10px)',
+          background: 'rgba(15, 23, 42, 0.4)',
+          backdropFilter: 'blur(8px)',
           zIndex: 1000,
           display: 'flex',
           alignItems: 'center',
@@ -60,15 +60,15 @@ const MainWebsite: React.FC = () => {
           padding: '20px'
         }}>
           <div style={{
-            background: '#0f172a',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            background: '#ffffff',
+            border: '1px solid #cbd5e1',
             borderRadius: '20px',
             maxWidth: '1100px',
             width: '100%',
             maxHeight: '90vh',
             overflowY: 'auto',
             position: 'relative',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+            boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)'
           }}>
             {/* Modal Header */}
             <div style={{
@@ -76,11 +76,11 @@ const MainWebsite: React.FC = () => {
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '16px 24px',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+              borderBottom: '1px solid #e2e8f0'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Lock size={16} color="#06b6d4" />
-                <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fff' }}>
+                <Lock size={16} color="#0284c7" />
+                <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>
                   Praxirence Clinical Portal
                 </span>
               </div>
@@ -89,7 +89,7 @@ const MainWebsite: React.FC = () => {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: '#94a3b8',
+                  color: '#64748b',
                   cursor: 'pointer',
                   padding: '4px'
                 }}

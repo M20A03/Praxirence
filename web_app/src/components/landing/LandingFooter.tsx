@@ -22,7 +22,7 @@ export const LandingFooter: React.FC = () => {
             }}>
               P
             </div>
-            <span style={{ fontWeight: 800, fontSize: '1.15rem', color: '#fff' }}>
+            <span style={{ fontWeight: 800, fontSize: '1.15rem', color: '#0f172a' }}>
               prax<span style={{ color: '#06b6d4' }}>i</span><span style={{ color: '#10b981' }}>rence</span>
             </span>
           </div>
@@ -31,7 +31,7 @@ export const LandingFooter: React.FC = () => {
             Engineered in India for licensed medical practitioners. Fully aligned with the National Medical Commission (NMC) Telemedicine Practice Guidelines, Digital Personal Data Protection (DPDP) Act 2023, and Ayushman Bharat Digital Mission (ABDM) standards.
           </p>
 
-          <span style={{ fontSize: '0.75rem', color: '#475569' }}>
+          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
             Zero Audio Storage Architecture: Ambient consultation audio is processed ephemerally and never retained.
           </span>
         </div>
@@ -59,7 +59,7 @@ export const LandingFooter: React.FC = () => {
             </span>
           </div>
 
-          <span style={{ fontSize: '0.75rem', color: '#475569' }}>
+          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
             © 2026 Praxirence Healthcare Technologies. All rights reserved.
           </span>
         </div>

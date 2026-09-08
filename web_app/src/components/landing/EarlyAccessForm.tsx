@@ -34,16 +34,16 @@ export const EarlyAccessForm: React.FC = () => {
 
         {submitted ? (
           <div style={{
-            background: 'rgba(16, 185, 129, 0.1)',
-            border: '1px solid rgba(16, 185, 129, 0.3)',
+            background: 'rgba(16, 185, 129, 0.08)',
+            border: '1px solid rgba(16, 185, 129, 0.25)',
             borderRadius: '16px',
             padding: '32px',
             margin: '32px 0',
             textAlign: 'center'
           }}>
-            <CheckCircle2 size={40} color="#10b981" style={{ margin: '0 auto 12px auto' }} />
-            <h4 style={{ color: '#fff', fontSize: '1.25rem', marginBottom: '8px' }}>Thank you, Dr. {formData.name}!</h4>
-            <p style={{ color: '#94a3b8', fontSize: '0.95rem' }}>
+            <CheckCircle2 size={40} color="#059669" style={{ margin: '0 auto 12px auto' }} />
+            <h4 style={{ color: '#0f172a', fontSize: '1.25rem', marginBottom: '8px', fontWeight: 700 }}>Thank you, Dr. {formData.name}!</h4>
+            <p style={{ color: '#475569', fontSize: '0.95rem' }}>
               Our clinical implementation team will contact you on WhatsApp ({formData.phone}) within 2 hours to activate your clinic's ambient AI gateway.
             </p>
           </div>
@@ -82,12 +82,12 @@ export const EarlyAccessForm: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
                 style={{ cursor: 'pointer' }}
               >
-                <option value="General Medicine" style={{ background: '#0f172a' }}>General Medicine</option>
-                <option value="Diabetology & Endocrinology" style={{ background: '#0f172a' }}>Diabetology & Endocrinology</option>
-                <option value="Cardiology" style={{ background: '#0f172a' }}>Cardiology</option>
-                <option value="Pediatrics" style={{ background: '#0f172a' }}>Pediatrics</option>
-                <option value="Orthopedics" style={{ background: '#0f172a' }}>Orthopedics</option>
-                <option value="Other" style={{ background: '#0f172a' }}>Other Specialization</option>
+                <option value="General Medicine">General Medicine</option>
+                <option value="Diabetology & Endocrinology">Diabetology & Endocrinology</option>
+                <option value="Cardiology">Cardiology</option>
+                <option value="Pediatrics">Pediatrics</option>
+                <option value="Orthopedics">Orthopedics</option>
+                <option value="Other">Other Specialization</option>
               </select>
             </div>
 
@@ -110,10 +110,10 @@ export const EarlyAccessForm: React.FC = () => {
           flexWrap: 'wrap'
         }}>
           <div style={{ textAlign: 'left' }}>
-            <span style={{ fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, display: 'block' }}>
+            <span style={{ fontSize: '0.8rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, display: 'block' }}>
               Direct Mobile Downloads
             </span>
-            <span style={{ fontSize: '0.9rem', color: '#fff' }}>
+            <span style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 600 }}>
               Signed Production APKs (v1.0.4)
             </span>
           </div>

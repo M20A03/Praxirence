@@ -63,28 +63,28 @@ export const AppShowcase: React.FC = () => {
             {activeTab === 'doctor' && (
               <div className="phone-screen">
                 {/* Status bar */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
-                    <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600 }}>NMC ID: 84920-A</span>
+                    <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>NMC ID: 84920-A</span>
                   </div>
-                  <span style={{ fontSize: '10px', color: '#06b6d4', fontWeight: 600 }}>Dr. Mayank</span>
+                  <span style={{ fontSize: '10px', color: '#0284c7', fontWeight: 700 }}>Dr. Mayank</span>
                 </div>
 
                 {/* Patient Header */}
-                <div style={{ background: 'rgba(255,255,255,0.04)', padding: '10px 12px', borderRadius: '12px', marginBottom: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ background: '#ffffff', padding: '10px 12px', borderRadius: '12px', marginBottom: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 700, color: '#fff', fontSize: '12px' }}>Ramesh Sharma</span>
-                    <span style={{ fontSize: '10px', color: '#10b981', background: 'rgba(16,185,129,0.15)', padding: '2px 8px', borderRadius: '10px' }}>OPD-204</span>
+                    <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '12px' }}>Ramesh Sharma</span>
+                    <span style={{ fontSize: '10px', color: '#059669', background: 'rgba(16,185,129,0.12)', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>OPD-204</span>
                   </div>
-                  <span style={{ fontSize: '10px', color: '#94a3b8' }}>48 Y / Male • +91 98765-43210</span>
+                  <span style={{ fontSize: '10px', color: '#64748b' }}>48 Y / Male • +91 98765-43210</span>
                 </div>
 
                 {/* Live Waveform & Listening State */}
-                <div style={{ background: 'rgba(6, 182, 212, 0.08)', border: '1px solid rgba(6, 182, 212, 0.25)', borderRadius: '14px', padding: '12px', textAlign: 'center', marginBottom: '12px' }}>
+                <div style={{ background: 'rgba(2, 132, 199, 0.06)', border: '1px solid rgba(2, 132, 199, 0.2)', borderRadius: '14px', padding: '12px', textAlign: 'center', marginBottom: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                    <Mic size={14} color="#06b6d4" />
-                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#06b6d4' }}>Ambient Voice AI Active</span>
+                    <Mic size={14} color="#0284c7" />
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#0284c7' }}>Ambient Voice AI Active</span>
                   </div>
                   <div className="waveform-bars">
                     <div className="wave-bar"></div>
@@ -95,25 +95,25 @@ export const AppShowcase: React.FC = () => {
                     <div className="wave-bar"></div>
                     <div className="wave-bar"></div>
                   </div>
-                  <span style={{ fontSize: '9px', color: '#94a3b8' }}>Bilingual Recognition (Hindi + English)</span>
+                  <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 500 }}>Bilingual Recognition (Hindi + English)</span>
                 </div>
 
                 {/* Extracted Diagnosis */}
-                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '12px', marginBottom: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <span style={{ fontSize: '9px', color: '#06b6d4', fontWeight: 700, textTransform: 'uppercase' }}>Extracted Diagnosis</span>
-                  <p style={{ fontSize: '11px', color: '#fff', fontWeight: 600, marginTop: '2px' }}>
+                <div style={{ background: '#ffffff', padding: '10px', borderRadius: '12px', marginBottom: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                  <span style={{ fontSize: '9px', color: '#0284c7', fontWeight: 700, textTransform: 'uppercase' }}>Extracted Diagnosis</span>
+                  <p style={{ fontSize: '11px', color: '#0f172a', fontWeight: 600, marginTop: '2px' }}>
                     Type 2 Diabetes Mellitus with Essential Hypertension
                   </p>
                   <div style={{ display: 'flex', gap: '4px', marginTop: '6px' }}>
-                    <span style={{ fontSize: '9px', background: 'rgba(6,182,212,0.15)', color: '#06b6d4', padding: '2px 6px', borderRadius: '4px' }}>ICD-10: E11.9</span>
-                    <span style={{ fontSize: '9px', background: 'rgba(16,185,129,0.15)', color: '#10b981', padding: '2px 6px', borderRadius: '4px' }}>Rx: 2 Drugs</span>
+                    <span style={{ fontSize: '9px', background: 'rgba(2,132,199,0.1)', color: '#0284c7', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>ICD-10: E11.9</span>
+                    <span style={{ fontSize: '9px', background: 'rgba(16,185,129,0.1)', color: '#059669', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>Rx: 2 Drugs</span>
                   </div>
                 </div>
 
                 {/* Prescribed Medications */}
-                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '12px', marginBottom: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 700 }}>Structured Prescriptions</span>
-                  <div style={{ marginTop: '4px', fontSize: '10px', color: '#e2e8f0' }}>
+                <div style={{ background: '#ffffff', padding: '10px', borderRadius: '12px', marginBottom: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                  <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 700 }}>Structured Prescriptions</span>
+                  <div style={{ marginTop: '4px', fontSize: '10px', color: '#334155', lineHeight: 1.4 }}>
                     • Metformin 500mg (1-0-1 after meals)<br />
                     • Telmisartan 40mg (1-0-0 morning)
                   </div>
@@ -126,9 +126,9 @@ export const AppShowcase: React.FC = () => {
                       type="checkbox"
                       checked={doctorVerified}
                       onChange={(e) => setDoctorVerified(e.target.checked)}
-                      style={{ accentColor: '#10b981', marginTop: '2px' }}
+                      style={{ accentColor: '#059669', marginTop: '2px' }}
                     />
-                    <span style={{ fontSize: '9px', color: '#cbd5e1', lineHeight: 1.3 }}>
+                    <span style={{ fontSize: '9px', color: '#334155', lineHeight: 1.3, fontWeight: 500 }}>
                       I have reviewed and legally verified this care plan under NMC Guidelines.
                     </span>
                   </label>
@@ -139,7 +139,7 @@ export const AppShowcase: React.FC = () => {
                       marginTop: '8px',
                       padding: '8px',
                       borderRadius: '8px',
-                      background: doctorVerified ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : '#334155',
+                      background: doctorVerified ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : '#94a3b8',
                       color: '#fff',
                       fontSize: '11px',
                       fontWeight: 700,
@@ -163,63 +163,63 @@ export const AppShowcase: React.FC = () => {
             {activeTab === 'patient' && (
               <div className="phone-screen">
                 {/* Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '8px' }}>
-                  <span style={{ fontSize: '11px', color: '#fff', fontWeight: 700 }}>नमस्ते रमेश जी</span>
-                  <div style={{ background: 'rgba(6,182,212,0.15)', color: '#06b6d4', padding: '2px 8px', borderRadius: '8px', fontSize: '9px', fontWeight: 600 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                  <span style={{ fontSize: '11px', color: '#0f172a', fontWeight: 700 }}>नमस्ते रमेश जी</span>
+                  <div style={{ background: 'rgba(2,132,199,0.1)', color: '#0284c7', padding: '2px 8px', borderRadius: '8px', fontSize: '9px', fontWeight: 700 }}>
                     हिंदी / ENG
                   </div>
                 </div>
 
                 {/* WhatsApp Care Plan Status */}
                 <div style={{ background: 'rgba(37, 211, 102, 0.1)', border: '1px solid rgba(37, 211, 102, 0.3)', borderRadius: '12px', padding: '10px 12px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <MessageSquare size={16} color="#25D366" />
+                  <MessageSquare size={16} color="#059669" />
                   <div>
-                    <span style={{ fontSize: '10px', color: '#25D366', fontWeight: 700, display: 'block' }}>WhatsApp पर भेजा गया</span>
-                    <span style={{ fontSize: '9px', color: '#94a3b8' }}>PDF केयर प्लान उपलब्ध है</span>
+                    <span style={{ fontSize: '10px', color: '#059669', fontWeight: 700, display: 'block' }}>WhatsApp पर भेजा गया</span>
+                    <span style={{ fontSize: '9px', color: '#64748b' }}>PDF केयर प्लान उपलब्ध है</span>
                   </div>
                 </div>
 
                 {/* Plain-Language Instructions */}
-                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '12px', marginBottom: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <span style={{ fontSize: '9px', color: '#06b6d4', fontWeight: 700, textTransform: 'uppercase' }}>डॉक्टर की सलाह (सरल भाषा में)</span>
-                  <p style={{ fontSize: '10px', color: '#cbd5e1', marginTop: '4px', lineHeight: 1.4 }}>
+                <div style={{ background: '#ffffff', padding: '10px', borderRadius: '12px', marginBottom: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                  <span style={{ fontSize: '9px', color: '#0284c7', fontWeight: 700, textTransform: 'uppercase' }}>डॉक्टर की सलाह (सरल भाषा में)</span>
+                  <p style={{ fontSize: '10px', color: '#334155', marginTop: '4px', lineHeight: 1.4 }}>
                     शुगर को नियंत्रित रखने के लिए दवा समय पर लें और सुबह 30 मिनट तेज चलें। मीठे पेय से परहेज करें।
                   </p>
                 </div>
 
                 {/* Daily Medicine Schedule */}
                 <div style={{ marginBottom: '10px' }}>
-                  <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>आज की दवाएं (Today's Doses)</span>
+                  <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>आज की दवाएं (Today's Doses)</span>
                   
                   {/* Morning Dose */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.04)', padding: '8px 10px', borderRadius: '10px', marginTop: '6px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff', padding: '8px 10px', borderRadius: '10px', marginTop: '6px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Clock size={12} color="#06b6d4" />
+                      <Clock size={12} color="#0284c7" />
                       <div>
-                        <span style={{ fontSize: '10px', color: '#fff', fontWeight: 600, display: 'block' }}>नाश्ते के बाद (सुबह 8:30)</span>
-                        <span style={{ fontSize: '9px', color: '#94a3b8' }}>Metformin 500mg • 1 गोली</span>
+                        <span style={{ fontSize: '10px', color: '#0f172a', fontWeight: 600, display: 'block' }}>नाश्ते के बाद (सुबह 8:30)</span>
+                        <span style={{ fontSize: '9px', color: '#64748b' }}>Metformin 500mg • 1 गोली</span>
                       </div>
                     </div>
-                    <CheckCircle2 size={14} color="#10b981" />
+                    <CheckCircle2 size={14} color="#059669" />
                   </div>
 
                   {/* Evening Dose */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.04)', padding: '8px 10px', borderRadius: '10px', marginTop: '6px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff', padding: '8px 10px', borderRadius: '10px', marginTop: '6px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Clock size={12} color="#f59e0b" />
+                      <Clock size={12} color="#d97706" />
                       <div>
-                        <span style={{ fontSize: '10px', color: '#fff', fontWeight: 600, display: 'block' }}>रात के खाने के बाद (रात 9:00)</span>
-                        <span style={{ fontSize: '9px', color: '#94a3b8' }}>Metformin 500mg • 1 गोली</span>
+                        <span style={{ fontSize: '10px', color: '#0f172a', fontWeight: 600, display: 'block' }}>रात के खाने के बाद (रात 9:00)</span>
+                        <span style={{ fontSize: '9px', color: '#64748b' }}>Metformin 500mg • 1 गोली</span>
                       </div>
                     </div>
-                    <span style={{ fontSize: '9px', color: '#f59e0b', fontWeight: 600 }}>बाकी है</span>
+                    <span style={{ fontSize: '9px', color: '#d97706', fontWeight: 600 }}>बाकी है</span>
                   </div>
                 </div>
 
                 {/* DPDP Consent Status */}
-                <div style={{ marginTop: 'auto', background: 'rgba(6, 182, 212, 0.08)', border: '1px solid rgba(6, 182, 212, 0.2)', borderRadius: '10px', padding: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Lock size={12} color="#06b6d4" />
-                  <span style={{ fontSize: '9px', color: '#94a3b8' }}>
+                <div style={{ marginTop: 'auto', background: 'rgba(2, 132, 199, 0.08)', border: '1px solid rgba(2, 132, 199, 0.2)', borderRadius: '10px', padding: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Lock size={12} color="#0284c7" />
+                  <span style={{ fontSize: '9px', color: '#475569', fontWeight: 500 }}>
                     DPDP Act 2023: आपकी सहमति सुरक्षित है। कभी भी वापस ले सकते हैं।
                   </span>
                 </div>
@@ -274,7 +274,7 @@ export const AppShowcase: React.FC = () => {
                   <Download size={16} />
                   <span>Download Doctor App (APK)</span>
                 </a>
-                <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+                <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500 }}>
                   Android 8.0+ • Release v1.0.4
                 </span>
               </div>
@@ -323,7 +323,7 @@ export const AppShowcase: React.FC = () => {
                   <Download size={16} />
                   <span>Download Patient App (APK)</span>
                 </a>
-                <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+                <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500 }}>
                   Universal Android APK • v1.0.4
                 </span>
               </div>

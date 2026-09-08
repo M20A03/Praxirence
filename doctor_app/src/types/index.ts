@@ -29,6 +29,8 @@ export interface PatientSummary {
   consent_status: boolean;
   role: 'patient';
   created_at?: string;
+  age?: number | string;
+  gender?: string;
 }
 
 export interface MedicineItem {
@@ -72,6 +74,7 @@ export interface ConsultationSummarizeResult {
   medicines: MedicineItem[];
   reminders: ReminderItem[];
   follow_up_days?: number;
+  conversation?: string;
 }
 
 export interface ConsentDocument {

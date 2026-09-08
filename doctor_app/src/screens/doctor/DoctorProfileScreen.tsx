@@ -7,8 +7,11 @@ import {
   Alert,
   ScrollView,
   ActivityIndicator,
+  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as LocalAuthentication from 'expo-local-authentication';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../../theme';
 import { DoctorUser } from '../../types';
 import { BrandLogoMobile } from '../../components/BrandLogoMobile';
@@ -26,10 +29,51 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
   const [latencyMs, setLatencyMs] = useState<number>(55);
   const [isLive, setIsLive] = useState<boolean>(true);
   const [checking, setChecking] = useState<boolean>(false);
+  const [biometricEnabled, setBiometricEnabled] = useState<boolean>(false);
 
   useEffect(() => {
     checkHealth();
+    loadBiometricSetting();
   }, []);
+
+  const loadBiometricSetting = async () => {
+    try {
+      const val = await AsyncStorage.getItem('praxirence_biometric_enabled');
+      if (val === 'true') setBiometricEnabled(true);
+    } catch (e) {}
+  };
+
+  const handleToggleBiometric = async (value: boolean) => {
+    if (value) {
+      try {
+        const hasHardware = await LocalAuthentication.hasHardwareAsync();
+        const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+        if (!hasHardware || !isEnrolled) {
+          Alert.alert(
+            'Biometrics Unavailable',
+            'Your device does not have fingerprint or face authentication enrolled in system settings.'
+          );
+          return;
+        }
+
+        const res = await LocalAuthentication.authenticateAsync({
+          promptMessage: 'Verify Biometric to Enable Doctor App Lock',
+        });
+
+        if (res.success) {
+          setBiometricEnabled(true);
+          await AsyncStorage.setItem('praxirence_biometric_enabled', 'true');
+          Alert.alert('Lock Enabled', 'Biometric protection is now active for doctor consultations.');
+        }
+      } catch (err: any) {
+        Alert.alert('Notice', 'Biometric setup: ' + err.message);
+      }
+    } else {
+      setBiometricEnabled(false);
+      await AsyncStorage.setItem('praxirence_biometric_enabled', 'false');
+    }
+  };
 
   const checkHealth = async () => {
     setChecking(true);
@@ -159,6 +203,24 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
               Full adherence to India Digital Personal Data Protection Act 2023 and Ayushman Bharat Digital Mission guidelines.
             </Text>
           </View>
+        </View>
+
+        <View style={[styles.securityRow, { alignItems: 'center', justifyContent: 'space-between' }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, paddingRight: 8 }}>
+            <Ionicons name="finger-print-outline" size={22} color="#0284C7" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.securityHeading}>Biometric Fingerprint / Face ID</Text>
+              <Text style={styles.securityDesc}>
+                Require biometric authentication before opening clinician workspace.
+              </Text>
+            </View>
+          </View>
+          <Switch
+            value={biometricEnabled}
+            onValueChange={handleToggleBiometric}
+            trackColor={{ false: '#E2E8F0', true: '#BAE6FD' }}
+            thumbColor={biometricEnabled ? '#0284C7' : '#94A3B8'}
+          />
         </View>
       </View>
 

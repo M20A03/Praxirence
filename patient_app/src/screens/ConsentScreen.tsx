@@ -11,6 +11,8 @@ import {
   Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
 import { PatientUser, ConsentDocument } from '../types';
 import { mobileApi } from '../services/api';
@@ -42,9 +44,58 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({
   // Export Data State
   const [exporting, setExporting] = useState<boolean>(false);
 
+  // Biometric Protection State
+  const [biometricsEnabled, setBiometricsEnabled] = useState<boolean>(false);
+
   useEffect(() => {
     loadConsentDocument();
+    checkBiometrics();
   }, []);
+
+  const checkBiometrics = async () => {
+    try {
+      const saved = await AsyncStorage.getItem('@praxirence_patient_biometrics');
+      setBiometricsEnabled(saved === 'true');
+    } catch (e) {
+      console.log('Biometrics check error:', e);
+    }
+  };
+
+  const handleToggleBiometrics = async (val: boolean) => {
+    if (val) {
+      try {
+        const compatible = await LocalAuthentication.hasHardwareAsync();
+        const enrolled = await LocalAuthentication.isEnrolledAsync();
+
+        if (!compatible || !enrolled) {
+          Alert.alert(
+            'Biometrics Unavailable',
+            'No enrolled fingerprint or face authentication detected on this device.'
+          );
+          return;
+        }
+
+        const res = await LocalAuthentication.authenticateAsync({
+          promptMessage: 'Authenticate to enable biometric protection for your medical vault',
+          fallbackLabel: 'Use Device Passcode',
+        });
+
+        if (res.success) {
+          setBiometricsEnabled(true);
+          await AsyncStorage.setItem('@praxirence_patient_biometrics', 'true');
+          Alert.alert('Biometrics Activated', 'Your medical records, prescriptions, and vitals vault are now secured with Biometric Lock.');
+        } else {
+          Alert.alert('Verification Cancelled', 'Biometric credentials could not be verified.');
+        }
+      } catch (err: any) {
+        Alert.alert('Biometrics Error', err.message || 'Biometric hardware unavailable');
+      }
+    } else {
+      setBiometricsEnabled(false);
+      await AsyncStorage.setItem('@praxirence_patient_biometrics', 'false');
+      Alert.alert('Biometrics Disabled', 'Biometric lock for your health vault has been turned off.');
+    }
+  };
 
   const loadConsentDocument = async () => {
     try {
@@ -310,6 +361,29 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({
               Your personal health data is never sold, leased, or monetized for advertising under any circumstances.
             </Text>
           </View>
+        </View>
+      </View>
+
+      {/* Biometric Security & Device Protection */}
+      <View style={styles.card}>
+        <Text style={styles.cardSectionHeader}>BIOMETRIC SECURITY & VAULT PROTECTION</Text>
+
+        <View style={styles.toggleRow}>
+          <View style={{ flex: 1, paddingRight: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+              <Ionicons name="finger-print" size={18} color={Colors.primary} />
+              <Text style={styles.toggleTitle}>Biometric Lock (Fingerprint / Face ID)</Text>
+            </View>
+            <Text style={styles.toggleDesc}>
+              Require biometric authentication whenever opening your medical vault, viewing confidential prescriptions, or accessing vitals history.
+            </Text>
+          </View>
+          <Switch
+            value={biometricsEnabled}
+            onValueChange={handleToggleBiometrics}
+            trackColor={{ false: '#334155', true: Colors.primary }}
+            thumbColor={biometricsEnabled ? '#ffffff' : '#94a3b8'}
+          />
         </View>
       </View>
 

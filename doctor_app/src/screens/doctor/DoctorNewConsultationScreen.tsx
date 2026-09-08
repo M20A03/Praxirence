@@ -11,8 +11,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../../theme';
-import { PatientSummary, MedicineItem, ReminderItem, DoctorUser } from '../../types';
+import { PatientSummary, MedicineItem, ReminderItem, DoctorUser, ConsultationSummarizeResult } from '../../types';
 import { mobileApi } from '../../services/api';
+import { AudioConsultationRecorder } from '../../components/AudioConsultationRecorder';
+import { generateAndSharePrescriptionPdf } from '../../services/PrescriptionPdfService';
 
 interface DoctorNewConsultationScreenProps {
   doctor: DoctorUser;
@@ -197,6 +199,33 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
     }
   };
 
+  const handleAudioProcessed = (result: ConsultationSummarizeResult) => {
+    if (result.conversation) setConversationText(result.conversation);
+    if (result.diagnosis) setDiagnosis(result.diagnosis);
+    if (result.patient_summary) setPatientSummary(result.patient_summary);
+    if (result.doctor_advice) setDoctorAdvice(result.doctor_advice);
+    if (result.medicines && result.medicines.length > 0) setMedicines(result.medicines);
+    if (result.reminders && result.reminders.length > 0) setReminders(result.reminders);
+    if (result.warning_signs && result.warning_signs.length > 0) setWarningSigns(result.warning_signs);
+  };
+
+  const handleSharePdf = async () => {
+    const selectedPat = patients.find((p) => p.id === selectedPatientId);
+    if (!selectedPat) {
+      Alert.alert('Select Patient', 'Please select a patient before generating PDF.');
+      return;
+    }
+    await generateAndSharePrescriptionPdf({
+      doctor,
+      patient: selectedPat,
+      diagnosis,
+      patientSummary,
+      doctorAdvice,
+      medicines,
+      reminders,
+    });
+  };
+
   const handleAddMedicine = () => {
     if (!medName.trim() || !medDosage.trim()) {
       Alert.alert('Incomplete', 'Please enter medicine name and dosage amount.');
@@ -328,6 +357,22 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
         <Text style={styles.helperText}>
           Record or enter what was discussed. AI will extract medications and write a clear, patient-friendly explanation.
         </Text>
+
+        {/* Real-time Audio Consultation Recorder */}
+        <AudioConsultationRecorder
+          patientId={selectedPatientId}
+          patientName={patients.find((p) => p.id === selectedPatientId)?.name || 'Patient'}
+          doctorName={doctor.name}
+          onRecordingProcessed={handleAudioProcessed}
+        />
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8 }}>
+          <View style={{ flex: 1, height: 1, backgroundColor: '#E2E8F0' }} />
+          <Text style={{ marginHorizontal: 8, fontSize: 11, color: '#94A3B8', fontWeight: '600' }}>
+            OR QUICK CLINICAL SCENARIOS
+          </Text>
+          <View style={{ flex: 1, height: 1, backgroundColor: '#E2E8F0' }} />
+        </View>
 
         {/* Quick Scenario Presets */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetScroll}>
@@ -555,6 +600,17 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
 
       {/* Action Buttons */}
       <View style={styles.actionRow}>
+        <TouchableOpacity
+          style={styles.sharePdfBtn}
+          onPress={handleSharePdf}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="document-text-outline" size={18} color="#0284C7" />
+          <Text style={styles.sharePdfBtnText}>
+            📄 Preview & Share E-Prescription (PDF / WhatsApp)
+          </Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.submitBtn, doctorVerified ? styles.submitBtnVerified : styles.submitBtnUnverified]}
           onPress={handleSaveAndDeliverWhatsApp}
@@ -1004,5 +1060,22 @@ const styles = StyleSheet.create({
   },
   submitBtnUnverified: {
     backgroundColor: '#0ea5e9',
+  },
+  sharePdfBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1.5,
+    borderColor: '#0284C7',
+    borderRadius: 10,
+    paddingVertical: 14,
+    marginBottom: 12,
+  },
+  sharePdfBtnText: {
+    color: '#0284C7',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

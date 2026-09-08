@@ -18,6 +18,13 @@ import { PatientUser, Visit, MedicineItem, ReminderItem, VitalsRecord } from '..
 import { mobileApi } from '../services/api';
 import { registerForPushNotificationsAsync } from '../services/notifications';
 import { BrandLogoMobile } from '../components/BrandLogoMobile';
+import { PillTrackerCard } from '../components/PillTrackerCard';
+import { VitalsTrackerModal } from '../components/VitalsTrackerModal';
+import {
+  SupportedLanguage,
+  SUPPORTED_LANGUAGES,
+  translateText,
+} from '../utils/languageTranslations';
 
 interface DashboardScreenProps {
   user: PatientUser;
@@ -62,6 +69,23 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const [inputHr, setInputHr] = useState<string>('72');
   const [inputSpo2, setInputSpo2] = useState<string>('98');
   const [inputSugar, setInputSugar] = useState<string>('96');
+  // Multilingual State
+  const [currentLang, setCurrentLang] = useState<SupportedLanguage>('en');
+  const [showLangModal, setShowLangModal] = useState<boolean>(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem('@praxirence_patient_lang').then((saved) => {
+      if (saved && ['en', 'hi', 'ta', 'te'].includes(saved)) {
+        setCurrentLang(saved as SupportedLanguage);
+      }
+    });
+  }, []);
+
+  const handleSelectLang = async (lang: SupportedLanguage) => {
+    setCurrentLang(lang);
+    setShowLangModal(false);
+    await AsyncStorage.setItem('@praxirence_patient_lang', lang);
+  };
 
   useEffect(() => {
     loadDashboardData();
@@ -203,6 +227,17 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       <View style={styles.topBrandBar}>
         <BrandLogoMobile variant="header" size="sm" subtitleText="Patient Care Portal" />
         <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+          <TouchableOpacity
+            style={styles.langBadge}
+            onPress={() => setShowLangModal(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="globe-outline" size={13} color={Colors.primaryDark} />
+            <Text style={styles.langBadgeText}>
+              {SUPPORTED_LANGUAGES.find((l) => l.code === currentLang)?.nativeLabel || 'English'}
+            </Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={[
               styles.consentBadge,
@@ -408,6 +443,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       )}
 
 
+      {/* Daily Pill Tracker & Adherence Streak Checklist */}
+      <PillTrackerCard lang={currentLang} />
+
       {/* Next Upcoming Reminder Card */}
       {upcomingReminders.length > 0 && (
         <View style={styles.nextDoseCard}>
@@ -574,97 +612,66 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       )}
     </ScrollView>
 
-    {/* Modal to Log Daily Vitals */}
-    <Modal
+    {/* Real Interactive Vitals Tracker Modal */}
+    <VitalsTrackerModal
       visible={showVitalsModal}
+      onClose={() => setShowVitalsModal(false)}
+      lang={currentLang}
+      onVitalsUpdated={(updatedVitals) => {
+        setVitals({
+          bloodPressureSystolic: updatedVitals.bloodPressureSys,
+          bloodPressureDiastolic: updatedVitals.bloodPressureDia,
+          heartRate: updatedVitals.heartRate,
+          spo2: updatedVitals.spo2,
+          bloodSugar: updatedVitals.bloodSugar,
+          recordedAt: updatedVitals.recordedAt,
+          statusNote: 'Optimal / Steady',
+        });
+      }}
+    />
+
+    {/* Language Selection Modal */}
+    <Modal
+      visible={showLangModal}
       transparent
-      animationType="slide"
-      onRequestClose={() => setShowVitalsModal(false)}
+      animationType="fade"
+      onRequestClose={() => setShowLangModal(false)}
     >
-      <View style={styles.modalBackdrop}>
-        <View style={styles.modalContent}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-            <Ionicons name="pulse" size={20} color={Colors.primary} />
-            <Text style={styles.modalTitle}>Record Daily Vitals</Text>
+      <TouchableOpacity
+        style={styles.modalBackdrop}
+        activeOpacity={1}
+        onPress={() => setShowLangModal(false)}
+      >
+        <View style={styles.langModalCard}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <Ionicons name="globe-outline" size={22} color={Colors.primary} />
+            <Text style={styles.langModalTitle}>Select Language / भाषा चुनें</Text>
           </View>
-          <Text style={styles.modalSubtitle}>Update your current physiological readings for your care team.</Text>
+          <Text style={styles.langModalSub}>
+            Choose your preferred language for medication schedules and care summaries.
+          </Text>
 
-          <View style={styles.modalInputRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.inputLabel}>Systolic BP (mmHg)</Text>
-              <TextInput
-                style={styles.modalInput}
-                keyboardType="numeric"
-                value={inputSys}
-                onChangeText={setInputSys}
-                placeholder="120"
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.inputLabel}>Diastolic BP (mmHg)</Text>
-              <TextInput
-                style={styles.modalInput}
-                keyboardType="numeric"
-                value={inputDia}
-                onChangeText={setInputDia}
-                placeholder="80"
-              />
-            </View>
-          </View>
-
-          <View style={styles.modalInputRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.inputLabel}>Heart Rate (bpm)</Text>
-              <TextInput
-                style={styles.modalInput}
-                keyboardType="numeric"
-                value={inputHr}
-                onChangeText={setInputHr}
-                placeholder="72"
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.inputLabel}>SpO2 Oxygen (%)</Text>
-              <TextInput
-                style={styles.modalInput}
-                keyboardType="numeric"
-                value={inputSpo2}
-                onChangeText={setInputSpo2}
-                placeholder="98"
-              />
-            </View>
-          </View>
-
-          <View style={{ marginBottom: 16 }}>
-            <Text style={styles.inputLabel}>Blood Glucose (mg/dL)</Text>
-            <TextInput
-              style={styles.modalInput}
-              keyboardType="numeric"
-              value={inputSugar}
-              onChangeText={setInputSugar}
-              placeholder="96"
-            />
-          </View>
-
-          <View style={styles.modalActionsRow}>
-            <TouchableOpacity
-              style={styles.modalCancelButton}
-              onPress={() => setShowVitalsModal(false)}
-            >
-              <Text style={styles.modalCancelText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.modalSaveButton}
-              onPress={handleSaveVitals}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-                <Ionicons name="checkmark-circle" size={15} color="#ffffff" />
-                <Text style={styles.modalSaveText}>Save Vitals</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
+          {SUPPORTED_LANGUAGES.map((lang) => {
+            const isSelected = currentLang === lang.code;
+            return (
+              <TouchableOpacity
+                key={lang.code}
+                style={[styles.langOptionItem, isSelected && styles.langOptionSelected]}
+                onPress={() => handleSelectLang(lang.code)}
+                activeOpacity={0.7}
+              >
+                <View>
+                  <Text style={[styles.langOptionNative, isSelected && { color: Colors.primaryDark }]}>
+                    {lang.nativeLabel}
+                  </Text>
+                  <Text style={styles.langOptionEnglish}>{lang.label}</Text>
+                </View>
+                {isSelected && <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />}
+              </TouchableOpacity>
+            );
+          })}
         </View>
-      </View>
+      </TouchableOpacity>
     </Modal>
   </View>
   );
@@ -1263,5 +1270,72 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.bold,
     fontSize: FontSize.body,
     color: '#FFFFFF',
+  },
+  langBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  langBadgeText: {
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.xs,
+    color: Colors.primaryDark,
+  },
+  langModalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 22,
+    width: '90%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  langModalTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.lg,
+    color: Colors.text,
+  },
+  langModalSub: {
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+    marginBottom: 16,
+    lineHeight: 18,
+  },
+  langOptionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 8,
+  },
+  langOptionSelected: {
+    backgroundColor: '#F0FDFA',
+    borderColor: Colors.primary,
+  },
+  langOptionNative: {
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.body,
+    color: Colors.text,
+  },
+  langOptionEnglish: {
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+    marginTop: 2,
   },
 });

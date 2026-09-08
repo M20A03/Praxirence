@@ -2,11 +2,16 @@ import React, { useState } from 'react';
 import './styles/landing.css';
 import { LandingNavbar } from './components/landing/LandingNavbar';
 import { LandingHero } from './components/landing/LandingHero';
+import { InteractiveConsultDemo } from './components/landing/InteractiveConsultDemo';
 import { AppShowcase } from './components/landing/AppShowcase';
 import { ClinicalArchitecture } from './components/landing/ClinicalArchitecture';
 import { TechnologyStack } from './components/landing/TechnologyStack';
+import { FaqSection } from './components/landing/FaqSection';
 import { EarlyAccessForm } from './components/landing/EarlyAccessForm';
 import { LandingFooter } from './components/landing/LandingFooter';
+import { MobileStickyBar } from './components/landing/MobileStickyBar';
+import { WhatsAppPreviewModal } from './components/landing/WhatsAppPreviewModal';
+import { QrDownloadModal } from './components/landing/QrDownloadModal';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { PatientPortalPage } from './pages/PatientPortalPage';
@@ -16,6 +21,8 @@ import { X, Lock } from 'lucide-react';
 
 const MainWebsite: React.FC = () => {
   const [showPortalModal, setShowPortalModal] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
   const { isAuthenticated, user, role, logout } = useAuth();
 
   return (
@@ -25,26 +32,56 @@ const MainWebsite: React.FC = () => {
       <div className="landing-ambient-mid"></div>
       <div className="landing-ambient-bottom"></div>
 
-      {/* 1. Header & Navigation */}
-      <LandingNavbar onOpenPortal={() => setShowPortalModal(true)} />
+      {/* 1. Responsive Header & Navigation */}
+      <LandingNavbar
+        onOpenPortal={() => setShowPortalModal(true)}
+        onOpenQr={() => setShowQrModal(true)}
+      />
 
-      {/* 2. Hero Section */}
+      {/* 2. Hero Section with Live Metrics */}
       <LandingHero />
 
-      {/* 3. Dual Mobile App Showcase */}
-      <AppShowcase />
+      {/* 3. Interactive Ambient Clinical AI Simulator */}
+      <InteractiveConsultDemo />
 
-      {/* 4. Company Pillars & Clinical Architecture */}
+      {/* 4. Dual Mobile App Showcase with Phone Frame */}
+      <AppShowcase
+        onOpenWhatsAppPreview={() => setShowWhatsAppModal(true)}
+        onOpenQrModal={() => setShowQrModal(true)}
+      />
+
+      {/* 5. Company Pillars & Clinical Architecture */}
       <ClinicalArchitecture />
 
-      {/* 5. Technology & Trust Stack */}
+      {/* 6. Technology & Trust Stack */}
       <TechnologyStack />
 
-      {/* 6. CTA & Early Access / APK Download */}
+      {/* 7. Clinical & Technical FAQs */}
+      <FaqSection />
+
+      {/* 8. CTA, Clinic Onboarding & Direct APK Downloads */}
       <EarlyAccessForm />
 
-      {/* 7. Footer */}
+      {/* 9. Compliance & Regulatory Footer */}
       <LandingFooter />
+
+      {/* 10. Sticky Bottom Action Bar for Mobile Screens */}
+      <MobileStickyBar
+        onOpenPortal={() => setShowPortalModal(true)}
+        onOpenQr={() => setShowQrModal(true)}
+      />
+
+      {/* WhatsApp Message Preview Modal */}
+      <WhatsAppPreviewModal
+        isOpen={showWhatsAppModal}
+        onClose={() => setShowWhatsAppModal(false)}
+      />
+
+      {/* QR Code Phone Scan Modal */}
+      <QrDownloadModal
+        isOpen={showQrModal}
+        onClose={() => setShowQrModal(false)}
+      />
 
       {/* Optional Doctor / Clinic Portal Modal */}
       {showPortalModal && (
@@ -57,7 +94,7 @@ const MainWebsite: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '20px'
+          padding: '16px'
         }}>
           <div style={{
             background: '#ffffff',
@@ -75,7 +112,7 @@ const MainWebsite: React.FC = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '16px 24px',
+              padding: '16px 20px',
               borderBottom: '1px solid #e2e8f0'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -99,13 +136,13 @@ const MainWebsite: React.FC = () => {
             </div>
 
             {/* Portal Body */}
-            <div style={{ padding: '24px' }}>
+            <div style={{ padding: '20px' }}>
               {!isAuthenticated ? (
                 <LoginPage />
               ) : role === 'doctor' ? (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <span style={{ color: '#10b981', fontWeight: 600 }}>Logged in as Dr. {user?.name}</span>
+                    <span style={{ color: '#059669', fontWeight: 600 }}>Logged in as Dr. {user?.name}</span>
                     <button onClick={logout} style={{ padding: '6px 12px', borderRadius: '8px', background: '#334155', color: '#fff', border: 'none', cursor: 'pointer' }}>
                       Sign Out
                     </button>

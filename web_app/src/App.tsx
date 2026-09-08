@@ -1,115 +1,124 @@
-import React, { useState, useEffect } from 'react';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { Navbar } from './components/Navbar';
+import React, { useState } from 'react';
+import './styles/landing.css';
+import { LandingNavbar } from './components/landing/LandingNavbar';
+import { LandingHero } from './components/landing/LandingHero';
+import { AppShowcase } from './components/landing/AppShowcase';
+import { ClinicalArchitecture } from './components/landing/ClinicalArchitecture';
+import { TechnologyStack } from './components/landing/TechnologyStack';
+import { EarlyAccessForm } from './components/landing/EarlyAccessForm';
+import { LandingFooter } from './components/landing/LandingFooter';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { PatientPortalPage } from './pages/PatientPortalPage';
-import { DoctorProfileModal } from './components/DoctorProfileModal';
-import { ToastContainer, ToastMessage } from './components/Toast';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { Activity } from 'lucide-react';
+import { X, Lock } from 'lucide-react';
 
-export const AppContent: React.FC = () => {
-  const { user, role, isAuthenticated, loading, logout, updateUser } = useAuth();
-  const [isDoctorProfileOpen, setIsDoctorProfileOpen] = useState(false);
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+const MainWebsite: React.FC = () => {
+  const [showPortalModal, setShowPortalModal] = useState(false);
+  const { isAuthenticated, user, role, logout } = useAuth();
 
-  const addToast = (toast: Omit<ToastMessage, 'id'>) => {
-    const id = Date.now().toString(36) + Math.random().toString(36).substring(2);
-    setToasts((prev) => [...prev, { ...toast, id }]);
-  };
+  return (
+    <div className="landing-container">
+      {/* Ambient background glows */}
+      <div className="landing-ambient-top"></div>
+      <div className="landing-ambient-mid"></div>
+      <div className="landing-ambient-bottom"></div>
 
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
+      {/* 1. Header & Navigation */}
+      <LandingNavbar onOpenPortal={() => setShowPortalModal(true)} />
 
-  useEffect(() => {
-    const handleCustomToast = (e: any) => {
-      if (e.detail) {
-        addToast(e.detail);
-      }
-    };
-    window.addEventListener('praxirence_toast' as any, handleCustomToast);
-    return () => {
-      window.removeEventListener('praxirence_toast' as any, handleCustomToast);
-    };
-  }, []);
+      {/* 2. Hero Section */}
+      <LandingHero />
 
-  // Hydration loader
-  if (loading) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'var(--bg-app)'
-      }}>
+      {/* 3. Dual Mobile App Showcase */}
+      <AppShowcase />
+
+      {/* 4. Company Pillars & Clinical Architecture */}
+      <ClinicalArchitecture />
+
+      {/* 5. Technology & Trust Stack */}
+      <TechnologyStack />
+
+      {/* 6. CTA & Early Access / APK Download */}
+      <EarlyAccessForm />
+
+      {/* 7. Footer */}
+      <LandingFooter />
+
+      {/* Optional Doctor / Clinic Portal Modal */}
+      {showPortalModal && (
         <div style={{
-          width: '56px',
-          height: '56px',
-          borderRadius: '50%',
-          background: 'rgba(6, 182, 212, 0.1)',
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: 'blur(10px)',
+          zIndex: 1000,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          marginBottom: '16px'
+          padding: '20px'
         }}>
-          <Activity size={28} color="#06b6d4" className="animate-spin" />
+          <div style={{
+            background: '#0f172a',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '20px',
+            maxWidth: '1100px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            position: 'relative',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '16px 24px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Lock size={16} color="#06b6d4" />
+                <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fff' }}>
+                  Praxirence Clinical Portal
+                </span>
+              </div>
+              <button
+                onClick={() => setShowPortalModal(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  padding: '4px'
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Portal Body */}
+            <div style={{ padding: '24px' }}>
+              {!isAuthenticated ? (
+                <LoginPage />
+              ) : role === 'doctor' ? (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <span style={{ color: '#10b981', fontWeight: 600 }}>Logged in as Dr. {user?.name}</span>
+                    <button onClick={logout} style={{ padding: '6px 12px', borderRadius: '8px', background: '#334155', color: '#fff', border: 'none', cursor: 'pointer' }}>
+                      Sign Out
+                    </button>
+                  </div>
+                  <DashboardPage />
+                </div>
+              ) : (
+                <PatientPortalPage />
+              )}
+            </div>
+          </div>
         </div>
-        <div style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.95rem' }}>
-          Verifying Clinical Session...
-        </div>
-      </div>
-    );
-  }
-
-  // Unauthenticated -> Show Unified Login Page
-  if (!isAuthenticated || !user || !role) {
-    return (
-      <>
-        <LoginPage />
-        <ToastContainer toasts={toasts} onDismiss={removeToast} />
-      </>
-    );
-  }
-
-  return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Navbar
-        user={user}
-        role={role}
-        onLogout={logout}
-        onOpenDoctorProfile={() => setIsDoctorProfileOpen(true)}
-      />
-
-      {/* Role-Based Active View */}
-      {role === 'doctor' ? (
-        <DashboardPage />
-      ) : (
-        <PatientPortalPage />
       )}
-
-      {/* Doctor & Clinic Profile Settings Modal */}
-      {role === 'doctor' && (
-        <DoctorProfileModal
-          doctor={user}
-          isOpen={isDoctorProfileOpen}
-          onClose={() => setIsDoctorProfileOpen(false)}
-          onProfileUpdated={(updated) => {
-            updateUser(updated);
-            addToast({
-              type: 'success',
-              title: 'Profile Updated',
-              message: 'Clinical credentials and prescription letterhead updated.',
-            });
-          }}
-        />
-      )}
-
-      {/* Global Floating Toasts */}
-      <ToastContainer toasts={toasts} onDismiss={removeToast} />
     </div>
   );
 };
@@ -118,7 +127,7 @@ export const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <AppContent />
+        <MainWebsite />
       </AuthProvider>
     </ErrorBoundary>
   );

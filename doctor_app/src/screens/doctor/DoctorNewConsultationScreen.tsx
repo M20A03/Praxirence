@@ -35,64 +35,17 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
 }) => {
   const [patients, setPatients] = useState<PatientSummary[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>(preselectedPatientId || '');
-  const [diagnosis, setDiagnosis] = useState('Acute Pharyngitis & Seasonal Pyrexia');
+  const [diagnosis, setDiagnosis] = useState('');
   const [doctorVerified, setDoctorVerified] = useState<boolean>(false);
   
   // Conversation & AI Summarizer States
-  const [conversationText, setConversationText] = useState(
-    'Doctor: Good morning Ramesh, how can I help you today?\n' +
-    'Patient: Doctor, I have had a severe sore throat, dry cough and fever around 101°F for 3 days.\n' +
-    'Doctor: Your throat examination shows pharyngeal erythema and mild tonsillar swelling. You have Acute Streptococcal Pharyngitis.\n' +
-    'I am prescribing Amoxicillin-Clavulanate 625mg twice daily after meals for 5 days. For fever and throat pain, take Paracetamol 650mg as needed.\n' +
-    'Drink plenty of warm water, do warm saline gargles three times daily, and rest adequately.\n' +
-    'Patient: When should I contact you again?\n' +
-    'Doctor: If fever persists beyond 3 days or you experience difficulty breathing, visit emergency immediately.'
-  );
+  const [conversationText, setConversationText] = useState('');
   const [summarizing, setSummarizing] = useState(false);
-  const [patientSummary, setPatientSummary] = useState(
-    'During your visit, your doctor diagnosed you with Acute Pharyngitis (throat infection) causing fever and sore throat. An antibiotic course has been prescribed to eliminate the infection, along with fever relief medication.'
-  );
-  const [doctorAdvice, setDoctorAdvice] = useState(
-    'Gargle with warm salt water 3 times a day. Drink plenty of warm water. Avoid cold drinks, ice, and spicy food. Rest well for 3-4 days.'
-  );
-  const [warningSigns, setWarningSigns] = useState<string[]>([
-    'High fever above 102°F not resolving with medication',
-    'Difficulty swallowing saliva or severe breathlessness',
-    'Chest tightness or persistent vomiting',
-  ]);
-
-  const [medicines, setMedicines] = useState<MedicineItem[]>([
-    {
-      name: 'Amoxicillin & Clavulanate Potassium',
-      dosage: '625mg',
-      frequency: 'Twice daily after meals',
-      instructions: 'Complete full 5-day antibiotic course',
-      duration_days: 5,
-    },
-    {
-      name: 'Paracetamol Tablets',
-      dosage: '650mg',
-      frequency: 'SOS for fever > 100°F (Max 3/day)',
-      instructions: 'Take with plenty of warm water',
-      duration_days: 3,
-    },
-  ]);
-  const [reminders, setReminders] = useState<ReminderItem[]>([
-    {
-      medicine_name: 'Amoxicillin & Clavulanate',
-      dosage: '625mg',
-      time: '08:30',
-      frequency: 'daily',
-      instructions: 'Morning post-breakfast dose',
-    },
-    {
-      medicine_name: 'Amoxicillin & Clavulanate',
-      dosage: '625mg',
-      time: '20:30',
-      frequency: 'daily',
-      instructions: 'Night post-dinner dose',
-    },
-  ]);
+  const [patientSummary, setPatientSummary] = useState('');
+  const [doctorAdvice, setDoctorAdvice] = useState('');
+  const [warningSigns, setWarningSigns] = useState<string[]>([]);
+  const [medicines, setMedicines] = useState<MedicineItem[]>([]);
+  const [reminders, setReminders] = useState<ReminderItem[]>([]);
 
   // Form states for adding another medicine
   const [medName, setMedName] = useState('');

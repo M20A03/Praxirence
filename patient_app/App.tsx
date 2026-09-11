@@ -3,13 +3,17 @@ import {
   SafeAreaView,
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   StatusBar,
 } from 'react-native';
-import { Colors } from './src/theme/colors';
-import { FontFamily, FontSize, LetterSpacing } from './src/theme/typography';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+
+import { Colors } from './src/theme/colors';
+import { FontFamily, FontSize } from './src/theme/typography';
 import { PatientUser } from './src/types';
 import { SplashScreen } from './src/screens/SplashScreen';
 import { PatientLoginScreen } from './src/screens/PatientLoginScreen';
@@ -24,15 +28,12 @@ import { DoctorSearchScreen } from './src/screens/DoctorSearchScreen';
 
 import { mobileApi } from './src/services/api';
 
-type PatientTab = 'today' | 'visits' | 'chatbot' | 'doctors' | 'consent' | 'profile';
+const Tab = createBottomTabNavigator();
 
 export default function App() {
   const [showSplash, setShowSplash] = useState<boolean>(true);
   const [currentPatient, setCurrentPatient] = useState<PatientUser | null>(null);
   const [loadingSession, setLoadingSession] = useState<boolean>(true);
-
-  // Active Tab
-  const [activeTab, setActiveTab] = useState<PatientTab>('today');
 
   useEffect(() => {
     const restore = async () => {
@@ -41,7 +42,6 @@ export default function App() {
         if (session && session.user && session.role === 'patient') {
           setCurrentPatient(session.user as PatientUser);
         } else if (session && session.user) {
-          // Default to patient user
           const pat: PatientUser = {
             id: session.user.id,
             name: session.user.name.replace('Dr. ', ''),
@@ -62,13 +62,11 @@ export default function App() {
 
   const handleAuthenticated = (patient: PatientUser) => {
     setCurrentPatient(patient);
-    setActiveTab('today');
   };
 
   const handleLogout = async () => {
     await mobileApi.clearSession();
     setCurrentPatient(null);
-    setActiveTab('today');
   };
 
   const handleConsentUpdated = (newStatus: boolean) => {
@@ -88,160 +86,121 @@ export default function App() {
   // Patient Login Screen
   if (!currentPatient) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-        <PatientLoginScreen onAuthenticated={handleAuthenticated} />
-      </SafeAreaView>
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.safeArea}>
+          <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+          <PatientLoginScreen onAuthenticated={handleAuthenticated} />
+        </SafeAreaView>
+      </SafeAreaProvider>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaProvider>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      {/* Main Content Area */}
-      <View style={styles.container}>
-        {activeTab === 'today' && (
-          <DashboardScreen
-            user={currentPatient}
-            onNavigateToConsent={() => setActiveTab('consent')}
-            onNavigateToChatbot={() => setActiveTab('chatbot')}
-            onNavigateToDoctors={() => setActiveTab('doctors')}
-            onNavigateToVisits={() => setActiveTab('visits')}
-          />
-        )}
-
-        {activeTab === 'visits' && (
-          <VisitsScreen
-            user={currentPatient}
-          />
-        )}
-
-        {activeTab === 'chatbot' && (
-          <ChatbotScreen
-            user={currentPatient}
-            onNavigateToDoctors={() => setActiveTab('doctors')}
-            onNavigateToVisits={() => setActiveTab('visits')}
-          />
-        )}
-
-        {activeTab === 'doctors' && (
-          <DoctorSearchScreen
-            user={currentPatient}
-          />
-        )}
-
-        {/* The Dedicated Last Page / Tab: Patient Consent & Data Concerns Center */}
-        {activeTab === 'consent' && (
-          <ConsentScreen
-            user={currentPatient}
-            onConsentUpdated={handleConsentUpdated}
-          />
-        )}
-
-        {activeTab === 'profile' && (
-          <ProfileScreen
-            user={currentPatient}
-            role="patient"
-            onLogout={handleLogout}
-          />
-        )}
-      </View>
-
-      {/* Bottom Navigation Bar for Patient App - Clean Light Theme */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => setActiveTab('today')}
+      <NavigationContainer>
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            headerShown: false,
+            tabBarActiveTintColor: '#059669',
+            tabBarInactiveTintColor: '#64748B',
+            tabBarStyle: styles.tabBar,
+            tabBarLabelStyle: styles.tabBarLabel,
+            tabBarIcon: ({ focused, color, size }) => {
+              let iconName: keyof typeof Ionicons.glyphMap = 'today';
+              if (route.name === 'Today') {
+                iconName = focused ? 'today' : 'today-outline';
+              } else if (route.name === 'Vault') {
+                iconName = focused ? 'document-text' : 'document-text-outline';
+              } else if (route.name === 'Assistant') {
+                iconName = focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline';
+              } else if (route.name === 'Specialists') {
+                iconName = focused ? 'search' : 'search-outline';
+              } else if (route.name === 'Consent') {
+                iconName = focused ? 'shield-checkmark' : 'shield-checkmark-outline';
+              } else if (route.name === 'Profile') {
+                iconName = focused ? 'person-circle' : 'person-circle-outline';
+              }
+              return <Ionicons name={iconName} size={size || 22} color={color} />;
+            },
+          })}
+          screenListeners={{
+            tabPress: () => {
+              try {
+                Haptics.selectionAsync();
+              } catch (_) {}
+            },
+          }}
         >
-          <Ionicons
-            name={activeTab === 'today' ? 'today' : 'today-outline'}
-            size={22}
-            color={activeTab === 'today' ? '#059669' : '#64748B'}
-          />
-          <Text style={[styles.navLabel, activeTab === 'today' && styles.navLabelActive]}>
-            Today
-          </Text>
-          {activeTab === 'today' && <View style={styles.navActiveBar} />}
-        </TouchableOpacity>
+          <Tab.Screen
+            name="Today"
+            options={{ tabBarLabel: 'Today' }}
+          >
+            {(props) => (
+              <DashboardScreen
+                user={currentPatient}
+                onNavigateToConsent={() => props.navigation.navigate('Consent')}
+                onNavigateToChatbot={() => props.navigation.navigate('Assistant')}
+                onNavigateToDoctors={() => props.navigation.navigate('Specialists')}
+                onNavigateToVisits={() => props.navigation.navigate('Vault')}
+              />
+            )}
+          </Tab.Screen>
 
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => setActiveTab('visits')}
-        >
-          <Ionicons
-            name={activeTab === 'visits' ? 'document-text' : 'document-text-outline'}
-            size={22}
-            color={activeTab === 'visits' ? '#059669' : '#64748B'}
-          />
-          <Text style={[styles.navLabel, activeTab === 'visits' && styles.navLabelActive]}>
-            Vault
-          </Text>
-          {activeTab === 'visits' && <View style={styles.navActiveBar} />}
-        </TouchableOpacity>
+          <Tab.Screen
+            name="Vault"
+            options={{ tabBarLabel: 'Vault' }}
+          >
+            {() => <VisitsScreen user={currentPatient} />}
+          </Tab.Screen>
 
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => setActiveTab('chatbot')}
-        >
-          <Ionicons
-            name={activeTab === 'chatbot' ? 'chatbubbles' : 'chatbubbles-outline'}
-            size={22}
-            color={activeTab === 'chatbot' ? '#059669' : '#64748B'}
-          />
-          <Text style={[styles.navLabel, activeTab === 'chatbot' && styles.navLabelActive]}>
-            AI Care
-          </Text>
-          {activeTab === 'chatbot' && <View style={styles.navActiveBar} />}
-        </TouchableOpacity>
+          <Tab.Screen
+            name="Assistant"
+            options={{ tabBarLabel: 'AI Chat' }}
+          >
+            {(props) => (
+              <ChatbotScreen
+                user={currentPatient}
+                onNavigateToDoctors={() => props.navigation.navigate('Specialists')}
+                onNavigateToVisits={() => props.navigation.navigate('Vault')}
+              />
+            )}
+          </Tab.Screen>
 
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => setActiveTab('doctors')}
-        >
-          <Ionicons
-            name={activeTab === 'doctors' ? 'medkit' : 'medkit-outline'}
-            size={22}
-            color={activeTab === 'doctors' ? '#059669' : '#64748B'}
-          />
-          <Text style={[styles.navLabel, activeTab === 'doctors' && styles.navLabelActive]}>
-            Doctors
-          </Text>
-          {activeTab === 'doctors' && <View style={styles.navActiveBar} />}
-        </TouchableOpacity>
+          <Tab.Screen
+            name="Specialists"
+            options={{ tabBarLabel: 'Doctors' }}
+          >
+            {() => <DoctorSearchScreen user={currentPatient} />}
+          </Tab.Screen>
 
-        {/* The Dedicated Consent & Data Concerns Center (Last Page) */}
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => setActiveTab('consent')}
-        >
-          <Ionicons
-            name={activeTab === 'consent' ? 'shield-checkmark' : 'shield-checkmark-outline'}
-            size={22}
-            color={activeTab === 'consent' ? '#059669' : '#64748B'}
-          />
-          <Text style={[styles.navLabel, activeTab === 'consent' && styles.navLabelActive]}>
-            Privacy
-          </Text>
-          {activeTab === 'consent' && <View style={styles.navActiveBar} />}
-        </TouchableOpacity>
+          <Tab.Screen
+            name="Consent"
+            options={{ tabBarLabel: 'Consent' }}
+          >
+            {() => (
+              <ConsentScreen
+                user={currentPatient}
+                onConsentUpdated={handleConsentUpdated}
+              />
+            )}
+          </Tab.Screen>
 
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => setActiveTab('profile')}
-        >
-          <Ionicons
-            name={activeTab === 'profile' ? 'person' : 'person-outline'}
-            size={22}
-            color={activeTab === 'profile' ? '#059669' : '#64748B'}
-          />
-          <Text style={[styles.navLabel, activeTab === 'profile' && styles.navLabelActive]}>
-            Profile
-          </Text>
-          {activeTab === 'profile' && <View style={styles.navActiveBar} />}
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+          <Tab.Screen
+            name="Profile"
+            options={{ tabBarLabel: 'Profile' }}
+          >
+            {() => (
+              <ProfileScreen
+                user={currentPatient}
+                role="patient"
+                onLogout={handleLogout}
+              />
+            )}
+          </Tab.Screen>
+        </Tab.Navigator>
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
 
@@ -250,49 +209,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  container: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  bottomNav: {
-    flexDirection: 'row',
+  tabBar: {
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
-    paddingVertical: 8,
-    paddingBottom: 14,
-    justifyContent: 'space-around',
-    alignItems: 'center',
+    height: 64,
+    paddingBottom: 8,
+    paddingTop: 8,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 8,
   },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-    paddingVertical: 4,
-  },
-  navLabel: {
-    fontFamily: FontFamily.sans,
+  tabBarLabel: {
+    fontFamily: FontFamily.medium,
     fontSize: 10,
-    color: '#64748B',
-    marginTop: 3,
-    fontWeight: '500',
-  },
-  navLabelActive: {
-    color: '#059669',
-    fontWeight: '700',
-  },
-  navActiveBar: {
-    position: 'absolute',
-    top: -8,
-    width: 24,
-    height: 3,
-    backgroundColor: '#059669',
-    borderRadius: 2,
+    marginTop: 2,
   },
 });

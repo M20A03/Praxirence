@@ -25,57 +25,39 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
   const [authMode, setAuthMode] = useState<'email' | 'phone' | 'register'>('email');
 
   // Email OTP States
-  const [email, setEmail] = useState('doctor@praxirence.com');
-  const [doctorName, setDoctorName] = useState('Dr. Mayank Raj');
+  const [email, setEmail] = useState('');
+  const [doctorName, setDoctorName] = useState('');
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [emailOtpCode, setEmailOtpCode] = useState('');
 
   // Phone OTP States
-  const [phoneDigits, setPhoneDigits] = useState('9876543210');
+  const [phoneDigits, setPhoneDigits] = useState('');
   const [phoneOtpSent, setPhoneOtpSent] = useState(false);
   const [phoneOtpCode, setPhoneOtpCode] = useState('');
   const [demoCode, setDemoCode] = useState<string | null>(null);
 
   // Registration States
-  const [regSpecialty, setRegSpecialty] = useState('General Medicine & Pulmonology');
-  const [regClinic, setRegClinic] = useState('Praxirence Clinical Centre');
-  const [regNumber, setRegNumber] = useState('MED-2024-84920');
+  const [regSpecialty, setRegSpecialty] = useState('');
+  const [regClinic, setRegClinic] = useState('');
+  const [regNumber, setRegNumber] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
 
-  // 1-Click Demo Login
+  // 1-Click Demo Login (Live Authenticated CMO Account)
   const handleQuickDemoDoctor = async () => {
     setLoading(true);
     setError(null);
     try {
-      let token = 'token_doctor_verified_session';
-      let doctorId = '6057fa47-615d-479b-9b9f-d0c2d3bd07ac';
-      try {
-        const loginRes = await mobileApi.loginDoctor('doctor@praxirence.com', 'Doctor123!');
-        if (loginRes.access_token) {
-          token = loginRes.access_token;
-          if (loginRes.user?.id) doctorId = loginRes.user.id;
-        }
-      } catch (loginErr) {
-        console.warn('Backend login notice, continuing with verified doctor session:', loginErr);
+      const loginRes = await mobileApi.loginDoctor('doctor@praxirence.com', 'Doctor123!');
+      if (loginRes.user) {
+        onAuthenticated(loginRes.user);
+      } else {
+        throw new Error('Authentication completed but doctor profile was empty.');
       }
-
-      const demoDoctor: DoctorUser = {
-        id: doctorId,
-        name: 'Dr. Mayank Raj',
-        email: 'doctor@praxirence.com',
-        phone: '+919876543210',
-        specialty: 'Chief Medical Officer & Physician',
-        clinic_name: 'Praxirence Clinical Centre',
-        reg_number: 'MED-2024-84920',
-        role: 'doctor',
-      };
-      await mobileApi.saveSession('doctor', token, demoDoctor);
-      onAuthenticated(demoDoctor);
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      setError(err.message || 'Login failed. Please verify network connection or credentials.');
     } finally {
       setLoading(false);
     }

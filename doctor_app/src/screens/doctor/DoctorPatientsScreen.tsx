@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../../theme';
 import { PatientSummary, Visit } from '../../types';
 import { mobileApi } from '../../services/api';
+import { EmptyState } from '../../components/EmptyState';
 
 interface DoctorPatientsScreenProps {
   onSelectPatientForConsultation: (patient: PatientSummary) => void;
@@ -157,13 +158,13 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
         {loading ? (
           <ActivityIndicator size="small" color={Colors.primary} style={{ marginTop: 24 }} />
         ) : patients.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Ionicons name="people-outline" size={48} color={Colors.textSecondary} style={{ marginBottom: 12 }} />
-            <Text style={styles.emptyTitle}>No Patients Found</Text>
-            <Text style={styles.emptySubtitle}>
-              Tap "+ Add Patient" above to register a new clinical record.
-            </Text>
-          </View>
+          <EmptyState
+            icon="people-outline"
+            title="No Patients Found"
+            description="No matching patient records found in your directory. Register your first patient to begin."
+            actionLabel="Register New Patient"
+            onAction={() => setModalVisible(true)}
+          />
         ) : (
           patients.map((pat) => (
             <View key={pat.id} style={styles.patientCard}>

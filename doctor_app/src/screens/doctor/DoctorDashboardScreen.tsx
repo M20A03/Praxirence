@@ -16,6 +16,7 @@ import { Colors, FontFamily, FontSize, LetterSpacing } from '../../theme';
 import { DoctorUser, UpcomingScheduleItem, UpcomingScheduleResponse } from '../../types';
 import { mobileApi } from '../../services/api';
 import { BrandLogoMobile } from '../../components/BrandLogoMobile';
+import { EmptyState } from '../../components/EmptyState';
 
 interface DoctorDashboardScreenProps {
   doctor: DoctorUser;
@@ -294,15 +295,13 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
           );
         })
       ) : (
-        <View style={styles.emptyCard}>
-          <Ionicons name="calendar-outline" size={42} color={Colors.textSecondary} />
-          <Text style={styles.emptyTitle}>No Upcoming Patients</Text>
-          <Text style={styles.emptySubtitle}>All scheduled patients for today have been consulted.</Text>
-          <TouchableOpacity style={styles.addWalkInButton} onPress={() => setShowWalkInModal(true)}>
-            <Ionicons name="add" size={18} color="#ffffff" />
-            <Text style={styles.addWalkInText}>Add Walk-In Patient</Text>
-          </TouchableOpacity>
-        </View>
+        <EmptyState
+          icon="calendar-outline"
+          title="No Patients in Queue"
+          description="Your clinical triage queue is currently clear. Add a walk-in patient or initiate an ad-hoc consultation."
+          actionLabel="Add Walk-In Patient"
+          onAction={() => setShowWalkInModal(true)}
+        />
       )}
 
       {/* Directory & Past Care Plans Navigation Bar */}

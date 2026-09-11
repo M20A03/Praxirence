@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,13 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
+import * as Haptics from 'expo-haptics';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
 import { PatientUser, Visit } from '../types';
 import { mobileApi } from '../services/api';
 import { BrandLogoMobile } from '../components/BrandLogoMobile';
+import { EmptyState } from '../components/EmptyState';
 
 interface VisitsScreenProps {
   user: PatientUser;
@@ -28,20 +31,23 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [doseTracker, setDoseTracker] = useState<Record<string, boolean>>({});
 
+  const soundRef = useRef<Audio.Sound | null>(null);
+
   const toggleDose = (key: string) => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (_) {}
     setDoseTracker((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   useEffect(() => {
     loadVisits();
 
-    const unsubscribe = mobileApi.startRealtimeSync(user.id, (freshVisits, isLive) => {
-      if (isLive && freshVisits.length > 0) {
-        setVisits(freshVisits);
+    return () => {
+      if (soundRef.current) {
+        soundRef.current.unloadAsync().catch(() => {});
       }
-    }, 8000);
-
-    return () => unsubscribe();
+    };
   }, [user.id]);
 
   const loadVisits = async () => {
@@ -58,18 +64,50 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
   };
 
   const toggleExpand = (id: string) => {
+    try {
+      Haptics.selectionAsync();
+    } catch (_) {}
     setExpandedId(expandedId === id ? null : id);
   };
 
-  const handleToggleAudio = (visitId: string) => {
-    if (playingAudioId === visitId) {
-      setPlayingAudioId(null);
-    } else {
+  const handleToggleAudio = async (visitId: string, audioUrl?: string) => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+      if (playingAudioId === visitId) {
+        if (soundRef.current) {
+          await soundRef.current.stopAsync();
+          await soundRef.current.unloadAsync();
+          soundRef.current = null;
+        }
+        setPlayingAudioId(null);
+        return;
+      }
+
+      if (soundRef.current) {
+        await soundRef.current.stopAsync();
+        await soundRef.current.unloadAsync();
+        soundRef.current = null;
+      }
+
       setPlayingAudioId(visitId);
-      // Automatically reset audio simulation after 12 seconds
-      setTimeout(() => {
-        setPlayingAudioId((curr) => (curr === visitId ? null : curr));
-      }, 12000);
+      const targetUrl = audioUrl || `${mobileApi.getApiUrl()}/recordings/visit/${visitId}`;
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: targetUrl },
+        { shouldPlay: true }
+      );
+      soundRef.current = sound;
+
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          setPlayingAudioId(null);
+          sound.unloadAsync().catch(() => {});
+          soundRef.current = null;
+        }
+      });
+    } catch (err) {
+      console.warn('Audio playback notice:', err);
+      setPlayingAudioId(null);
     }
   };
 
@@ -137,13 +175,11 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
       </View>
 
       {visits.length === 0 ? (
-        <View style={styles.emptyCard}>
-          <Image source={require('../../assets/features/visits.png')} style={{ width: 64, height: 64, marginBottom: 16, opacity: 0.8 }} resizeMode="contain" />
-          <Text style={styles.emptyTitle}>No Past Consultations</Text>
-          <Text style={styles.emptySubtitle}>
-            When your doctor completes a consultation and approves your care plan, what they explained to you will be safely recorded here.
-          </Text>
-        </View>
+        <EmptyState
+          icon="document-text-outline"
+          title="No Past Consultations"
+          description="Your medical vault is completely clean. When your doctor finishes a consultation and approves your care plan, all prescriptions, clinical summaries, and doctor voice advice will safely appear here."
+        />
       ) : (
         visits.map((visit) => {
           const isExpanded = expandedId === visit.id;

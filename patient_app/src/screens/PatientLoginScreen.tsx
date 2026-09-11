@@ -25,13 +25,13 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
   const [authMode, setAuthMode] = useState<'email' | 'phone'>('email');
 
   // Email OTP States
-  const [email, setEmail] = useState('patient@praxirence.com');
-  const [patientName, setPatientName] = useState('Aarav Sharma');
+  const [email, setEmail] = useState('');
+  const [patientName, setPatientName] = useState('');
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [emailOtpCode, setEmailOtpCode] = useState('');
 
   // Phone WhatsApp States
-  const [phoneDigits, setPhoneDigits] = useState('9876543210');
+  const [phoneDigits, setPhoneDigits] = useState('');
   const [phoneOtpSent, setPhoneOtpSent] = useState(false);
   const [phoneOtpCode, setPhoneOtpCode] = useState('');
   const [demoCode, setDemoCode] = useState<string | null>(null);
@@ -41,27 +41,6 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
 
   const fullPhone = `+91${phoneDigits}`;
-
-  // Quick Demo Access
-  const handleQuickDemoPatient = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const demoPatient: PatientUser = {
-        id: 'pat_live_01',
-        name: 'Aarav Sharma',
-        phone: '+919876543210',
-        consent_status: true,
-        role: 'patient',
-      };
-      await mobileApi.saveSession('patient', 'token_patient_verified_session', demoPatient);
-      onAuthenticated(demoPatient);
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Request Email OTP
   const handleRequestEmailOtp = async () => {
@@ -295,7 +274,7 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                 <Ionicons name="person-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. Aarav Sharma"
+                  placeholder="Enter your full name"
                   placeholderTextColor={Colors.textSecondary}
                   value={patientName}
                   onChangeText={setPatientName}
@@ -379,22 +358,6 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
               )}
             </View>
           )}
-
-          {/* Quick Demo Login Divider */}
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR INSTANT ACCESS</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <TouchableOpacity
-            style={styles.demoLoginBtn}
-            onPress={handleQuickDemoPatient}
-            disabled={loading}
-          >
-            <Ionicons name="flash" size={18} color="#10b981" />
-            <Text style={styles.demoLoginBtnText}>Instant Demo: Aarav Sharma (Patient)</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Security & DPDP Compliance Guarantee */}

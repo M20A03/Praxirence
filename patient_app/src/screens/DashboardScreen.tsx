@@ -20,6 +20,8 @@ import { registerForPushNotificationsAsync } from '../services/notifications';
 import { BrandLogoMobile } from '../components/BrandLogoMobile';
 import { PillTrackerCard } from '../components/PillTrackerCard';
 import { VitalsTrackerModal } from '../components/VitalsTrackerModal';
+import { EmptyState } from '../components/EmptyState';
+import * as Haptics from 'expo-haptics';
 import {
   SupportedLanguage,
   SUPPORTED_LANGUAGES,
@@ -92,23 +94,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     loadVitalsData();
     checkPushPermissions();
     measureLatency();
-
-    // SRE Real-time sync engine (polls every 6 seconds)
-    const unsubscribe = mobileApi.startRealtimeSync(user.id, (freshVisits, liveStatus) => {
-      setIsLive(liveStatus);
-      if (liveStatus && freshVisits.length > 0) {
-        setVisits((prev) => {
-          if (prev.length > 0 && freshVisits.length > prev.length) {
-            setNewPlanAlert(`New consultation received from Dr. ${freshVisits[0].doctor_name || 'Provider'}`);
-          }
-          return freshVisits;
-        });
-        setLastSyncedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-        setIsOfflineCached(false);
-      }
-    }, 6000);
-
-    return () => unsubscribe();
   }, [user.id]);
 
   const measureLatency = async () => {
@@ -202,6 +187,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const upcomingReminders: ReminderItem[] = latestVisit?.reminders || [];
 
   const handleMarkTaken = (key: string) => {
+    try {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (_) {}
     setTakenReminders((prev) => ({ ...prev, [key]: true }));
     Alert.alert('Dose Logged', 'Great job staying on track with your medication schedule!');
   };
@@ -548,10 +536,13 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </View>
 
         {activeMedicines.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No active medications right now.</Text>
-            <Text style={styles.emptySubtext}>Your prescribed medications will appear here after your doctor consultation.</Text>
-          </View>
+          <EmptyState
+            icon="medkit-outline"
+            title="No Active Prescriptions"
+            description="You currently have no active prescribed medications. When your doctor approves a care plan, your medicines and dosage timers will appear here."
+            actionLabel={onNavigateToDoctors ? "Find a Specialist" : undefined}
+            onAction={onNavigateToDoctors}
+          />
         ) : (
           activeMedicines.map((med, index) => (
             <View key={index} style={styles.medCard}>

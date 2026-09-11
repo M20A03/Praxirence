@@ -60,6 +60,8 @@ export interface Visit {
   reminders: ReminderItem[];
   status: 'draft' | 'approved' | 'sent';
   doctor_name?: string;
+  specialty?: string;
+  created_at?: string;
   patient_name?: string;
   patient_phone?: string;
 }

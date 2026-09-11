@@ -153,24 +153,24 @@ export const mobileApi = {
   },
 
   async loginDoctor(email: string, password?: string): Promise<{ access_token: string; role?: string; user?: DoctorUser }> {
-    try {
-      const res = await resilientFetch(`${API_BASE_URL}/auth/doctor/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: password || 'Doctor123!' }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.access_token) {
-          authToken = data.access_token;
-          await AsyncStorage.setItem('praxirence_token', data.access_token);
-        }
-        return data;
-      }
-    } catch (e) {
-      console.warn('Doctor login API call notice:', e);
+    const res = await resilientFetch(`${API_BASE_URL}/auth/doctor/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: password || 'Doctor123!' }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Doctor login failed. Check email and password.');
     }
-    return { access_token: 'token_doctor_verified_session' };
+    const data = await res.json();
+    if (data.access_token) {
+      authToken = data.access_token;
+      await AsyncStorage.setItem('praxirence_token', data.access_token);
+      if (data.user) {
+        await this.saveSession('doctor', data.access_token, data.user);
+      }
+    }
+    return data;
   },
 
   async requestDoctorEmailOtp(email: string, name?: string): Promise<{ success: boolean; message: string }> {
@@ -404,76 +404,14 @@ export const mobileApi = {
         return await res.json();
       }
     } catch (e) {
-      console.warn('Upcoming schedule network fetch fallback:', e);
+      console.warn('Upcoming schedule network fetch notice:', e);
     }
-    // High-fidelity fallback schedule for clinical continuity
     return {
       date: new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
       doctor_name: 'Dr. Mayank Raj',
-      total_scheduled: 5,
-      in_waiting: 2,
-      queue: [
-        {
-          token: 'T-01',
-          patient_id: 'pat_live_01',
-          patient_name: 'Aarav Sharma',
-          patient_phone: '+919876543210',
-          time: '09:30 AM',
-          chief_complaint: 'Persistent productive cough, fever 101°F & chest heaviness for 3 days',
-          triage: 'Priority',
-          status: 'Waiting in Clinic',
-          dob: '1992-06-15',
-          consent_status: true,
-        },
-        {
-          token: 'T-02',
-          patient_id: 'pat_live_02',
-          patient_name: 'Priya Patel',
-          patient_phone: '+919876540001',
-          time: '10:15 AM',
-          chief_complaint: 'Routine Type-2 Diabetes quarterly follow-up & fasting blood glucose check',
-          triage: 'Routine',
-          status: 'In Waiting Room',
-          dob: '1988-11-20',
-          consent_status: true,
-        },
-        {
-          token: 'T-03',
-          patient_id: 'pat_live_03',
-          patient_name: 'Vikram Singh',
-          patient_phone: '+919876540002',
-          time: '11:00 AM',
-          chief_complaint: 'Acute throbbing migraine with photophobia and nausea',
-          triage: 'Urgent',
-          status: 'In Waiting Room',
-          dob: '1995-03-10',
-          consent_status: true,
-        },
-        {
-          token: 'T-04',
-          patient_id: 'pat_live_04',
-          patient_name: 'Sneha Kulkarni',
-          patient_phone: '+919876540003',
-          time: '11:45 AM',
-          chief_complaint: 'Stage-1 Essential Hypertension monitoring & medication review',
-          triage: 'Routine',
-          status: 'Scheduled Today',
-          dob: '1984-09-05',
-          consent_status: true,
-        },
-        {
-          token: 'T-05',
-          patient_id: 'pat_live_05',
-          patient_name: 'Rahul Verma',
-          patient_phone: '+919876540004',
-          time: '12:30 PM',
-          chief_complaint: 'Seasonal allergic rhinitis, sneezing and throat irritation',
-          triage: 'Routine',
-          status: 'Scheduled Today',
-          dob: '1998-01-25',
-          consent_status: true,
-        },
-      ],
+      total_scheduled: 0,
+      in_waiting: 0,
+      queue: [],
     };
   },
 
@@ -588,8 +526,8 @@ export const mobileApi = {
         const visit = await res.json();
         return {
           diagnosis: visit.diagnosis || 'Clinical Assessment Completed',
-          patient_summary: visit.patient_summary || 'Your doctor conducted a clinical assessment.',
-          doctor_advice: visit.doctor_advice || 'Follow medication schedule and rest adequately.',
+          patient_summary: visit.patient_summary || '',
+          doctor_advice: visit.doctor_advice || '',
           medicines: visit.medicines || [],
           reminders: visit.reminders || [],
           warning_signs: visit.warning_signs || [],
@@ -597,55 +535,11 @@ export const mobileApi = {
         };
       } else {
         const errText = await res.text().catch(() => '');
-        console.warn(`upload-audio status ${res.status}:`, errText);
+        throw new Error(errText || `Clinical audio transcription server returned status ${res.status}`);
       }
-    } catch (netErr) {
-      console.warn('Backend audio upload notice, utilizing clinical AI pipeline:', netErr);
+    } catch (netErr: any) {
+      throw new Error(netErr.message || 'Audio upload failed. Check connection or record again.');
     }
-
-    return {
-      diagnosis: 'Acute Upper Respiratory Tract Infection',
-      patient_summary: 'Your doctor evaluated your clinical symptoms and diagnosed an acute upper respiratory infection. A structured medication plan has been issued to clear the infection and relieve throat irritation.',
-      doctor_advice: 'Drink plenty of warm fluids, perform warm saline gargles twice daily, avoid cold drinks, and rest for 3 days.',
-      warning_signs: [
-        'High fever above 101°F persistent after 48 hours',
-        'Breathing difficulty or severe throat swelling',
-        'Severe chest discomfort',
-      ],
-      medicines: [
-        {
-          name: 'Amoxicillin & Clavulanate',
-          dosage: '625mg',
-          frequency: 'Twice daily after meals',
-          instructions: 'Complete full 5-day antibiotic course',
-          duration_days: 5,
-        },
-        {
-          name: 'Paracetamol Tablets',
-          dosage: '650mg',
-          frequency: 'SOS for fever > 100°F (Max 3/day)',
-          instructions: 'Take with warm water after meals',
-          duration_days: 3,
-        },
-      ],
-      reminders: [
-        {
-          medicine_name: 'Amoxicillin & Clavulanate',
-          dosage: '625mg',
-          time: '08:30',
-          frequency: 'daily',
-          instructions: 'Morning post-breakfast dose',
-        },
-        {
-          medicine_name: 'Amoxicillin & Clavulanate',
-          dosage: '625mg',
-          time: '20:30',
-          frequency: 'daily',
-          instructions: 'Night post-dinner dose',
-        },
-      ],
-      conversation: 'Doctor: Good morning, what symptoms have you been experiencing?\nPatient: High fever, sore throat, and dry cough for the past 2 days.\nDoctor: Throat examination shows pharyngeal redness and mild tonsillar swelling. You have Acute Pharyngitis. I am prescribing an antibiotic course and fever medication.\nPatient: Thank you, Doctor.',
-    };
   },
 
   async createStructuredVisit(params: {
@@ -808,7 +702,6 @@ export const mobileApi = {
     }
     const cached = await AsyncStorage.getItem(cacheKey);
     if (cached) return JSON.parse(cached);
-    // Verified fallback directory
     return [
       {
         id: '15a1fef3-d264-4d37-b981-f7a10a683fb8',
@@ -820,26 +713,6 @@ export const mobileApi = {
         reg_number: 'NMC-2024-84920',
         role: 'doctor',
       },
-      {
-        id: 'b913837b-a7c0-4b57-bbcf-2eba37c3a48b',
-        name: 'Dr. Aarav Mehta',
-        email: 'dr.aarav@hospital.org',
-        phone: '+919876540001',
-        specialty: 'Pediatrics',
-        clinic_name: 'Mehta Children Hospital',
-        reg_number: 'NMC-2024-11223',
-        role: 'doctor',
-      },
-      {
-        id: 'c762dca3-0694-41b9-a758-6367b48cfb13',
-        name: 'Dr. Test Doctor',
-        email: 'newdoc@praxirence.com',
-        phone: '+919876543210',
-        specialty: 'Cardiology',
-        clinic_name: 'Praxirence Clinical Centre',
-        reg_number: 'NMC-2024-84920',
-        role: 'doctor',
-      }
     ];
   },
 

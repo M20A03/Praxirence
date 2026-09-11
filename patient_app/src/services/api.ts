@@ -645,7 +645,6 @@ export const mobileApi = {
     }
     const cached = await AsyncStorage.getItem(cacheKey);
     if (cached) return JSON.parse(cached);
-    // Verified fallback directory
     return [
       {
         id: '15a1fef3-d264-4d37-b981-f7a10a683fb8',
@@ -657,26 +656,6 @@ export const mobileApi = {
         reg_number: 'NMC-2024-84920',
         role: 'doctor',
       },
-      {
-        id: 'b913837b-a7c0-4b57-bbcf-2eba37c3a48b',
-        name: 'Dr. Aarav Mehta',
-        email: 'dr.aarav@hospital.org',
-        phone: '+919876540001',
-        specialty: 'Pediatrics',
-        clinic_name: 'Mehta Children Hospital',
-        reg_number: 'NMC-2024-11223',
-        role: 'doctor',
-      },
-      {
-        id: 'c762dca3-0694-41b9-a758-6367b48cfb13',
-        name: 'Dr. Test Doctor',
-        email: 'newdoc@praxirence.com',
-        phone: '+919876543210',
-        specialty: 'Cardiology',
-        clinic_name: 'Praxirence Clinical Centre',
-        reg_number: 'NMC-2024-84920',
-        role: 'doctor',
-      }
     ];
   },
 

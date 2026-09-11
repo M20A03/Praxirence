@@ -1,5 +1,5 @@
 import React from 'react';
-import { Smartphone, ArrowRight, ShieldCheck, Zap, Lock, Activity } from 'lucide-react';
+import { Smartphone, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
 
 export const LandingHero: React.FC = () => {
   return (
@@ -8,44 +8,44 @@ export const LandingHero: React.FC = () => {
       <div style={{ display: 'inline-flex', justifyContent: 'center' }}>
         <div className="section-tag">
           <Zap size={14} />
-          <span>Next-Generation Ambient Clinical AI</span>
+          <span>Next-Generation Ambient Clinical Ecosystem</span>
         </div>
       </div>
 
       {/* Main Headline */}
       <h1 className="hero-headline">
-        Clinical Care Plans, <span>Ambiently Generated</span>. Zero Overhead.
+        Ambient Clinical Intelligence for <span>Doctors & Patients</span>.
       </h1>
 
       {/* Subtitle */}
       <p className="hero-sub">
-        Praxirence listens to bilingual doctor-patient consultations, generates structured clinical care plans, mandates physician legal sign-off, and dispatches plain-language care instructions straight to WhatsApp.
+        Praxirence bridges clinicians and patients seamlessly: ambiently structuring clinical notes and prescriptions for doctors, while delivering instant vernacular care plans, medication reminders, and verified WhatsApp summaries directly to patients.
       </p>
 
       {/* Dual CTA Buttons */}
       <div className="hero-cta-group">
         <a href="#apps" className="btn-primary">
           <Smartphone size={18} />
-          <span>Explore Doctor App</span>
+          <span>Explore Doctor & Patient Apps</span>
           <ArrowRight size={16} />
         </a>
 
-        <a href="#download" className="btn-secondary">
+        <a href="#contact" className="btn-secondary">
           <ShieldCheck size={18} color="#10b981" />
-          <span>Request Clinic Access</span>
+          <span>Partner With Us</span>
         </a>
       </div>
 
-      {/* Live Metrics Strip */}
+      {/* Clinical Highlights Strip */}
       <div className="stats-grid">
         <div className="stat-item">
-          <div className="stat-number accent">&lt; 1.2s</div>
-          <div className="stat-label">Synthesis Latency</div>
+          <div className="stat-number accent">Instant</div>
+          <div className="stat-label">WhatsApp Care Plan Delivery</div>
         </div>
 
         <div className="stat-item">
-          <div className="stat-number">100%</div>
-          <div className="stat-label">Physician-Verified Sign-Off</div>
+          <div className="stat-number">Dual-App</div>
+          <div className="stat-label">Doctor & Patient Platform</div>
         </div>
 
         <div className="stat-item">
@@ -54,8 +54,8 @@ export const LandingHero: React.FC = () => {
         </div>
 
         <div className="stat-item">
-          <div className="stat-number">ABDM</div>
-          <div className="stat-label">FHIR M2 Interoperable</div>
+          <div className="stat-number">ABDM & DPDP</div>
+          <div className="stat-label">India Digital Health Standards</div>
         </div>
       </div>
     </section>

@@ -28,7 +28,7 @@ export const LandingFooter: React.FC = () => {
           </div>
 
           <p style={{ fontSize: '0.8rem', color: '#64748b', lineHeight: 1.5, marginBottom: '8px' }}>
-            Engineered in India for licensed medical practitioners. Fully aligned with the National Medical Commission (NMC) Telemedicine Practice Guidelines, Digital Personal Data Protection (DPDP) Act 2023, and Ayushman Bharat Digital Mission (ABDM) standards.
+            Engineered in India for doctors and patients. Fully aligned with the Digital Personal Data Protection (DPDP) Act 2023 and Ayushman Bharat Digital Mission (ABDM) standards.
           </p>
 
           <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
@@ -42,7 +42,7 @@ export const LandingFooter: React.FC = () => {
             <a href="#apps" className="footer-link">Doctor App</a>
             <a href="#apps" className="footer-link">Patient App</a>
             <a href="#architecture" className="footer-link">Architecture</a>
-            <a href="#download" className="footer-link">Pilot Access</a>
+            <a href="#contact" className="footer-link">Contact & Inquiries</a>
           </div>
 
           <div style={{ display: 'flex', gap: '16px' }}>

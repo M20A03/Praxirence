@@ -70,7 +70,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
           text: 'Confirm Booking',
           onPress: () => {
             Alert.alert(
-              'Encounter Scheduled! 🩺',
+              'Encounter Scheduled',
               `Your appointment request has been submitted to ${doctor.name}. Your care coordinator will verify and notify you via WhatsApp.`
             );
             if (onSelectDoctorForVisit) {
@@ -211,7 +211,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                     <Ionicons name="business-outline" size={13} color={Colors.textSecondary} />
                     <Text style={styles.doctorClinic}>{doc.clinic_name}</Text>
                   </View>
-                  <Text style={styles.doctorReg}>NMC Reg: {doc.reg_number}</Text>
+                  <Text style={styles.doctorReg}>Reg: {doc.reg_number}</Text>
                 </View>
               </View>
 

@@ -98,7 +98,7 @@ export const WhatsAppPreviewModal: React.FC<WhatsAppPreviewModalProps> = ({ isOp
             maxWidth: '90%',
             boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
           }}>
-            🔒 Messages and calls are end-to-end encrypted under DPDP Act 2023.
+            End-to-end encrypted under DPDP Act 2023 • Confidential
           </div>
 
           {/* Incoming Message Bubble */}
@@ -113,7 +113,7 @@ export const WhatsAppPreviewModal: React.FC<WhatsAppPreviewModalProps> = ({ isOp
           }}>
             <p style={{ fontSize: '0.825rem', color: '#111B21', margin: '0 0 6px 0', lineHeight: 1.4 }}>
               नमस्ते <b>रमेश शर्मा जी</b>,<br />
-              डॉ. मयंक राज (NMC: 84920-A) द्वारा आपका आधिकारिक प्रिस्क्रिप्शन व केयर प्लान तैयार कर भेजा गया है।
+              डॉ. मयंक राज (MD, Gen Med) द्वारा आपका आधिकारिक प्रिस्क्रिप्शन व केयर प्लान तैयार कर भेजा गया है।
             </p>
 
             {/* Attached PDF Card */}

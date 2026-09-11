@@ -133,6 +133,7 @@ export interface UpcomingScheduleResponse {
   doctor_name: string;
   total_scheduled: number;
   in_waiting: number;
+  completed?: number;
   queue: UpcomingScheduleItem[];
 }
 

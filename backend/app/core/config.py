@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     SMTP_USER: Optional[str] = None
     SMTP_PASSWORD: Optional[str] = None
     SMTP_FROM_EMAIL: str = "noreply@praxirence.com"
-    SMTP_FROM_NAME: str = "Praxirence Clinical Portal"
+    SMTP_FROM_NAME: str = "Praxirence"
 
     # Audio Recording Storage
     AUDIO_UPLOAD_DIR: str = "/tmp/praxirence_recordings"
@@ -69,7 +69,10 @@ class Settings(BaseSettings):
     ]
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(
+            os.path.join(os.path.dirname(__file__), "..", "..", ".env"),
+            ".env"
+        ),
         env_file_encoding="utf-8",
         extra="ignore"
     )

@@ -1,35 +1,35 @@
 import React, { useState } from 'react';
-import { Download, Send, CheckCircle2, Shield, Smartphone, Sparkles } from 'lucide-react';
+import { Send, CheckCircle2, Mail, Building2, User, Phone } from 'lucide-react';
 
 export const EarlyAccessForm: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
-    clinic: '',
-    phone: '',
-    specialty: 'General Medicine'
+    role: 'Doctor / Healthcare Provider',
+    contact: '',
+    message: ''
   });
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.phone) return;
+    if (!formData.name || !formData.contact) return;
     setSubmitted(true);
   };
 
   return (
-    <section id="download" className="landing-section">
+    <section id="contact" className="landing-section">
       <div className="landing-card cta-card">
         <div className="section-tag" style={{ marginBottom: '14px' }}>
-          <Sparkles size={14} />
-          <span>Deploy Praxirence in Your Clinic</span>
+          <Mail size={14} />
+          <span>Connect With Praxirence</span>
         </div>
 
         <h2 className="section-title" style={{ fontSize: '2.25rem' }}>
-          Join the Pilot Network of Modern Physicians
+          Get in Touch with Our Team
         </h2>
 
         <p className="section-subtitle" style={{ margin: '0 auto', fontSize: '1rem' }}>
-          Cut documentation time by 80% and elevate patient compliance. Request clinic deployment or download the APKs immediately.
+          Whether you are a healthcare practitioner, hospital administrator, patient, or technology partner, we are here to support your clinical communication needs.
         </p>
 
         {submitted ? (
@@ -42,108 +42,62 @@ export const EarlyAccessForm: React.FC = () => {
             textAlign: 'center'
           }}>
             <CheckCircle2 size={40} color="#059669" style={{ margin: '0 auto 12px auto' }} />
-            <h4 style={{ color: '#0f172a', fontSize: '1.25rem', marginBottom: '8px', fontWeight: 700 }}>Thank you, Dr. {formData.name}!</h4>
+            <h4 style={{ color: '#0f172a', fontSize: '1.25rem', marginBottom: '8px', fontWeight: 700 }}>
+              Thank you, {formData.name}!
+            </h4>
             <p style={{ color: '#475569', fontSize: '0.95rem' }}>
-              Our clinical implementation team will contact you on WhatsApp ({formData.phone}) within 2 hours to activate your clinic's ambient AI gateway.
+              Your message has been received. Our clinical partnership team will reach out to you at {formData.contact} promptly.
             </p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} style={{ marginTop: '28px' }}>
             <div className="form-grid">
               <input
                 type="text"
-                placeholder="Doctor Name (e.g. Dr. Rajesh Verma)"
+                placeholder="Full Name"
                 className="form-input"
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
 
-              <input
-                type="text"
-                placeholder="Clinic / Hospital Name"
-                className="form-input"
-                value={formData.clinic}
-                onChange={(e) => setFormData({ ...formData, clinic: e.target.value })}
-              />
-
-              <input
-                type="tel"
-                placeholder="WhatsApp Number (e.g. +91 98765 43210)"
-                className="form-input"
-                required
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              />
-
               <select
                 className="form-input"
-                value={formData.specialty}
-                onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                 style={{ cursor: 'pointer' }}
               >
-                <option value="General Medicine">General Medicine</option>
-                <option value="Diabetology & Endocrinology">Diabetology & Endocrinology</option>
-                <option value="Cardiology">Cardiology</option>
-                <option value="Pediatrics">Pediatrics</option>
-                <option value="Orthopedics">Orthopedics</option>
-                <option value="Other">Other Specialization</option>
+                <option value="Doctor / Healthcare Provider">Doctor / Healthcare Provider</option>
+                <option value="Hospital / Clinic Administrator">Hospital / Clinic Administrator</option>
+                <option value="Patient / Family Caregiver">Patient / Family Caregiver</option>
+                <option value="Healthtech Partner / Researcher">Healthtech Partner / Researcher</option>
+                <option value="Other">Other Inquiry</option>
               </select>
+
+              <input
+                type="text"
+                placeholder="Email or Phone / WhatsApp"
+                className="form-input"
+                required
+                value={formData.contact}
+                onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+              />
+
+              <input
+                type="text"
+                placeholder="City / Institution (Optional)"
+                className="form-input"
+                value={formData.message}
+                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+              />
             </div>
 
-            <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+            <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '16px' }}>
               <Send size={16} />
-              <span>Request Priority Clinic Onboarding</span>
+              <span>Submit Inquiry</span>
             </button>
           </form>
         )}
-
-        {/* Direct APK Download Strip */}
-        <div style={{
-          marginTop: '40px',
-          paddingTop: '32px',
-          borderTop: '1px solid var(--landing-border)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '20px',
-          flexWrap: 'wrap'
-        }}>
-          <div style={{ textAlign: 'left' }}>
-            <span style={{ fontSize: '0.8rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, display: 'block' }}>
-              Direct Mobile Downloads
-            </span>
-            <span style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 600 }}>
-              Signed Production APKs (v1.0.4)
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <a
-              href="https://github.com/M20A03/Praxirence/releases"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-secondary"
-              style={{ padding: '10px 18px', fontSize: '0.85rem' }}
-            >
-              <Smartphone size={15} color="#06b6d4" />
-              <span>Doctor APK (Android)</span>
-              <Download size={14} />
-            </a>
-
-            <a
-              href="https://github.com/M20A03/Praxirence/releases"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-secondary"
-              style={{ padding: '10px 18px', fontSize: '0.85rem' }}
-            >
-              <Smartphone size={15} color="#10b981" />
-              <span>Patient APK (Android)</span>
-              <Download size={14} />
-            </a>
-          </div>
-        </div>
       </div>
     </section>
   );

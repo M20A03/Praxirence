@@ -84,13 +84,13 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
       .join('\n');
 
     const message =
-      `🩺 *Praxirence Consultation Summary*\n` +
-      `👨‍⚕️ Doctor: Dr. ${visit.doctor_name || 'Care Team'}\n` +
-      `📅 Date: ${new Date(visit.date).toLocaleDateString()}\n` +
-      `📋 Diagnosis: ${visit.diagnosis || 'Clinical Consultation'}\n\n` +
-      `💬 *What Your Doctor Explained:*\n${summaryText}\n\n` +
-      `💡 *Doctor's Advice & Care:*\n${adviceText}\n\n` +
-      `💊 *Prescribed Medications:*\n${medList || 'None specified'}\n\n` +
+      `*Praxirence Consultation Summary*\n` +
+      `Doctor: Dr. ${visit.doctor_name || 'Care Team'}\n` +
+      `Date: ${new Date(visit.date).toLocaleDateString()}\n` +
+      `Diagnosis: ${visit.diagnosis || 'Clinical Consultation'}\n\n` +
+      `*What Your Doctor Explained:*\n${summaryText}\n\n` +
+      `*Doctor's Advice & Care:*\n${adviceText}\n\n` +
+      `*Prescribed Medications:*\n${medList || 'None specified'}\n\n` +
       `_Recorded and delivered via Praxirence Clinical Portal_`;
 
     try {
@@ -108,25 +108,18 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
       style={styles.container}
       contentContainerStyle={styles.content}
       refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => {
-            setRefreshing(true);
-            loadVisits();
-          }}
-          tintColor={Colors.primary}
-        />
+        <RefreshControl refreshing={refreshing} onRefresh={loadVisits} tintColor={Colors.primary} />
       }
     >
       <View style={{ marginBottom: 16 }}>
         <BrandLogoMobile variant="header" size="sm" subtitleText="Clinical Consultation History" />
       </View>
 
-      {/* Header with Bespoke Visits Emblem */}
+      {/* Header with Bespoke Screen Feature Asset */}
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flex: 1, paddingRight: 12 }}>
-            <Text style={styles.title}>Prescription Vault</Text>
+          <View style={{ flex: 1, marginRight: 10 }}>
+            <Text style={styles.title}>Consultation Care Plans</Text>
             <Text style={styles.subtitle}>Doctor explanations, home advice, and prescriptions</Text>
           </View>
           <Image source={require('../../assets/features/visits.png')} style={{ width: 50, height: 50 }} resizeMode="contain" />
@@ -171,7 +164,7 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
           return (
             <View key={visit.id} style={styles.visitCard}>
               <View style={styles.visitHeader}>
-                <View>
+                <View style={{ flex: 1, marginRight: 8 }}>
                   <Text style={styles.visitDate}>{visitDate}</Text>
                   <Text style={styles.doctorName}>Dr. {visit.doctor_name || 'Care Provider'}</Text>
                 </View>
@@ -292,19 +285,35 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
                             {['Morning', 'Afternoon', 'Night'].map((slot) => {
                               const doseKey = `${visit.id}_${med.name}_${slot}`;
                               const isTaken = !!doseTracker[doseKey];
+                              const slotColor =
+                                slot === 'Morning'
+                                  ? { bg: '#FEF3C7', border: '#FDE68A', text: '#92400E' }
+                                  : slot === 'Afternoon'
+                                  ? { bg: '#E0F2FE', border: '#BAE6FD', text: '#0369A1' }
+                                  : { bg: '#F5F3FF', border: '#DDD6FE', text: '#6D28D9' };
                               return (
                                 <TouchableOpacity
                                   key={slot}
-                                  style={[styles.dosePill, isTaken && styles.dosePillActive]}
+                                  style={[
+                                    styles.dosePill,
+                                    { backgroundColor: slotColor.bg, borderColor: slotColor.border },
+                                    isTaken && styles.dosePillActive,
+                                  ]}
                                   onPress={() => toggleDose(doseKey)}
                                   activeOpacity={0.7}
                                 >
                                   <Ionicons
                                     name={isTaken ? 'checkmark-circle' : 'ellipse-outline'}
                                     size={12}
-                                    color={isTaken ? '#FFFFFF' : Colors.textMuted}
+                                    color={isTaken ? '#FFFFFF' : slotColor.text}
                                   />
-                                  <Text style={[styles.dosePillText, isTaken && styles.dosePillTextActive]}>
+                                  <Text
+                                    style={[
+                                      styles.dosePillText,
+                                      { color: slotColor.text },
+                                      isTaken && styles.dosePillTextActive,
+                                    ]}
+                                  >
                                     {slot}
                                   </Text>
                                 </TouchableOpacity>
@@ -395,15 +404,17 @@ const styles = StyleSheet.create({
     color: Colors.whatsapp,
   },
   diagnosisSection: {
-    backgroundColor: Colors.cardSubtle,
+    backgroundColor: '#F0F9FF',
     borderRadius: 10,
     padding: 12,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
   },
   diagnosisLabel: {
     fontFamily: FontFamily.bold,
     fontSize: FontSize.caption,
-    color: Colors.textMuted,
+    color: '#0284C7',
     letterSpacing: LetterSpacing.wider,
     textTransform: 'uppercase',
   },
@@ -544,10 +555,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    backgroundColor: Colors.cardSubtle,
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 6,
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.teal || '#0D9488',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 8,
   },
   medDetailName: {
     fontFamily: FontFamily.bold,

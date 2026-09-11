@@ -1,12 +1,7 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Download, Menu, X, Smartphone, Layers, HelpCircle, Lock } from 'lucide-react';
+import { ShieldCheck, Menu, X, Smartphone, Layers, HelpCircle, Mail } from 'lucide-react';
 
-interface LandingNavbarProps {
-  onOpenPortal?: () => void;
-  onOpenQr?: () => void;
-}
-
-export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onOpenPortal, onOpenQr }) => {
+export const LandingNavbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const closeMenu = () => setMobileMenuOpen(false);
@@ -14,7 +9,7 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onOpenPortal, onOp
   return (
     <header className="landing-navbar">
       <div className="landing-nav-inner">
-        {/* Brand Logo & Live Regulatory Badge */}
+        {/* Brand Logo & Regulatory Badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <a href="#" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
             <div style={{
@@ -36,10 +31,10 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onOpenPortal, onOp
             </span>
           </a>
 
-          {/* Live Regulatory Status - Responsive text */}
-          <div className="badge-status" title="Compliant with National Medical Commission Guidelines & Digital Personal Data Protection Act 2023">
+          {/* Compliance Status */}
+          <div className="badge-status" title="Compliant with Digital Personal Data Protection Act 2023 and ABDM Standards">
             <span className="status-dot"></span>
-            <span className="badge-text-desktop">NMC & DPDP 2023</span>
+            <span className="badge-text-desktop">DPDP 2023 & ABDM</span>
           </div>
         </div>
 
@@ -49,39 +44,18 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onOpenPortal, onOp
           <a href="#architecture" className="nav-link">Architecture</a>
           <a href="#technology" className="nav-link">Security</a>
           <a href="#faq" className="nav-link">FAQ</a>
-          <a href="#download" className="nav-link">Downloads</a>
+          <a href="#contact" className="nav-link">Contact</a>
         </nav>
 
-        {/* Action CTAs (Desktop & Mobile trigger) */}
+        {/* Action CTA */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {onOpenPortal && (
-            <button
-              onClick={onOpenPortal}
-              className="navbar-portal-btn"
-              style={{
-                background: '#ffffff',
-                border: '1px solid #cbd5e1',
-                color: '#475569',
-                padding: '7px 14px',
-                borderRadius: '10px',
-                fontSize: '0.825rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              Doctor Console
-            </button>
-          )}
-
           <a
-            href="#download"
+            href="#contact"
             className="btn-primary navbar-cta-btn"
-            style={{ padding: '7px 14px', fontSize: '0.825rem', borderRadius: '10px' }}
+            style={{ padding: '7px 16px', fontSize: '0.825rem', borderRadius: '10px' }}
           >
-            <Download size={14} />
-            <span>Get App</span>
+            <Mail size={14} />
+            <span>Contact Us</span>
           </a>
 
           {/* Mobile Hamburger Toggle */}
@@ -141,7 +115,7 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onOpenPortal, onOp
             style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#0f172a', textDecoration: 'none', fontWeight: 600, fontSize: '0.95rem' }}
           >
             <ShieldCheck size={16} color="#0284c7" />
-            <span>Trust & Security Stack</span>
+            <span>Trust, Security & Privacy</span>
           </a>
 
           <a
@@ -155,31 +129,15 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onOpenPortal, onOp
 
           <div style={{ height: '1px', background: '#e2e8f0', margin: '4px 0' }} />
 
-          <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
-            {onOpenPortal && (
-              <button
-                onClick={() => {
-                  closeMenu();
-                  onOpenPortal();
-                }}
-                className="btn-secondary"
-                style={{ justifyContent: 'center', padding: '10px' }}
-              >
-                <Lock size={15} color="#0284c7" />
-                <span>Open Doctor Console</span>
-              </button>
-            )}
-
-            <a
-              href="#download"
-              onClick={closeMenu}
-              className="btn-primary"
-              style={{ justifyContent: 'center', padding: '10px' }}
-            >
-              <Download size={15} />
-              <span>Download Android APKs</span>
-            </a>
-          </div>
+          <a
+            href="#contact"
+            onClick={closeMenu}
+            className="btn-primary"
+            style={{ justifyContent: 'center', padding: '10px' }}
+          >
+            <Mail size={15} />
+            <span>Get in Touch with Praxirence</span>
+          </a>
         </div>
       )}
     </header>

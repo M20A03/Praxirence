@@ -146,7 +146,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
 
       {/* Clinician Profile Header */}
       <View style={styles.header}>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, marginRight: 8 }}>
           <Text style={styles.greeting}>Clinician Workspace</Text>
           <Text style={styles.doctorName}>{doctor.name}</Text>
           <Text style={styles.specialtyText}>{doctor.specialty} • {doctor.clinic_name}</Text>
@@ -155,51 +155,54 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
 
         <View style={styles.verifiedDoctorBadge}>
           <Ionicons name="checkmark-circle" size={14} color={Colors.primary} />
-          <Text style={styles.verifiedDoctorText}>NMC Verified</Text>
+          <Text style={styles.verifiedDoctorText}>Verified Clinician</Text>
         </View>
       </View>
 
-      {/* Connectivity Banner - Clean Hospital Grade */}
-      <View style={styles.cloudStatusBar}>
-        <View style={styles.cloudStatusLeft}>
-          <View style={[styles.statusDot, { backgroundColor: isLive ? '#10b981' : '#f59e0b' }]} />
-          <Text style={styles.cloudStatusText}>
-            {isLive ? 'Clinical Network Active • Real-time Sync' : 'Offline Clinical Vault Active'}
-          </Text>
+      {/* Clinical Session Date & Room Header */}
+      <View style={styles.dateHeaderRow}>
+        <View style={styles.dateBadge}>
+          <Ionicons name="calendar-outline" size={14} color="#0284c7" />
+          <Text style={styles.dateLabel}>{scheduleData?.date || 'Today'}</Text>
         </View>
-        <Text style={styles.dateLabel}>{scheduleData?.date || 'Today'}</Text>
+        <View style={styles.activeRoomBadge}>
+          <View style={styles.livePulseDot} />
+          <Text style={styles.activeRoomText}>OPD Consultation Session</Text>
+        </View>
       </View>
 
       {/* Live Clinical Queue Metrics */}
       <View style={styles.statsRow}>
-        <View style={styles.statCard}>
-          <View style={[styles.statIconBadge, { backgroundColor: 'rgba(14, 165, 233, 0.15)' }]}>
-            <Ionicons name="calendar" size={18} color="#0ea5e9" />
+        <View style={[styles.statCard, { backgroundColor: '#F0F9FF', borderColor: '#BAE6FD' }]}>
+          <View style={[styles.statIconBadge, { backgroundColor: '#E0F2FE' }]}>
+            <Ionicons name="people" size={18} color="#0284c7" />
           </View>
-          <Text style={styles.statNumber}>{scheduleData?.total_scheduled || 0}</Text>
+          <Text style={[styles.statNumber, { color: '#0369a1' }]}>{scheduleData?.total_scheduled || 0}</Text>
           <Text style={styles.statLabel}>Today's Queue</Text>
         </View>
 
-        <View style={styles.statCard}>
-          <View style={[styles.statIconBadge, { backgroundColor: 'rgba(245, 158, 11, 0.15)' }]}>
-            <Ionicons name="people" size={18} color="#f59e0b" />
+        <View style={[styles.statCard, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+          <View style={[styles.statIconBadge, { backgroundColor: '#DCFCE7' }]}>
+            <Ionicons name="checkmark-done" size={18} color="#15803d" />
           </View>
-          <Text style={styles.statNumber}>{scheduleData?.in_waiting || 0}</Text>
-          <Text style={styles.statLabel}>In Waiting Room</Text>
+          <Text style={[styles.statNumber, { color: '#15803d' }]}>{scheduleData?.completed || 0}</Text>
+          <Text style={styles.statLabel}>Consulted</Text>
         </View>
 
-        <View style={styles.statCard}>
-          <View style={[styles.statIconBadge, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
-            <Ionicons name="shield-checkmark" size={18} color="#10b981" />
+        <View style={[styles.statCard, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
+          <View style={[styles.statIconBadge, { backgroundColor: '#FEF3C7' }]}>
+            <Ionicons name="time" size={18} color="#d97706" />
           </View>
-          <Text style={styles.statNumber}>100%</Text>
-          <Text style={styles.statLabel}>Data Protected</Text>
+          <Text style={[styles.statNumber, { color: '#b45309' }]}>
+            {(scheduleData?.total_scheduled || 0) - (scheduleData?.completed || 0)}
+          </Text>
+          <Text style={styles.statLabel}>Pending</Text>
         </View>
       </View>
 
       {/* Primary Section Header: Upcoming Patient Schedule */}
       <View style={styles.sectionHeaderRow}>
-        <View>
+        <View style={{ flex: 1, marginRight: 8 }}>
           <Text style={styles.sectionTitle}>Upcoming Patient Schedule</Text>
           <Text style={styles.sectionSubtitle}>Live triage queue ordered by appointment time</Text>
         </View>
@@ -455,36 +458,49 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontWeight: '600',
   },
-  cloudStatusBar: {
+  dateHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F0FDF4',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#BBF7D0',
+    gap: 8,
   },
-  cloudStatusLeft: {
+  dateBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  cloudStatusText: {
-    fontFamily: FontFamily.mono,
-    fontSize: FontSize.xs,
-    color: '#15803D',
-    fontWeight: '600',
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   dateLabel: {
     fontFamily: FontFamily.mono,
+    fontSize: FontSize.xs,
+    color: '#0369A1',
+    fontWeight: '700',
+  },
+  activeRoomBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  livePulseDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#16A34A',
+  },
+  activeRoomText: {
+    fontFamily: FontFamily.sans,
     fontSize: FontSize.xs,
     color: '#15803D',
     fontWeight: '600',
@@ -575,7 +591,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tokenBox: {
-    backgroundColor: Colors.primary,
+    backgroundColor: '#EEF2FF',
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
@@ -583,7 +601,7 @@ const styles = StyleSheet.create({
   tokenText: {
     fontFamily: FontFamily.mono,
     fontSize: FontSize.sm,
-    color: '#ffffff',
+    color: '#4F46E5',
     fontWeight: '700',
   },
   timeBox: {

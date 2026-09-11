@@ -205,13 +205,13 @@ export const generatePrescriptionHtml = (data: PrescriptionPdfData): string => {
       <body>
         <div class="header">
           <div>
-            <h1 class="clinic-title">🏥 PRAXIRENCE CLINICAL HEALTH</h1>
+            <h1 class="clinic-title">PRAXIRENCE CLINICAL HEALTH</h1>
             <div class="clinic-subtitle">Autonomous Clinical Intelligence & Telehealth System • ABDM Compliant</div>
           </div>
           <div class="doctor-meta">
             <div class="doctor-name">${data.doctor.name}</div>
             <div class="doctor-spec">${data.doctor.specialty}</div>
-            <div class="doctor-reg">NMC Reg: MED-${data.doctor.id.slice(-6).toUpperCase()}</div>
+            <div class="doctor-reg">Reg: MED-${data.doctor.id.slice(-6).toUpperCase()}</div>
           </div>
         </div>
 

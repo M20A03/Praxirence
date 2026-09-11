@@ -8,7 +8,7 @@ export const ClinicalArchitecture: React.FC = () => {
       title: "Physician-First Governance",
       bgIcon: "rgba(16, 185, 129, 0.12)",
       borderColor: "rgba(16, 185, 129, 0.25)",
-      description: "Strict doctor verification step prior to dispatch. AI proposes clinical extractions, but the licensed physician strictly disposes and signs off. Zero automated unchecked outbound communications."
+      description: "Strict doctor verification step prior to dispatch. AI proposes clinical extractions, but the attending clinician verifies and signs off. Zero automated unchecked outbound communications."
     },
     {
       icon: <HardDriveDownload size={26} color="#06b6d4" />,

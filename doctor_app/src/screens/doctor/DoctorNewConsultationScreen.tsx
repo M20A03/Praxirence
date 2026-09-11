@@ -276,7 +276,7 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
       const docDisplayName = doctor.name.startsWith('Dr.') ? doctor.name : `Dr. ${doctor.name}`;
       Alert.alert(
         'Physician Verification & Sign-Off Required',
-        `Under NMC Telemedicine Practice Guidelines and clinical safety protocols, attending physician ${docDisplayName} must review the clinical assessment and verify the care plan by checking the "Physician Clinical Verification & Legal Sign-Off" box before dispatching.`
+        `Under clinical practice guidelines and patient safety protocols, attending physician ${docDisplayName} must review the clinical assessment and verify the care plan by checking the "Physician Clinical Verification & Sign-Off" box before dispatching.`
       );
       return;
     }
@@ -386,28 +386,28 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
         {/* Quick Scenario Presets */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetScroll}>
           <TouchableOpacity
-            style={styles.presetChip}
+            style={[styles.presetChip, { backgroundColor: '#F0F9FF', borderColor: '#BAE6FD' }]}
             onPress={() => handleApplyPreset('bronchitis')}
           >
-            <Text style={styles.presetChipText}>🫁 Bronchitis & Wheezing</Text>
+            <Text style={[styles.presetChipText, { color: '#0284C7' }]}>Bronchitis & Wheezing</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.presetChip}
+            style={[styles.presetChip, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}
             onPress={() => handleApplyPreset('diabetes')}
           >
-            <Text style={styles.presetChipText}>🩸 Type 2 Diabetes Review</Text>
+            <Text style={[styles.presetChipText, { color: '#B45309' }]}>Type 2 Diabetes Review</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.presetChip}
+            style={[styles.presetChip, { backgroundColor: '#F5F3FF', borderColor: '#DDD6FE' }]}
             onPress={() => handleApplyPreset('migraine')}
           >
-            <Text style={styles.presetChipText}>⚡ Acute Migraine Attack</Text>
+            <Text style={[styles.presetChipText, { color: '#7C3AED' }]}>Acute Migraine Attack</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.presetChip}
+            style={[styles.presetChip, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}
             onPress={() => handleApplyPreset('hypertension')}
           >
-            <Text style={styles.presetChipText}>❤️ Stage 1 Hypertension</Text>
+            <Text style={[styles.presetChipText, { color: '#E11D48' }]}>Stage 1 Hypertension</Text>
           </TouchableOpacity>
         </ScrollView>
 
@@ -443,8 +443,8 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
             <Ionicons name="heart-circle" size={22} color={Colors.primaryDark} />
             <Text style={styles.patientPreviewTitle}>What Your Patient Will See</Text>
           </View>
-          <View style={styles.liveSyncBadge}>
-            <Text style={styles.liveSyncText}>WhatsApp & Portal Sync</Text>
+          <View style={[styles.liveSyncBadge, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+            <Text style={[styles.liveSyncText, { color: '#15803D' }]}>WhatsApp Care Plan</Text>
           </View>
         </View>
 
@@ -544,20 +544,29 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
         )}
 
         {medicines.map((med, idx) => (
-          <View key={idx} style={styles.medCard}>
+          <View key={idx} style={[styles.medCard, { borderLeftWidth: 3.5, borderLeftColor: '#0D9488' }]}>
             <View style={styles.medHeader}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.medName}>{med.name}</Text>
-                <Text style={styles.medDosage}>{med.dosage} • {med.frequency}</Text>
-                {med.instructions && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 5, flexWrap: 'wrap' }}>
+                  <View style={{ backgroundColor: '#F0FDFA', borderWidth: 1, borderColor: '#99F6E4', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#0F766E' }}>{med.dosage}</Text>
+                  </View>
+                  <View style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: '#1D4ED8' }}>{med.frequency}</Text>
+                  </View>
+                  {med.duration_days ? (
+                    <View style={{ backgroundColor: '#F5F3FF', borderWidth: 1, borderColor: '#DDD6FE', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
+                      <Text style={{ fontSize: 11, fontWeight: '600', color: '#6D28D9' }}>{med.duration_days} days</Text>
+                    </View>
+                  ) : null}
+                </View>
+                {med.instructions ? (
                   <Text style={styles.medInstructions}>Instructions: {med.instructions}</Text>
-                )}
-                {med.duration_days && (
-                  <Text style={styles.medDuration}>Duration: {med.duration_days} days</Text>
-                )}
+                ) : null}
               </View>
               <TouchableOpacity onPress={() => handleRemoveMedicine(idx)} style={styles.removeBtn}>
-                <Ionicons name="close-circle" size={18} color={Colors.rose} />
+                <Ionicons name="close-circle" size={20} color={Colors.rose} />
               </TouchableOpacity>
             </View>
           </View>
@@ -571,9 +580,9 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
             <Ionicons name="shield-checkmark" size={18} color={doctorVerified ? '#10b981' : '#f59e0b'} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.verificationTitle}>Physician Clinical Verification & Legal Sign-Off</Text>
+            <Text style={styles.verificationTitle}>Physician Clinical Verification & Sign-Off</Text>
             <Text style={styles.verificationSubtitle}>
-              Telemedicine Practice Guidelines • NMC Registered Physician Verification
+              Clinical Practice Guidelines • Attending Physician Verification
             </Text>
           </View>
         </View>
@@ -616,7 +625,7 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
         >
           <Ionicons name="document-text-outline" size={18} color="#0284C7" />
           <Text style={styles.sharePdfBtnText}>
-            📄 Preview & Share E-Prescription (PDF / WhatsApp)
+            Preview & Share E-Prescription (PDF)
           </Text>
         </TouchableOpacity>
 
@@ -629,14 +638,14 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
           {submitting ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 12 }}>
               <Ionicons
                 name={doctorVerified ? 'checkmark-done-circle' : 'shield-outline'}
                 size={20}
                 color="#ffffff"
               />
               <Text style={styles.submitBtnText}>
-                {doctorVerified ? 'Verify & Dispatch Care Plan' : 'Legal Sign-Off Required to Dispatch'}
+                {doctorVerified ? 'Verify & Dispatch Care Plan' : 'Physician Sign-Off Required'}
               </Text>
             </View>
           )}
@@ -958,7 +967,8 @@ const styles = StyleSheet.create({
   submitBtn: {
     backgroundColor: Colors.whatsapp,
     borderRadius: 14,
-    paddingVertical: 16,
+    paddingVertical: 15,
+    paddingHorizontal: 12,
     alignItems: 'center',
     shadowColor: Colors.whatsapp,
     shadowOffset: { width: 0, height: 4 },
@@ -969,8 +979,9 @@ const styles = StyleSheet.create({
   submitBtnText: {
     fontFamily: FontFamily.bold,
     color: '#FFFFFF',
-    fontSize: FontSize.md,
-    letterSpacing: LetterSpacing.wide,
+    fontSize: 14,
+    textAlign: 'center',
+    flexShrink: 1,
   },
   cancelBtn: {
     paddingVertical: 12,
@@ -1091,12 +1102,15 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#0284C7',
     borderRadius: 10,
-    paddingVertical: 14,
+    paddingVertical: 13,
+    paddingHorizontal: 12,
     marginBottom: 12,
   },
   sharePdfBtnText: {
     color: '#0284C7',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
+    textAlign: 'center',
+    flexShrink: 1,
   },
 });

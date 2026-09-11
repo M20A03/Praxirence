@@ -34,8 +34,8 @@ class MetaWhatsAppService:
         Formats structured care plan into a clean, patient-friendly WhatsApp message.
         """
         lines = [
-            "🏥 *PRAXIRENCE HEALTHCARE CLINIC*",
-            "📋 *Clinical Care Plan & Prescription*",
+            "🏥 *PRAXIRENCE*",
+            "📋 *Prescription & Care Plan*",
             "━━━━━━━━━━━━━━━━━━━━━━",
             f"👤 *Patient:* {patient_name}",
             f"🩺 *Doctor:* Dr. {doctor_name}",

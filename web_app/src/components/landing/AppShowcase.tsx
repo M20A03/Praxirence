@@ -3,7 +3,6 @@ import {
   Mic,
   ShieldCheck,
   Send,
-  Download,
   Smartphone,
   CheckCircle2,
   Clock,
@@ -12,16 +11,14 @@ import {
   Heart,
   MessageSquare,
   Lock,
-  QrCode,
   Eye
 } from 'lucide-react';
 
 interface AppShowcaseProps {
   onOpenWhatsAppPreview?: () => void;
-  onOpenQrModal?: () => void;
 }
 
-export const AppShowcase: React.FC<AppShowcaseProps> = ({ onOpenWhatsAppPreview, onOpenQrModal }) => {
+export const AppShowcase: React.FC<AppShowcaseProps> = ({ onOpenWhatsAppPreview }) => {
   const [activeTab, setActiveTab] = useState<'doctor' | 'patient'>('doctor');
   const [doctorVerified, setDoctorVerified] = useState<boolean>(true);
 
@@ -73,7 +70,7 @@ export const AppShowcase: React.FC<AppShowcaseProps> = ({ onOpenWhatsAppPreview,
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
-                    <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>NMC ID: 84920-A</span>
+                    <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>Clinician Workspace</span>
                   </div>
                   <span style={{ fontSize: '10px', color: '#0284c7', fontWeight: 700 }}>Dr. Mayank</span>
                 </div>
@@ -136,7 +133,7 @@ export const AppShowcase: React.FC<AppShowcaseProps> = ({ onOpenWhatsAppPreview,
                       style={{ accentColor: '#059669', marginTop: '2px' }}
                     />
                     <span style={{ fontSize: '8.5px', color: '#334155', lineHeight: 1.3, fontWeight: 500 }}>
-                      I have reviewed and legally verified this care plan under NMC Guidelines.
+                      I have reviewed and verified this care plan for patient dispatch.
                     </span>
                   </label>
 
@@ -274,7 +271,7 @@ export const AppShowcase: React.FC<AppShowcaseProps> = ({ onOpenWhatsAppPreview,
                 <div>
                   <h4>Mandatory Physician Verification Gate</h4>
                   <p>
-                    Strictly enforces doctor review and legal sign-off in compliance with NMC Telemedicine Practice Guidelines before dispatch.
+                    Strictly enforces doctor review and clinical sign-off, ensuring absolute accuracy and patient safety before dispatch.
                   </p>
                 </div>
               </div>
@@ -291,7 +288,7 @@ export const AppShowcase: React.FC<AppShowcaseProps> = ({ onOpenWhatsAppPreview,
                 </div>
               </div>
 
-              {/* Action Buttons: WhatsApp Preview & Direct APK / QR */}
+              {/* Action Buttons: WhatsApp Preview & Contact */}
               <div style={{ marginTop: '16px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 {onOpenWhatsAppPreview && (
                   <button
@@ -304,20 +301,8 @@ export const AppShowcase: React.FC<AppShowcaseProps> = ({ onOpenWhatsAppPreview,
                   </button>
                 )}
 
-                {onOpenQrModal && (
-                  <button
-                    onClick={onOpenQrModal}
-                    className="btn-secondary"
-                    style={{ padding: '10px 18px', fontSize: '0.85rem' }}
-                  >
-                    <QrCode size={16} color="#0284c7" />
-                    <span>Scan Phone QR</span>
-                  </button>
-                )}
-
-                <a href="#download" className="btn-primary" style={{ padding: '10px 18px', fontSize: '0.85rem' }}>
-                  <Download size={16} />
-                  <span>Download APK (Android)</span>
+                <a href="#contact" className="btn-primary" style={{ padding: '10px 18px', fontSize: '0.85rem' }}>
+                  <span>Request Platform Access</span>
                 </a>
               </div>
             </div>
@@ -372,9 +357,8 @@ export const AppShowcase: React.FC<AppShowcaseProps> = ({ onOpenWhatsAppPreview,
                   </button>
                 )}
 
-                <a href="#download" className="btn-primary" style={{ padding: '10px 18px', fontSize: '0.85rem' }}>
-                  <Download size={16} />
-                  <span>Download Patient APK</span>
+                <a href="#contact" className="btn-primary" style={{ padding: '10px 18px', fontSize: '0.85rem' }}>
+                  <span>Inquire for Patients</span>
                 </a>
               </div>
             </div>

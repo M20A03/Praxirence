@@ -62,6 +62,17 @@ class PatientRegisterRequest(BaseModel):
     gender: Optional[str] = "Other"
 
 
+class PatientEmailOTPRequest(BaseModel):
+    email: EmailStr
+    name: Optional[str] = None
+
+
+class PatientEmailOTPVerifyRequest(BaseModel):
+    email: EmailStr
+    code: str
+
+
+
 class CheckPhoneRequest(BaseModel):
     phone: str
 

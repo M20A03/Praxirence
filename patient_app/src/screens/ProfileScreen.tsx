@@ -1,14 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   ScrollView,
-  Modal,
-  TextInput,
-  ActivityIndicator,
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,72 +32,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
   const isDoctor = role === 'doctor';
 
-  // NMC Clinician Verification Modal State (For patients who are doctors)
-  const [showNmcModal, setShowNmcModal] = useState(false);
-  const [docName, setDocName] = useState(user?.name || '');
-  const [docSpecialty, setDocSpecialty] = useState('General Physician');
-  const [docClinic, setDocClinic] = useState('Praxirence Clinical Centre');
-  const [docRegNum, setDocRegNum] = useState('NMC-2024-84920');
-  const [verifyingNmc, setVerifyingNmc] = useState(false);
-
   const handleLogoutPress = () => {
     onLogout();
   };
 
   const handleSwitchAccountPress = () => {
     onLogout();
-  };
-
-  const handleVerifyNmcLicense = async () => {
-    if (!docRegNum.trim() || !docName.trim()) {
-      Alert.alert('Incomplete', 'Please enter your Full Name and NMC Registration Number.');
-      return;
-    }
-    setVerifyingNmc(true);
-    try {
-      const registered = await mobileApi.registerDoctor({
-        name: docName.trim(),
-        email: `${docName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'doctor'}@praxirence.com`,
-        phone: user.phone,
-        specialty: docSpecialty.trim() || 'General Physician',
-        clinic_name: docClinic.trim() || 'Praxirence Clinical Centre',
-        reg_number: docRegNum.trim(),
-      });
-      setShowNmcModal(false);
-      Alert.alert(
-        'NMC Credentials Verified',
-        `Welcome Dr. ${docName}! Your clinical registration (${docRegNum}) has been verified. Switching to Clinician Workspace.`,
-        [
-          {
-            text: 'Open Workspace',
-            onPress: () => {
-              if (onDoctorVerified) {
-                onDoctorVerified(registered.user);
-              }
-            },
-          },
-        ]
-      );
-    } catch (e: any) {
-      console.warn('NMC registration note, proceeding with verified credentials:', e);
-      const fallbackDoc: DoctorUser = {
-        id: `doc-${Date.now()}`,
-        name: docName.trim(),
-        email: 'doctor@praxirence.com',
-        phone: user.phone,
-        specialty: docSpecialty.trim(),
-        clinic_name: docClinic.trim(),
-        reg_number: docRegNum.trim(),
-        role: 'doctor',
-      };
-      await mobileApi.saveSession('doctor', 'token_doc_verified', fallbackDoc);
-      setShowNmcModal(false);
-      if (onDoctorVerified) {
-        onDoctorVerified(fallbackDoc);
-      }
-    } finally {
-      setVerifyingNmc(false);
-    }
   };
 
   return (
@@ -134,26 +70,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </View>
       </View>
 
-      {/* Clinician Medical Verification (Only for patients who are medical doctors) */}
-      {!isDoctor && (
-        <View style={styles.clinicianVerifyCard}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <Ionicons name="medical" size={20} color={Colors.primary} />
-            <Text style={styles.clinicianVerifyTitle}>Licensed Medical Practitioner?</Text>
-          </View>
-          <Text style={styles.clinicianVerifySubtitle}>
-            Doctors and clinical specialists can verify their National Medical Commission (NMC) registration number to access prescription authoring and patient consults.
-          </Text>
-          <TouchableOpacity
-            style={styles.clinicianVerifyBtn}
-            onPress={() => setShowNmcModal(true)}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.clinicianVerifyBtnText}>Verify NMC Medical License →</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
       {/* Account Credentials Card */}
       <View style={styles.card}>
         <View style={styles.cardHeaderRow}>
@@ -172,9 +88,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               <Text style={styles.infoValue}>{(user as any).clinic_name || 'Praxirence Centre'}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>NMC Registration</Text>
+              <Text style={styles.infoLabel}>Medical Registration</Text>
               <Text style={[styles.infoValue, { color: Colors.primaryDark, fontFamily: FontFamily.bold }]}>
-                {(user as any).reg_number || 'NMC-2024-84920'}
+                {(user as any).reg_number || 'MED-2024-84920'}
               </Text>
             </View>
           </>
@@ -265,88 +181,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <Text style={styles.logoutButtonText}>Sign Out</Text>
         </TouchableOpacity>
       </View>
-
-      {/* NMC Verification Modal */}
-      <Modal
-        visible={showNmcModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowNmcModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Ionicons name="medkit" size={20} color={Colors.primary} />
-                <Text style={styles.modalTitle}>Clinician Verification</Text>
-              </View>
-              <TouchableOpacity onPress={() => setShowNmcModal(false)}>
-                <Ionicons name="close" size={24} color={Colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.modalSubtitle}>
-              Enter your National Medical Commission (NMC) registration details to unlock the doctor workspace.
-            </Text>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Doctor Full Name</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={docName}
-                onChangeText={setDocName}
-                placeholder="Dr. Full Name"
-                placeholderTextColor={Colors.textMuted}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Medical Specialty</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={docSpecialty}
-                onChangeText={setDocSpecialty}
-                placeholder="e.g. Cardiology, General Physician"
-                placeholderTextColor={Colors.textMuted}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Clinic / Hospital Name</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={docClinic}
-                onChangeText={setDocClinic}
-                placeholder="Hospital Affiliation"
-                placeholderTextColor={Colors.textMuted}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>NMC Registration Number</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={docRegNum}
-                onChangeText={setDocRegNum}
-                placeholder="e.g. NMC-2024-84920"
-                placeholderTextColor={Colors.textMuted}
-              />
-            </View>
-
-            <TouchableOpacity
-              style={styles.submitNmcBtn}
-              onPress={handleVerifyNmcLicense}
-              disabled={verifyingNmc}
-            >
-              {verifyingNmc ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.submitNmcBtnText}>Verify & Access Doctor Workspace →</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </ScrollView>
   );
 };
@@ -405,43 +239,6 @@ const styles = StyleSheet.create({
     color: Colors.primaryDark,
     letterSpacing: LetterSpacing.wide,
   },
-  clinicianVerifyCard: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: 'rgba(13, 148, 136, 0.3)',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  clinicianVerifyTitle: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.body,
-    color: Colors.text,
-  },
-  clinicianVerifySubtitle: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-    lineHeight: 18,
-    marginBottom: 14,
-  },
-  clinicianVerifyBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  clinicianVerifyBtnText: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.sm,
-    color: '#FFFFFF',
-    letterSpacing: LetterSpacing.wide,
-  },
   card: {
     backgroundColor: Colors.card,
     borderWidth: 1,
@@ -473,19 +270,24 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingVertical: 9,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.border,
+    gap: 8,
   },
   infoLabel: {
     fontFamily: FontFamily.medium,
     fontSize: FontSize.sm,
     color: Colors.textSecondary,
+    flexShrink: 0,
   },
   infoValue: {
     fontFamily: FontFamily.semiBold,
     fontSize: FontSize.sm,
     color: Colors.text,
+    flexShrink: 1,
+    textAlign: 'right',
   },
   actionButtonsContainer: {
     gap: 12,
@@ -501,12 +303,15 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(13, 148, 136, 0.3)',
     borderRadius: 12,
     paddingVertical: 14,
+    paddingHorizontal: 12,
   },
   switchAccountButtonText: {
     fontFamily: FontFamily.bold,
     fontSize: FontSize.sm,
     color: Colors.primaryDark,
     letterSpacing: LetterSpacing.wide,
+    textAlign: 'center',
+    flexShrink: 1,
   },
   logoutButton: {
     flexDirection: 'row',
@@ -517,74 +322,14 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(239, 68, 68, 0.25)',
     borderRadius: 12,
     paddingVertical: 14,
+    paddingHorizontal: 12,
   },
   logoutButtonText: {
     fontFamily: FontFamily.bold,
     fontSize: FontSize.sm,
     color: '#EF4444',
     letterSpacing: LetterSpacing.wide,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 22,
-    paddingBottom: 36,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  modalTitle: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.lg,
-    color: Colors.text,
-  },
-  modalSubtitle: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-    lineHeight: 18,
-    marginBottom: 16,
-  },
-  inputGroup: {
-    marginBottom: 12,
-  },
-  inputLabel: {
-    fontFamily: FontFamily.semiBold,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-    marginBottom: 4,
-  },
-  modalInput: {
-    backgroundColor: Colors.cardSubtle,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: FontSize.sm,
-    fontFamily: FontFamily.medium,
-    color: Colors.text,
-  },
-  submitNmcBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  submitNmcBtnText: {
-    fontFamily: FontFamily.bold,
-    color: '#FFFFFF',
-    fontSize: FontSize.body,
-    letterSpacing: LetterSpacing.wide,
+    textAlign: 'center',
+    flexShrink: 1,
   },
 });

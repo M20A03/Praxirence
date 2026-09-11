@@ -170,7 +170,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
     try {
       setProcessing(true);
       setError(null);
-      setProcessingStage('Submitting consultation to Whisper LoRA ASR & Mistral QLoRA parser...');
+      setProcessingStage('Transcribing consultation & extracting clinical entities...');
 
       const fileName = audioBlob instanceof File ? audioBlob.name : 'consultation_audio.wav';
       const visit = await api.uploadAudio(patient.id, audioBlob, keepRecording, fileName);
@@ -178,8 +178,8 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
       window.dispatchEvent(
         new CustomEvent('praxirence_toast', {
           detail: {
-            title: 'Care Plan Extracted',
-            message: `Identified ${visit.medicines?.length || 0} medications for ${patient.name}`,
+            title: 'Care Plan Generated',
+            message: `Identified ${visit.diagnosis} with ${visit.medicines?.length || 0} medications`,
             type: 'success',
           },
         })
@@ -187,8 +187,8 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
 
       onCarePlanGenerated(visit);
     } catch (err: any) {
-      console.error('Care plan extraction failure:', err);
-      setError(err.message || 'Consultation processing failed. Please verify network connection.');
+      console.error('Processing error:', err);
+      setError(err.message || 'Consultation processing failed. Please try again.');
     } finally {
       setProcessing(false);
       setProcessingStage('');
@@ -205,7 +205,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
     try {
       setProcessing(true);
       setError(null);
-      setProcessingStage('Transmitting dialogue to Clinical AI LLM engine...');
+      setProcessingStage('Analyzing dialogue & structuring care plan...');
 
       const syntheticBlob = createSampleAudioBlob(3);
       const visit = await api.uploadAudio(

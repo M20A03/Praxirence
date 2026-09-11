@@ -620,6 +620,15 @@ html, body {
   color: var(--landing-text-muted);
 }
 
+/* Trust Grid & Consult Demo Grid */
+.trust-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.consult-demo-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
 /* Early Access Form */
 .cta-card {
   max-width: 760px;
@@ -843,6 +852,16 @@ html, body {
   .form-grid {
     grid-template-columns: 1fr;
     gap: 10px;
+  }
+
+  .trust-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .consult-demo-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
   }
 
   .cta-card {

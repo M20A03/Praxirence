@@ -187,6 +187,43 @@ export const mobileApi = {
     return data;
   },
 
+  async requestPatientEmailOtp(email: string, name?: string): Promise<{ success: boolean; message: string }> {
+    const cleanEmail = email.toLowerCase().trim();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      throw new Error('Please enter a valid email address.');
+    }
+    const res = await resilientFetch(`${API_BASE_URL}/auth/patient/email-otp/request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: cleanEmail, name }),
+    }, 0);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to dispatch email verification code');
+    }
+    return await res.json();
+  },
+
+  async verifyPatientEmailOtp(email: string, code: string): Promise<{ access_token: string; role: 'patient'; user: PatientUser }> {
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanCode = code.trim();
+    if (!cleanCode) {
+      throw new Error('Please enter the 6-digit verification code.');
+    }
+    const res = await resilientFetch(`${API_BASE_URL}/auth/patient/email-otp/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: cleanEmail, code: cleanCode }),
+    }, 0);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Invalid or expired verification code');
+    }
+    const data = await res.json();
+    await this.saveSession('patient', data.access_token, data.user);
+    return data;
+  },
+
   async requestUnifiedOtp(phone: string, channel: 'whatsapp' | 'sms' = 'whatsapp'): Promise<{ success: boolean; message: string; demo_code?: string }> {
     // Try Doctor OTP endpoint first, fall back to Patient OTP endpoint
     try {

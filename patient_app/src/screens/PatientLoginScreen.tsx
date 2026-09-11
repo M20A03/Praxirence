@@ -22,10 +22,18 @@ interface PatientLoginScreenProps {
 }
 
 export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthenticated }) => {
+  const [authMode, setAuthMode] = useState<'email' | 'phone'>('email');
+
+  // Email OTP States
+  const [email, setEmail] = useState('patient@praxirence.com');
+  const [patientName, setPatientName] = useState('Aarav Sharma');
+  const [emailOtpSent, setEmailOtpSent] = useState(false);
+  const [emailOtpCode, setEmailOtpCode] = useState('');
+
+  // Phone WhatsApp States
   const [phoneDigits, setPhoneDigits] = useState('9876543210');
-  const [name, setName] = useState('Aarav Sharma');
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+  const [phoneOtpCode, setPhoneOtpCode] = useState('');
   const [demoCode, setDemoCode] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
@@ -55,8 +63,45 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
     }
   };
 
+  // Request Email OTP
+  const handleRequestEmailOtp = async () => {
+    if (!email.trim() || !email.includes('@')) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await mobileApi.requestPatientEmailOtp(email.trim(), patientName.trim());
+      setEmailOtpSent(true);
+      setSuccessNotice(res.message || `Verification code sent to ${email}`);
+    } catch (err: any) {
+      setError(err.message || 'Failed to dispatch email verification code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Verify Email OTP
+  const handleVerifyEmailOtp = async () => {
+    if (!emailOtpCode.trim()) {
+      setError('Please enter the 6-digit code received in your email.');
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await mobileApi.verifyPatientEmailOtp(email.trim(), emailOtpCode.trim());
+      onAuthenticated(res.user);
+    } catch (err: any) {
+      setError(err.message || 'Invalid or expired verification code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Request WhatsApp OTP
-  const handleRequestOtp = async () => {
+  const handleRequestPhoneOtp = async () => {
     if (phoneDigits.length < 10) {
       setError('Please enter a valid 10-digit mobile number.');
       return;
@@ -65,11 +110,11 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
     setLoading(true);
     try {
       const res: any = await mobileApi.requestPatientOtp(fullPhone, 'whatsapp');
-      setOtpSent(true);
+      setPhoneOtpSent(true);
       const code = res?.otp_code || res?.demo_code;
       if (code) {
         setDemoCode(code);
-        setOtpCode(code);
+        setPhoneOtpCode(code);
       }
       setSuccessNotice(`WhatsApp verification code sent to ${fullPhone}`);
     } catch (err: any) {
@@ -80,15 +125,15 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
   };
 
   // Verify WhatsApp OTP
-  const handleVerifyOtp = async () => {
-    if (!otpCode.trim()) {
+  const handleVerifyPhoneOtp = async () => {
+    if (!phoneOtpCode.trim()) {
       setError('Please enter the 6-digit code received on WhatsApp.');
       return;
     }
     setError(null);
     setLoading(true);
     try {
-      const res = await mobileApi.verifyPatientOtp(fullPhone, otpCode.trim());
+      const res = await mobileApi.verifyPatientOtp(fullPhone, phoneOtpCode.trim());
       onAuthenticated(res.user);
     } catch (err: any) {
       setError(err.message || 'Invalid verification code');
@@ -118,6 +163,25 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
           </Text>
         </View>
 
+        {/* Auth Mode Tabs */}
+        <View style={styles.tabBar}>
+          <TouchableOpacity
+            style={[styles.tabBtn, authMode === 'email' && styles.tabBtnActive]}
+            onPress={() => { setAuthMode('email'); setError(null); setSuccessNotice(null); }}
+          >
+            <Ionicons name="mail" size={16} color={authMode === 'email' ? '#10b981' : Colors.textSecondary} />
+            <Text style={[styles.tabText, authMode === 'email' && styles.tabTextActive]}>Email OTP</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tabBtn, authMode === 'phone' && styles.tabBtnActive]}
+            onPress={() => { setAuthMode('phone'); setError(null); setSuccessNotice(null); }}
+          >
+            <Ionicons name="logo-whatsapp" size={16} color={authMode === 'phone' ? '#25D366' : Colors.textSecondary} />
+            <Text style={[styles.tabText, authMode === 'phone' && styles.tabTextActive]}>WhatsApp</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Notices */}
         {error ? (
           <View style={styles.errorBox}>
@@ -133,92 +197,186 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
           </View>
         ) : null}
 
-        {/* Login Card */}
+        {/* Main Card */}
         <View style={styles.card}>
-          <Text style={styles.label}>Your Full Name</Text>
-          <View style={styles.inputContainer}>
-            <Ionicons name="person-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. Aarav Sharma"
-              placeholderTextColor={Colors.textSecondary}
-              value={name}
-              onChangeText={setName}
-            />
-          </View>
-
-          <Text style={styles.label}>Mobile Phone Number (for WhatsApp Reminders)</Text>
-          <View style={styles.phoneInputRow}>
-            <View style={styles.countryCodeBox}>
-              <Text style={styles.countryCodeText}>🇮🇳 +91</Text>
-            </View>
-            <TextInput
-              style={[styles.input, { flex: 1 }]}
-              placeholder="9876543210"
-              placeholderTextColor={Colors.textSecondary}
-              value={phoneDigits}
-              onChangeText={setPhoneDigits}
-              keyboardType="phone-pad"
-              maxLength={10}
-            />
-          </View>
-
-          {!otpSent ? (
-            <TouchableOpacity
-              style={styles.primaryBtn}
-              onPress={handleRequestOtp}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <>
-                  <Ionicons name="logo-whatsapp" size={18} color="#ffffff" />
-                  <Text style={styles.primaryBtnText}>Get WhatsApp OTP</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          ) : (
-            <View style={{ marginTop: 12 }}>
-              {demoCode && (
-                <View style={styles.demoNotice}>
-                  <Text style={styles.demoNoticeText}>
-                    WhatsApp Demo Code: <Text style={{ fontWeight: '800' }}>{demoCode}</Text>
-                  </Text>
-                </View>
-              )}
-
-              <Text style={styles.label}>Enter 6-Digit WhatsApp Code</Text>
+          {authMode === 'email' ? (
+            /* EMAIL OTP FLOW */
+            <View>
+              <Text style={styles.label}>Your Full Name</Text>
               <View style={styles.inputContainer}>
-                <Ionicons name="key-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                <Ionicons name="person-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. 123456"
+                  placeholder="e.g. Aarav Sharma"
                   placeholderTextColor={Colors.textSecondary}
-                  value={otpCode}
-                  onChangeText={setOtpCode}
-                  keyboardType="number-pad"
+                  value={patientName}
+                  onChangeText={setPatientName}
                 />
               </View>
 
-              <TouchableOpacity
-                style={styles.primaryBtn}
-                onPress={handleVerifyOtp}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <>
-                    <Ionicons name="checkmark-done" size={18} color="#ffffff" />
-                    <Text style={styles.primaryBtnText}>Verify & Access My Health Vault</Text>
-                  </>
-                )}
-              </TouchableOpacity>
+              <Text style={styles.label}>Your Email Address</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="at-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="name@gmail.com"
+                  placeholderTextColor={Colors.textSecondary}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
 
-              <TouchableOpacity onPress={() => setOtpSent(false)} style={styles.resendBtn}>
-                <Text style={styles.resendText}>Change mobile number</Text>
-              </TouchableOpacity>
+              {!emailOtpSent ? (
+                <TouchableOpacity
+                  style={[styles.primaryBtn, { backgroundColor: '#10b981' }]}
+                  onPress={handleRequestEmailOtp}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
+                    <>
+                      <Ionicons name="mail-outline" size={18} color="#ffffff" />
+                      <Text style={styles.primaryBtnText}>Send Verification Code to Email</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <View style={{ marginTop: 12 }}>
+                  <View style={styles.emailInstructionBox}>
+                    <Ionicons name="information-circle" size={18} color="#047857" />
+                    <Text style={styles.emailInstructionText}>
+                      We sent a 6-digit OTP to <Text style={{ fontWeight: '700' }}>{email}</Text>. Copy the code from your inbox and paste it below.
+                    </Text>
+                  </View>
+
+                  <Text style={styles.label}>Enter 6-Digit Email Code</Text>
+                  <View style={styles.inputContainer}>
+                    <Ionicons name="key-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                    <TextInput
+                      style={[styles.input, { letterSpacing: 4, fontWeight: '700' }]}
+                      placeholder="123456"
+                      placeholderTextColor={Colors.textSecondary}
+                      value={emailOtpCode}
+                      onChangeText={setEmailOtpCode}
+                      keyboardType="number-pad"
+                      maxLength={6}
+                    />
+                  </View>
+
+                  <TouchableOpacity
+                    style={[styles.primaryBtn, { backgroundColor: '#10b981' }]}
+                    onPress={handleVerifyEmailOtp}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#ffffff" />
+                    ) : (
+                      <>
+                        <Ionicons name="checkmark-done" size={18} color="#ffffff" />
+                        <Text style={styles.primaryBtnText}>Verify OTP & Access Health Vault</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity onPress={() => setEmailOtpSent(false)} style={styles.resendBtn}>
+                    <Text style={styles.resendText}>Change email address</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          ) : (
+            /* WHATSAPP PHONE OTP FLOW */
+            <View>
+              <Text style={styles.label}>Your Full Name</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="person-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. Aarav Sharma"
+                  placeholderTextColor={Colors.textSecondary}
+                  value={patientName}
+                  onChangeText={setPatientName}
+                />
+              </View>
+
+              <Text style={styles.label}>Mobile Phone Number (for WhatsApp Reminders)</Text>
+              <View style={styles.phoneInputRow}>
+                <View style={styles.countryCodeBox}>
+                  <Text style={styles.countryCodeText}>🇮🇳 +91</Text>
+                </View>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="9876543210"
+                  placeholderTextColor={Colors.textSecondary}
+                  value={phoneDigits}
+                  onChangeText={setPhoneDigits}
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                />
+              </View>
+
+              {!phoneOtpSent ? (
+                <TouchableOpacity
+                  style={styles.primaryBtn}
+                  onPress={handleRequestPhoneOtp}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
+                    <>
+                      <Ionicons name="logo-whatsapp" size={18} color="#ffffff" />
+                      <Text style={styles.primaryBtnText}>Get WhatsApp OTP</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <View style={{ marginTop: 12 }}>
+                  {demoCode && (
+                    <View style={styles.demoNotice}>
+                      <Text style={styles.demoNoticeText}>
+                        WhatsApp Demo Code: <Text style={{ fontWeight: '800' }}>{demoCode}</Text>
+                      </Text>
+                    </View>
+                  )}
+
+                  <Text style={styles.label}>Enter 6-Digit WhatsApp Code</Text>
+                  <View style={styles.inputContainer}>
+                    <Ionicons name="key-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g. 123456"
+                      placeholderTextColor={Colors.textSecondary}
+                      value={phoneOtpCode}
+                      onChangeText={setPhoneOtpCode}
+                      keyboardType="number-pad"
+                      maxLength={6}
+                    />
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.primaryBtn}
+                    onPress={handleVerifyPhoneOtp}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#ffffff" />
+                    ) : (
+                      <>
+                        <Ionicons name="checkmark-done" size={18} color="#ffffff" />
+                        <Text style={styles.primaryBtnText}>Verify & Access My Health Vault</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity onPress={() => setPhoneOtpSent(false)} style={styles.resendBtn}>
+                    <Text style={styles.resendText}>Change mobile number</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           )}
 
@@ -239,7 +397,7 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
           </TouchableOpacity>
         </View>
 
-        {/* Security & Zero Audio Retention Guarantee */}
+        {/* Security & DPDP Compliance Guarantee */}
         <View style={styles.complianceFooter}>
           <Ionicons name="shield-checkmark" size={14} color="#10b981" />
           <Text style={styles.complianceText}>
@@ -301,6 +459,62 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
     paddingHorizontal: 20,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  tabBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  tabBtnActive: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tabText: {
+    fontFamily: FontFamily.sans,
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+  },
+  tabTextActive: {
+    color: Colors.textPrimary,
+    fontWeight: '700',
+  },
+  emailInstructionBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  emailInstructionText: {
+    fontFamily: FontFamily.sans,
+    fontSize: FontSize.xs,
+    color: '#065f46',
+    flex: 1,
+    lineHeight: 18,
   },
   card: {
     backgroundColor: Colors.card,

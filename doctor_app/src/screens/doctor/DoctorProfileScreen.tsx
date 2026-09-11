@@ -117,7 +117,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
         <View style={styles.badgeRow}>
           <View style={styles.verifiedBadge}>
             <Ionicons name="shield-checkmark" size={13} color="#10b981" />
-            <Text style={styles.verifiedText}>NMC VERIFIED PRACTITIONER</Text>
+            <Text style={styles.verifiedText}>VERIFIED CLINICAL PRACTITIONER</Text>
           </View>
         </View>
 

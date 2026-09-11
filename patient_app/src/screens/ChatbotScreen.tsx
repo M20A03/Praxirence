@@ -259,7 +259,7 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
                           <Text style={styles.doctorCardName}>{doc.name}</Text>
                           <Text style={styles.doctorCardSpecialty}>{doc.specialty}</Text>
                           <Text style={styles.doctorCardClinic}>{doc.clinic_name}</Text>
-                          <Text style={styles.doctorCardNmc}>NMC: {doc.reg_number}</Text>
+                          <Text style={styles.doctorCardNmc}>Reg: {doc.reg_number}</Text>
                         </View>
                         <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
                       </TouchableOpacity>

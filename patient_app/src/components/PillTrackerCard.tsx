@@ -97,11 +97,11 @@ export const PillTrackerCard: React.FC<PillTrackerCardProps> = ({ lang = 'en' })
   const getWindowBadge = (window: 'morning' | 'afternoon' | 'night') => {
     switch (window) {
       case 'morning':
-        return { label: translateText('morningDose', lang), bg: '#FEF3C7', color: '#B45309', icon: 'sunny' as const };
+        return { label: translateText('morningDose', lang), bg: '#FEF3C7', border: '#FDE68A', color: '#B45309', icon: 'sunny' as const };
       case 'afternoon':
-        return { label: translateText('afternoonDose', lang), bg: '#E0F2FE', color: '#0369A1', icon: 'partly-sunny' as const };
+        return { label: translateText('afternoonDose', lang), bg: '#E0F2FE', border: '#BAE6FD', color: '#0369A1', icon: 'partly-sunny' as const };
       case 'night':
-        return { label: translateText('nightDose', lang), bg: '#F1F5F9', color: '#334155', icon: 'moon' as const };
+        return { label: translateText('nightDose', lang), bg: '#F5F3FF', border: '#DDD6FE', color: '#6D28D9', icon: 'moon' as const };
     }
   };
 
@@ -126,8 +126,9 @@ export const PillTrackerCard: React.FC<PillTrackerCardProps> = ({ lang = 'en' })
 
       {/* Streak Badge */}
       <View style={styles.streakCard}>
+        <Ionicons name="ribbon-outline" size={14} color="#047857" style={{ marginRight: 6 }} />
         <Text style={styles.streakText}>
-          🔥 {streakDays}-Day Adherence Streak • {adherencePercent}% Today
+          Adherence Streak: {streakDays} Days • {adherencePercent}% Score
         </Text>
       </View>
 
@@ -162,7 +163,7 @@ export const PillTrackerCard: React.FC<PillTrackerCardProps> = ({ lang = 'en' })
                   {pill.instruction}
                 </Text>
 
-                <View style={styles.windowTag}>
+                <View style={[styles.windowTag, { backgroundColor: win.bg, borderColor: win.border, borderWidth: 1, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }]}>
                   <Ionicons name={win.icon} size={11} color={win.color} />
                   <Text style={[styles.windowTagText, { color: win.color }]}>
                     {win.label} • {pill.timeLabel}
@@ -235,19 +236,22 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   streakCard: {
-    backgroundColor: '#FFFBEB',
+    backgroundColor: '#F0FDF4',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#FDE68A',
+    borderColor: '#BBF7D0',
     paddingVertical: 6,
     paddingHorizontal: 12,
     marginBottom: 12,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   streakText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#B45309',
+    color: '#047857',
+    flexShrink: 1,
   },
   pillsList: {
     gap: 8,

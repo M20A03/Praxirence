@@ -194,7 +194,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     setVitals(updated);
     await mobileApi.saveVitals(user.id, updated);
     setShowVitalsModal(false);
-    Alert.alert('Vitals Recorded! 🩺', `Status: ${note}. Your health trends have been updated.`);
+    Alert.alert('Vitals Recorded', `Status: ${note}. Your health trends have been updated.`);
   };
 
   const latestVisit = visits.length > 0 ? visits[0] : null;
@@ -225,8 +225,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     >
       {/* Brand Logo Top Header */}
       <View style={styles.topBrandBar}>
-        <BrandLogoMobile variant="header" size="sm" subtitleText="Patient Care Portal" />
-        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+        <View style={{ flexShrink: 1 }}>
+          <BrandLogoMobile variant="header" size="sm" subtitleText="Patient Care Portal" />
+        </View>
+        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center', flexShrink: 0 }}>
           <TouchableOpacity
             style={styles.langBadge}
             onPress={() => setShowLangModal(true)}
@@ -255,7 +257,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 styles.consentBadgeText,
                 { color: user.consent_status ? Colors.primaryDark : Colors.amber }
               ]}>
-                {user.consent_status ? 'ABDM Vault Active' : 'Consent Pending'}
+                {user.consent_status ? 'ABDM Active' : 'Consent Pending'}
               </Text>
             </View>
           </TouchableOpacity>
@@ -276,43 +278,43 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       {/* Quick Action Navigation Grid with Bespoke Feature Emblems */}
       <View style={styles.quickActionsGrid}>
         <TouchableOpacity
-          style={[styles.quickActionCard, { backgroundColor: 'rgba(13, 148, 136, 0.08)', borderColor: 'rgba(13, 148, 136, 0.25)' }]}
+          style={[styles.quickActionCard, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}
           onPress={onNavigateToChatbot}
           activeOpacity={0.8}
         >
           <Image source={require('../../assets/features/chatbot.png')} style={styles.featureAssetIcon} resizeMode="contain" />
-          <Text style={styles.quickActionTitle}>AI Health Bot</Text>
-          <Text style={styles.quickActionSub}>Prescription Q&A</Text>
+          <Text style={[styles.quickActionTitle, { color: '#166534' }]}>AI Health Bot</Text>
+          <Text style={[styles.quickActionSub, { color: '#15803D' }]}>Prescription Q&A</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.quickActionCard, { backgroundColor: 'rgba(37, 99, 235, 0.08)', borderColor: 'rgba(37, 99, 235, 0.25)' }]}
+          style={[styles.quickActionCard, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}
           onPress={onNavigateToDoctors}
           activeOpacity={0.8}
         >
           <Image source={require('../../assets/features/doctors.png')} style={styles.featureAssetIcon} resizeMode="contain" />
-          <Text style={styles.quickActionTitle}>Find Doctors</Text>
-          <Text style={styles.quickActionSub}>Verified Clinics</Text>
+          <Text style={[styles.quickActionTitle, { color: '#1E40AF' }]}>Find Doctors</Text>
+          <Text style={[styles.quickActionSub, { color: '#2563EB' }]}>Verified Clinics</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.quickActionCard, { backgroundColor: 'rgba(16, 185, 129, 0.08)', borderColor: 'rgba(16, 185, 129, 0.25)' }]}
+          style={[styles.quickActionCard, { backgroundColor: '#F0FDFA', borderColor: '#99F6E4' }]}
           onPress={onNavigateToVisits}
           activeOpacity={0.8}
         >
           <Image source={require('../../assets/features/visits.png')} style={styles.featureAssetIcon} resizeMode="contain" />
-          <Text style={styles.quickActionTitle}>Active Rx</Text>
-          <Text style={styles.quickActionSub}>Download PDF</Text>
+          <Text style={[styles.quickActionTitle, { color: '#0F766E' }]}>Active Rx</Text>
+          <Text style={[styles.quickActionSub, { color: '#0D9488' }]}>Download PDF</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.quickActionCard, { backgroundColor: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.25)' }]}
+          style={[styles.quickActionCard, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}
           onPress={onNavigateToConsent}
           activeOpacity={0.8}
         >
           <Image source={require('../../assets/features/vault.png')} style={styles.featureAssetIcon} resizeMode="contain" />
-          <Text style={styles.quickActionTitle}>Data Vault</Text>
-          <Text style={styles.quickActionSub}>ABDM / HIPAA</Text>
+          <Text style={[styles.quickActionTitle, { color: '#92400E' }]}>Data Vault</Text>
+          <Text style={[styles.quickActionSub, { color: '#B45309' }]}>ABDM / HIPAA</Text>
         </TouchableOpacity>
       </View>
 
@@ -333,76 +335,75 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
         <View style={styles.vitalsGrid}>
           {/* BP */}
-          <View style={styles.vitalBox}>
-            <Text style={styles.vitalLabel}>Blood Pressure</Text>
-            <Text style={styles.vitalValue}>{vitals.bloodPressureSystolic}/{vitals.bloodPressureDiastolic}</Text>
+          <View style={[styles.vitalBox, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Ionicons name="pulse" size={13} color="#2563EB" />
+              <Text style={[styles.vitalLabel, { color: '#1D4ED8' }]}>Blood Pressure</Text>
+            </View>
+            <Text style={[styles.vitalValue, { color: '#1E40AF' }]}>{vitals.bloodPressureSystolic}/{vitals.bloodPressureDiastolic}</Text>
             <Text style={styles.vitalUnit}>mmHg</Text>
-            <View style={[styles.vitalStatusPill, { flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
+            <View style={[styles.vitalStatusPill, { backgroundColor: '#DBEAFE', flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
               <Ionicons
                 name={vitals.bloodPressureSystolic < 130 ? "checkmark-circle" : "warning"}
                 size={11}
-                color={vitals.bloodPressureSystolic < 130 ? Colors.primaryDark : Colors.amber}
+                color={vitals.bloodPressureSystolic < 130 ? "#1D4ED8" : "#D97706"}
               />
-              <Text style={styles.vitalStatusText}>
+              <Text style={[styles.vitalStatusText, { color: '#1E40AF' }]}>
                 {vitals.bloodPressureSystolic < 130 ? 'Optimal' : 'Elevated'}
               </Text>
             </View>
           </View>
 
           {/* Pulse */}
-          <View style={styles.vitalBox}>
-            <Text style={styles.vitalLabel}>Heart Rate</Text>
-            <Text style={styles.vitalValue}>{vitals.heartRate}</Text>
+          <View style={[styles.vitalBox, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Ionicons name="heart" size={13} color="#E11D48" />
+              <Text style={[styles.vitalLabel, { color: '#BE123C' }]}>Heart Rate</Text>
+            </View>
+            <Text style={[styles.vitalValue, { color: '#9F1239' }]}>{vitals.heartRate}</Text>
             <Text style={styles.vitalUnit}>bpm</Text>
-            <View style={[styles.vitalStatusPill, { flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
-              <Ionicons name="heart" size={11} color="#EF4444" />
-              <Text style={styles.vitalStatusText}>Steady</Text>
+            <View style={[styles.vitalStatusPill, { backgroundColor: '#FFE4E6', flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
+              <Ionicons name="heart" size={11} color="#E11D48" />
+              <Text style={[styles.vitalStatusText, { color: '#BE123C' }]}>Steady</Text>
             </View>
           </View>
 
           {/* SpO2 */}
-          <View style={styles.vitalBox}>
-            <Text style={styles.vitalLabel}>Blood Oxygen</Text>
-            <Text style={styles.vitalValue}>{vitals.spo2}%</Text>
+          <View style={[styles.vitalBox, { backgroundColor: '#ECFEFF', borderColor: '#A5F3FC' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Ionicons name="fitness" size={13} color="#0891B2" />
+              <Text style={[styles.vitalLabel, { color: '#0E7490' }]}>Blood Oxygen</Text>
+            </View>
+            <Text style={[styles.vitalValue, { color: '#155E75' }]}>{vitals.spo2}%</Text>
             <Text style={styles.vitalUnit}>SpO2</Text>
-            <View style={[styles.vitalStatusPill, { flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
+            <View style={[styles.vitalStatusPill, { backgroundColor: '#CFFAFE', flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
               <Ionicons
                 name={vitals.spo2 >= 95 ? "checkmark-circle" : "warning"}
                 size={11}
-                color={vitals.spo2 >= 95 ? Colors.primaryDark : Colors.amber}
+                color={vitals.spo2 >= 95 ? "#0E7490" : "#D97706"}
               />
-              <Text style={styles.vitalStatusText}>
+              <Text style={[styles.vitalStatusText, { color: '#155E75' }]}>
                 {vitals.spo2 >= 95 ? 'Normal' : 'Low'}
               </Text>
             </View>
           </View>
 
           {/* Sugar */}
-          <View style={styles.vitalBox}>
-            <Text style={styles.vitalLabel}>Blood Glucose</Text>
-            <Text style={styles.vitalValue}>{vitals.bloodSugar || 96}</Text>
+          <View style={[styles.vitalBox, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Ionicons name="water" size={13} color="#D97706" />
+              <Text style={[styles.vitalLabel, { color: '#B45309' }]}>Blood Glucose</Text>
+            </View>
+            <Text style={[styles.vitalValue, { color: '#92400E' }]}>{vitals.bloodSugar || 96}</Text>
             <Text style={styles.vitalUnit}>mg/dL</Text>
-            <View style={styles.vitalStatusPill}>
-              <Text style={styles.vitalStatusText}>Fasting</Text>
+            <View style={[styles.vitalStatusPill, { backgroundColor: '#FEF3C7' }]}>
+              <Text style={[styles.vitalStatusText, { color: '#92400E' }]}>Fasting</Text>
             </View>
           </View>
         </View>
       </View>
 
-
-      {/* Offline Status Notice (Only visible when disconnected) */}
-      {!isLive && isOfflineCached && (
-        <View style={styles.cloudStatusBar}>
-          <View style={styles.cloudStatusLeft}>
-            <Ionicons name="cloud-offline-outline" size={16} color="#D97706" />
-            <Text style={[styles.cloudStatusText, { color: '#B45309' }]}>
-              Offline Mode • Showing cached records
-            </Text>
-          </View>
-        </View>
-      )}
-
-      {/* New Care Plan Live Alert */}
+      {/* New Care Plan Alert */}
       {newPlanAlert && (
         <TouchableOpacity
           style={styles.newPlanBanner}
@@ -429,17 +430,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             <Text style={styles.bannerSubtitle}>Receive timely alerts so you never miss a dose.</Text>
           </View>
         </TouchableOpacity>
-      )}
-
-      {/* Offline Mode Indicator Banner */}
-      {isOfflineCached && (
-        <View style={styles.offlineBanner}>
-          <Ionicons name="cloud-offline" size={20} color={Colors.amber} style={{ marginRight: 10 }} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.offlineTitle}>Offline Mode Active</Text>
-            <Text style={styles.offlineSubtitle}>Viewing locally cached care plan & active medications.</Text>
-          </View>
-        </View>
       )}
 
 
@@ -1053,12 +1043,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
     marginBottom: 16,
     borderRadius: 16,
+    flexWrap: 'wrap',
+    gap: 8,
   },
   greetingBox: {
     marginBottom: 16,

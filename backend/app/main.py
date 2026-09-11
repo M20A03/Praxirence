@@ -16,7 +16,7 @@ from app.models.user import User
 from app.models.patient import Patient
 from app.models.audit_log import AuditLog
 from app import auth
-from app.routes import visits, patients, recordings, chat
+from app.routes import visits, patients, recordings, chat, realtime
 from ml.inference import model_loader
 
 # Configure logging
@@ -251,6 +251,7 @@ app.include_router(patients.router)
 app.include_router(visits.router)
 app.include_router(recordings.router)
 app.include_router(chat.router)
+app.include_router(realtime.router)
 
 
 @app.get("/health")

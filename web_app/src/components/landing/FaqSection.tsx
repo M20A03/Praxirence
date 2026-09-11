@@ -16,7 +16,7 @@ export const FaqSection: React.FC = () => {
     },
     {
       question: "Why is physician verification mandatory before WhatsApp dispatch?",
-      answer: "In compliance with the National Medical Commission (NMC) Telemedicine Practice Guidelines and medico-legal standards, AI can propose clinical notes, but only a registered medical practitioner can legally prescribe and dispatch treatments. Praxirence locks the dispatch button until the doctor reviews and checks the legal sign-off box."
+      answer: "In compliance with established telemedicine practice guidelines and medico-legal standards, AI can propose clinical notes, but only a qualified attending physician can legally prescribe and dispatch treatments. Praxirence locks the dispatch button until the clinician reviews and checks the clinical sign-off box."
     },
     {
       question: "How does offline mode work when the clinic has no internet?",
@@ -41,7 +41,7 @@ export const FaqSection: React.FC = () => {
         </div>
         <h2 className="section-title">Clinical, Legal & Technical FAQs</h2>
         <p className="section-subtitle" style={{ margin: '0 auto' }}>
-          Everything doctors, clinic administrators, and health fiduciaries need to know about Praxirence's clinical architecture.
+          Everything doctors, patients, clinic administrators, and health fiduciaries need to know about Praxirence's clinical architecture.
         </p>
       </div>
 

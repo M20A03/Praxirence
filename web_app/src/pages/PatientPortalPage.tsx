@@ -382,7 +382,7 @@ export const PatientPortalPage: React.FC = () => {
             fontSize: '0.725rem',
             fontWeight: 700
           }}>
-            WhatsApp & App Synced
+            WhatsApp Delivered
           </span>
         </div>
 

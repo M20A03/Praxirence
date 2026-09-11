@@ -11,7 +11,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.praxirence.doctor"
+      "bundleIdentifier": "com.praxirence.doctor",
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
@@ -19,6 +20,7 @@
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.praxirence.doctor",
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "SCHEDULE_EXACT_ALARM",

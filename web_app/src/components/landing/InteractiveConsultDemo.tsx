@@ -109,9 +109,8 @@ export const InteractiveConsultDemo: React.FC = () => {
         </div>
 
         {/* Demo Grid: Left Dialogue, Right Extracted Plan */}
-        <div style={{
+        <div className="consult-demo-grid" style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
           gap: '20px',
           marginTop: '20px'
         }}>

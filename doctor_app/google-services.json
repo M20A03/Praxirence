@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1082331995841",
+    "project_id": "praxirence-medical",
+    "storage_bucket": "praxirence-medical.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1082331995841:android:3f5b540a445d67bbf0fe40",
+        "android_client_info": {
+          "package_name": "com.praxirence.doctor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFhX7YrtEv8QH6_ZLpQwQQi8RIvHPGKZA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1082331995841:android:2b5e06a7eb752104f0fe40",
+        "android_client_info": {
+          "package_name": "com.praxirence.patient"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFhX7YrtEv8QH6_ZLpQwQQi8RIvHPGKZA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

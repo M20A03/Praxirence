@@ -39,7 +39,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
   // Registration States
   const [regSpecialty, setRegSpecialty] = useState('General Medicine & Pulmonology');
   const [regClinic, setRegClinic] = useState('Praxirence Clinical Centre');
-  const [regNumber, setRegNumber] = useState('NMC-2024-84920');
+  const [regNumber, setRegNumber] = useState('MED-2024-84920');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +69,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
         phone: '+919876543210',
         specialty: 'Chief Medical Officer & Physician',
         clinic_name: 'Praxirence Clinical Centre',
-        reg_number: 'NMC-2024-84920',
+        reg_number: 'MED-2024-84920',
         role: 'doctor',
       };
       await mobileApi.saveSession('doctor', token, demoDoctor);
@@ -204,7 +204,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
           </View>
           <Text style={styles.title}>Clinician Workstation</Text>
           <Text style={styles.subtitle}>
-            Secure NMC-compliant clinical suite for verified medical practitioners
+            Secure clinical suite for verified medical practitioners
           </Text>
         </View>
 
@@ -449,12 +449,12 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                 />
               </View>
 
-              <Text style={styles.label}>NMC Registration Number</Text>
+              <Text style={styles.label}>Medical Registration Number</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="id-card" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                 <TextInput
                   style={styles.input}
-                  placeholder="NMC-2024-84920"
+                  placeholder="MED-2024-84920"
                   placeholderTextColor={Colors.textSecondary}
                   value={regNumber}
                   onChangeText={setRegNumber}

@@ -269,7 +269,12 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
         };
         await handleAuthSuccess(fallbackPatient);
       } else {
-        setError(err.message || 'Invalid or expired verification code');
+        const msg = err?.message || '';
+        if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
+          setError('Connection timed out. Please check your internet connection and try again.');
+        } else {
+          setError(msg || 'Invalid or expired verification code');
+        }
       }
     } finally {
       setLoading(false);
@@ -325,7 +330,12 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
         };
         await handleAuthSuccess(fallbackPatient);
       } else {
-        setError(err.message || 'Invalid verification code');
+        const msg = err?.message || '';
+        if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
+          setError('Connection timed out. Please check your internet connection and try again.');
+        } else {
+          setError(msg || 'Invalid verification code');
+        }
       }
     } finally {
       setLoading(false);
@@ -350,7 +360,12 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
       });
       await handleAuthSuccess(res.user);
     } catch (err: any) {
-      setError(err.message || 'Registration failed. Please try again.');
+      const msg = err?.message || '';
+      if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
+        setError('Connection timed out. Please check your internet connection and try again.');
+      } else {
+        setError(msg || 'Registration failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

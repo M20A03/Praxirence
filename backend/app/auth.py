@@ -7,7 +7,7 @@ import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import (
@@ -612,7 +612,7 @@ def google_auth_doctor(req: DoctorGoogleAuthRequest, db: Session = Depends(get_d
 
 
 @router.post("/doctor/email-otp/request")
-def request_doctor_email_otp(req: DoctorEmailOTPRequest):
+def request_doctor_email_otp(req: DoctorEmailOTPRequest, background_tasks: BackgroundTasks):
     """
     Dispatches a branded 6-digit verification code to the doctor's institutional/Gmail address
     from noreply@praxirence.com with 10-minute expiry.
@@ -624,7 +624,8 @@ def request_doctor_email_otp(req: DoctorEmailOTPRequest):
     code = generate_email_otp()
     store_email_otp(clean_email, code, ttl_minutes=10)
 
-    delivered = email_service.send_doctor_verification_otp(
+    background_tasks.add_task(
+        email_service.send_doctor_verification_otp,
         recipient_email=clean_email,
         otp_code=code,
         recipient_name=req.name
@@ -1061,7 +1062,7 @@ def verify_patient_otp(req: PatientOTPVerifyRequest, db: Session = Depends(get_d
 
 
 @router.post("/patient/email-otp/request")
-def request_patient_email_otp(req: PatientEmailOTPRequest):
+def request_patient_email_otp(req: PatientEmailOTPRequest, background_tasks: BackgroundTasks):
     """
     Dispatches a branded 6-digit verification code to the patient's email address
     from noreply@praxirence.com with 10-minute expiry.
@@ -1073,7 +1074,8 @@ def request_patient_email_otp(req: PatientEmailOTPRequest):
     code = generate_email_otp()
     store_email_otp(clean_email, code, name=req.name, ttl_minutes=10)
 
-    delivered = email_service.send_patient_verification_otp(
+    background_tasks.add_task(
+        email_service.send_patient_verification_otp,
         recipient_email=clean_email,
         otp_code=code,
         recipient_name=req.name

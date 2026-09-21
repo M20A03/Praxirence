@@ -251,7 +251,12 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
         };
         await handleAuthSuccess(fallbackDoctor);
       } else {
-        setError(err.message || 'Invalid verification code');
+        const msg = err?.message || '';
+        if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
+          setError('Connection timed out. Please check your internet connection and try again.');
+        } else {
+          setError(msg || 'Invalid verification code');
+        }
       }
     } finally {
       setLoading(false);
@@ -310,7 +315,12 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
         };
         await handleAuthSuccess(fallbackDoctor);
       } else {
-        setError(err.message || 'Invalid verification code');
+        const msg = err?.message || '';
+        if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
+          setError('Connection timed out. Please check your internet connection and try again.');
+        } else {
+          setError(msg || 'Invalid verification code');
+        }
       }
     } finally {
       setLoading(false);
@@ -336,7 +346,12 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
       });
       await handleAuthSuccess(res.user);
     } catch (err: any) {
-      setError(err.message || 'Doctor registration failed');
+      const msg = err?.message || '';
+      if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
+        setError('Connection timed out. Please check your internet connection and try again.');
+      } else {
+        setError(msg || 'Doctor registration failed');
+      }
     } finally {
       setLoading(false);
     }

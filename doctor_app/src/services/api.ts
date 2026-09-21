@@ -38,7 +38,7 @@ export const getEffectiveApiUrl = (): string => {
   );
 };
 
-const REQUEST_TIMEOUT_MS = 9000;
+const REQUEST_TIMEOUT_MS = 25000;
 
 let authToken: string | null = null;
 let activeRole: UserRole = 'patient';
@@ -86,6 +86,9 @@ async function resilientFetch(url: string, options: RequestInit = {}, retries = 
     if (retries > 0 && options.method !== 'POST') {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       return resilientFetch(url, options, retries - 1);
+    }
+    if (err?.name === 'AbortError' || err?.message?.toLowerCase().includes('abort')) {
+      throw new Error('Connection timed out. Please check your internet connection and try again.');
     }
     throw err;
   }

@@ -112,10 +112,9 @@ class Fast2SMSService:
                         logger.info(f"Fast2SMS OTP dispatched to {local_phone}: {data.get('message')}")
                         return {
                             "success": True,
-                            "message": f"OTP sent via SMS to {phone}",
+                            "message": f"Verification code sent via SMS to {phone}",
                             "phone": phone,
-                            "otp_code": otp_code,
-                            "demo_code": otp_code,
+                            "expires_in": 600,
                             "provider": "Fast2SMS"
                         }
                     else:
@@ -123,21 +122,21 @@ class Fast2SMSService:
             except Exception as e:
                 logger.error(f"Fast2SMS connection error: {e}")
 
-        # Real-time backend generation fallback
-        logger.info(f"[BACKEND REALTIME OTP GENERATED] OTP for {phone} is '{otp_code}'")
+        # Real-time backend generation
+        logger.info(f"[BACKEND REALTIME OTP GENERATED] OTP generated for {phone}")
 
         return {
             "success": True,
-            "message": f"Real-time verification OTP generated for {phone}",
+            "message": f"Verification code dispatched to {phone}",
             "phone": phone,
-            "otp_code": otp_code,
-            "demo_code": otp_code,
+            "expires_in": 600,
             "provider": "Praxirence Cloud Auth Server"
         }
 
     def verify_otp(self, phone: str, code: str) -> bool:
         """
         Verifies patient / doctor OTP against active real-time cache.
+        Invalidates immediately upon successful verification to prevent replay attacks.
         """
         clean_code = str(code).strip()
         digits = "".join(c for c in phone if c.isdigit())
@@ -170,18 +169,22 @@ class Fast2SMSService:
             # Check expiration
             if time.time() > entry.get("expires_at", 0):
                 logger.warning(f"OTP for {phone} has expired")
+                # Clean up expired entry
+                for c in candidates:
+                    _otp_cache.pop(c, None)
+                _save_vault_to_disk()
                 return False
 
             expected_code = str(entry.get("code", "")).strip()
             if expected_code and expected_code == clean_code:
-                logger.info(f"Successfully verified OTP {clean_code} for {phone}")
+                logger.info(f"Successfully verified OTP for {phone}")
+                # Invalidate immediately to prevent replay attack
+                for c in candidates:
+                    _otp_cache.pop(c, None)
+                _save_vault_to_disk()
                 return True
             else:
-                logger.warning(f"Mismatch OTP for {phone}: expected {expected_code}, received {clean_code}")
-
-        # Universal fallback for automated testing and pilot bypass
-        if clean_code in ("987654", "123456"):
-            return True
+                logger.warning(f"Mismatch OTP entered for {phone}")
 
         return False
 

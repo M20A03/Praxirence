@@ -17,6 +17,26 @@ logger = logging.getLogger("praxirence.email")
 
 # In-memory OTP storage for email verification: {email: {"code": "123456", "expires_at": datetime}}
 _email_otp_cache: Dict[str, Dict] = {}
+_rate_limit_cache: Dict[str, list] = {}
+
+
+def check_otp_rate_limit(identifier: str, max_requests: int = 3, window_seconds: int = 600) -> bool:
+    """
+    Returns True if request is allowed, False if rate limited (max 3 per 10 mins).
+    Prevents mail/SMS server blacklisting and OTP flooding attacks.
+    """
+    import time
+    now = time.time()
+    clean_id = identifier.lower().strip()
+    history = _rate_limit_cache.get(clean_id, [])
+    # Filter out entries older than window
+    valid_history = [t for t in history if now - t < window_seconds]
+    if len(valid_history) >= max_requests:
+        _rate_limit_cache[clean_id] = valid_history
+        return False
+    valid_history.append(now)
+    _rate_limit_cache[clean_id] = valid_history
+    return True
 
 
 def generate_email_otp() -> str:

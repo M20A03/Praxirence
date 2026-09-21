@@ -93,14 +93,18 @@ def test_create_and_search_patient():
 
 
 def test_patient_otp_flow_and_consent():
+    from app.services.fast2sms_service import _otp_cache
     # 1. Request OTP
     otp_req = client.post("/auth/otp/request", json={"phone": "+15558889900"})
     assert otp_req.status_code == 200
 
-    # 2. Verify OTP with simulated code 123456
+    digits = "".join(c for c in "+15558889900" if c.isdigit())[-10:]
+    code = _otp_cache[digits]["code"]
+
+    # 2. Verify OTP with real cryptographically generated code
     otp_ver = client.post(
         "/auth/otp/verify",
-        json={"phone": "+15558889900", "code": "123456"}
+        json={"phone": "+15558889900", "code": code}
     )
     assert otp_ver.status_code == 200
     token_data = otp_ver.json()
@@ -119,7 +123,7 @@ def test_patient_otp_flow_and_consent():
     grant_res = client.post(
         f"/patients/{patient_id}/consent",
         headers=headers,
-        json={"consent_status": True, "otp_code": "123456"}
+        json={"consent_status": True, "otp_code": code}
     )
     assert grant_res.status_code == 200
     assert grant_res.json()["consent_status"] is True
@@ -295,13 +299,15 @@ def test_doctor_whatsapp_otp():
     assert otp_req.status_code == 200
     data = otp_req.json()
     assert data["success"] is True
-    assert "demo_code" in data
     assert data["channel"] == "whatsapp"
+
+    from app.services.fast2sms_service import _otp_cache
+    code1 = _otp_cache["9876543210"]["code"]
 
     # 2. Doctor WhatsApp OTP Verify
     otp_verify = client.post(
         "/auth/doctor/otp/verify",
-        json={"phone": "+919876543210", "code": "123456"}
+        json={"phone": "+919876543210", "code": code1}
     )
     assert otp_verify.status_code == 200
     v_data = otp_verify.json()
@@ -316,9 +322,10 @@ def test_doctor_whatsapp_otp():
         json={"phone": new_phone, "channel": "whatsapp"}
     )
     assert new_req.status_code == 200
+    code2 = _otp_cache["9899887766"]["code"]
     new_verify = client.post(
         "/auth/doctor/otp/verify",
-        json={"phone": new_phone, "code": "123456"}
+        json={"phone": new_phone, "code": code2}
     )
     assert new_verify.status_code == 200
     nv_data = new_verify.json()
@@ -426,8 +433,10 @@ def test_visit_with_patient_summary_and_portal():
     assert visits[0]["doctor_advice"] == advice_text
 
     # 5. Patient OTP login & check portal
+    from app.services.fast2sms_service import _otp_cache
     client.post("/auth/otp/request", json={"phone": "+919988776655"})
-    p_login = client.post("/auth/otp/verify", json={"phone": "+919988776655", "code": "123456"})
+    p_code = _otp_cache["9988776655"]["code"]
+    p_login = client.post("/auth/otp/verify", json={"phone": "+919988776655", "code": p_code})
     p_token = p_login.json()["access_token"]
     p_headers = {"Authorization": f"Bearer {p_token}"}
 
@@ -441,6 +450,7 @@ def test_visit_with_patient_summary_and_portal():
 
 
 def test_doctor_email_otp_flow():
+    from app.services.email_service import _email_otp_cache
     # 1. Request verification code for email
     email = "dr.sharma@apollohospital.org"
     req_res = client.post(
@@ -450,10 +460,11 @@ def test_doctor_email_otp_flow():
     assert req_res.status_code == 200
     assert req_res.json()["success"] is True
 
-    # 2. Verify with OTP (using demo OTP 123456)
+    # 2. Verify with actual generated OTP
+    code = _email_otp_cache[email.lower()]["code"]
     verify_res = client.post(
         "/auth/doctor/email-otp/verify",
-        json={"email": email, "code": "123456"}
+        json={"email": email, "code": code}
     )
     assert verify_res.status_code == 200
     data = verify_res.json()
@@ -463,6 +474,7 @@ def test_doctor_email_otp_flow():
 
 
 def test_patient_email_otp_flow():
+    from app.services.email_service import _email_otp_cache
     # 1. Request verification code for patient email
     email = "aarav.care@gmail.com"
     req_res = client.post(
@@ -472,10 +484,11 @@ def test_patient_email_otp_flow():
     assert req_res.status_code == 200
     assert req_res.json()["success"] is True
 
-    # 2. Verify with OTP (using demo OTP 123456)
+    # 2. Verify with actual generated OTP
+    code = _email_otp_cache[email.lower()]["code"]
     verify_res = client.post(
         "/auth/patient/email-otp/verify",
-        json={"email": email, "code": "123456"}
+        json={"email": email, "code": code}
     )
     assert verify_res.status_code == 200
     data = verify_res.json()

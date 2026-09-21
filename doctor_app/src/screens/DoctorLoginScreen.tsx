@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -129,6 +129,16 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
   const [regClinic, setRegClinic] = useState('');
   const [regNumber, setRegNumber] = useState('');
 
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
@@ -215,6 +225,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
       await mobileApi.requestDoctorEmailOtp(email.trim(), doctorName.trim());
       setEmailOtpSent(true);
       setEmailOtpCode('');
+      setResendCooldown(60);
       setSuccessNotice(`Verification code sent to ${email.trim()}. Please check your inbox and spam folder.`);
     } catch (err: any) {
       const msg = err?.message || '';
@@ -240,25 +251,11 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
       const res = await mobileApi.verifyDoctorEmailOtp(email.trim(), emailOtpCode.trim());
       await handleAuthSuccess(res.user);
     } catch (err: any) {
-      if (emailOtpCode.trim() === '987654' || emailOtpCode.trim() === '123456') {
-        const fallbackDoctor: DoctorUser = {
-          id: 'doc_' + Date.now(),
-          name: doctorName || 'Dr. Mayank Raj',
-          email: email.trim(),
-          phone: '+919876543210',
-          specialty: 'Internal Medicine & Physician',
-          clinic_name: 'Praxirence Clinical Centre',
-          reg_number: 'NMC-2024-84920',
-          role: 'doctor',
-        };
-        await handleAuthSuccess(fallbackDoctor);
+      const msg = err?.message || '';
+      if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
+        setError('Connection timed out. Please check your internet connection and try again.');
       } else {
-        const msg = err?.message || '';
-        if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
-          setError('Connection timed out. Please check your internet connection and try again.');
-        } else {
-          setError(msg || 'Invalid verification code');
-        }
+        setError(msg || 'Invalid or expired verification code. Please request a new code.');
       }
     } finally {
       setLoading(false);
@@ -275,17 +272,18 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
     setLoading(true);
     const fullPhone = `+91${phoneDigits}`;
     try {
-      const res: any = await mobileApi.requestDoctorOtp(fullPhone, 'whatsapp');
+      await mobileApi.requestDoctorOtp(fullPhone, 'whatsapp');
       setPhoneOtpSent(true);
-      const code = res?.otp_code || res?.demo_code || '987654';
-      setDemoCode(code);
-      setPhoneOtpCode(code);
-      setSuccessNotice(`Verification code: ${code} (Auto-filled)`);
+      setPhoneOtpCode('');
+      setResendCooldown(60);
+      setSuccessNotice(`Verification code dispatched to ${fullPhone}. Please check your WhatsApp.`);
     } catch (err: any) {
-      setPhoneOtpSent(true);
-      setDemoCode('987654');
-      setPhoneOtpCode('987654');
-      setSuccessNotice('Verification code: 987654 (Auto-filled)');
+      const msg = err?.message || '';
+      if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
+        setError('Connection timed out. Please check your internet connection and try again.');
+      } else {
+        setError(msg || 'Failed to dispatch verification code. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -304,25 +302,11 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
       const res = await mobileApi.verifyDoctorOtp(fullPhone, phoneOtpCode.trim());
       await handleAuthSuccess(res.user);
     } catch (err: any) {
-      if (phoneOtpCode.trim() === '987654' || phoneOtpCode.trim() === '123456' || phoneOtpCode.trim() === demoCode) {
-        const fallbackDoctor: DoctorUser = {
-          id: 'doc_verified_' + phoneDigits,
-          name: doctorName || 'Dr. Mayank Raj',
-          email: email || 'doctor@praxirence.com',
-          phone: fullPhone,
-          specialty: 'Internal Medicine & Physician',
-          clinic_name: 'Praxirence Clinical Centre',
-          reg_number: 'NMC-2024-84920',
-          role: 'doctor',
-        };
-        await handleAuthSuccess(fallbackDoctor);
+      const msg = err?.message || '';
+      if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
+        setError('Connection timed out. Please check your internet connection and try again.');
       } else {
-        const msg = err?.message || '';
-        if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
-          setError('Connection timed out. Please check your internet connection and try again.');
-        } else {
-          setError(msg || 'Invalid verification code');
-        }
+        setError(msg || 'Invalid or expired verification code. Please request a new code.');
       }
     } finally {
       setLoading(false);
@@ -507,9 +491,11 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                   <TouchableOpacity
                     style={styles.resendBtn}
                     onPress={handleRequestEmailOtp}
-                    disabled={loading}
+                    disabled={loading || resendCooldown > 0}
                   >
-                    <Text style={styles.resendText}>Didn't receive code? Resend</Text>
+                    <Text style={[styles.resendText, resendCooldown > 0 && { color: Colors.textMuted }]}>
+                      {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Didn't receive code? Resend"}
+                    </Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -555,14 +541,18 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                   <View style={styles.inputContainer}>
                     <Ionicons name="key" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                     <TextInput
-                      style={styles.input}
-                      placeholder="e.g. 987654"
+                      style={[styles.input, { letterSpacing: 6, fontWeight: '700' }]}
+                      placeholder="• • • • • •"
                       placeholderTextColor={Colors.textSecondary}
                       value={phoneOtpCode}
                       onChangeText={setPhoneOtpCode}
                       keyboardType="number-pad"
+                      maxLength={6}
                     />
                   </View>
+                  <Text style={{ fontSize: 12, color: Colors.textSecondary, marginTop: 4, marginBottom: 12 }}>
+                    📬 Please check your WhatsApp messages. Code expires in 10 minutes.
+                  </Text>
 
                   <TouchableOpacity
                     style={[styles.primaryBtn, { backgroundColor: '#25D366' }]}
@@ -577,6 +567,16 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                         <Text style={styles.primaryBtnText}>Verify OTP & Sign In</Text>
                       </>
                     )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.resendBtn}
+                    onPress={handleRequestPhoneOtp}
+                    disabled={loading || resendCooldown > 0}
+                  >
+                    <Text style={[styles.resendText, resendCooldown > 0 && { color: Colors.textMuted }]}>
+                      {resendCooldown > 0 ? `Resend WhatsApp OTP in ${resendCooldown}s` : "Didn't receive OTP? Resend"}
+                    </Text>
                   </TouchableOpacity>
                 </View>
               )}

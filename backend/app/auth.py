@@ -46,7 +46,8 @@ from app.services.email_service import (
     generate_email_otp,
     store_email_otp,
     verify_email_otp,
-    get_stored_email_otp_name
+    get_stored_email_otp_name,
+    check_otp_rate_limit
 )
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -357,6 +358,12 @@ async def request_doctor_otp(req: DoctorOTPRequest, db: Session = Depends(get_db
     Supports instant passwordless OTP authentication for registered and new clinicians.
     """
     clean_phone = req.phone.strip()
+    if not check_otp_rate_limit(clean_phone):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many OTP requests for this phone number. Please wait 10 minutes before requesting another code."
+        )
+
     last10 = get_phone_last10(clean_phone)
     norm = normalize_phone_digits(clean_phone)
 
@@ -385,11 +392,9 @@ async def request_doctor_otp(req: DoctorOTPRequest, db: Session = Depends(get_db
         result = await meta_whatsapp_service.send_otp_whatsapp(norm, otp_code)
         return {
             "success": True,
-            "message": f"Clinical access code sent to WhatsApp ({norm})",
+            "message": f"Clinical access code sent to WhatsApp ({norm}). Valid for 10 minutes.",
             "phone": norm,
             "channel": "whatsapp",
-            "otp_code": otp_code,
-            "demo_code": otp_code,
             "expires_in": 600,
             "provider": result.get("provider", "Meta WhatsApp Cloud API")
         }
@@ -397,11 +402,9 @@ async def request_doctor_otp(req: DoctorOTPRequest, db: Session = Depends(get_db
         result = await fast2sms_service.send_otp(clean_phone, otp_code)
         return {
             "success": True,
-            "message": f"Clinical access code sent via SMS ({clean_phone})",
+            "message": f"Clinical access code sent via SMS ({clean_phone}). Valid for 10 minutes.",
             "phone": clean_phone,
             "channel": "sms",
-            "otp_code": otp_code,
-            "demo_code": otp_code,
             "expires_in": 600,
             "provider": result.get("provider", "Fast2SMS")
         }
@@ -621,6 +624,12 @@ def request_doctor_email_otp(req: DoctorEmailOTPRequest, background_tasks: Backg
     if not clean_email or "@" not in clean_email:
         raise HTTPException(status_code=400, detail="Please enter a valid email address.")
 
+    if not check_otp_rate_limit(clean_email):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many verification requests for this email. Please wait 10 minutes before requesting another code."
+        )
+
     code = generate_email_otp()
     store_email_otp(clean_email, code, ttl_minutes=10)
 
@@ -647,8 +656,7 @@ def verify_doctor_email_otp(req: DoctorEmailOTPVerifyRequest, db: Session = Depe
     clean_code = req.code.strip()
 
     valid = verify_email_otp(clean_email, clean_code)
-    # Also accept demo/bypass OTP 987654 (or legacy 123456) in dev/offline testing if requested
-    if not valid and clean_code not in ("987654", "123456"):
+    if not valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired verification code. Please request a new code."
@@ -938,6 +946,12 @@ async def request_patient_otp(req: PatientOTPRequest, db: Session = Depends(get_
     if not clean_phone:
         raise HTTPException(status_code=400, detail="Phone number is required")
 
+    if not check_otp_rate_limit(clean_phone):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many OTP requests for this phone number. Please wait 10 minutes before requesting another code."
+        )
+
     norm = normalize_phone_digits(clean_phone)
     last10 = get_phone_last10(clean_phone)
 
@@ -973,11 +987,9 @@ async def request_patient_otp(req: PatientOTPRequest, db: Session = Depends(get_
         result = await meta_whatsapp_service.send_otp_whatsapp(norm, otp_code)
         return {
             "success": True,
-            "message": f"Verification OTP sent to WhatsApp ({norm})",
+            "message": f"Verification OTP sent to WhatsApp ({norm}). Valid for 10 minutes.",
             "phone": norm,
             "channel": "whatsapp",
-            "otp_code": otp_code,
-            "demo_code": otp_code,
             "expires_in": 600,
             "provider": result.get("provider", "Meta WhatsApp Cloud API")
         }
@@ -985,11 +997,9 @@ async def request_patient_otp(req: PatientOTPRequest, db: Session = Depends(get_
         result = await fast2sms_service.send_otp(clean_phone, otp_code)
         return {
             "success": True,
-            "message": f"OTP sent to {clean_phone} via SMS",
+            "message": f"OTP sent to {clean_phone} via SMS. Valid for 10 minutes.",
             "phone": clean_phone,
             "channel": "sms",
-            "otp_code": otp_code,
-            "demo_code": otp_code,
             "expires_in": 600,
             "provider": result.get("provider", "Fast2SMS")
         }
@@ -1070,6 +1080,12 @@ def request_patient_email_otp(req: PatientEmailOTPRequest, background_tasks: Bac
     if not clean_email or "@" not in clean_email:
         raise HTTPException(status_code=400, detail="Please enter a valid email address.")
 
+    if not check_otp_rate_limit(clean_email):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many verification requests for this email. Please wait 10 minutes before requesting another code."
+        )
+
     code = generate_email_otp()
     store_email_otp(clean_email, code, name=req.name, ttl_minutes=10)
 
@@ -1098,8 +1114,7 @@ def verify_patient_email_otp(req: PatientEmailOTPVerifyRequest, db: Session = De
     stored_name = get_stored_email_otp_name(clean_email)
 
     valid = verify_email_otp(clean_email, clean_code)
-    # Also accept demo/bypass OTP 987654 (or legacy 123456) in dev/offline testing if requested
-    if not valid and clean_code not in ("987654", "123456"):
+    if not valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired verification code. Please request a new code."

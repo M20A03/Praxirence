@@ -165,8 +165,9 @@ def test_doctor_availability_and_slot_booking_lifecycle():
     assert res_conflict.status_code == 409
     assert "already been reserved" in res_conflict.json()["detail"]
 
-    # 4. Mark doctor on leave for a specific date
-    future_leave_date = (datetime.now() + timedelta(days=5)).strftime("%Y-%m-%d")
+    # 4. Mark doctor on leave for a specific practicing weekday
+    leave_offset = 3 if (datetime.now() + timedelta(days=3)).weekday() != 6 else 4
+    future_leave_date = (datetime.now() + timedelta(days=leave_offset)).strftime("%Y-%m-%d")
     res_leave = client.post(
         f"/doctors/me/leave?doctor_id={doc_id}",
         json={"date": future_leave_date, "action": "add"}

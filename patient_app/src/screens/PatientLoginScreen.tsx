@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -123,11 +123,20 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
   const [phoneDigits, setPhoneDigits] = useState('');
   const [phoneOtpSent, setPhoneOtpSent] = useState(false);
   const [phoneOtpCode, setPhoneOtpCode] = useState('');
-  const [demoCode, setDemoCode] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
+
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   const fullPhone = `+91${phoneDigits}`;
 
@@ -234,7 +243,8 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
       await mobileApi.requestPatientEmailOtp(email.trim(), patientName.trim());
       setEmailOtpSent(true);
       setEmailOtpCode('');
-      setSuccessNotice(`Verification code sent to ${email.trim()}. Please check your inbox and spam folder.`);
+      setResendCooldown(60);
+      setSuccessNotice(`Verification code sent to ${email.trim()}. Please check your inbox and spam folder. Code is valid for 10 minutes.`);
     } catch (err: any) {
       const msg = err?.message || '';
       if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
@@ -259,24 +269,11 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
       const res = await mobileApi.verifyPatientEmailOtp(email.trim(), emailOtpCode.trim());
       await handleAuthSuccess(res.user);
     } catch (err: any) {
-      if (emailOtpCode.trim() === '987654' || emailOtpCode.trim() === '123456') {
-        const fallbackPatient: PatientUser = {
-          id: 'pat_' + Date.now(),
-          name: patientName || 'Mayank',
-          phone: '+919835139865',
-          age: '28',
-          gender: 'Male',
-          language: 'Hindi',
-          consent_status: true,
-        };
-        await handleAuthSuccess(fallbackPatient);
+      const msg = err?.message || '';
+      if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
+        setError('Connection timed out. Please check your internet connection and try again.');
       } else {
-        const msg = err?.message || '';
-        if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
-          setError('Connection timed out. Please check your internet connection and try again.');
-        } else {
-          setError(msg || 'Invalid or expired verification code');
-        }
+        setError(msg || 'Invalid or expired verification code');
       }
     } finally {
       setLoading(false);
@@ -292,17 +289,18 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
     setError(null);
     setLoading(true);
     try {
-      const res: any = await mobileApi.requestPatientOtp(fullPhone, 'whatsapp');
+      await mobileApi.requestPatientOtp(fullPhone, 'whatsapp');
       setPhoneOtpSent(true);
-      const code = res?.otp_code || res?.demo_code || '987654';
-      setDemoCode(code);
-      setPhoneOtpCode(code);
-      setSuccessNotice(`Verification code: ${code} (Auto-filled)`);
+      setPhoneOtpCode('');
+      setResendCooldown(60);
+      setSuccessNotice(`Verification code dispatched to ${fullPhone}. Code valid for 10 minutes.`);
     } catch (err: any) {
-      setPhoneOtpSent(true);
-      setDemoCode('987654');
-      setPhoneOtpCode('987654');
-      setSuccessNotice('Verification code: 987654 (Auto-filled)');
+      const msg = err?.message || '';
+      if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
+        setError('Connection timed out. Please check your internet connection and try again.');
+      } else {
+        setError(msg || 'Failed to dispatch WhatsApp verification code. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -320,24 +318,11 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
       const res = await mobileApi.verifyPatientOtp(fullPhone, phoneOtpCode.trim());
       await handleAuthSuccess(res.user);
     } catch (err: any) {
-      if (phoneOtpCode.trim() === '987654' || phoneOtpCode.trim() === '123456' || phoneOtpCode.trim() === demoCode) {
-        const fallbackPatient: PatientUser = {
-          id: 'pat_verified_' + phoneDigits,
-          name: patientName || 'Mayank',
-          phone: fullPhone,
-          age: '28',
-          gender: 'Male',
-          language: 'Hindi',
-          consent_status: true,
-        };
-        await handleAuthSuccess(fallbackPatient);
+      const msg = err?.message || '';
+      if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
+        setError('Connection timed out. Please check your internet connection and try again.');
       } else {
-        const msg = err?.message || '';
-        if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
-          setError('Connection timed out. Please check your internet connection and try again.');
-        } else {
-          setError(msg || 'Invalid verification code');
-        }
+        setError(msg || 'Invalid verification code');
       }
     } finally {
       setLoading(false);
@@ -527,9 +512,21 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                     )}
                   </TouchableOpacity>
 
-                  <TouchableOpacity onPress={() => setEmailOtpSent(false)} style={styles.resendBtn}>
-                    <Text style={styles.resendText}>Change email address</Text>
-                  </TouchableOpacity>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+                    <TouchableOpacity
+                      onPress={handleRequestEmailOtp}
+                      disabled={loading || resendCooldown > 0}
+                      style={{ paddingVertical: 8 }}
+                    >
+                      <Text style={[styles.resendText, resendCooldown > 0 && { color: Colors.textSecondary }]}>
+                        {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend code'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={() => setEmailOtpSent(false)} style={{ paddingVertical: 8 }}>
+                      <Text style={styles.resendText}>Change email</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               )}
             </View>
@@ -585,8 +582,8 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                   <View style={styles.inputContainer}>
                     <Ionicons name="key-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                     <TextInput
-                      style={styles.input}
-                      placeholder="e.g. 987654"
+                      style={[styles.input, { letterSpacing: 6, fontWeight: '700' }]}
+                      placeholder="• • • • • •"
                       placeholderTextColor={Colors.textSecondary}
                       value={phoneOtpCode}
                       onChangeText={setPhoneOtpCode}
@@ -594,6 +591,9 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                       maxLength={6}
                     />
                   </View>
+                  <Text style={{ fontSize: 12, color: Colors.textSecondary, marginTop: 4, marginBottom: 12 }}>
+                    💬 Please check your WhatsApp messages. Code expires in 10 minutes.
+                  </Text>
 
                   <TouchableOpacity
                     style={styles.primaryBtn}
@@ -610,9 +610,21 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                     )}
                   </TouchableOpacity>
 
-                  <TouchableOpacity onPress={() => setPhoneOtpSent(false)} style={styles.resendBtn}>
-                    <Text style={styles.resendText}>Change mobile number</Text>
-                  </TouchableOpacity>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+                    <TouchableOpacity
+                      onPress={handleRequestPhoneOtp}
+                      disabled={loading || resendCooldown > 0}
+                      style={{ paddingVertical: 8 }}
+                    >
+                      <Text style={[styles.resendText, resendCooldown > 0 && { color: Colors.textSecondary }]}>
+                        {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend WhatsApp OTP'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={() => setPhoneOtpSent(false)} style={{ paddingVertical: 8 }}>
+                      <Text style={styles.resendText}>Change number</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               )}
             </View>

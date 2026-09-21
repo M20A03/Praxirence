@@ -545,6 +545,87 @@ export const mobileApi = {
     }
   },
 
+  async removePatientFromQueue(visitId: string, reason?: string): Promise<any> {
+    try {
+      const res = await resilientFetch(`${getEffectiveApiUrl()}/visits/${visitId}/remove-from-queue`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ reason: reason || 'Removed by clinician' }),
+      }, 0);
+      if (res.ok) {
+        return await res.json();
+      }
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to remove patient from queue');
+    } catch (e: any) {
+      console.warn('removePatientFromQueue error:', e);
+      throw e;
+    }
+  },
+
+  async setPatientPriority(visitId: string, triageLevel: 'Urgent' | 'Priority' | 'Routine'): Promise<any> {
+    try {
+      const res = await resilientFetch(`${getEffectiveApiUrl()}/visits/${visitId}/priority`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ triage_level: triageLevel }),
+      }, 0);
+      if (res.ok) {
+        return await res.json();
+      }
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to update patient priority');
+    } catch (e: any) {
+      console.warn('setPatientPriority error:', e);
+      throw e;
+    }
+  },
+
+  async rescheduleFreeSlot(visitId: string, targetDate?: string, targetSlot?: string, reason?: string): Promise<any> {
+    try {
+      const res = await resilientFetch(`${getEffectiveApiUrl()}/visits/${visitId}/reschedule-free`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
+          target_date: targetDate,
+          target_slot: targetSlot,
+          reason: reason || 'Patient No-Show / Complimentary Slot',
+        }),
+      }, 0);
+      if (res.ok) {
+        return await res.json();
+      }
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to reschedule free slot');
+    } catch (e: any) {
+      console.warn('rescheduleFreeSlot error:', e);
+      throw e;
+    }
+  },
+
+  async manageCustomSlot(doctorId: string, date: string, action: 'add' | 'block' | 'unblock', timeSlot: string, reason?: string): Promise<any> {
+    try {
+      const res = await resilientFetch(`${getEffectiveApiUrl()}/doctors/${doctorId}/custom-slots`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
+          date,
+          action,
+          time_slot: timeSlot,
+          reason,
+        }),
+      }, 0);
+      if (res.ok) {
+        return await res.json();
+      }
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to update custom slot');
+    } catch (e: any) {
+      console.warn('manageCustomSlot error:', e);
+      throw e;
+    }
+  },
+
   async createWalkInVisit(params: {
     patientId: string;
     doctorId?: string;

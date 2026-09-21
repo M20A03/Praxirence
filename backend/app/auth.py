@@ -634,8 +634,7 @@ def request_doctor_email_otp(req: DoctorEmailOTPRequest, background_tasks: Backg
     return {
         "success": True,
         "email": clean_email,
-        "otp_code": code,
-        "message": f"Verification code sent to {clean_email}. Please check your inbox (valid for 10 minutes)."
+        "message": f"Verification code sent to {clean_email}. Please check your inbox and spam folder (valid for 10 minutes)."
     }
 
 
@@ -1084,8 +1083,7 @@ def request_patient_email_otp(req: PatientEmailOTPRequest, background_tasks: Bac
     return {
         "success": True,
         "email": clean_email,
-        "otp_code": code,
-        "message": f"Verification code sent to {clean_email}. Please check your inbox (valid for 10 minutes)."
+        "message": f"Verification code sent to {clean_email}. Please check your inbox and spam folder (valid for 10 minutes)."
     }
 
 

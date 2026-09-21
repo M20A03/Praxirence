@@ -12,7 +12,7 @@ from typing import Optional, Tuple, Dict, Any
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from sqlalchemy.orm import Session
-from sqlalchemy import case
+from sqlalchemy import case, func
 from app.services.realtime_service import realtime_manager
 from app.core.database import get_db
 from app.models.visit import Visit
@@ -1145,6 +1145,184 @@ def reschedule_visit(
         "time_slot": visit.time_slot,
         "token_display": token_disp,
         "message": f"Appointment successfully rescheduled to {visit.appointment_date} at {visit.time_slot}"
+    }
+
+
+class RemoveFromQueueRequest(BaseModel):
+    reason: Optional[str] = "Removed from clinic queue by doctor"
+
+
+@router.post("/{visit_id}/remove-from-queue")
+def remove_visit_from_queue(
+    visit_id: str,
+    payload: Optional[RemoveFromQueueRequest] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Allows a doctor or clinic staff to remove a patient from today's OPD triage queue.
+    Sets status to 'cancelled' and emits a real-time event.
+    """
+    visit = db.query(Visit).filter(Visit.id == visit_id).first()
+    if not visit:
+        raise HTTPException(status_code=404, detail="Visit not found")
+
+    visit.status = "cancelled"
+    db.commit()
+
+    token_disp = f"PX-{visit.token_number:02d}" if visit.token_number else "PX-01"
+    try:
+        if visit.doctor_id:
+            realtime_manager.emit_to_doctor_sync(
+                str(visit.doctor_id),
+                "QUEUE_UPDATE",
+                {"action": "removed", "visit_id": visit.id, "status": "cancelled", "token": token_disp}
+            )
+        if visit.patient_id:
+            realtime_manager.emit_to_patient_sync(
+                str(visit.patient_id),
+                "QUEUE_UPDATE",
+                {"action": "removed", "visit_id": visit.id, "status": "cancelled", "token": token_disp}
+            )
+    except Exception as e:
+        logger.warning(f"Realtime emit notice on remove-from-queue: {e}")
+
+    return {
+        "success": True,
+        "visit_id": visit.id,
+        "status": "cancelled",
+        "message": "Patient successfully removed from clinical queue."
+    }
+
+
+class PriorityToggleRequest(BaseModel):
+    triage_level: str = "Urgent"  # Urgent, Priority, Routine
+
+
+@router.post("/{visit_id}/priority")
+def set_visit_priority(
+    visit_id: str,
+    payload: PriorityToggleRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Toggles patient triage priority (e.g. Urgent/Emergency vs Routine).
+    Urgent patients jump to the front of the queue immediately.
+    """
+    visit = db.query(Visit).filter(Visit.id == visit_id).first()
+    if not visit:
+        raise HTTPException(status_code=404, detail="Visit not found")
+
+    valid_levels = ["Urgent", "Priority", "Routine"]
+    if payload.triage_level not in valid_levels:
+        raise HTTPException(status_code=400, detail=f"Invalid triage level. Choose from {valid_levels}")
+
+    visit.triage_level = payload.triage_level
+    db.commit()
+    db.refresh(visit)
+
+    token_disp = f"PX-{visit.token_number:02d}" if visit.token_number else "PX-01"
+    try:
+        if visit.doctor_id:
+            realtime_manager.emit_to_doctor_sync(
+                str(visit.doctor_id),
+                "QUEUE_UPDATE",
+                {"action": "priority_changed", "visit_id": visit.id, "triage_level": visit.triage_level, "token": token_disp}
+            )
+    except Exception as e:
+        logger.warning(f"Realtime emit notice on priority: {e}")
+
+    return {
+        "success": True,
+        "visit_id": visit.id,
+        "triage_level": visit.triage_level,
+        "message": f"Patient triage updated to {visit.triage_level}."
+    }
+
+
+class FreeRescheduleRequest(BaseModel):
+    target_date: Optional[str] = None  # YYYY-MM-DD
+    target_slot: Optional[str] = None  # e.g. "10:30 AM"
+    reason: Optional[str] = "Patient No-Show / Complimentary Slot"
+
+
+@router.post("/{visit_id}/reschedule-free")
+def reschedule_free_slot(
+    visit_id: str,
+    payload: FreeRescheduleRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Handles Patient No-Show:
+    1. Retires current visit as 'skipped' / 'rescheduled'.
+    2. Provisions next-day (or specified date) complimentary free slot for the patient.
+    3. Re-assigns an OPD token without any billing charge.
+    """
+    visit = db.query(Visit).filter(Visit.id == visit_id).first()
+    if not visit:
+        raise HTTPException(status_code=404, detail="Visit not found")
+
+    target_date = payload.target_date
+    if not target_date:
+        target_date = (datetime.now(timezone.utc) + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    target_slot = payload.target_slot or visit.time_slot or "10:00 AM"
+
+    # Mark old visit as skipped/rescheduled
+    visit.status = "rescheduled"
+    visit.skip_count = (visit.skip_count or 0) + 1
+
+    # Allocate sequential token on target date
+    max_tok = (
+        db.query(func.max(Visit.token_number))
+        .filter(Visit.doctor_id == visit.doctor_id, Visit.appointment_date == target_date)
+        .scalar()
+        or 0
+    )
+    new_token = max_tok + 1
+
+    # Create complimentary free visit
+    new_visit = Visit(
+        patient_id=visit.patient_id,
+        doctor_id=visit.doctor_id,
+        appointment_date=target_date,
+        time_slot=target_slot,
+        token_number=new_token,
+        status="scheduled",
+        booking_type=visit.booking_type or "in_person",
+        chief_complaint=f"[Complimentary Reschedule - No Show] {visit.chief_complaint or 'Clinical Consultation'}",
+        triage_level=visit.triage_level or "Routine"
+    )
+    db.add(new_visit)
+    db.commit()
+    db.refresh(new_visit)
+
+    token_disp = f"PX-{new_token:02d}"
+
+    try:
+        if visit.doctor_id:
+            realtime_manager.emit_to_doctor_sync(
+                str(visit.doctor_id),
+                "QUEUE_UPDATE",
+                {"action": "no_show_rescheduled", "old_visit_id": visit.id, "new_visit_id": new_visit.id, "date": target_date, "slot": target_slot, "token": token_disp}
+            )
+        if visit.patient_id:
+            realtime_manager.emit_to_patient_sync(
+                str(visit.patient_id),
+                "QUEUE_UPDATE",
+                {"action": "no_show_rescheduled", "old_visit_id": visit.id, "new_visit_id": new_visit.id, "date": target_date, "slot": target_slot, "token": token_disp}
+            )
+    except Exception as e:
+        logger.warning(f"Realtime emit notice on free reschedule: {e}")
+
+    return {
+        "success": True,
+        "old_visit_id": visit.id,
+        "new_visit_id": new_visit.id,
+        "target_date": target_date,
+        "target_slot": target_slot,
+        "token_number": new_token,
+        "token_display": token_disp,
+        "message": f"Complimentary slot granted for {target_date} at {target_slot} (Token {token_disp})."
     }
 
 

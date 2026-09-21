@@ -7,7 +7,7 @@ from typing import List, Optional
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, case
 from app.core.database import get_db
 from app.core.security import compute_phone_hash
 from app.models.patient import Patient
@@ -313,14 +313,18 @@ def get_upcoming_patient_schedule(
     """
     today_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-    # 1. Fetch real booked visits for this doctor in token order
+    # 1. Fetch real booked visits for this doctor in token & priority order
     real_visits = (
         db.query(Visit)
         .filter(
             Visit.doctor_id == current_doctor.id,
-            Visit.status.in_(["scheduled", "in_progress", "draft", "approved"])
+            Visit.status.in_(["scheduled", "in_progress", "draft", "approved", "deferred"])
         )
-        .order_by(Visit.appointment_date.asc().nullslast(), Visit.token_number.asc().nullslast(), Visit.time_slot.asc().nullslast())
+        .order_by(
+            case((Visit.triage_level == "Urgent", 0), (Visit.triage_level == "Priority", 1), else_=2),
+            Visit.token_number.asc().nullslast(),
+            Visit.time_slot.asc().nullslast()
+        )
         .all()
     )
 
@@ -331,8 +335,8 @@ def get_upcoming_patient_schedule(
         p_name = p.name if p else "Patient"
         p_phone = p.phone if p else "+919835139865"
 
-        status_val = "In Consultation" if v.status == "in_progress" else ("Waiting in Clinic" if idx == 0 else "Scheduled Today")
-        triage_val = "Urgent" if "urgent" in (v.chief_complaint or "").lower() else ("Priority" if idx == 0 else "Routine")
+        status_val = "In Consultation" if v.status == "in_progress" else ("Standby" if v.status == "deferred" else ("Waiting in Clinic" if idx == 0 else "Scheduled Today"))
+        triage_val = v.triage_level or ("Urgent" if "urgent" in (v.chief_complaint or "").lower() else "Routine")
 
         schedule.append({
             "token": token_str,

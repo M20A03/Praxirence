@@ -252,25 +252,42 @@ def get_doctor_availability(
 
     all_slots = generate_time_slots(start_time, end_time, slot_mins)
 
+    # Cross-reference custom slots for this doctor
+    custom_map = getattr(doctor, "custom_slots", {}) or {}
+    day_custom = custom_map.get(target_date_str, {})
+    custom_added = day_custom.get("added", [])
+    custom_blocked = set(day_custom.get("blocked", []))
+
+    # Merge custom added slots
+    combined_slots = list(all_slots)
+    for cs in custom_added:
+        if cs not in combined_slots:
+            combined_slots.append(cs)
+
     # Find existing booked visits on this date
     booked_visits = (
         db.query(Visit)
         .filter(
             Visit.doctor_id == doctor.id,
             Visit.appointment_date == target_date_str,
-            Visit.status.in_(["scheduled", "draft", "approved", "completed"])
+            Visit.status.in_(["scheduled", "draft", "approved", "completed", "in_progress"])
         )
         .all()
     )
     booked_slots = {v.time_slot.strip() for v in booked_visits if v.time_slot}
 
     slot_items = []
-    for s in all_slots:
+    for s in combined_slots:
+        is_blocked = s.strip() in custom_blocked
         is_booked = s.strip() in booked_slots
+        is_open = (not is_booked) and (not is_blocked)
+        reason_str = "blocked by doctor" if is_blocked else ("booked" if is_booked else "open")
         slot_items.append({
             "time": s,
-            "available": not is_booked,
-            "reason": "booked" if is_booked else "open"
+            "available": is_open,
+            "is_custom": s in custom_added,
+            "is_blocked": is_blocked,
+            "reason": reason_str
         })
 
     return {
@@ -507,4 +524,73 @@ def get_doctor_reschedule_pending(
             }
             for v in visits
         ]
+    }
+
+
+class CustomSlotActionRequest(BaseModel):
+    date: str = Field(..., description="Date in YYYY-MM-DD format")
+    action: str = Field(..., description="'add', 'block', or 'unblock'")
+    time_slot: str = Field(..., description="e.g. '04:30 PM' or '17:30'")
+    reason: Optional[str] = None
+
+
+@router.post("/{doctor_id}/custom-slots")
+@router.post("/me/custom-slots")
+def manage_doctor_custom_slot(
+    payload: CustomSlotActionRequest,
+    doctor_id: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Enables doctors to manage specific time slots:
+    - 'add': Opens a custom or emergency slot (e.g. 05:30 PM).
+    - 'block': Blocks out a time slot for personal time, surgery, or break.
+    - 'unblock': Restores a previously blocked time slot.
+    """
+    doctor = None
+    if doctor_id and doctor_id != "me":
+        doctor = db.query(User).filter(User.id == doctor_id).first()
+    if not doctor:
+        doctor = db.query(User).first()
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+
+    custom_map = dict(getattr(doctor, "custom_slots", {}) or {})
+    d_str = payload.date.strip()
+    slot_str = payload.time_slot.strip()
+    if d_str not in custom_map:
+        custom_map[d_str] = {"added": [], "blocked": []}
+
+    day_data = dict(custom_map[d_str])
+    added_list = list(day_data.get("added", []))
+    blocked_list = list(day_data.get("blocked", []))
+
+    if payload.action == "add":
+        if slot_str not in added_list:
+            added_list.append(slot_str)
+        if slot_str in blocked_list:
+            blocked_list.remove(slot_str)
+    elif payload.action == "block":
+        if slot_str not in blocked_list:
+            blocked_list.append(slot_str)
+    elif payload.action == "unblock":
+        if slot_str in blocked_list:
+            blocked_list.remove(slot_str)
+
+    day_data["added"] = added_list
+    day_data["blocked"] = blocked_list
+    custom_map[d_str] = day_data
+    doctor.custom_slots = custom_map
+
+    db.commit()
+    db.refresh(doctor)
+
+    return {
+        "success": True,
+        "doctor_id": str(doctor.id),
+        "date": d_str,
+        "action": payload.action,
+        "time_slot": slot_str,
+        "custom_slots": custom_map[d_str],
+        "message": f"Slot {slot_str} successfully updated ({payload.action}) for {d_str}."
     }

@@ -32,6 +32,7 @@ class User(Base):
     working_hours_end = Column(String(10), default="18:00")
     slot_duration_mins = Column(Integer, default=30)
     unavailable_dates = Column(JSON, default=list)  # ISO strings ["YYYY-MM-DD"] when doctor is on leave
+    custom_slots = Column(JSON, default=dict)  # {"YYYY-MM-DD": {"added": ["05:30 PM"], "blocked": ["02:00 PM"]}}
     consultation_fee = Column(Integer, default=500)
     current_delay_mins = Column(Integer, default=0, nullable=False)
     delay_updated_at = Column(DateTime, nullable=True)

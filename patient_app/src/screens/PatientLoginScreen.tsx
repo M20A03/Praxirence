@@ -231,15 +231,17 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
     setError(null);
     setLoading(true);
     try {
-      const res = await mobileApi.requestPatientEmailOtp(email.trim(), patientName.trim());
+      await mobileApi.requestPatientEmailOtp(email.trim(), patientName.trim());
       setEmailOtpSent(true);
-      const code = (res as any)?.otp_code || (res as any)?.demo_code || '987654';
-      setEmailOtpCode(code);
-      setSuccessNotice(`Verification code: ${code} (Auto-filled)`);
+      setEmailOtpCode('');
+      setSuccessNotice(`Verification code sent to ${email.trim()}. Please check your inbox and spam folder.`);
     } catch (err: any) {
-      setEmailOtpSent(true);
-      setEmailOtpCode('987654');
-      setSuccessNotice('Verification code: 987654 (Auto-filled)');
+      const msg = err?.message || '';
+      if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
+        setError('Connection timed out. Please check your internet connection and try again.');
+      } else {
+        setError(msg || 'Failed to dispatch verification code. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -497,8 +499,8 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                   <View style={styles.inputContainer}>
                     <Ionicons name="key-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                     <TextInput
-                      style={[styles.input, { letterSpacing: 4, fontWeight: '700' }]}
-                      placeholder="987654"
+                      style={[styles.input, { letterSpacing: 6, fontWeight: '700' }]}
+                      placeholder="• • • • • •"
                       placeholderTextColor={Colors.textSecondary}
                       value={emailOtpCode}
                       onChangeText={setEmailOtpCode}
@@ -506,6 +508,9 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                       maxLength={6}
                     />
                   </View>
+                  <Text style={{ fontSize: 12, color: Colors.textSecondary, marginTop: 4, marginBottom: 12 }}>
+                    📬 Please check your Inbox and Spam/Junk folder. Code expires in 10 minutes.
+                  </Text>
 
                   <TouchableOpacity
                     style={[styles.primaryBtn, { backgroundColor: '#10b981' }]}

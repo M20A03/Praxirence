@@ -150,6 +150,7 @@ class EmailService:
                 msg["Subject"] = subject
                 msg["From"] = f"{self.from_name} <{self.from_email}>"
                 msg["To"] = recipient_email
+                msg["Reply-To"] = self.from_email
 
                 part1 = MIMEText(plain_text, "plain")
                 part2 = MIMEText(html_content, "html")
@@ -255,6 +256,7 @@ class EmailService:
                 msg["Subject"] = subject
                 msg["From"] = f"{self.from_name} <{self.from_email}>"
                 msg["To"] = recipient_email
+                msg["Reply-To"] = self.from_email
 
                 part1 = MIMEText(plain_text, "plain")
                 part2 = MIMEText(html_content, "html")

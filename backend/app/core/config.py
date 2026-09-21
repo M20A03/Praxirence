@@ -59,12 +59,15 @@ class Settings(BaseSettings):
     # Groq API (Ultra-low Latency LPU Whisper & Inference)
     GROQ_API_KEY: Optional[str] = None
 
+    # Resend Email REST API (HTTPS fallback - port 443, never blocked)
+    RESEND_API_KEY: Optional[str] = None
+
     # SMTP / Noreply Email Configuration (Email OTP Verification)
-    SMTP_HOST: Optional[str] = None
+    SMTP_HOST: Optional[str] = "smtp.gmail.com"
     SMTP_PORT: int = 587
-    SMTP_USER: Optional[str] = None
-    SMTP_PASSWORD: Optional[str] = None
-    SMTP_FROM_EMAIL: str = "noreply@praxirence.com"
+    SMTP_USER: Optional[str] = "mayankrajgupta01@gmail.com"
+    SMTP_PASSWORD: Optional[str] = "yrlfeoaacdxmkfxq"
+    SMTP_FROM_EMAIL: str = "mayankrajgupta01@gmail.com"
     SMTP_FROM_NAME: str = "Praxirence"
 
     # Audio Recording Storage

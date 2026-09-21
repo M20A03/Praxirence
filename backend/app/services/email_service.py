@@ -71,6 +71,75 @@ class EmailService:
         self.smtp_password = settings.SMTP_PASSWORD
         self.from_email = settings.SMTP_FROM_EMAIL
         self.from_name = settings.SMTP_FROM_NAME
+        self.resend_api_key = getattr(settings, "RESEND_API_KEY", None)
+
+    def _send_mime_email(self, subject: str, plain_text: str, html_content: str, recipient_email: str) -> bool:
+        """
+        Dispatches email with dual-port fallback (Port 587 STARTTLS -> Port 465 SSL)
+        and optional Resend HTTPS REST API support.
+        """
+        # 1. Try Resend HTTPS REST API if key is present
+        if self.resend_api_key:
+            try:
+                import urllib.request
+                import json
+                req = urllib.request.Request(
+                    "https://api.resend.com/emails",
+                    data=json.dumps({
+                        "from": f"{self.from_name} <{self.from_email}>",
+                        "to": [recipient_email],
+                        "subject": subject,
+                        "html": html_content,
+                        "text": plain_text
+                    }).encode("utf-8"),
+                    headers={
+                        "Authorization": f"Bearer {self.resend_api_key}",
+                        "Content-Type": "application/json"
+                    }
+                )
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    if resp.status in (200, 201):
+                        logger.info(f"Dispatched email to {recipient_email} via Resend HTTPS API")
+                        return True
+            except Exception as e:
+                logger.warning(f"Resend HTTPS dispatch failed, attempting SMTP: {e}")
+
+        # 2. Try SMTP if credentials exist
+        if not (self.smtp_host and self.smtp_user and self.smtp_password):
+            return False
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = f"{self.from_name} <{self.from_email}>"
+        msg["To"] = recipient_email
+        msg["Reply-To"] = self.from_email
+        msg.attach(MIMEText(plain_text, "plain"))
+        msg.attach(MIMEText(html_content, "html"))
+
+        # Try Port 587 with STARTTLS first
+        try:
+            context = ssl.create_default_context()
+            with smtplib.SMTP(self.smtp_host, 587, timeout=10) as server:
+                server.starttls(context=context)
+                server.login(self.smtp_user, self.smtp_password)
+                server.sendmail(self.from_email, recipient_email, msg.as_string())
+            logger.info(f"Dispatched verification email to {recipient_email} via SMTP (Port 587 STARTTLS)")
+            return True
+        except Exception as e587:
+            logger.warning(f"SMTP Port 587 STARTTLS notice for {recipient_email} ({e587}), attempting Port 465 SSL fallback...")
+
+        # Fallback to Port 465 with direct SSL (bypasses cloud datacenter port 587 blocking)
+        try:
+            context = ssl.create_default_context()
+            with smtplib.SMTP_SSL(self.smtp_host, 465, context=context, timeout=10) as server:
+                server.login(self.smtp_user, self.smtp_password)
+                server.sendmail(self.from_email, recipient_email, msg.as_string())
+            logger.info(f"Dispatched verification email to {recipient_email} via SMTP_SSL (Port 465 SSL)")
+            return True
+        except Exception as e465:
+            logger.error(f"SMTP Port 465 SSL also failed for {recipient_email}: {e465}")
+
+        return False
 
     def send_doctor_verification_otp(
         self,
@@ -143,31 +212,10 @@ class EmailService:
             f"— Praxirence Team"
         )
 
-        # If live SMTP host is provided, attempt real delivery
-        if self.smtp_host and self.smtp_user and self.smtp_password:
-            try:
-                msg = MIMEMultipart("alternative")
-                msg["Subject"] = subject
-                msg["From"] = f"{self.from_name} <{self.from_email}>"
-                msg["To"] = recipient_email
-                msg["Reply-To"] = self.from_email
-
-                part1 = MIMEText(plain_text, "plain")
-                part2 = MIMEText(html_content, "html")
-                msg.attach(part1)
-                msg.attach(part2)
-
-                context = ssl.create_default_context()
-                with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=10) as server:
-                    server.starttls(context=context)
-                    server.login(self.smtp_user, self.smtp_password)
-                    server.sendmail(self.from_email, recipient_email, msg.as_string())
-
-                logger.info(f"Successfully dispatched real verification email to {recipient_email} via {self.smtp_host}")
-                return True
-            except Exception as e:
-                logger.error(f"SMTP delivery error for {recipient_email}: {e}")
-                # Fall through to simulated delivery so dev/pilot workflows are not blocked
+        # Live Delivery with Dual-Port Fallback (Port 587 STARTTLS -> Port 465 SSL) and Resend API
+        if self._send_mime_email(subject, plain_text, html_content, recipient_email):
+            logger.info(f"Successfully dispatched real verification email to {recipient_email}")
+            return True
         
         # Local / Test Fallback: Clean simulated logging
         logger.info(
@@ -249,30 +297,10 @@ class EmailService:
             f"This code is valid for 10 minutes. Please enter it in the app to log in.\n\n"
             f"— Praxirence Team"
         )
-
-        if self.smtp_host and self.smtp_user and self.smtp_password:
-            try:
-                msg = MIMEMultipart("alternative")
-                msg["Subject"] = subject
-                msg["From"] = f"{self.from_name} <{self.from_email}>"
-                msg["To"] = recipient_email
-                msg["Reply-To"] = self.from_email
-
-                part1 = MIMEText(plain_text, "plain")
-                part2 = MIMEText(html_content, "html")
-                msg.attach(part1)
-                msg.attach(part2)
-
-                context = ssl.create_default_context()
-                with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=10) as server:
-                    server.starttls(context=context)
-                    server.login(self.smtp_user, self.smtp_password)
-                    server.sendmail(self.from_email, recipient_email, msg.as_string())
-
-                logger.info(f"Successfully dispatched real patient verification email to {recipient_email} via {self.smtp_host}")
-                return True
-            except Exception as e:
-                logger.error(f"SMTP delivery error for {recipient_email}: {e}")
+        # Live Delivery with Dual-Port Fallback (Port 587 STARTTLS -> Port 465 SSL) and Resend API
+        if self._send_mime_email(subject, plain_text, html_content, recipient_email):
+            logger.info(f"Successfully dispatched real patient verification email to {recipient_email}")
+            return True
 
         logger.info(
             f"\n"

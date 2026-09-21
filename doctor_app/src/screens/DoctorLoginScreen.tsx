@@ -722,7 +722,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                         styles.presetBtn,
                         (activeServerUrl.includes('192.168.') || activeServerUrl.includes('localhost')) && !activeServerUrl.includes('10.0.2.2') && styles.presetBtnActive
                       ]}
-                      onPress={() => handleSelectPreset('http://192.168.0.8:8000')}
+                      onPress={() => handleSelectPreset('http://192.168.0.8:8001')}
                     >
                       <Ionicons name="wifi-outline" size={13} color={(activeServerUrl.includes('192.168.') || activeServerUrl.includes('localhost')) && !activeServerUrl.includes('10.0.2.2') ? '#FFFFFF' : Colors.textPrimary} />
                       <Text style={[
@@ -735,7 +735,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
 
                     <TouchableOpacity
                       style={[styles.presetBtn, activeServerUrl.includes('10.0.2.2') && styles.presetBtnActive]}
-                      onPress={() => handleSelectPreset('http://10.0.2.2:8000')}
+                      onPress={() => handleSelectPreset('http://10.0.2.2:8001')}
                     >
                       <Ionicons name="phone-portrait-outline" size={13} color={activeServerUrl.includes('10.0.2.2') ? '#FFFFFF' : Colors.textPrimary} />
                       <Text style={[styles.presetBtnText, activeServerUrl.includes('10.0.2.2') && styles.presetBtnTextActive]}>
@@ -750,7 +750,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                       style={styles.customUrlInput}
                       value={customServerInput}
                       onChangeText={setCustomServerInput}
-                      placeholder="http://192.168.x.x:8000"
+                      placeholder="http://192.168.x.x:8001"
                       placeholderTextColor="#94A3B8"
                       autoCapitalize="none"
                       autoCorrect={false}

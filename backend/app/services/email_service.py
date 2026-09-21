@@ -103,6 +103,7 @@ class EmailService:
         if self.resend_api_key:
             try:
                 import urllib.request
+                import urllib.error
                 import json
                 # Resend requires onboarding@resend.dev unless a custom domain is verified
                 resend_sender = "Praxirence <onboarding@resend.dev>" if "@gmail.com" in self.from_email.lower() else f"{self.from_name} <{self.from_email}>"
@@ -117,13 +118,17 @@ class EmailService:
                     }).encode("utf-8"),
                     headers={
                         "Authorization": f"Bearer {self.resend_api_key}",
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        "User-Agent": "Mozilla/5.0 (compatible; PraxirenceCloud/2.0; +https://praxirence.com)"
                     }
                 )
                 with urllib.request.urlopen(req, timeout=10) as resp:
                     if resp.status in (200, 201):
                         logger.info(f"Dispatched email to {recipient_email} via Resend HTTPS API")
                         return True
+            except urllib.error.HTTPError as http_err:
+                err_body = http_err.read().decode("utf-8", errors="ignore")
+                logger.warning(f"Resend HTTPS HTTPError {http_err.code} for {recipient_email}: {err_body}")
             except Exception as e:
                 logger.warning(f"Resend HTTPS dispatch notice: {e}")
 
@@ -131,6 +136,7 @@ class EmailService:
         if self.brevo_api_key:
             try:
                 import urllib.request
+                import urllib.error
                 import json
                 req = urllib.request.Request(
                     "https://api.brevo.com/v3/smtp/email",
@@ -144,13 +150,17 @@ class EmailService:
                     headers={
                         "api-key": self.brevo_api_key,
                         "Content-Type": "application/json",
-                        "Accept": "application/json"
+                        "Accept": "application/json",
+                        "User-Agent": "Mozilla/5.0 (compatible; PraxirenceCloud/2.0; +https://praxirence.com)"
                     }
                 )
                 with urllib.request.urlopen(req, timeout=10) as resp:
                     if resp.status in (200, 201):
                         logger.info(f"Dispatched email to {recipient_email} via Brevo HTTPS API")
                         return True
+            except urllib.error.HTTPError as http_err:
+                err_body = http_err.read().decode("utf-8", errors="ignore")
+                logger.warning(f"Brevo HTTPS HTTPError {http_err.code} for {recipient_email}: {err_body}")
             except Exception as e:
                 logger.warning(f"Brevo HTTPS dispatch notice: {e}")
 

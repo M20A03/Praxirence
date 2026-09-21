@@ -70,15 +70,20 @@ def build_fallback_response(
     rec_docs = []
     suggestions = []
 
-    is_hindi = language.lower() in ["hindi", "हिन्दी", "hinglish"]
-    is_bengali = language.lower() in ["bengali", "বাংলা"]
-    is_tamil = language.lower() in ["tamil", "தமிழ்"]
-    is_telugu = language.lower() in ["telugu", "తెలుగు"]
-    is_marathi = language.lower() in ["marathi", "मराठी"]
-    is_gujarati = language.lower() in ["gujarati", "ગુજરાતી"]
+    is_kannada = language.lower() in ["kannada", "ಕನ್ನಡ", "kn"]
+    is_bhojpuri = language.lower() in ["bhojpuri", "भोजपुरी", "bho"]
+    is_urdu = language.lower() in ["urdu", "اردو", "ur"]
+    is_hindi = language.lower() in ["hindi", "हिन्दी", "hinglish", "hi"]
+    is_bengali = language.lower() in ["bengali", "বাংলা", "bn"]
+    is_tamil = language.lower() in ["tamil", "தமிழ்", "ta"]
+    is_telugu = language.lower() in ["telugu", "తెలుగు", "te"]
+    is_marathi = language.lower() in ["marathi", "मराठी", "mr"]
+    is_malayalam = language.lower() in ["malayalam", "മലയാളം", "ml"]
+    is_punjabi = language.lower() in ["punjabi", "ਪੰਜਾਬੀ", "pa"]
+    is_gujarati = language.lower() in ["gujarati", "ગુજરાતી", "gu"]
 
     # 1. Prescription / Medicine Queries
-    if any(k in q_lower for k in ["medicine", "medication", "prescription", "dose", "dosage", "tablet", "syrup", "pill", "schedule", "timing", "side effect", "दवा", "दवाई", "औषध", "மருந்து", "మందు"]):
+    if any(k in q_lower for k in ["medicine", "medication", "prescription", "dose", "dosage", "tablet", "syrup", "pill", "schedule", "timing", "side effect", "दवा", "दवाई", "औषध", "ಔಷಧ", "ಮಾತ್ರೆ", "மருந்து", "మందు", "دوا"]):
         intent = "prescription_explanation"
         if medicines:
             meds_ref = medicines
@@ -92,7 +97,28 @@ def build_fallback_response(
             
             summary_block = "\n".join(med_summaries)
 
-            if is_hindi:
+            if is_kannada:
+                reply_text = (
+                    f"ನಮಸ್ಕಾರ! ನಿಮ್ಮ ಇತ್ತೀಚಿನ ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್ ಪ್ರಕಾರ:\n\n"
+                    f"{summary_block}\n\n"
+                    f"📌 **ವೈದ್ಯರ ಸಲಹೆ:** ಔಷಧಿಗಳನ್ನು ಯಾವಾಗಲೂ ಸಮಯಕ್ಕೆ ಸರಿಯಾಗಿ ನೀರಿನೊಂದಿಗೆ ತೆಗೆದುಕೊಳ್ಳಿ. ಊಟದ ನಂತರ ತೆಗೆದುಕೊಳ್ಳಿ. ಯಾವುದೇ ತೊಂದರೆ ಕಂಡರೆ ತಕ್ಷಣ ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ."
+                )
+                suggestions = ["ಮಾತ್ರೆಗಳ ಅಡ್ಡಪರಿಣಾಮಗಳೇನು?", "ಡೋಸ್ ಮರೆತರೆ ಏನು ಮಾಡಬೇಕು?", "ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ"]
+            elif is_bhojpuri:
+                reply_text = (
+                    f"प्रणाम! रउआ के सबसे हाल के परचा के हिसाब से दवाई:\n\n"
+                    f"{summary_block}\n\n"
+                    f"📌 **सावधानी:** दवाई सब समय पर खाईं। खाना खईला के बाद पानी से खाईं। कौनो परेशानी होखे त डॉक्टर साहेब से मिलीं।"
+                )
+                suggestions = ["दवाई के साइड इफेक्ट का बा?", "खुराक छूट गइल त का करीं?", "डॉक्टर से बात करीं"]
+            elif is_urdu:
+                reply_text = (
+                    f"السلام علیکم! آپ کے حالیہ نسخے کے مطابق:\n\n"
+                    f"{summary_block}\n\n"
+                    f"📌 **طبی ہدایت:** ادویات ہمیشہ وقت پر کھانے کے بعد پانی کے ساتھ لیں۔ کسی قسم کی الرجی یا چکر آنے کی صورت میں فوری ڈاکٹر سے رجوع کریں۔"
+                )
+                suggestions = ["دوا کے مضر اثرات کیا ہیں؟", "خوراک چھوٹ جائے تو کیا کریں؟", "ڈاکٹر سے رابطہ کریں"]
+            elif is_hindi:
                 reply_text = (
                     f"नमस्ते! आपके सबसे हालिया प्रिस्क्रिप्शन के अनुसार:\n\n"
                     f"{summary_block}\n\n"
@@ -120,6 +146,27 @@ def build_fallback_response(
                     f"📌 **సూచన:** మందులను భోజనం తర్వాత సరైన సమయానికి తీసుకోండి."
                 )
                 suggestions = ["దుష్ప్రభావాలు ఏమిటి?", "వైద్యుడిని సంప్రదించండి"]
+            elif is_marathi:
+                reply_text = (
+                    f"नमस्कार! आपल्या चालू प्रिस्क्रिप्शननुसार औषधे:\n\n"
+                    f"{summary_block}\n\n"
+                    f"📌 **सल्ला:** औषधे नियमित वेळेवर पाण्यासोबत घ्या. काही त्रास जाणवल्यास डॉक्टरांशी संपर्क साधा."
+                )
+                suggestions = ["औषधांचे दुष्परिणाम काय आहेत?", "डॉक्टरांशी संपर्क साधा"]
+            elif is_malayalam:
+                reply_text = (
+                    f"നമസ്കാരം! നിങ്ങളുടെ ഏറ്റവും പുതിയ കുറിപ്പടി പ്രകാരം:\n\n"
+                    f"{summary_block}\n\n"
+                    f"📌 **നിർദ്ദേശം:** മരുന്നുകൾ കൃത്യസമയത്ത് വെള്ളത്തോടൊപ്പം കഴിക്കുക."
+                )
+                suggestions = ["പാർശ്വഫലങ്ങൾ എന്തൊക്കെയാണ്?", "ഡോക്ടറെ ബന്ധപ്പെടുക"]
+            elif is_punjabi:
+                reply_text = (
+                    f"ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ! ਤੁਹਾਡੇ ਨਵੇਂ ਨੁਸਖੇ ਅਨੁਸਾਰ ਦਵਾਈਆਂ:\n\n"
+                    f"{summary_block}\n\n"
+                    f"📌 **ਸਲਾਹ:** ਦਵਾਈਆਂ ਹਮੇਸ਼ਾ ਸਮੇਂ ਸਿਰ ਅਤੇ ਰੋਟੀ ਤੋਂ ਬਾਅਦ ਪਾਣੀ ਨਾਲ ਲਵੋ।"
+                )
+                suggestions = ["ਦਵਾਈ ਦੇ ਮਾੜੇ ਪ੍ਰਭਾਵ ਕੀ ਹਨ?", "ਡਾਕਟਰ ਨਾਲ ਸੰਪਰਕ ਕਰੋ"]
             else:
                 reply_text = (
                     f"Hello! Based on your active Praxirence prescription:\n\n"
@@ -129,14 +176,24 @@ def build_fallback_response(
                 )
                 suggestions = ["What are potential side effects?", "What if I miss a dose?", "Contact Prescribing Doctor"]
         else:
-            if is_hindi:
+            if is_kannada:
+                reply_text = "ಪ್ರಸ್ತುತ ನಿಮ್ಮ ಖಾತೆಯಲ್ಲಿ ಯಾವುದೇ ಸಕ್ರಿಯ ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್ ಕಂಡುಬಂದಿಲ್ಲ. ನೀವು 'ವೈದ್ಯರು' ಟ್ಯಾಬ್ ಮೂಲಕ ಹೊಸ ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಕಾಯ್ದಿರಿಸಬಹುದು."
+                suggestions = ["ಸಾಮಾನ್ಯ ವೈದ್ಯರನ್ನು ಹುಡುಕಿ", "ಸಲಹೆ ಪಡೆಯಿರಿ", "ವೈಟಲ್ಸ್ ಹೇಗೆ ದಾಖಲಿಸುವುದು?"]
+            elif is_bhojpuri:
+                reply_text = "अहिले रउआ के खाता में कौनो दवाई के परचा नइखे। रउआ 'डॉक्टर' टैब से अपॉइंटमेंट बुक कर सकत बानी।"
+                suggestions = ["डॉक्टर खोजीं", "सलाह लीं", "वाइटल्स कइसे दर्ज करीं?"]
+            elif is_urdu:
+                reply_text = "فی الحال آپ کے ریکارڈ میں کوئی فعال نسخہ موجود نہیں ہے۔ آپ 'ڈاکٹر' ٹیب سے نیا اپائنٹمنٹ حاصل کر سکتے ہیں۔"
+                suggestions = ["ماہر ڈاکٹر تلاش کریں", "مشورہ حاصل کریں", "وائٹلز کیسے درج کریں؟"]
+            elif is_hindi:
                 reply_text = "वर्तमान में आपके रिकॉर्ड में कोई सक्रिय प्रिस्क्रिप्शन नहीं मिला। आप 'डॉक्टर' टैब से अपॉइंटमेंट बुक कर सकते हैं।"
+                suggestions = ["Find General Physician", "Book Consultation", "How to sync vitals?"]
             else:
                 reply_text = "No active prescription records found. You can book an encounter with a specialist under the 'Doctors' tab."
-            suggestions = ["Find General Physician", "Book Consultation", "How to sync vitals?"]
+                suggestions = ["Find General Physician", "Book Consultation", "How to sync vitals?"]
 
     # 2. Doctor Search / Recommendation Queries
-    elif any(k in q_lower for k in ["doctor", "specialist", "pediatrician", "cardiologist", "physician", "clinic", "डॉक्टर", "হাসপাতাল"]):
+    elif any(k in q_lower for k in ["doctor", "specialist", "pediatrician", "cardiologist", "physician", "clinic", "डॉक्टर", "ವೈದ್ಯ", "ڈاکٹر", "হাসপাতাল"]):
         intent = "doctor_recommendation"
         for doc in doctors[:4]:
             rec_docs.append(RecommendedDoctor(
@@ -151,7 +208,28 @@ def build_fallback_response(
         doc_lines = [f"• **{d.name}** - {d.specialty} ({d.clinic_name})" for d in rec_docs]
         doc_block = "\n".join(doc_lines)
 
-        if is_hindi:
+        if is_kannada:
+            reply_text = (
+                f"ನಮ್ಮ ಕ್ಲಿನಿಕಲ್ ನೆಟ್‌ವರ್ಕ್‌ನಲ್ಲಿ ಲಭ್ಯವಿರುವ ಪರಿಶೀಲಿಸಿದ ತಜ್ಞ ವೈದ್ಯರು:\n\n"
+                f"{doc_block}\n\n"
+                f"ನೀವು 'ವೈದ್ಯರು' ಟ್ಯಾಬ್ ಮೂಲಕ ಇವರ ವಿವರ ವೀಕ್ಷಿಸಬಹುದು ಮತ್ತು ಸಮಾಲೋಚನೆ ಆರಂಭಿಸಬಹುದು."
+            )
+            suggestions = ["Dr. Mayank Raj ಅವರೊಂದಿಗೆ ಭೇಟಿ", "ಮಕ್ಕಳ ತಜ್ಞರನ್ನು ಹುಡುಕಿ", "ಕ್ಲಿನಿಕ್ ಸಮಯ"]
+        elif is_bhojpuri:
+            reply_text = (
+                f"हमार क्लिनिकल नेटवर्क में उपलब्ध सत्यापित डॉक्टर लोग:\n\n"
+                f"{doc_block}\n\n"
+                f"रउआ 'डॉक्टर' टैब में जाके डॉक्टर साहेब से सलाह ले सकत बानी।"
+            )
+            suggestions = ["Dr. Mayank Raj से बात करीं", "शिशु रोग विशेषज्ञ खोजीं", "क्लिनिक के समय"]
+        elif is_urdu:
+            reply_text = (
+                f"ہمارے کلینیکل نیٹ ورک میں دستیاب تصدیق شدہ ڈاکٹرز:\n\n"
+                f"{doc_block}\n\n"
+                f"آپ 'ڈاکٹر' ٹیب میں جا کر کسی بھی معالج سے فوری رابطہ کر سکتے ہیں۔"
+            )
+            suggestions = ["Dr. Mayank Raj سے مشورہ لیں", "بچوں کے ماہر تلاش کریں", "کلینک کے اوقات"]
+        elif is_hindi:
             reply_text = (
                 f"हमारे क्लिनिकल नेटवर्क में उपलब्ध सत्यापित डॉक्टर:\n\n"
                 f"{doc_block}\n\n"
@@ -169,10 +247,37 @@ def build_fallback_response(
     # 3. App Features / Navigation Queries
     elif any(k in q_lower for k in ["download", "pdf", "whatsapp", "consent", "privacy", "feature", "vitals", "app"]):
         intent = "app_navigation"
-        if is_hindi:
+        if is_kannada:
+            reply_text = (
+                "📱 **Praxirence ಆ್ಯಪ್‌ನ ಮುಖ್ಯ ಸೌಲಭ್ಯಗಳು:**\n\n"
+                "1. **ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್ PDF ಡೌನ್‌ಲೋಡ್:** 'Visits' ಟ್ಯಾಬ್‌ಗೆ ಹೋಗಿ 'Download PDF' ಮೇಲೆ ಒತ್ತಿ.\n"
+                "2. **WhatsApp ಅಲರ್ಟ್‌ಗಳು:** ವೈದ್ಯರು ಸಲಹೆ ನೀಡಿದ ತಕ್ಷಣ ಪೂರ್ಣ ಆರೈಕೆ ಯೋಜನೆ ನಿಮ್ಮ WhatsApp ಗೆ ಬರುತ್ತದೆ.\n"
+                "3. **ಗೌಪ್ಯತೆ ಮತ್ತು ಸಮ್ಮತಿ:** 'Consent' ಟ್ಯಾಬ್‌ನಲ್ಲಿ ನಿಮ್ಮ ವೈದ್ಯಕೀಯ ಡೇಟಾ ಅನುಮತಿಯನ್ನು ನಿಯಂತ್ರಿಸಿ.\n"
+                "4. **ವೈಟಲ್ಸ್ ಟ್ರ್ಯಾಕರ್:** 'Today' ಟ್ಯಾಬ್‌ನಲ್ಲಿ ನಿಮ್ಮ ರಕ್ತದೊತ್ತಡ, ಸಕ್ಕರೆ ಮಟ್ಟ ಮತ್ತು ನಾಡಿಮಿಡಿತ ದಾಖಲಿಸಿ."
+            )
+            suggestions = ["ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ", "ಸಮ್ಮತಿ ಹೇಗೆ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತದೆ?", "ವೈಟಲ್ಸ್ ದಾಖಲಿಸಿ"]
+        elif is_bhojpuri:
+            reply_text = (
+                "📱 **Praxirence ऐप के मुख्य सुविधा:**\n\n"
+                "1. **परचा PDF डाउनलोड:** 'Visits' टैब पर जाईं आ 'Download PDF' दबाईं।\n"
+                "2. **WhatsApp पर अलर्ट:** डॉक्टर के परामर्श पूरा होते ही पूरा केयर प्लान WhatsApp पर आ जाई।\n"
+                "3. **गोपनीयता आ सहमति:** 'Consent' टैब से रउआ आपन डेटा अनुमति कभी भी बदल सकत बानी।\n"
+                "4. **वाइटल्स ट्रैकर:** 'Today' टैब पर बीपी, शुगर आ दिल के धड़कन दर्ज करीं।"
+            )
+            suggestions = ["परचा डाउनलोड करीं", "सहमति कइसे काम करेला?", "वाइटल्स दर्ज करीं"]
+        elif is_urdu:
+            reply_text = (
+                "📱 **Praxirence ایپ کی اہم خصوصیات:**\n\n"
+                "1. **نسخہ PDF ڈاؤن لوڈ:** 'Visits' ٹیب میں جا کر 'Download PDF' پر کلک کریں۔\n"
+                "2. **واٹس ایپ الرٹس:** ڈاکٹر کے نسخہ تیار کرتے ہی نگہداشت کا مکمل پلان آپ کے واٹس ایپ پر موصول ہو جاتا ہے۔\n"
+                "3. **رضامندی اور رازداری:** 'Consent' ٹیب میں جا کر اپنے ڈیٹا کی رسائی کو منظم کریں۔\n"
+                "4. **وائٹلز ٹریکر:** 'Today' ٹیب پر بی پی، شوگر اور نبض ریکارڈ کریں۔"
+            )
+            suggestions = ["نسخہ ڈاؤن لوڈ کریں", "رضامندی کا طریقہ کار", "وائٹلز درج کریں"]
+        elif is_hindi:
             reply_text = (
                 "📱 **Praxirence ऐप की मुख्य विशेषताएं:**\n\n"
-                "1. **प्रिस्क्रिप्शन PDF ডাউনলোড:** 'Visits' टैब पर जाएं और 'Download PDF' पर टैप करें।\n"
+                "1. **प्रिस्क्रिप्शन PDF डाउनलोड:** 'Visits' टैब पर जाएं और 'Download PDF' पर टैप करें।\n"
                 "2. **WhatsApp अलर्ट:** डॉक्टर द्वारा परामर्श पूरा होते ही पूरा केयर प्लान आपके WhatsApp पर आ जाता है।\n"
                 "3. **गोपनीयता और सहमति:** 'Consent' टैब में जाकर आप किसी भी समय अपनी डेटा अनुमति प्रबंधित कर सकते हैं।\n"
                 "4. **वाइटल्स ट्रैकर:** 'Today' टैब पर अपना बीपी, शुगर और हार्ट रेट रिकॉर्ड करें।"
@@ -191,7 +296,37 @@ def build_fallback_response(
     # 4. General Medical & Emergency Support
     else:
         intent = "general_support"
-        if is_hindi:
+        if is_kannada:
+            reply_text = (
+                "ನಮಸ್ಕಾರ! ನಾನು ನಿಮ್ಮ ಪ್ರ್ಯಾಕ್ಸಿರೆನ್ಸ್ AI ಕ್ಲಿನಿಕಲ್ ಸಹಾಯಕ.\n\n"
+                "ನಾನು ನಿಮಗೆ ಸಹಾಯ ಮಾಡಬಲ್ಲೆ:\n"
+                "• ನಿಮ್ಮ ಔಷಧಗಳು, ಡೋಸ್ ಮತ್ತು ನಿಯಮಗಳನ್ನು ವಿವರಿಸಲು 💊\n"
+                "• ಆಸ್ಪತ್ರೆಯ ಪರಿಶೀಲಿಸಿದ ತಜ್ಞ ವೈದ್ಯರನ್ನು ಹುಡುಕಲು 👨‍⚕️\n"
+                "• ಆ್ಯಪ್ ಸೌಲಭ್ಯಗಳು ಮತ್ತು ರಿಪೋರ್ಟ್ ಡೌನ್‌ಲೋಡ್ ಮಾಡಲು 📄\n\n"
+                "⚠️ **ತುರ್ತು ಸೂಚನೆ:** ಎದೆನೋವು ಅಥವಾ ತೀವ್ರ ಉಸಿರಾಟದ ತೊಂದರೆಯಿದ್ದಲ್ಲಿ ತಕ್ಷಣ ತುರ್ತು ಆಸ್ಪತ್ರೆಗೆ ಭೇಟಿ ನೀಡಿ."
+            )
+            suggestions = ["ಔಷಧಿ ವೇಳಾಪಟ್ಟಿ ವಿವರಿಸಿ 💊", "ವೈದ್ಯರನ್ನು ಹುಡುಕಿ 👨‍⚕️", "ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್ ಡೌನ್‌ಲೋಡ್ 📄"]
+        elif is_bhojpuri:
+            reply_text = (
+                "प्रणाम! हम रउआ के प्रैक्सिरेंस एआई स्वास्थ्य सहायक हईं।\n\n"
+                "हम रउआ के मदद कर सकत बानी:\n"
+                "• परचा आ दवाई के खुराक समझावे में 💊\n"
+                "• अस्पताल के बढ़िया डॉक्टर लोगन के खोजे में 👨‍⚕️\n"
+                "• रिपोर्ट आ परचा डाउनलोड करे में 📄\n\n"
+                "⚠️ **इमरजेंसी सूचना:** अगर सीना में दरद भा सांस लेवे में जादे दिक्कत होखे त तुरंत नजदीकी अस्पताल जाईं।"
+            )
+            suggestions = ["हमार दवाई समझाईं 💊", "डॉक्टर खोजीं 👨‍⚕️", "परचा डाउनलोड करीं 📄"]
+        elif is_urdu:
+            reply_text = (
+                "السلام علیکم! میں آپ کا پریکسیرینس AI طبی معاون ہوں۔\n\n"
+                "میں آپ کی رہنمائی کر سکتا ہوں:\n"
+                "• آپ کی ادویات، خوراک اور پرہیز سمجھانے میں 💊\n"
+                "• کلینک کے تصدیق شدہ ماہر ڈاکٹرز تلاش کرنے میں 👨‍⚕️\n"
+                "• نسخہ اور رپورٹس ڈاؤن لوڈ کرنے میں 📄\n\n"
+                "⚠️ **ایمرجنسی نوٹس:** سینے میں شدید درد یا سانس لینے میں دشواری کی صورت میں فوری ایمرجنسی سے رجوع کریں۔"
+            )
+            suggestions = ["میری ادویات سمجھائیں 💊", "ڈاکٹر تلاش کریں 👨‍⚕️", "نسخہ ڈاؤن لوڈ کریں 📄"]
+        elif is_hindi:
             reply_text = (
                 "नमस्ते! मैं आपका प्रैक्सिरेंस एआई स्वास्थ्य सहायक हूँ।\n\n"
                 "मैं आपकी सहायता कर सकता हूँ:\n"

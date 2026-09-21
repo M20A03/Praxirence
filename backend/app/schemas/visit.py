@@ -9,6 +9,8 @@ class MedicineItem(BaseModel):
     frequency: str = Field(..., description="Intake timing (e.g. 1-0-1 or Twice daily)")
     instructions: Optional[str] = Field("After food", description="Specific intake advice")
     duration_days: Optional[int] = Field(5, description="Number of days to take medicine")
+    meal_relation: Optional[str] = Field("after_food", description="empty_stomach, before_food, after_food, with_food")
+    is_sos: Optional[bool] = Field(False, description="True for PRN / as-needed medicine")
 
 
 class ReminderItem(BaseModel):
@@ -35,7 +37,7 @@ class ConsultationSummarizeRequest(BaseModel):
 
 
 class ConsultationSummarizeResponse(BaseModel):
-    patient_summary: str = Field(..., description="Plain-language, easy-to-understand explanation of what doctor told patient")
+    patient_summary: str = Field(..., description="Plain-language explanation of diagnosis and treatment")
     doctor_advice: str = Field(..., description="Dietary, lifestyle, hydration, and resting advice")
     warning_signs: List[str] = Field(default_factory=list, description="Red flag symptoms when to contact doctor immediately")
     diagnosis: str = Field(..., description="Clinical diagnostic term")
@@ -83,6 +85,14 @@ class VisitResponse(BaseModel):
     patient_name: Optional[str] = None
     patient_phone: Optional[str] = None
     doctor_name: Optional[str] = None
+    appointment_date: Optional[str] = None
+    time_slot: Optional[str] = None
+    booking_type: Optional[str] = "in_person"
+    chief_complaint: Optional[str] = None
+    token_number: Optional[int] = None
+    token_display: Optional[str] = None
+    patients_ahead: Optional[int] = None
+    estimated_wait_mins: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -94,4 +104,68 @@ class VisitApproveResponse(BaseModel):
     scheduled_reminders_count: int
     message: str
     patient_summary: Optional[str] = None
+
+
+class BookSlotRequest(BaseModel):
+    doctor_id: str
+    patient_id: str
+    appointment_date: str = Field(..., description="Date in YYYY-MM-DD")
+    time_slot: str = Field(..., description="Time slot e.g. 10:30 AM")
+    chief_complaint: Optional[str] = None
+    booking_type: str = "in_person"
+
+
+class BookSlotResponse(BaseModel):
+    success: bool
+    visit_id: str
+    message: str
+    status: str = "scheduled"
+    token_number: int = 1
+    token_display: str = "PX-01"
+    patients_ahead: int = 0
+    estimated_wait_mins: int = 0
+    appointment: Dict[str, Any]
+
+
+class QueueStatusResponse(BaseModel):
+    visit_id: str
+    doctor_id: str
+    doctor_name: str
+    patient_id: str
+    patient_name: str
+    appointment_date: str
+    time_slot: str
+    token_number: int
+    token_display: str
+    current_serving_token: Optional[str] = None
+    current_serving_token_number: Optional[int] = None
+    patients_ahead: int
+    estimated_wait_mins: int
+    doctor_delay_mins: Optional[int] = 0
+    recommended_departure_time: Optional[str] = None
+    triage: Optional[str] = "Routine"
+    status: str
+    clinic_name: Optional[str] = None
+    clinic_address: Optional[str] = None
+
+
+class AdvanceQueueRequest(BaseModel):
+    status: str = Field("in_progress", description="New status: in_progress, completed, cancelled, skipped, deferred")
+
+
+class CallNextPatientResponse(BaseModel):
+    success: bool
+    message: str
+    serving_visit_id: Optional[str] = None
+    serving_token: Optional[str] = None
+    patient_id: Optional[str] = None
+    patient_name: Optional[str] = None
+    chamber: str = "Chamber 1"
+
+
+class RescheduleRequest(BaseModel):
+    appointment_date: str = Field(..., description="YYYY-MM-DD")
+    time_slot: str = Field(..., description="e.g. 10:30 AM")
+
+
 

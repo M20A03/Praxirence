@@ -18,6 +18,7 @@ interface ProfileScreenProps {
   role: UserRole;
   onLogout: () => void;
   onDoctorVerified?: (doctorUser: DoctorUser) => void;
+  onNavigateToConsent?: () => void;
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
@@ -25,6 +26,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   role,
   onLogout,
   onDoctorVerified,
+  onNavigateToConsent,
 }) => {
   if (!user) {
     return null;
@@ -142,6 +144,18 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <Text style={styles.infoLabel}>Data Protection</Text>
           <Text style={[styles.infoValue, { color: Colors.primaryDark, fontFamily: FontFamily.semiBold }]}>End-to-End Encrypted</Text>
         </View>
+
+        {onNavigateToConsent && (
+          <TouchableOpacity
+            style={styles.manageConsentBtn}
+            onPress={onNavigateToConsent}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="settings-outline" size={16} color={Colors.primaryDark} />
+            <Text style={styles.manageConsentBtnText}>Manage ABDM Consent & Data Rights</Text>
+            <Ionicons name="chevron-forward" size={16} color={Colors.primaryDark} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Emergency Helpline */}
@@ -326,10 +340,26 @@ const styles = StyleSheet.create({
   },
   logoutButtonText: {
     fontFamily: FontFamily.bold,
-    fontSize: FontSize.sm,
+    fontSize: FontSize.body,
     color: '#EF4444',
-    letterSpacing: LetterSpacing.wide,
-    textAlign: 'center',
-    flexShrink: 1,
+  },
+  manageConsentBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 12,
+  },
+  manageConsentBtnText: {
+    flex: 1,
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.xs,
+    color: Colors.primaryDark,
+    marginLeft: 8,
   },
 });

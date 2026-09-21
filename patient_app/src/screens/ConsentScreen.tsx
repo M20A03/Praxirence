@@ -21,11 +21,13 @@ import { BrandLogoMobile } from '../components/BrandLogoMobile';
 interface ConsentScreenProps {
   user: PatientUser;
   onConsentUpdated: (newStatus: boolean) => void;
+  onClose?: () => void;
 }
 
 export const ConsentScreen: React.FC<ConsentScreenProps> = ({
   user,
   onConsentUpdated,
+  onClose,
 }) => {
   const [doc, setDoc] = useState<ConsentDocument | null>(null);
   const [loading, setLoading] = useState(true);
@@ -221,8 +223,15 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Brand Header */}
-      <View style={{ marginBottom: 16 }}>
-        <BrandLogoMobile variant="header" size="sm" subtitleText="Privacy, Consent & Data Governance" />
+      <View style={{ marginBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View style={{ flex: 1 }}>
+          <BrandLogoMobile variant="header" size="sm" subtitleText="Privacy, Consent & Data Governance" />
+        </View>
+        {onClose && (
+          <TouchableOpacity onPress={onClose} style={styles.headerCloseBtn}>
+            <Ionicons name="close" size={24} color={Colors.textPrimary} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Title */}
@@ -428,7 +437,7 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({
       </View>
 
       {/* Erasure Confirmation Modal */}
-      <Modal visible={showErasureModal} transparent animationType="fade">
+      <Modal visible={showErasureModal} transparent animationType="fade" onRequestClose={() => setShowErasureModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
@@ -488,7 +497,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.medium,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginTop: 12,
@@ -507,29 +516,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    backgroundColor: '#F0FDF4',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 20,
+    borderRadius: 8,
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.3)',
+    borderColor: '#DCFCE7',
   },
   complianceBadgeText: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.semiBold,
     fontSize: FontSize.xs,
-    color: '#10b981',
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    color: '#166534',
+    letterSpacing: 0.2,
   },
   title: {
-    fontFamily: FontFamily.display,
+    fontFamily: FontFamily.bold,
     fontSize: FontSize.xl,
     color: Colors.textPrimary,
-    fontWeight: '800',
   },
   subtitle: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginTop: 4,
@@ -545,20 +552,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   statusBannerActive: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    borderColor: 'rgba(16, 185, 129, 0.3)',
+    backgroundColor: '#F0FDF4',
+    borderColor: '#DCFCE7',
   },
   statusBannerPaused: {
-    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-    borderColor: 'rgba(245, 158, 11, 0.3)',
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FDE68A',
   },
   statusBannerTitle: {
-    fontFamily: FontFamily.display,
+    fontFamily: FontFamily.bold,
     fontSize: FontSize.md,
-    fontWeight: '700',
   },
   statusBannerSubtitle: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginTop: 2,
@@ -573,11 +579,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   cardSectionHeader: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.semiBold,
     fontSize: FontSize.xs,
-    color: '#0ea5e9',
-    fontWeight: '700',
-    letterSpacing: 1,
+    color: Colors.textSecondary,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
     marginBottom: 14,
   },
   toggleRow: {
@@ -587,13 +593,12 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   toggleTitle: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.semiBold,
     fontSize: FontSize.sm,
     color: Colors.textPrimary,
-    fontWeight: '700',
   },
   toggleDesc: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     lineHeight: 16,
@@ -618,13 +623,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   guaranteeTitle: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.semiBold,
     fontSize: FontSize.sm,
     color: Colors.textPrimary,
-    fontWeight: '700',
   },
   guaranteeDesc: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     lineHeight: 16,
@@ -637,19 +641,18 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   actionBtnTitle: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.semiBold,
     fontSize: FontSize.sm,
     color: Colors.textPrimary,
-    fontWeight: '600',
   },
   actionBtnSubtitle: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginTop: 1,
   },
   footerNote: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     textAlign: 'center',
@@ -746,5 +749,11 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.textSecondary,
     fontWeight: '600',
+  },
+  headerCloseBtn: {
+    padding: 6,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
+    marginLeft: 8,
   },
 });

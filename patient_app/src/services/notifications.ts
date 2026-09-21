@@ -1,9 +1,14 @@
 import { Platform } from 'react-native';
+import { mobileApi } from './api';
 
-export async function registerForPushNotificationsAsync(): Promise<string | null> {
+export async function registerForPushNotificationsAsync(patientId?: string): Promise<string | null> {
   // Graceful stub for development & web preview
   if (Platform.OS === 'web') {
-    return 'web_mock_push_token_123';
+    const mockToken = 'web_mock_push_token_123';
+    if (patientId) {
+      mobileApi.updateFcmToken(patientId, mockToken).catch(() => {});
+    }
+    return mockToken;
   }
 
   try {
@@ -12,7 +17,11 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
 
     if (!Device.isDevice) {
       console.log('Running on emulator/simulator: using local notification token');
-      return 'emulator_mock_token_123';
+      const emuToken = 'emulator_mock_token_123';
+      if (patientId) {
+        mobileApi.updateFcmToken(patientId, emuToken).catch(() => {});
+      }
+      return emuToken;
     }
 
     // Request permissions safely
@@ -36,20 +45,36 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
     }
 
     // Attempt to get Expo push token with timeout & safe catch (handles missing Firebase google-services.json)
+    let token: string | null = null;
     try {
       const tokenPromise = Notifications.getExpoPushTokenAsync().then((res: any) => res?.data);
       const timeoutPromise = new Promise<string | null>((resolve) =>
         setTimeout(() => resolve('device_local_active_token'), 2500)
       );
-      const token = await Promise.race([tokenPromise, timeoutPromise]);
-      return token || 'device_local_active_token';
+      token = (await Promise.race([tokenPromise, timeoutPromise])) || 'device_local_active_token';
     } catch (tokenErr) {
       console.log('Firebase FCM not packaged: using active device local notifications channel');
-      return 'device_local_active_token';
+      token = 'device_local_active_token';
     }
+
+    if (token && patientId) {
+      mobileApi.updateFcmToken(patientId, token).catch((e) => {
+        console.warn('Backend push token sync notice:', e);
+      });
+    }
+
+    return token;
   } catch (err) {
     console.log('Notification registration fallback notice:', err);
     return 'device_local_active_token';
   }
 }
 
+export async function syncPushTokenWithBackend(patientId: string, token: string): Promise<void> {
+  if (!patientId || !token) return;
+  try {
+    await mobileApi.updateFcmToken(patientId, token);
+  } catch (e) {
+    console.warn('Manual push token sync notice:', e);
+  }
+}

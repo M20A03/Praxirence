@@ -179,8 +179,8 @@ class Fast2SMSService:
             else:
                 logger.warning(f"Mismatch OTP for {phone}: expected {expected_code}, received {clean_code}")
 
-        # Universal fallback for automated testing
-        if clean_code == "123456":
+        # Universal fallback for automated testing and pilot bypass
+        if clean_code in ("987654", "123456"):
             return True
 
         return False

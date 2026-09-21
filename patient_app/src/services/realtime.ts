@@ -4,7 +4,8 @@
  * Listens for new prescriptions, doctor messages, and streams pill adherence confirmations.
  */
 
-import { Platform } from 'react-native';
+import { Platform, AppState, AppStateStatus } from 'react-native';
+import { mobileApi } from './api';
 
 export type RealtimeEventCallback = (payload: any) => void;
 
@@ -13,21 +14,43 @@ class PatientRealtimeService {
   private patientId: string | null = null;
   private listeners: Map<string, Set<RealtimeEventCallback>> = new Map();
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 10;
+  private maxReconnectAttempts = 12;
   private isConnecting = false;
   private pingInterval: any = null;
+  private processedMsgIds: Set<string> = new Set();
+  private msgIdQueue: string[] = [];
+  private appStateSubscription: any = null;
+
+  constructor() {
+    this.setupAppStateListener();
+  }
+
+  private setupAppStateListener() {
+    this.appStateSubscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
+      if (nextState === 'active') {
+        if (this.patientId && (!this.ws || this.ws.readyState !== WebSocket.OPEN)) {
+          this.reconnectAttempts = 0;
+          this.connect(this.patientId);
+        }
+      } else if (nextState === 'background') {
+        this.stopHeartbeat();
+      }
+    });
+  }
 
   private getWebSocketUrl(patientId: string): string {
-    if (__DEV__) {
-      return Platform.OS === 'android'
-        ? `ws://10.0.2.2:8000/ws/patient/${patientId}`
-        : `ws://localhost:8000/ws/patient/${patientId}`;
+    if (process.env.EXPO_PUBLIC_WS_URL) {
+      return `${process.env.EXPO_PUBLIC_WS_URL}/ws/patient/${patientId}`;
     }
-    return `wss://praxirence-production.up.railway.app/ws/patient/${patientId}`;
+    const apiBase = mobileApi.getApiUrl();
+    const wsProto = apiBase.startsWith('https://') ? 'wss://' : 'ws://';
+    const cleanHost = apiBase.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    return `${wsProto}${cleanHost}/ws/patient/${patientId}`;
   }
 
   public connect(patientId: string) {
-    if (this.ws || this.isConnecting) return;
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) return;
+    if (this.isConnecting) return;
     this.patientId = patientId;
     this.isConnecting = true;
 
@@ -47,6 +70,19 @@ class PatientRealtimeService {
           const data = JSON.parse(event.data);
           const eventType = data.event;
           const payload = data.payload;
+
+          // Message deduplication
+          const msgKey = data.msg_id || `${eventType}_${JSON.stringify(payload)}`;
+          if (this.processedMsgIds.has(msgKey)) {
+            return;
+          }
+          this.processedMsgIds.add(msgKey);
+          this.msgIdQueue.push(msgKey);
+          if (this.msgIdQueue.length > 200) {
+            const oldest = this.msgIdQueue.shift();
+            if (oldest) this.processedMsgIds.delete(oldest);
+          }
+
           this.notify(eventType, payload);
         } catch (e) {
           // Non-JSON telemetry ping
@@ -72,10 +108,12 @@ class PatientRealtimeService {
 
   private scheduleReconnect() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts || !this.patientId) return;
-    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 25000);
     this.reconnectAttempts++;
     setTimeout(() => {
-      if (this.patientId) this.connect(this.patientId);
+      if (this.patientId && (!this.ws || this.ws.readyState !== WebSocket.OPEN)) {
+        this.connect(this.patientId);
+      }
     }, delay);
   }
 
@@ -85,7 +123,7 @@ class PatientRealtimeService {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
         this.ws.send(JSON.stringify({ event: 'PING', payload: Date.now() }));
       }
-    }, 25000);
+    }, 12000);
   }
 
   private stopHeartbeat() {
@@ -137,6 +175,9 @@ class PatientRealtimeService {
 
   public disconnect() {
     this.stopHeartbeat();
+    if (this.appStateSubscription) {
+      try { this.appStateSubscription.remove(); } catch (_) {}
+    }
     if (this.ws) {
       this.ws.close();
       this.ws = null;

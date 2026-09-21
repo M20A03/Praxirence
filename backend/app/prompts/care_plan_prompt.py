@@ -11,34 +11,39 @@ You must output valid JSON ONLY matching the following schema:
   "diagnosis": "Concise medical assessment or primary complaint (e.g. Acute Pharyngitis with Mild Dehydration)",
   "medicines": [
     {
-      "name": "Generic or Brand Medicine Name (e.g. Amoxicillin)",
-      "dosage": "Dosage with units (e.g. 500mg, 10ml, 1 tablet)",
-      "frequency": "Timing pattern (e.g. Twice daily after food, 1-0-1, Once daily morning)",
-      "instructions": "Specific guidance (e.g. Take after meal with plenty of water. Complete full course.)",
-      "duration_days": 5
+      "name": "Generic or Brand Medicine Name (e.g. Amoxicillin, Pantocid, Dolo 650)",
+      "dosage": "Dosage with units (e.g. 500mg, 40mg, 10ml, 1 tablet)",
+      "frequency": "Timing pattern (e.g. Twice daily after food, 1-0-1, Once daily empty stomach)",
+      "instructions": "Specific guidance (e.g. Take 30 mins before breakfast on empty stomach. Complete course.)",
+      "duration_days": 5,
+      "meal_relation": "after_meal | before_meal | empty_stomach | with_meal",
+      "is_sos": false
     }
   ],
   "reminders": [
     {
       "medicine_name": "Medicine name matching above",
       "dosage": "Dosage (e.g. 500mg)",
-      "time": "24-hour time HH:MM (e.g. 08:00 for morning, 14:00 for afternoon, 20:00 for night)",
+      "time": "24-hour time HH:MM (e.g. 07:30 for empty stomach / morning, 13:30 for afternoon, 20:30 for night)",
       "frequency": "daily",
-      "instructions": "Short actionable instruction for phone notification"
+      "instructions": "Short actionable instruction for phone notification (e.g. '🥣 Take 1 tablet on empty stomach before breakfast')"
     }
   ]
 }
 
 Rules:
-1. Standardize reminder times based on medical timing conventions:
-   - Morning / Breakfast: 08:00
-   - Afternoon / Lunch: 13:30
-   - Evening / Dinner / Bedtime: 20:30
-2. If frequency is twice daily (BID / 1-0-1), create 2 reminders (08:00 and 20:30).
-3. If frequency is three times daily (TID / 1-1-1), create 3 reminders (08:00, 13:30, and 20:30).
-4. If frequency is once daily (OD / 0-0-1), choose appropriate time (morning 08:00 or night 20:30 based on medicine).
-5. Never hallucinate dangerous medications. If the doctor mentions vague symptoms without specific meds, provide the diagnosis and only the medications explicitly or clearly discussed.
-6. Return purely valid JSON with no markdown formatting, no backticks, and no extra preamble.
+1. Indian and Global Timing Conventions:
+   - Empty stomach / Khali pet (e.g. Pantoprazole, Omeprazole, Thyroxine, Rabeprazole): Set meal_relation="empty_stomach", reminder time 07:30.
+   - Before meals: Set meal_relation="before_meal", reminder times (07:30, 13:00, 20:00).
+   - After meals: Set meal_relation="after_meal", reminder times (08:30, 14:00, 21:00).
+   - Bedtime / Raat ko: 21:30.
+2. SOS / PRN Medications:
+   - If doctor says "as needed", "SOS", "agar bukhar ho", "jarurat padne par": Set is_sos=true. Do not create repetitive scheduled reminders, provide only a conditional reminder or note.
+3. If frequency is twice daily (BID / 1-0-1), create 2 reminders (08:30 and 21:00, or 07:30 and 20:30 if before meal).
+4. If frequency is three times daily (TID / 1-1-1), create 3 reminders (08:30, 14:00, and 21:00).
+5. If frequency is once daily (OD / 0-0-1), choose appropriate time (07:30 for empty stomach, 08:30 for morning after food, or 21:30 for bedtime).
+6. Never hallucinate dangerous medications. If the doctor mentions vague symptoms without specific meds, provide the diagnosis and only the medications explicitly or clearly discussed.
+7. Return purely valid JSON with no markdown formatting, no backticks, and no extra preamble.
 """
 
 CARE_PLAN_FEW_SHOT_EXAMPLE_INPUT = """

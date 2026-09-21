@@ -9,18 +9,131 @@ export interface DoctorUser {
   clinic_name: string;
   reg_number: string;
   role: 'doctor';
+  city?: string;
+  state?: string;
+  pincode?: string;
+  clinic_address?: string;
+  latitude?: number;
+  longitude?: number;
+  distance_km?: number;
+  available_days?: string[];
+  working_hours_start?: string;
+  working_hours_end?: string;
+  slot_duration_mins?: number;
+  unavailable_dates?: string[];
+  consultation_fee?: number;
+  is_available_today?: boolean;
+}
+
+export interface DoctorSlot {
+  time: string;
+  available: boolean;
+  reason?: string;
+}
+
+export interface DoctorAvailabilityResponse {
+  doctor_id: string;
+  doctor_name: string;
+  date: string;
+  day_of_week: string;
+  is_available: boolean;
+  reason?: string;
+  working_hours: {
+    start: string;
+    end: string;
+    slot_duration_mins?: number;
+  };
+  slots: DoctorSlot[];
+  total_slots: number;
+  available_slots_count: number;
+}
+
+export interface BookAppointmentSlotRequest {
+  doctor_id: string;
+  patient_id: string;
+  appointment_date: string; // YYYY-MM-DD
+  time_slot: string; // e.g. "10:30 AM"
+  chief_complaint?: string;
+  booking_type?: 'in_person' | 'video' | 'chat';
+}
+
+export interface BookAppointmentSlotResponse {
+  success: boolean;
+  visit_id: string;
+  message: string;
+  status: string;
+  token_number?: number;
+  token_display?: string;
+  patients_ahead?: number;
+  estimated_wait_mins?: number;
+  appointment: {
+    id: string;
+    doctor_id: string;
+    doctor_name: string;
+    doctor_specialty: string;
+    clinic_name: string;
+    clinic_address: string;
+    patient_id: string;
+    patient_name: string;
+    appointment_date: string;
+    time_slot: string;
+    booking_type: string;
+    chief_complaint?: string;
+    token_number?: number;
+    token_display?: string;
+    patients_ahead?: number;
+    estimated_wait_mins?: number;
+    status: string;
+  };
+}
+
+export interface QueueStatusResponse {
+  visit_id: string;
+  doctor_id: string;
+  doctor_name: string;
+  patient_id: string;
+  patient_name: string;
+  appointment_date: string;
+  time_slot: string;
+  token_number: number;
+  token_display: string;
+  current_serving_token?: string;
+  current_serving_token_number?: number;
+  patients_ahead: number;
+  estimated_wait_mins: number;
+  status: string;
+  clinic_name?: string;
+  clinic_address?: string;
+  doctor_delay_mins?: number;
+  recommended_departure_time?: string;
+  triage?: string;
 }
 
 export interface PatientUser {
   id: string;
   name: string;
   phone: string;
+  email?: string;
+  age?: number | string;
+  gender?: string;
+  language?: string;
+  emergency_contact?: string;
   consent_status: boolean;
   consent_updated_at?: string;
   role?: 'patient';
+  family_relation?: string;
 }
 
 export type ActiveUser = DoctorUser | PatientUser;
+
+export interface FamilyMemberProfile {
+  id: string;
+  name: string;
+  dob?: string;
+  family_relation: string;
+  phone?: string;
+  is_primary?: boolean;
+}
 
 export interface PatientSummary {
   id: string;
@@ -37,6 +150,8 @@ export interface MedicineItem {
   frequency: string;
   instructions?: string;
   duration_days?: number;
+  meal_relation?: 'before_meal' | 'after_meal' | 'empty_stomach' | 'with_meal';
+  is_sos?: boolean;
 }
 
 export interface ReminderItem {
@@ -45,6 +160,8 @@ export interface ReminderItem {
   time: string; // 24h format e.g. 08:30
   frequency: string;
   instructions?: string;
+  meal_relation?: 'before_meal' | 'after_meal' | 'empty_stomach' | 'with_meal';
+  is_sos?: boolean;
 }
 
 export interface Visit {
@@ -58,12 +175,24 @@ export interface Visit {
   raw_transcription?: string;
   medicines: MedicineItem[];
   reminders: ReminderItem[];
-  status: 'draft' | 'approved' | 'sent';
+  status: 'scheduled' | 'draft' | 'approved' | 'sent' | 'completed' | 'cancelled' | 'in_progress' | 'reschedule_required' | 'deferred' | 'skipped';
   doctor_name?: string;
   specialty?: string;
+  clinic_name?: string;
+  clinic_address?: string;
   created_at?: string;
   patient_name?: string;
   patient_phone?: string;
+  appointment_date?: string;
+  time_slot?: string;
+  booking_type?: string;
+  chief_complaint?: string;
+  token_number?: number;
+  token_display?: string;
+  patients_ahead?: number;
+  estimated_wait_mins?: number;
+  signature_hash?: string;
+  approved_at?: string;
 }
 
 export interface ConsultationSummarizeResult {

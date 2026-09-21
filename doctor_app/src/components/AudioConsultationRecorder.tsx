@@ -7,10 +7,13 @@ import {
   Animated,
   Alert,
   ActivityIndicator,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
-import { Colors } from '../theme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Colors, FontFamily } from '../theme';
 import { ConsultationSummarizeResult } from '../types';
 import { mobileApi } from '../services/api';
 
@@ -29,11 +32,14 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
 }) => {
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [durationSec, setDurationSec] = useState(0);
   const [processing, setProcessing] = useState(false);
   const [lastAudioUri, setLastAudioUri] = useState<string | null>(null);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [uploadFailed, setUploadFailed] = useState<boolean>(false);
+  const [backgroundPaused, setBackgroundPaused] = useState<boolean>(false);
 
   // Pulse & Waveform Animation Refs
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -48,20 +54,81 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
     new Animated.Value(8),
   ]).current;
 
-  // Timer Ref
+  // Timer & Lifecycle Refs
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const recordingRef = useRef<Audio.Recording | null>(null);
+  const isRecordingRef = useRef(false);
+  const isPausedRef = useRef(false);
 
   useEffect(() => {
+    recordingRef.current = recording;
+    isRecordingRef.current = isRecording;
+    isPausedRef.current = isPaused;
+  }, [recording, isRecording, isPaused]);
+
+  // Check if an offline draft exists for this patient on mount
+  useEffect(() => {
+    const restoreOfflineDraft = async () => {
+      try {
+        const key = `praxirence_offline_audio_${patientId}`;
+        const stored = await AsyncStorage.getItem(key);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.uri) {
+            setLastAudioUri(parsed.uri);
+            setUploadFailed(true);
+          }
+        }
+      } catch (e) {
+        // Cache lookup notice
+      }
+    };
+    restoreOfflineDraft();
+  }, [patientId]);
+
+  // Gracefully pause and preserve audio draft when app transitions to background or is minimized
+  // Prevents abrupt recording termination or corrupt audio files
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
+      if (nextAppState.match(/inactive|background/) && isRecordingRef.current) {
+        if (recordingRef.current) {
+          try {
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+              timerRef.current = null;
+            }
+            setIsRecording(false);
+            isRecordingRef.current = false;
+            await recordingRef.current.stopAndUnloadAsync();
+            const uri = recordingRef.current.getURI();
+            setRecording(null);
+            recordingRef.current = null;
+            if (uri) {
+              setLastAudioUri(uri);
+              setBackgroundPaused(true);
+              await AsyncStorage.setItem(
+                `praxirence_offline_audio_${patientId}`,
+                JSON.stringify({ uri, patientId, patientName, doctorName, date: new Date().toISOString() })
+              );
+            }
+          } catch (e) {
+            console.warn('Background audio draft cache notice:', e);
+          }
+        }
+      }
+    });
+
     return () => {
+      subscription.remove();
       if (timerRef.current) clearInterval(timerRef.current);
-      if (recording) {
-        recording.stopAndUnloadAsync().catch(() => {});
+      if (recordingRef.current) {
+        recordingRef.current.stopAndUnloadAsync().catch(() => {});
       }
       if (sound) {
         sound.unloadAsync().catch(() => {});
       }
     };
-  }, []);
+  }, [patientId, patientName, doctorName]);
 
   // Animate pulse & waveform while recording
   useEffect(() => {
@@ -136,6 +203,7 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
 
       setRecording(newRecording);
       setIsRecording(true);
+      setIsPaused(false);
       setDurationSec(0);
       setLastAudioUri(null);
 
@@ -148,8 +216,73 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
     }
   };
 
+  const pauseRecording = async () => {
+    const active = recordingRef.current || recording;
+    if (!active || !isRecordingRef.current) return;
+    try {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      await active.pauseAsync();
+      setIsPaused(true);
+      isPausedRef.current = true;
+    } catch (e: any) {
+      console.warn('Pause error:', e);
+    }
+  };
+
+  const resumeRecording = async () => {
+    const active = recordingRef.current || recording;
+    if (!active || !isRecordingRef.current) return;
+    try {
+      await active.startAsync();
+      setIsPaused(false);
+      isPausedRef.current = false;
+      timerRef.current = setInterval(() => {
+        setDurationSec((prev) => prev + 1);
+      }, 1000);
+    } catch (e: any) {
+      console.warn('Resume error:', e);
+    }
+  };
+
+  const discardRecording = () => {
+    Alert.alert(
+      'Discard Consultation Recording?',
+      'Are you sure you want to discard this consultation recording? This audio cannot be recovered.',
+      [
+        { text: 'Keep Recording', style: 'cancel' },
+        {
+          text: 'Discard Audio',
+          style: 'destructive',
+          onPress: async () => {
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+              timerRef.current = null;
+            }
+            setIsRecording(false);
+            setIsPaused(false);
+            isRecordingRef.current = false;
+            const active = recordingRef.current || recording;
+            if (active) {
+              try {
+                await active.stopAndUnloadAsync();
+              } catch {}
+            }
+            setRecording(null);
+            recordingRef.current = null;
+            setDurationSec(0);
+            setLastAudioUri(null);
+          },
+        },
+      ]
+    );
+  };
+
   const stopRecording = async () => {
-    if (!recording) return;
+    const activeRecording = recordingRef.current || recording;
+    if (!activeRecording) return;
 
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -157,10 +290,13 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
     }
 
     setIsRecording(false);
+    setIsPaused(false);
+    isRecordingRef.current = false;
     try {
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
+      await activeRecording.stopAndUnloadAsync();
+      const uri = activeRecording.getURI();
       setRecording(null);
+      recordingRef.current = null;
       setLastAudioUri(uri);
 
       if (uri) {
@@ -175,6 +311,8 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
 
   const processAudio = async (uri: string) => {
     setProcessing(true);
+    setUploadFailed(false);
+    setBackgroundPaused(false);
     try {
       const result = await mobileApi.uploadConsultationAudio({
         patientId,
@@ -183,14 +321,28 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
         doctorName,
       });
 
+      // Clear local offline cache on successful upload
+      await AsyncStorage.removeItem(`praxirence_offline_audio_${patientId}`).catch(() => {});
+
       onRecordingProcessed(result);
 
       Alert.alert(
-        '✨ Audio Transcribed & Extracted!',
-        'AI has processed the voice dialogue, extracted medications, and generated patient explanations.'
+        'Audio Transcribed & Extracted',
+        'Clinical voice dialogue processed, medications extracted, and patient instructions generated.'
       );
     } catch (err: any) {
-      Alert.alert('Notice', err.message || 'Consultation processed via clinical pipeline.');
+      console.warn('Audio upload network timeout, caching draft:', err);
+      setUploadFailed(true);
+      // Persist to Offline Consultation Queue
+      await AsyncStorage.setItem(
+        `praxirence_offline_audio_${patientId}`,
+        JSON.stringify({ uri, patientId, patientName, doctorName, date: new Date().toISOString() })
+      ).catch(() => {});
+
+      Alert.alert(
+        'Offline Consultation Saved',
+        'Audio recording was preserved locally in the offline queue. Tap "Retry Upload (Draft Saved)" when connection stabilizes.'
+      );
     } finally {
       setProcessing(false);
     }
@@ -236,9 +388,9 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
     <View style={styles.card}>
       <View style={styles.topRow}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <View style={[styles.statusDot, isRecording && styles.statusDotRecording]} />
+          <View style={[styles.statusDot, isRecording && (isPaused ? styles.statusDotPaused : styles.statusDotRecording)]} />
           <Text style={styles.cardTitle}>
-            {isRecording ? 'Listening to Consultation...' : 'Live Voice Consultation'}
+            {isRecording ? (isPaused ? 'Consultation Paused' : 'Listening to Consultation...') : 'Live Voice Consultation'}
           </Text>
         </View>
         <View style={styles.badge}>
@@ -262,7 +414,7 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
                 styles.waveBar,
                 {
                   height: anim,
-                  backgroundColor: isRecording ? '#EF4444' : '#94A3B8',
+                  backgroundColor: isRecording ? (isPaused ? '#F59E0B' : '#EF4444') : '#94A3B8',
                 },
               ]}
             />
@@ -270,8 +422,8 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
         </View>
 
         {/* Timer Display */}
-        <Text style={[styles.timerText, isRecording && styles.timerTextActive]}>
-          {formatTime(durationSec)}
+        <Text style={[styles.timerText, isRecording && (isPaused ? styles.timerTextPaused : styles.timerTextActive)]}>
+          {formatTime(durationSec)} {isPaused ? '(Paused)' : ''}
         </Text>
       </View>
 
@@ -295,18 +447,37 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
             <Text style={styles.micButtonText}>Start Voice Recording</Text>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity
-            style={[styles.micButton, styles.micButtonRecording]}
-            onPress={stopRecording}
-            activeOpacity={0.8}
-          >
-            <View style={[styles.micCircle, styles.micCircleRecording]}>
-              <Ionicons name="stop" size={26} color="#FFFFFF" />
-            </View>
-            <Text style={[styles.micButtonText, { color: '#DC2626' }]}>
-              Stop & Transcribe with AI
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.recordingCluster}>
+            {/* Discard Button */}
+            <TouchableOpacity
+              style={styles.clusterDiscardBtn}
+              onPress={discardRecording}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="trash-outline" size={18} color="#DC2626" />
+              <Text style={styles.clusterDiscardText}>Discard</Text>
+            </TouchableOpacity>
+
+            {/* Pause / Resume Button */}
+            <TouchableOpacity
+              style={[styles.clusterPauseBtn, isPaused && styles.clusterResumeBtn]}
+              onPress={isPaused ? resumeRecording : pauseRecording}
+              activeOpacity={0.7}
+            >
+              <Ionicons name={isPaused ? "play" : "pause"} size={18} color="#FFFFFF" />
+              <Text style={styles.clusterActionText}>{isPaused ? "Resume" : "Pause"}</Text>
+            </TouchableOpacity>
+
+            {/* Finish & AI Extract Button */}
+            <TouchableOpacity
+              style={styles.clusterFinishBtn}
+              onPress={stopRecording}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="sparkles" size={18} color="#FFFFFF" />
+              <Text style={styles.clusterActionText}>Finish & Extract</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
 
@@ -347,6 +518,39 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Offline Draft Saved / Upload Retry Banner */}
+      {uploadFailed && lastAudioUri && !processing && (
+        <View style={styles.offlineQueueBanner}>
+          <View style={styles.offlineQueueInfo}>
+            <Ionicons name="cloud-offline" size={18} color="#D97706" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.offlineQueueTitle}>Offline Consultation Draft Saved</Text>
+              <Text style={styles.offlineQueueSub}>
+                Network upload interrupted. Audio file safely preserved in device storage.
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.retryUploadBtn}
+            onPress={() => processAudio(lastAudioUri)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="refresh" size={16} color="#FFFFFF" />
+            <Text style={styles.retryUploadBtnText}>Retry Upload (Draft Saved)</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Background Graceful Pause Banner */}
+      {backgroundPaused && !uploadFailed && (
+        <View style={styles.backgroundNoticeBanner}>
+          <Ionicons name="pause-circle" size={16} color="#0284C7" />
+          <Text style={styles.backgroundNoticeText}>
+            Recording paused & draft saved locally when app was minimized.
+          </Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -379,6 +583,9 @@ const styles = StyleSheet.create({
   },
   statusDotRecording: {
     backgroundColor: '#EF4444',
+  },
+  statusDotPaused: {
+    backgroundColor: '#F59E0B',
   },
   cardTitle: {
     fontSize: 14,
@@ -431,16 +638,73 @@ const styles = StyleSheet.create({
   },
   timerText: {
     fontSize: 16,
-    fontFamily: 'monospace',
-    fontWeight: '700',
+    fontFamily: FontFamily.bold,
+    fontVariant: ['tabular-nums'],
     color: '#64748B',
   },
   timerTextActive: {
     color: '#EF4444',
   },
+  timerTextPaused: {
+    color: '#D97706',
+  },
   controlsRow: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  recordingCluster: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  clusterDiscardBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    backgroundColor: '#FEF2F2',
+  },
+  clusterDiscardText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#DC2626',
+  },
+  clusterPauseBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    backgroundColor: '#D97706',
+  },
+  clusterResumeBtn: {
+    backgroundColor: '#0284C7',
+  },
+  clusterFinishBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    backgroundColor: '#059669',
+  },
+  clusterActionText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   micButton: {
     alignItems: 'center',
@@ -526,5 +790,62 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: '#0284C7',
+  },
+  offlineQueueBanner: {
+    backgroundColor: '#FFFBEB',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    padding: 12,
+    marginTop: 12,
+    gap: 10,
+  },
+  offlineQueueInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  offlineQueueTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#B45309',
+  },
+  offlineQueueSub: {
+    fontSize: 11,
+    color: '#78350F',
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  retryUploadBtn: {
+    backgroundColor: '#D97706',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    gap: 8,
+  },
+  retryUploadBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  backgroundNoticeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F0F9FF',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    marginTop: 10,
+  },
+  backgroundNoticeText: {
+    fontSize: 12,
+    color: '#0284C7',
+    fontWeight: '600',
+    flex: 1,
   },
 });

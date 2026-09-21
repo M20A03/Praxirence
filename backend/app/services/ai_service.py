@@ -13,12 +13,24 @@ from app.prompts.care_plan_prompt import (
 logger = logging.getLogger("praxirence.ai")
 
 
+import base64
+import httpx
+
 class AIService:
     def __init__(self):
+        self.gemini_key = getattr(settings, "GEMINI_API_KEY", "") or os.getenv("GEMINI_API_KEY", "")
+        self.gemini_model = getattr(settings, "GEMINI_MODEL", "gemini-3.6-flash") or "gemini-3.6-flash"
+        self.groq_key = getattr(settings, "GROQ_API_KEY", "") or os.getenv("GROQ_API_KEY", "")
         self.api_key = settings.OPENAI_API_KEY
         self.whisper_model = settings.OPENAI_WHISPER_MODEL
         self.gpt_model = settings.OPENAI_GPT_MODEL
         self._client = None
+
+        if self.gemini_key:
+            logger.info(f"Google Gemini client initialized ({self.gemini_model}).")
+
+        if self.groq_key:
+            logger.info("Groq LPU client initialized (whisper-large-v3).")
 
         if self.api_key:
             try:
@@ -26,16 +38,110 @@ class AIService:
                 self._client = OpenAI(api_key=self.api_key)
                 logger.info("OpenAI client initialized successfully.")
             except Exception as e:
-                logger.warning(f"Failed to initialize OpenAI client: {e}. Fallback to mock mode.")
+                logger.warning(f"Failed to initialize OpenAI client: {e}.")
 
     def transcribe_audio(self, file_path: str) -> str:
         """
-        Transcribes doctor consultation audio using OpenAI Whisper API.
-        Falls back to a clinical mock transcription if no API key is provided.
+        Transcribes doctor consultation audio using Google Gemini multimodal audio
+        or OpenAI Whisper API. Falls back to a clinical mock transcription if no API key is provided.
         """
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Audio file not found at: {file_path}")
 
+        # 1. Try Google Gemini Multimodal Audio Transcription
+        if self.gemini_key:
+            try:
+                logger.info(f"Sending {file_path} to Google Gemini ({self.gemini_model}) for transcription...")
+                import mimetypes
+                mime_type, _ = mimetypes.guess_type(file_path)
+                if not mime_type or not mime_type.startswith("audio/"):
+                    ext = os.path.splitext(file_path)[1].lower()
+                    mime_map = {
+                        ".m4a": "audio/mp4",
+                        ".aac": "audio/aac",
+                        ".wav": "audio/wav",
+                        ".mp3": "audio/mp3",
+                        ".webm": "audio/webm",
+                        ".ogg": "audio/ogg",
+                    }
+                    mime_type = mime_map.get(ext, "audio/mp4")
+
+                with open(file_path, "rb") as f:
+                    audio_b64 = base64.b64encode(f.read()).decode("utf-8")
+
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.gemini_model}:generateContent?key={self.gemini_key}"
+                payload = {
+                    "contents": [
+                        {
+                            "parts": [
+                                {
+                                    "inlineData": {
+                                        "mimeType": mime_type,
+                                        "data": audio_b64
+                                    }
+                                },
+                                {
+                                    "text": (
+                                        "Transcribe this doctor-patient medical consultation audio recording verbatim. "
+                                        "Accurately capture doctor and patient dialogue in the original spoken languages "
+                                        "(English / Hindi / Hinglish / Indian regional languages). "
+                                        "Format as dialogue lines: 'Doctor: ...' and 'Patient: ...'. "
+                                        "Only output the verbatim transcription text."
+                                    )
+                                }
+                            ]
+                        }
+                    ]
+                }
+                with httpx.Client(timeout=30.0) as client:
+                    resp = client.post(url, json=payload)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+                        text_parts = [p.get("text", "") for p in parts if p.get("text")]
+                        transcript = "\n".join(text_parts).strip()
+                        if transcript:
+                            logger.info("Successfully transcribed consultation with Google Gemini.")
+                            return transcript
+                    else:
+                        logger.warning(f"Google Gemini transcription error {resp.status_code}: {resp.text}")
+            except Exception as e:
+                logger.warning(f"Google Gemini audio transcription notice: {e}. Falling back to next pipeline.")
+
+        # 2. Try Groq LPU Whisper Transcription (Ultra-low latency <1s)
+        if self.groq_key:
+            try:
+                logger.info(f"Sending {file_path} to Groq LPU Whisper (whisper-large-v3)...")
+                with open(file_path, "rb") as f:
+                    files = {"file": (os.path.basename(file_path), f)}
+                    data = {
+                        "model": "whisper-large-v3",
+                        "prompt": (
+                            "Doctor-patient OPD clinical consultation, Indian brands: Pantocid 40mg subah khali pet (empty stomach), "
+                            "Dolo 650mg SOS bukhar ke liye, Augmentin 625 BD, Pan-D, Thyronorm 50mcg empty stomach, Montair-LC raat ko, "
+                            "Telma 40, Glycomet GP1, Supradyn, Azithral 500 OD, Meftal-Spas, Ondem, Levolin syrup, 1-0-1 after food."
+                        ),
+                        "response_format": "json"
+                    }
+                    headers = {"Authorization": f"Bearer {self.groq_key}"}
+                    with httpx.Client(timeout=30.0) as client:
+                        resp = client.post(
+                            "https://api.groq.com/openai/v1/audio/transcriptions",
+                            headers=headers,
+                            data=data,
+                            files=files
+                        )
+                        if resp.status_code == 200:
+                            transcript = resp.json().get("text", "").strip()
+                            if transcript and len(transcript) > 5:
+                                logger.info("Successfully transcribed consultation via Groq LPU Whisper.")
+                                return transcript
+                        else:
+                            logger.warning(f"Groq Whisper notice ({resp.status_code}): {resp.text}")
+            except Exception as e:
+                logger.warning(f"Groq Whisper error: {e}. Falling back to next pipeline.")
+
+        # 3. Try OpenAI Whisper API
         if self._client:
             try:
                 logger.info(f"Sending {file_path} to OpenAI Whisper ({self.whisper_model})...")
@@ -43,14 +149,18 @@ class AIService:
                     transcript_obj = self._client.audio.transcriptions.create(
                         model=self.whisper_model,
                         file=audio_file,
-                        prompt="Medical consultation, diagnosis, medication dosage, frequency, paracetamol, amoxicillin, metformin, bd, tds, od.",
+                        prompt=(
+                            "Doctor-patient OPD clinical consultation, Indian brands: Pantocid 40mg subah khali pet (empty stomach), "
+                            "Dolo 650mg SOS bukhar ke liye, Augmentin 625 BD, Pan-D, Thyronorm 50mcg empty stomach, Montair-LC raat ko, "
+                            "Telma 40, Glycomet GP1, Supradyn, Azithral 500 OD, Meftal-Spas, Ondem, Levolin syrup, 1-0-1 after food."
+                        ),
                         response_format="text"
                     )
                 return str(transcript_obj).strip()
             except Exception as e:
                 logger.error(f"Whisper API error: {e}. Using clinical fallback.")
 
-        # Realistic mock fallback transcription for development/testing
+        # 3. Realistic mock fallback transcription for development/testing
         logger.info("Using simulated Whisper clinical consultation transcription.")
         return (
             "Doctor: Hello David. Tell me what brings you in today. "
@@ -64,8 +174,46 @@ class AIService:
 
     def generate_care_plan(self, transcription: str) -> CarePlanStructure:
         """
-        Extracts structured diagnosis, medications, and reminders from consultation transcription using GPT-4.
+        Extracts structured diagnosis, medications, and reminders from consultation transcription
+        using Google Gemini or OpenAI GPT-4o.
         """
+        # 1. Try Google Gemini Flash models (with automatic resilient fallback)
+        if self.gemini_key:
+            candidate_models = list(dict.fromkeys([self.gemini_model, "gemini-3.5-flash-lite", "gemini-3.6-flash"]))
+            for model_name in candidate_models:
+                try:
+                    logger.info(f"Extracting care plan with Google Gemini ({model_name})...")
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.gemini_key}"
+                    payload = {
+                        "contents": [
+                            {
+                                "parts": [
+                                    {
+                                        "text": f"{CARE_PLAN_SYSTEM_PROMPT}\n\nConsultation transcription to analyze:\n{transcription}"
+                                    }
+                                ]
+                            }
+                        ],
+                        "generationConfig": {
+                            "responseMimeType": "application/json"
+                        }
+                    }
+                    with httpx.Client(timeout=25.0) as client:
+                        resp = client.post(url, json=payload)
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+                            text_parts = [p.get("text", "") for p in parts if p.get("text")]
+                            text = "".join(text_parts).strip()
+                            plan_data = json.loads(text)
+                            logger.info(f"Successfully extracted structured care plan via Google Gemini ({model_name}).")
+                            return CarePlanStructure(**plan_data)
+                        else:
+                            logger.warning(f"Google Gemini ({model_name}) error {resp.status_code}: {resp.text[:100]}... trying next model.")
+                except Exception as e:
+                    logger.warning(f"Google Gemini ({model_name}) notice: {e}. Trying next fallback.")
+
+        # 2. Try OpenAI GPT-4o
         if self._client:
             try:
                 logger.info(f"Extracting care plan with {self.gpt_model}...")
@@ -89,7 +237,7 @@ class AIService:
             except Exception as e:
                 logger.error(f"GPT-4 extraction error: {e}. Falling back to rule-based clinical parser.")
 
-        # Realistic mock fallback care plan structure
+        # 3. Realistic mock fallback care plan structure
         logger.info("Generating mock structured care plan based on consultation transcript.")
         return CarePlanStructure(
             diagnosis="Acute Bronchitis with Mild Pyrexia & Bronchospasm",
@@ -165,6 +313,43 @@ class AIService:
         Generates a patient-friendly plain language summary of the doctor-patient dialogue
         along with structured clinical care plan, advice, and precautions.
         """
+        # 1. Try Google Gemini for Patient Consultation Summary
+        if self.gemini_key:
+            try:
+                system_prompt = (
+                    "You are Praxirence Clinical AI, an expert medical communicator. "
+                    "Analyze the consultation conversation between a doctor and patient. "
+                    "Generate a structured JSON output with: "
+                    "1. 'patient_summary': A clear, compassionate, jargon-free explanation written directly for the patient so they understand what the doctor told them during the visit. "
+                    "2. 'doctor_advice': Practical lifestyle, hydration, resting, and diet advice given by the doctor. "
+                    "3. 'warning_signs': A list of red-flag symptoms when the patient must seek urgent medical help. "
+                    "4. 'diagnosis': Standard clinical diagnostic term. "
+                    "5. 'medicines': List of objects with name, dosage, frequency, instructions, duration_days. "
+                    "6. 'reminders': List of objects with medicine_name, dosage, time (HH:MM), frequency, instructions. "
+                    "7. 'follow_up_days': Recommended days for follow-up."
+                )
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.gemini_model}:generateContent?key={self.gemini_key}"
+                payload = {
+                    "contents": [{
+                        "parts": [{
+                            "text": f"{system_prompt}\n\nPatient Name: {patient_name}\nDoctor Name: {doctor_name}\n\nConsultation Dialogue:\n{conversation}"
+                        }]
+                    }],
+                    "generationConfig": {
+                        "responseMimeType": "application/json"
+                    }
+                }
+                with httpx.Client(timeout=25.0) as client:
+                    resp = client.post(url, json=payload)
+                    if resp.status_code == 200:
+                        parts = resp.json().get("candidates", [{}])[0].get("content", {}).get("parts", [])
+                        text = "".join(p.get("text", "") for p in parts if p.get("text"))
+                        if text:
+                            return json.loads(text)
+            except Exception as e:
+                logger.warning(f"Google Gemini patient summarization notice: {e}. Trying next engine.")
+
+        # 2. Try OpenAI GPT-4o
         if self._client:
             try:
                 system_prompt = (

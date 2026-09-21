@@ -10,11 +10,13 @@ import {
   Modal,
   TextInput,
   Alert,
+  BackHandler,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../../theme';
 import { DoctorUser, UpcomingScheduleItem, UpcomingScheduleResponse } from '../../types';
 import { mobileApi } from '../../services/api';
+import { doctorRealtime } from '../../services/realtime';
 import { BrandLogoMobile } from '../../components/BrandLogoMobile';
 import { EmptyState } from '../../components/EmptyState';
 
@@ -42,10 +44,53 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
   const [walkInComplaint, setWalkInComplaint] = useState<string>('');
   const [walkInTriage, setWalkInTriage] = useState<'Urgent' | 'Priority' | 'Routine'>('Routine');
   const [creatingWalkIn, setCreatingWalkIn] = useState<boolean>(false);
+  const [callingNext, setCallingNext] = useState<boolean>(false);
+  const [delayMins, setDelayMins] = useState<number>(doctor?.current_delay_mins || 0);
+  const [broadcastingDelay, setBroadcastingDelay] = useState<boolean>(false);
+
+  // Hardware Back button protection for walk-in modal
+  useEffect(() => {
+    if (!showWalkInModal) return;
+    const onBackPress = () => {
+      setShowWalkInModal(false);
+      return true;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [showWalkInModal]);
 
   useEffect(() => {
     loadUpcomingSchedule();
-  }, []);
+
+    // 1. Connect Realtime WebSocket for live queue and appointment updates
+    if (doctor?.id) {
+      doctorRealtime.connect(doctor.id);
+    }
+
+    const unsubQueue = doctorRealtime.on('QUEUE_UPDATE', () => {
+      loadUpcomingScheduleSilently();
+    });
+
+    const unsubBooked = doctorRealtime.on('APPOINTMENT_BOOKED', () => {
+      loadUpcomingScheduleSilently();
+    });
+
+    const unsubPill = doctorRealtime.on('PILL_TAKEN', () => {
+      loadUpcomingScheduleSilently();
+    });
+
+    // 2. Background Polling Fallback (every 10s) if WebSocket disconnects
+    const pollInterval = setInterval(() => {
+      loadUpcomingScheduleSilently();
+    }, 10000);
+
+    return () => {
+      unsubQueue();
+      unsubBooked();
+      unsubPill();
+      clearInterval(pollInterval);
+    };
+  }, [doctor?.id]);
 
   const loadUpcomingSchedule = async () => {
     try {
@@ -64,6 +109,17 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
     }
   };
 
+  const loadUpcomingScheduleSilently = async () => {
+    try {
+      const schedule = await mobileApi.getUpcomingSchedule();
+      if (schedule && schedule.queue) {
+        setScheduleData(schedule);
+      }
+    } catch (err) {
+      // Background poll notice
+    }
+  };
+
   const handleAddWalkIn = async () => {
     if (!walkInName.trim()) {
       Alert.alert('Missing Name', 'Please enter patient full name.');
@@ -76,20 +132,29 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
 
     try {
       setCreatingWalkIn(true);
+      // 1. Create or retrieve patient
       const created = await mobileApi.createPatient({
         name: walkInName.trim(),
         phone: walkInPhone.trim(),
       });
 
-      const nextTokenNum = (scheduleData?.queue.length || 0) + 1;
+      // 2. Persist Walk-in Visit to PostgreSQL database
+      const walkInResult = await mobileApi.createWalkInVisit({
+        patientId: created.id,
+        doctorId: doctor.id,
+        chiefComplaint: walkInComplaint.trim() || 'Walk-in acute consultation',
+        triage: walkInTriage,
+      });
+
+      const assignedToken = walkInResult.token || `PX-0${(scheduleData?.queue.length || 0) + 1}`;
       const newQueueItem: UpcomingScheduleItem = {
-        token: `T-0${nextTokenNum}`,
+        token: assignedToken,
         patient_id: created.id,
         patient_name: created.name,
         patient_phone: created.phone,
-        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        time: walkInResult.time || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
         chief_complaint: walkInComplaint.trim() || 'Walk-in acute consultation',
-        triage: walkInTriage,
+        triage: (walkInResult.triage as any) || walkInTriage,
         status: 'Waiting in Clinic',
         consent_status: true,
       };
@@ -99,14 +164,14 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
           ...scheduleData,
           total_scheduled: scheduleData.total_scheduled + 1,
           in_waiting: scheduleData.in_waiting + 1,
-          queue: [newQueueItem, ...scheduleData.queue],
+          queue: [newQueueItem, ...scheduleData.queue.filter(q => q.patient_id !== created.id)],
         });
       }
 
       setShowWalkInModal(false);
       setWalkInName('');
       setWalkInComplaint('');
-      Alert.alert('Patient Added', `${created.name} added to queue as Token ${newQueueItem.token}`);
+      Alert.alert('Patient Added to Live Queue', `${created.name} assigned Token ${assignedToken}.`);
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to add walk-in patient');
     } finally {
@@ -117,11 +182,75 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
   const getTriageColor = (triage: string) => {
     switch (triage) {
       case 'Urgent':
-        return { bg: 'rgba(239, 68, 68, 0.15)', text: '#ef4444', border: 'rgba(239, 68, 68, 0.35)' };
+        return { bg: '#FEF2F2', text: '#DC2626', border: '#FECACA' };
       case 'Priority':
-        return { bg: 'rgba(245, 158, 11, 0.15)', text: '#f59e0b', border: 'rgba(245, 158, 11, 0.35)' };
+        return { bg: '#FFFBEB', text: '#D97706', border: '#FDE68A' };
       default:
-        return { bg: 'rgba(16, 185, 129, 0.15)', text: '#10b981', border: 'rgba(16, 185, 129, 0.35)' };
+        return { bg: '#F0FDF4', text: '#16A34A', border: '#BBF7D0' };
+    }
+  };
+
+  const handleCallNext = async () => {
+    try {
+      setCallingNext(true);
+      const res = await mobileApi.callNextPatient(doctor.id);
+      if (res.success) {
+        Alert.alert(
+          'Patient Called Into Chamber',
+          `Token ${res.token_called || 'Next'} (${res.patient_name || 'Patient'}) called into consultation room.`
+        );
+        await loadUpcomingScheduleSilently();
+        if (res.serving_visit_id && res.patient_name) {
+          onNavigateToNewVisit(res.serving_visit_id, res.patient_name, 'Consultation');
+        }
+      }
+    } catch (err: any) {
+      Alert.alert('Queue Notice', err.message || 'No patients currently waiting in queue.');
+    } finally {
+      setCallingNext(false);
+    }
+  };
+
+  const handleStandby = async (item: UpcomingScheduleItem) => {
+    if (!item.visit_id) {
+      Alert.alert('Notice', 'Cannot defer walk-in without persistent appointment record.');
+      return;
+    }
+    try {
+      await mobileApi.advanceQueue(item.visit_id, 'deferred');
+      Alert.alert('Patient Moved to Standby', `${item.patient_name} (${item.token}) deferred. Next patient can be called.`);
+      loadUpcomingScheduleSilently();
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Could not move patient to standby');
+    }
+  };
+
+  const handleRecall = async (item: UpcomingScheduleItem) => {
+    if (!item.visit_id) return;
+    try {
+      await mobileApi.recallPatient(item.visit_id);
+      Alert.alert('Patient Recalled', `${item.patient_name} (${item.token}) restored to immediate active queue.`);
+      loadUpcomingScheduleSilently();
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Could not recall patient');
+    }
+  };
+
+  const handleBroadcastDelay = async (minutes: number) => {
+    try {
+      setBroadcastingDelay(true);
+      const res = await mobileApi.broadcastDoctorDelay(doctor.id, minutes);
+      setDelayMins(minutes);
+      Alert.alert(
+        minutes > 0 ? 'Delay Broadcasted' : 'Schedule Reset',
+        minutes > 0
+          ? `Broadcasted a ${minutes}-minute running delay to ${res.affected_patients_count || 0} waiting patients.`
+          : 'Clinic status reset to On Schedule.'
+      );
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to broadcast clinic delay');
+    } finally {
+      setBroadcastingDelay(false);
     }
   };
 
@@ -148,56 +277,121 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
       {/* Clinician Profile Header */}
       <View style={styles.header}>
         <View style={{ flex: 1, marginRight: 8 }}>
-          <Text style={styles.greeting}>Clinician Workspace</Text>
+          <Text style={styles.greeting}>Attending Physician</Text>
           <Text style={styles.doctorName}>{doctor.name}</Text>
           <Text style={styles.specialtyText}>{doctor.specialty} • {doctor.clinic_name}</Text>
-          <Text style={styles.regBadge}>REG: {doctor.reg_number}</Text>
+          <Text style={styles.regBadge}>Lic. No: {doctor.reg_number}</Text>
         </View>
 
         <View style={styles.verifiedDoctorBadge}>
-          <Ionicons name="checkmark-circle" size={14} color={Colors.primary} />
-          <Text style={styles.verifiedDoctorText}>Verified Clinician</Text>
+          <Ionicons name="shield-checkmark" size={14} color={Colors.primary} />
+          <Text style={styles.verifiedDoctorText}>Verified</Text>
         </View>
       </View>
 
       {/* Clinical Session Date & Room Header */}
       <View style={styles.dateHeaderRow}>
         <View style={styles.dateBadge}>
-          <Ionicons name="calendar-outline" size={14} color="#0284c7" />
+          <Ionicons name="calendar-outline" size={14} color={Colors.textSecondary} />
           <Text style={styles.dateLabel}>{scheduleData?.date || 'Today'}</Text>
         </View>
         <View style={styles.activeRoomBadge}>
           <View style={styles.livePulseDot} />
-          <Text style={styles.activeRoomText}>OPD Consultation Session</Text>
+          <Text style={styles.activeRoomText}>OPD Active Session</Text>
         </View>
       </View>
 
       {/* Live Clinical Queue Metrics */}
       <View style={styles.statsRow}>
-        <View style={[styles.statCard, { backgroundColor: '#F0F9FF', borderColor: '#BAE6FD' }]}>
-          <View style={[styles.statIconBadge, { backgroundColor: '#E0F2FE' }]}>
-            <Ionicons name="people" size={18} color="#0284c7" />
+        <View style={styles.statCard}>
+          <View style={[styles.statIconBadge, { backgroundColor: '#F0F9FF' }]}>
+            <Ionicons name="people" size={17} color="#0284c7" />
           </View>
-          <Text style={[styles.statNumber, { color: '#0369a1' }]}>{scheduleData?.total_scheduled || 0}</Text>
+          <Text style={styles.statNumber}>{scheduleData?.total_scheduled || 0}</Text>
           <Text style={styles.statLabel}>Today's Queue</Text>
         </View>
 
-        <View style={[styles.statCard, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
-          <View style={[styles.statIconBadge, { backgroundColor: '#DCFCE7' }]}>
-            <Ionicons name="checkmark-done" size={18} color="#15803d" />
+        <View style={styles.statCard}>
+          <View style={[styles.statIconBadge, { backgroundColor: '#F0FDF4' }]}>
+            <Ionicons name="checkmark-done" size={17} color="#16a34a" />
           </View>
-          <Text style={[styles.statNumber, { color: '#15803d' }]}>{scheduleData?.completed || 0}</Text>
+          <Text style={styles.statNumber}>{scheduleData?.completed || 0}</Text>
           <Text style={styles.statLabel}>Consulted</Text>
         </View>
 
-        <View style={[styles.statCard, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
-          <View style={[styles.statIconBadge, { backgroundColor: '#FEF3C7' }]}>
-            <Ionicons name="time" size={18} color="#d97706" />
+        <View style={styles.statCard}>
+          <View style={[styles.statIconBadge, { backgroundColor: '#FFFBEB' }]}>
+            <Ionicons name="time-outline" size={17} color="#d97706" />
           </View>
-          <Text style={[styles.statNumber, { color: '#b45309' }]}>
+          <Text style={styles.statNumber}>
             {(scheduleData?.total_scheduled || 0) - (scheduleData?.completed || 0)}
           </Text>
-          <Text style={styles.statLabel}>Pending</Text>
+          <Text style={styles.statLabel}>In Waiting</Text>
+        </View>
+      </View>
+
+      {/* 1-Tap "Call Next Patient" Sticky Hero Macro Card */}
+      <TouchableOpacity
+        style={styles.callNextHeroCard}
+        onPress={handleCallNext}
+        disabled={callingNext}
+        activeOpacity={0.85}
+      >
+        <View style={styles.callNextHeroContent}>
+          <View style={styles.callNextIconContainer}>
+            {callingNext ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Ionicons name="megaphone" size={22} color="#FFFFFF" />
+            )}
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.callNextHeroTitle}>Call Next Patient</Text>
+              <View style={styles.macroBadge}>
+                <Text style={styles.macroBadgeText}>1-TAP DISPATCH</Text>
+              </View>
+            </View>
+            <Text style={styles.callNextHeroSubtitle}>
+              Completes active consult, summons next token & broadcasts live alert.
+            </Text>
+          </View>
+          <Ionicons name="arrow-forward-circle" size={26} color="#FFFFFF" />
+        </View>
+      </TouchableOpacity>
+
+      {/* OPD Running Delay Broadcast Bar */}
+      <View style={styles.delayBroadcastCard}>
+        <View style={styles.delayHeaderRow}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name="speedometer-outline" size={16} color="#D97706" />
+            <Text style={styles.delayTitle}>OPD Delay Broadcast:</Text>
+          </View>
+          <Text style={[styles.delayCurrentBadge, delayMins > 0 ? styles.delayActiveText : styles.delayNormalText]}>
+            {delayMins > 0 ? `Running +${delayMins}m behind` : 'On Schedule'}
+          </Text>
+        </View>
+        <View style={styles.delayChipsRow}>
+          {[0, 15, 30, 45, 60].map((mins) => (
+            <TouchableOpacity
+              key={mins}
+              style={[
+                styles.delayChip,
+                delayMins === mins && styles.delayChipActive,
+                mins === 0 && styles.delayChipClear,
+              ]}
+              onPress={() => handleBroadcastDelay(mins)}
+              disabled={broadcastingDelay}
+            >
+              <Text style={[
+                styles.delayChipText,
+                delayMins === mins && styles.delayChipTextActive,
+                mins === 0 && delayMins === 0 && styles.delayChipClearText,
+              ]}>
+                {mins === 0 ? 'Clear (On Time)' : `+${mins}m`}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
 
@@ -273,15 +467,35 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
                 <Text style={styles.complaintText}>{item.chief_complaint}</Text>
               </View>
 
-              {/* Card CTA: Start Consultation */}
+              {/* Card Actions: Start Consultation, Standby, Recall, History */}
               <View style={styles.cardActionRow}>
                 <TouchableOpacity
                   style={styles.startConsultBtn}
                   onPress={() => onNavigateToNewVisit(item.patient_id, item.patient_name, item.chief_complaint)}
                 >
                   <Ionicons name="mic" size={16} color="#ffffff" />
-                  <Text style={styles.startConsultBtnText}>Start Consultation</Text>
+                  <Text style={styles.startConsultBtnText}>Start</Text>
                 </TouchableOpacity>
+
+                {item.status === 'deferred' || item.status === 'skipped' ? (
+                  <TouchableOpacity
+                    style={styles.recallBtn}
+                    onPress={() => handleRecall(item)}
+                  >
+                    <Ionicons name="refresh-circle-outline" size={16} color="#0284C7" />
+                    <Text style={styles.recallBtnText}>Recall</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.standbyBtn}
+                    onPress={() => handleStandby(item)}
+                  >
+                    <Ionicons name="pause-outline" size={15} color="#D97706" />
+                    <Text style={styles.standbyBtnText}>
+                      Standby{item.skip_count && item.skip_count > 0 ? ` (${item.skip_count})` : ''}
+                    </Text>
+                  </TouchableOpacity>
+                )}
 
                 <TouchableOpacity
                   style={styles.patientHistoryBtn}
@@ -319,7 +533,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
       </View>
 
       {/* Walk-In Modal */}
-      <Modal visible={showWalkInModal} animationType="slide" transparent>
+      <Modal visible={showWalkInModal} animationType="slide" transparent onRequestClose={() => setShowWalkInModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -400,7 +614,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   content: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 16,
     paddingBottom: 40,
   },
   header: {
@@ -408,25 +623,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     backgroundColor: Colors.card,
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 16,
     borderWidth: 1,
     borderColor: Colors.border,
     marginBottom: 12,
   },
   greeting: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.medium,
     fontSize: FontSize.xs,
-    color: Colors.primary,
-    letterSpacing: LetterSpacing.wider,
-    textTransform: 'uppercase',
+    color: Colors.textMuted,
     marginBottom: 2,
   },
   doctorName: {
     fontFamily: FontFamily.display,
     fontSize: FontSize.lg,
     color: Colors.textPrimary,
-    fontWeight: '700',
   },
   specialtyText: {
     fontFamily: FontFamily.sans,
@@ -435,93 +647,90 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   regBadge: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.medium,
     fontSize: FontSize.xs,
-    color: Colors.textSecondary,
+    color: Colors.textMuted,
     marginTop: 4,
   },
   verifiedDoctorBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(14, 165, 233, 0.12)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(14, 165, 233, 0.3)',
+    borderColor: '#BBF7D0',
   },
   verifiedDoctorText: {
-    fontFamily: FontFamily.mono,
-    fontSize: FontSize.xs,
-    color: Colors.primary,
-    fontWeight: '600',
+    fontFamily: FontFamily.medium,
+    fontSize: FontSize.caption,
+    color: '#166534',
   },
   dateHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
     gap: 8,
   },
   dateBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#BAE6FD',
+    borderColor: Colors.border,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
   },
   dateLabel: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.medium,
     fontSize: FontSize.xs,
-    color: '#0369A1',
-    fontWeight: '700',
+    color: Colors.textSecondary,
   },
   activeRoomBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#BBF7D0',
+    borderColor: Colors.border,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
   },
   livePulseDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: '#16A34A',
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10b981',
   },
   activeRoomText: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.medium,
     fontSize: FontSize.xs,
-    color: '#15803D',
-    fontWeight: '600',
+    color: Colors.textSecondary,
   },
   statsRow: {
     flexDirection: 'row',
     gap: 10,
-    marginBottom: 20,
+    marginBottom: 18,
   },
   statCard: {
     flex: 1,
-    backgroundColor: Colors.card,
-    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
     padding: 12,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.border,
   },
   statIconBadge: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 6,
@@ -530,7 +739,6 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.display,
     fontSize: FontSize.xl,
     color: Colors.textPrimary,
-    fontWeight: '700',
   },
   statLabel: {
     fontFamily: FontFamily.sans,
@@ -549,7 +757,6 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.display,
     fontSize: FontSize.md,
     color: Colors.textPrimary,
-    fontWeight: '700',
   },
   sectionSubtitle: {
     fontFamily: FontFamily.sans,
@@ -563,45 +770,43 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 10,
+    borderRadius: 8,
   },
   addWalkInText: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.semiBold,
     fontSize: FontSize.xs,
     color: '#ffffff',
-    fontWeight: '600',
   },
   queueCard: {
     backgroundColor: Colors.card,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 14,
+    padding: 14,
     borderWidth: 1,
     borderColor: Colors.border,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   queueCardNext: {
-    borderColor: Colors.primary,
-    backgroundColor: 'rgba(14, 165, 233, 0.05)',
+    borderColor: '#0284C7',
+    backgroundColor: '#F8FAFC',
   },
   queueCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
     gap: 8,
   },
   tokenBox: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#F1F5F9',
     borderWidth: 1,
-    borderColor: '#C7D2FE',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   tokenText: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.bold,
     fontSize: FontSize.sm,
-    color: '#4F46E5',
-    fontWeight: '700',
+    color: Colors.textPrimary,
   },
   timeBox: {
     flexDirection: 'row',
@@ -609,86 +814,82 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   timeText: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
   },
   triageBadge: {
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 2,
     borderRadius: 6,
     borderWidth: 1,
   },
   triageText: {
-    fontFamily: FontFamily.mono,
-    fontSize: FontSize.xs,
-    fontWeight: '700',
+    fontFamily: FontFamily.semiBold,
+    fontSize: FontSize.caption,
   },
   nextUpBadge: {
     marginLeft: 'auto',
-    backgroundColor: '#ef4444',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 2,
     borderRadius: 6,
   },
   nextUpText: {
-    fontFamily: FontFamily.mono,
-    fontSize: FontSize.xs,
-    color: '#ffffff',
-    fontWeight: '800',
-    letterSpacing: 1,
+    fontFamily: FontFamily.semiBold,
+    fontSize: FontSize.caption,
+    color: '#DC2626',
   },
   patientInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 12,
+    gap: 10,
+    marginBottom: 10,
   },
   patientAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(14, 165, 233, 0.2)',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#E0F2FE',
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
-    fontFamily: FontFamily.display,
-    fontSize: FontSize.md,
-    color: Colors.primary,
-    fontWeight: '700',
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.sm,
+    color: '#0284C7',
   },
   patientName: {
     fontFamily: FontFamily.display,
     fontSize: FontSize.md,
     color: Colors.textPrimary,
-    fontWeight: '600',
   },
   patientSubtext: {
     fontFamily: FontFamily.sans,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
-    marginTop: 2,
+    marginTop: 1,
   },
   complaintBox: {
-    backgroundColor: '#F0F9FF',
-    borderRadius: 10,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
     padding: 10,
-    marginBottom: 14,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#BAE6FD',
+    borderColor: '#E2E8F0',
   },
   complaintHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 4,
+    marginBottom: 3,
   },
   complaintTitle: {
-    fontFamily: FontFamily.mono,
-    fontSize: FontSize.xs,
-    color: '#0ea5e9',
-    fontWeight: '600',
+    fontFamily: FontFamily.semiBold,
+    fontSize: FontSize.caption,
+    color: Colors.textSecondary,
   },
   complaintText: {
     fontFamily: FontFamily.sans,
@@ -698,23 +899,22 @@ const styles = StyleSheet.create({
   },
   cardActionRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
   },
   startConsultBtn: {
     flex: 2,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     backgroundColor: Colors.primary,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingVertical: 9,
+    borderRadius: 8,
   },
   startConsultBtnText: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.semiBold,
     fontSize: FontSize.sm,
     color: '#ffffff',
-    fontWeight: '700',
   },
   patientHistoryBtn: {
     flex: 1,
@@ -722,33 +922,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#F1F5F9',
-    paddingVertical: 10,
-    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 9,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: '#E2E8F0',
   },
   patientHistoryBtnText: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.medium,
     fontSize: FontSize.sm,
-    color: Colors.textPrimary,
-    fontWeight: '600',
+    color: Colors.textSecondary,
   },
   emptyCard: {
     backgroundColor: Colors.card,
-    borderRadius: 16,
-    padding: 30,
+    borderRadius: 14,
+    padding: 28,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.border,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   emptyTitle: {
     fontFamily: FontFamily.display,
     fontSize: FontSize.md,
     color: Colors.textPrimary,
-    fontWeight: '700',
-    marginTop: 12,
+    marginTop: 10,
   },
   emptySubtitle: {
     fontFamily: FontFamily.sans,
@@ -756,15 +954,15 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
     marginTop: 4,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   patientsDirectoryCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: Colors.card,
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: 12,
+    padding: 14,
     borderWidth: 1,
     borderColor: Colors.border,
     marginTop: 8,
@@ -774,7 +972,6 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.display,
     fontSize: FontSize.sm,
     color: Colors.textPrimary,
-    fontWeight: '700',
   },
   directoryCardSubtitle: {
     fontFamily: FontFamily.sans,
@@ -786,26 +983,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#0ea5e9',
+    backgroundColor: '#0284c7',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 10,
+    borderRadius: 8,
   },
   viewDirectoryBtnText: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.semiBold,
     fontSize: FontSize.xs,
     color: '#ffffff',
-    fontWeight: '700',
   },
   loadingContainer: {
     padding: 40,
     alignItems: 'center',
   },
   loadingText: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.medium,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
-    marginTop: 12,
+    marginTop: 10,
   },
   modalOverlay: {
     flex: 1,
@@ -815,13 +1011,13 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: 16,
     padding: 20,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.12,
     shadowRadius: 10,
     elevation: 6,
   },
@@ -829,26 +1025,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   modalTitle: {
     fontFamily: FontFamily.display,
     fontSize: FontSize.lg,
     color: Colors.textPrimary,
-    fontWeight: '700',
   },
   inputLabel: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.medium,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginBottom: 6,
-    marginTop: 10,
+    marginTop: 8,
   },
   input: {
     backgroundColor: '#F8FAFC',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
     color: Colors.textPrimary,
     fontFamily: FontFamily.sans,
     fontSize: FontSize.sm,
@@ -857,9 +1052,9 @@ const styles = StyleSheet.create({
   },
   triageSelectRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
     marginTop: 6,
-    marginBottom: 20,
+    marginBottom: 18,
   },
   triageOptionBtn: {
     flex: 1,
@@ -875,14 +1070,13 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary,
   },
   triageOptionText: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.medium,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
-    fontWeight: '600',
   },
   triageOptionTextActive: {
     color: '#ffffff',
-    fontWeight: '700',
+    fontFamily: FontFamily.semiBold,
   },
   modalSubmitBtn: {
     flexDirection: 'row',
@@ -890,13 +1084,158 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     backgroundColor: Colors.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 10,
   },
   modalSubmitBtnText: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.semiBold,
     fontSize: FontSize.sm,
     color: '#ffffff',
-    fontWeight: '700',
+  },
+  callNextHeroCard: {
+    backgroundColor: '#059669',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 14,
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  callNextHeroContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  callNextIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  callNextHeroTitle: {
+    fontSize: 15,
+    fontFamily: FontFamily.bold,
+    color: '#FFFFFF',
+  },
+  macroBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  macroBadgeText: {
+    fontSize: 9,
+    fontFamily: FontFamily.bold,
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  callNextHeroSubtitle: {
+    fontSize: 11,
+    fontFamily: FontFamily.sans,
+    color: '#E6F4EA',
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  delayBroadcastCard: {
+    backgroundColor: '#FFFBEB',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    padding: 12,
+    marginBottom: 14,
+  },
+  delayHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  delayTitle: {
+    fontSize: 12,
+    fontFamily: FontFamily.semiBold,
+    color: '#92400E',
+  },
+  delayCurrentBadge: {
+    fontSize: 11,
+    fontFamily: FontFamily.semiBold,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  delayActiveText: {
+    backgroundColor: '#FEE2E2',
+    color: '#DC2626',
+  },
+  delayNormalText: {
+    backgroundColor: '#D1FAE5',
+    color: '#065F46',
+  },
+  delayChipsRow: {
+    flexDirection: 'row',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  delayChip: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  delayChipActive: {
+    backgroundColor: '#D97706',
+    borderColor: '#D97706',
+  },
+  delayChipClear: {
+    borderColor: '#E2E8F0',
+  },
+  delayChipText: {
+    fontSize: 11,
+    fontFamily: FontFamily.medium,
+    color: '#B45309',
+  },
+  delayChipTextActive: {
+    color: '#FFFFFF',
+    fontFamily: FontFamily.bold,
+  },
+  delayChipClearText: {
+    color: '#64748B',
+  },
+  standbyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFFBEB',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  standbyBtnText: {
+    fontSize: 12,
+    fontFamily: FontFamily.semiBold,
+    color: '#D97706',
+  },
+  recallBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F0F9FF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  recallBtnText: {
+    fontSize: 12,
+    fontFamily: FontFamily.semiBold,
+    color: '#0284C7',
   },
 });

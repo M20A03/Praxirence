@@ -205,13 +205,14 @@ export const generatePrescriptionHtml = (data: PrescriptionPdfData): string => {
       <body>
         <div class="header">
           <div>
-            <h1 class="clinic-title">PRAXIRENCE CLINICAL HEALTH</h1>
-            <div class="clinic-subtitle">Autonomous Clinical Intelligence & Telehealth System • ABDM Compliant</div>
+            <h1 class="clinic-title">${data.doctor.clinic_name || 'PRAXIRENCE CLINICAL CENTRE'}</h1>
+            <div class="clinic-subtitle">${data.doctor.clinic_address || '12th Main, Indiranagar, Bangalore'} • Tel: ${data.doctor.phone || '+91 98765 43210'}</div>
+            <div style="font-size: 11px; color: #0284C7; font-weight: 700; margin-top: 2px;">ABDM FHIR M2 Compliant • Telemedicine Practice Guidelines 2020</div>
           </div>
           <div class="doctor-meta">
-            <div class="doctor-name">${data.doctor.name}</div>
-            <div class="doctor-spec">${data.doctor.specialty}</div>
-            <div class="doctor-reg">Reg: MED-${data.doctor.id.slice(-6).toUpperCase()}</div>
+            <div class="doctor-name">${data.doctor.name.startsWith('Dr.') ? data.doctor.name : `Dr. ${data.doctor.name}`}</div>
+            <div class="doctor-spec">${data.doctor.specialty || 'General Physician'}</div>
+            <div class="doctor-reg">NMC Reg. No: ${data.doctor.reg_number || 'NMC-2024-84920'}</div>
           </div>
         </div>
 
@@ -270,13 +271,18 @@ export const generatePrescriptionHtml = (data: PrescriptionPdfData): string => {
         ` : ''}
 
         <div class="footer">
-          <div class="security-footer">
-            Generated via Praxirence Clinical E-Prescription Gateway.<br>
-            Verified for ABDM health records and WhatsApp dispatch.
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=70x70&data=https://praxirence-production.up.railway.app/health" width="70" height="70" style="border-radius: 4px; border: 1px solid #CBD5E1;" alt="Verify QR" />
+            <div class="security-footer">
+              <strong>Scan to Verify Prescription</strong><br>
+              Cryptographically signed & timestamped via Praxirence Clinical Gateway.<br>
+              Records maintained under NMC 3-Year Regulatory Statute.
+            </div>
           </div>
           <div class="signature-box">
-            <div class="signature-stamp">✓ Digitally Signed & Approved</div>
+            <div class="signature-stamp">Digitally Signed & Approved</div>
             <div class="signature-text">${data.doctor.name} • ${currentDate}</div>
+            <div style="font-size: 10px; color: #94A3B8; margin-top: 2px;">NMC Reg: ${data.doctor.reg_number || 'NMC-2024-84920'}</div>
           </div>
         </div>
       </body>

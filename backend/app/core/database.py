@@ -5,7 +5,16 @@ from app.core.config import settings
 
 # Configure database engine
 connect_args = {}
-db_url = settings.DATABASE_URL
+db_url = settings.DATABASE_URL or ""
+
+# 1. Normalize Railway postgres dialect (postgres:// -> postgresql://)
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+# 2. Resilient local fallback if Railway template variable is unexpanded or invalid outside Railway runtime
+if not db_url or "://" not in db_url or db_url.startswith("${{"):
+    db_url = "sqlite:///./praxirence_dev.db"
+
 engine_kwargs = {"pool_pre_ping": True}
 if db_url.startswith("sqlite"):
     connect_args = {"check_same_thread": False}

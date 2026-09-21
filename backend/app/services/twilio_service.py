@@ -139,8 +139,8 @@ class TwilioService:
                 return {"success": False, "error": str(e)}
 
         # Simulated OTP for development
-        logger.info(f"[MOCK OTP GENERATION] OTP for {formatted_phone} is '123456'")
-        return {"success": True, "status": "pending_mock", "demo_code": "123456"}
+        logger.info(f"[MOCK OTP GENERATION] OTP for {formatted_phone} is '987654'")
+        return {"success": True, "status": "pending_mock", "demo_code": "987654"}
 
     def verify_otp(self, phone: str, code: str) -> bool:
         """
@@ -158,8 +158,8 @@ class TwilioService:
                 logger.error(f"Twilio Verify check error: {e}")
                 return False
 
-        # In mock mode, allow '123456' or any 6-digit code in debug
-        if code == "123456" or (settings.DEBUG and len(code) == 6):
+        # In mock mode, allow '987654' or '123456' or any 6-digit code in debug
+        if code in ("987654", "123456") or (settings.DEBUG and len(code) == 6):
             logger.info(f"[MOCK OTP VERIFIED] Accepted code {code} for {formatted_phone}")
             return True
 

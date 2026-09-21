@@ -5,12 +5,14 @@ import {
   Text,
   StyleSheet,
   StatusBar,
+  Platform,
 } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import * as Notifications from 'expo-notifications';
 
 import { Colors } from './src/theme/colors';
 import { FontFamily, FontSize, LetterSpacing } from './src/theme/typography';
@@ -26,6 +28,8 @@ import { DoctorProfileScreen } from './src/screens/doctor/DoctorProfileScreen';
 
 import { mobileApi } from './src/services/api';
 
+export const navigationRef = createNavigationContainerRef<any>();
+
 const Tab = createBottomTabNavigator();
 
 export default function App() {
@@ -37,6 +41,50 @@ export default function App() {
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>();
   const [selectedPatientName, setSelectedPatientName] = useState<string | undefined>();
   const [selectedComplaint, setSelectedComplaint] = useState<string | undefined>();
+
+  useEffect(() => {
+    // Setup Android notification channel for doctor alerts
+    if (Platform.OS === 'android') {
+      try {
+        Notifications.setNotificationChannelAsync('doctor-alerts', {
+          name: 'Doctor OPD Alerts',
+          importance: Notifications.AndroidImportance.HIGH,
+          sound: 'default',
+          enableVibrate: true,
+          vibrationPattern: [0, 250, 250, 250],
+        }).catch(() => {});
+      } catch (_) {}
+    }
+
+    // Deep link response listener for doctor notifications
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      try {
+        const data = response?.notification?.request?.content?.data as Record<string, any> | undefined;
+        if (!navigationRef.isReady()) return;
+
+        const notifType = data?.type || '';
+        if (notifType === 'START_CONSULT' || notifType === 'CONSULTATION') {
+          if (data?.patientId) {
+            setSelectedPatientId(data.patientId);
+            setSelectedPatientName(data.patientName || 'Patient');
+            setSelectedComplaint(data.chiefComplaint);
+          }
+          navigationRef.navigate('NewConsult');
+        } else if (notifType === 'CARE_PLAN' || notifType === 'PATIENT_HISTORY') {
+          navigationRef.navigate('CarePlans');
+        } else {
+          // Default for QUEUE_UPDATE, CALL_NEXT, WALK_IN, etc.
+          navigationRef.navigate('Schedule');
+        }
+      } catch (err) {
+        console.warn('Error handling doctor notification tap:', err);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     const restore = async () => {
@@ -95,7 +143,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <Tab.Navigator
           screenOptions={({ route }) => ({
             headerShown: false,

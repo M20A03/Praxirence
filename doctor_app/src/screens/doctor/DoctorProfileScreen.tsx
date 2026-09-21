@@ -30,11 +30,87 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
   const [isLive, setIsLive] = useState<boolean>(true);
   const [checking, setChecking] = useState<boolean>(false);
   const [biometricEnabled, setBiometricEnabled] = useState<boolean>(false);
+  const [availableDays, setAvailableDays] = useState<string[]>(
+    doctor.available_days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  );
+  const [startTime, setStartTime] = useState<string>(doctor.working_hours_start || '09:00');
+  const [endTime, setEndTime] = useState<string>(doctor.working_hours_end || '18:00');
+  const [unavailableDates, setUnavailableDates] = useState<string[]>(
+    doctor.unavailable_dates || []
+  );
+  const [savingSchedule, setSavingSchedule] = useState<boolean>(false);
 
   useEffect(() => {
     checkHealth();
     loadBiometricSetting();
   }, []);
+
+  const toggleDay = (day: string) => {
+    if (availableDays.includes(day)) {
+      if (availableDays.length === 1) {
+        Alert.alert('Notice', 'At least one practicing day is required.');
+        return;
+      }
+      setAvailableDays(availableDays.filter((d) => d !== day));
+    } else {
+      setAvailableDays([...availableDays, day]);
+    }
+  };
+
+  const handleMarkLeaveToday = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    if (unavailableDates.includes(today)) {
+      Alert.alert('Notice', 'Today is already marked as on leave.');
+      return;
+    }
+    const updated = [...unavailableDates, today];
+    setUnavailableDates(updated);
+    await mobileApi.toggleDoctorLeave(today, 'add', doctor.id);
+    Alert.alert('Leave Activated', `Marked ${today} as On Leave. Patients cannot book slots on this date.`);
+  };
+
+  const handleMarkLeaveTomorrow = async () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    const tomorrow = d.toISOString().split('T')[0];
+    if (unavailableDates.includes(tomorrow)) {
+      Alert.alert('Notice', 'Tomorrow is already marked as on leave.');
+      return;
+    }
+    const updated = [...unavailableDates, tomorrow];
+    setUnavailableDates(updated);
+    await mobileApi.toggleDoctorLeave(tomorrow, 'add', doctor.id);
+    Alert.alert('Leave Activated', `Marked ${tomorrow} as On Leave. Patients cannot book slots on this date.`);
+  };
+
+  const handleCancelLeave = async (dateStr: string) => {
+    const updated = unavailableDates.filter((d) => d !== dateStr);
+    setUnavailableDates(updated);
+    await mobileApi.toggleDoctorLeave(dateStr, 'remove', doctor.id);
+    Alert.alert('Leave Cancelled', `Dr. ${doctor.name} is now available on ${dateStr}.`);
+  };
+
+  const handleSaveSchedule = async () => {
+    setSavingSchedule(true);
+    try {
+      await mobileApi.updateDoctorSchedule(
+        {
+          available_days: availableDays,
+          working_hours_start: startTime,
+          working_hours_end: endTime,
+          unavailable_dates: unavailableDates,
+          clinic_address: doctor.clinic_address,
+          city: doctor.city,
+        },
+        doctor.id
+      );
+      Alert.alert('Practice Schedule Saved', 'Your available days and consultation hours have been updated in the cloud.');
+    } catch (e: any) {
+      Alert.alert('Error', 'Failed to save schedule: ' + e.message);
+    } finally {
+      setSavingSchedule(false);
+    }
+  };
 
   const loadBiometricSetting = async () => {
     try {
@@ -169,6 +245,128 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
             <Text style={styles.infoValue}>{doctor.clinic_name}</Text>
           </View>
         </View>
+
+        <View style={styles.infoRow}>
+          <View style={styles.infoIconBox}>
+            <Ionicons name="location-outline" size={18} color="#0ea5e9" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.infoLabel}>Clinic Location & Area</Text>
+            <Text style={styles.infoValue}>
+              {doctor.clinic_address || '12th Main, Indiranagar'}, {doctor.city || 'Bangalore'} ({doctor.state || 'Karnataka'})
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Practice Schedule & Availability Card */}
+      <View style={styles.sectionCard}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <Text style={styles.sectionTitle}>Practice Schedule & Leave Calendar</Text>
+          <View style={styles.liveSyncBadge}>
+            <Ionicons name="cloud-done-outline" size={12} color="#059669" />
+            <Text style={styles.liveSyncText}>Live Cloud Sync</Text>
+          </View>
+        </View>
+        <Text style={styles.scheduleSubtitle}>
+          Configure practice days, working hours, and out-of-office dates. Patients cannot book slots on leave days.
+        </Text>
+
+        {/* Practicing Days Toggle */}
+        <Text style={styles.subHeadingLabel}>Weekly Practicing Days</Text>
+        <View style={styles.daysRow}>
+          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => {
+            const isActive = availableDays.includes(day);
+            return (
+              <TouchableOpacity
+                key={day}
+                style={[styles.dayPill, isActive && styles.dayPillActive]}
+                onPress={() => toggleDay(day)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.dayPillText, isActive && styles.dayPillTextActive]}>{day}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Working Hours */}
+        <Text style={[styles.subHeadingLabel, { marginTop: 14 }]}>Clinic Consultation Hours</Text>
+        <View style={styles.hoursRow}>
+          <View style={styles.hourBox}>
+            <Ionicons name="time-outline" size={16} color={Colors.primary} />
+            <Text style={styles.hourBoxLabel}>Start: {startTime}</Text>
+          </View>
+          <Text style={{ color: Colors.textSecondary, fontWeight: '700' }}>→</Text>
+          <View style={styles.hourBox}>
+            <Ionicons name="time-outline" size={16} color={Colors.primary} />
+            <Text style={styles.hourBoxLabel}>End: {endTime}</Text>
+          </View>
+        </View>
+
+        {/* Leave / Out of Office Section */}
+        <View style={styles.leaveSectionBox}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+            <Ionicons name="calendar-outline" size={16} color="#d97706" />
+            <Text style={styles.leaveSectionTitle}>Mark Out-of-Office / On Leave</Text>
+          </View>
+          <Text style={styles.leaveSectionDesc}>
+            Quickly mark dates as unavailable. When marked on leave, patients attempting to book will see you are unavailable.
+          </Text>
+
+          <View style={styles.leaveQuickActionsRow}>
+            <TouchableOpacity style={styles.quickLeaveBtn} onPress={handleMarkLeaveToday} activeOpacity={0.7}>
+              <Ionicons name="airplane-outline" size={13} color="#b45309" />
+              <Text style={styles.quickLeaveBtnText}>Mark Today On Leave</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.quickLeaveBtn} onPress={handleMarkLeaveTomorrow} activeOpacity={0.7}>
+              <Ionicons name="calendar-clear-outline" size={13} color="#b45309" />
+              <Text style={styles.quickLeaveBtnText}>Mark Tomorrow</Text>
+            </TouchableOpacity>
+          </View>
+
+          {unavailableDates.length > 0 ? (
+            <View style={{ marginTop: 10 }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.textSecondary, marginBottom: 6 }}>
+                Active Leave Dates ({unavailableDates.length}):
+              </Text>
+              {unavailableDates.map((dt) => (
+                <View key={dt} style={styles.leaveDateItem}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Ionicons name="close-circle" size={14} color="#ef4444" />
+                    <Text style={styles.leaveDateText}>{dt} (Unavailable / On Leave)</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => handleCancelLeave(dt)}>
+                    <Text style={styles.cancelLeaveText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.noLeaveBox}>
+              <Ionicons name="checkmark-circle-outline" size={14} color="#10b981" />
+              <Text style={styles.noLeaveText}>No active leaves scheduled • Practicing as normal</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Save Schedule Button */}
+        <TouchableOpacity
+          style={[styles.saveScheduleBtn, savingSchedule && { opacity: 0.7 }]}
+          onPress={handleSaveSchedule}
+          disabled={savingSchedule}
+          activeOpacity={0.8}
+        >
+          {savingSchedule ? (
+            <ActivityIndicator size="small" color="#ffffff" />
+          ) : (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="save-outline" size={16} color="#ffffff" />
+              <Text style={styles.saveScheduleBtnText}>Save Practice Schedule</Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* Security & Zero Audio Retention Card */}
@@ -313,36 +511,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    backgroundColor: '#F0FDF4',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 20,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.3)',
+    borderColor: '#DCFCE7',
   },
   verifiedText: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.semiBold,
     fontSize: FontSize.xs,
-    color: '#10b981',
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    color: '#166534',
+    letterSpacing: 0.2,
   },
   doctorName: {
-    fontFamily: FontFamily.display,
+    fontFamily: FontFamily.bold,
     fontSize: FontSize.xl,
     color: Colors.textPrimary,
-    fontWeight: '800',
     textAlign: 'center',
   },
   specialtyText: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.medium,
     fontSize: FontSize.sm,
-    color: '#0ea5e9',
+    color: Colors.primary,
     marginTop: 2,
-    fontWeight: '600',
   },
   clinicText: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginTop: 2,
@@ -356,10 +551,9 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   sectionTitle: {
-    fontFamily: FontFamily.display,
+    fontFamily: FontFamily.semiBold,
     fontSize: FontSize.sm,
     color: Colors.textPrimary,
-    fontWeight: '700',
     marginBottom: 12,
   },
   infoRow: {
@@ -379,15 +573,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   infoLabel: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
   },
   infoValue: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.semiBold,
     fontSize: FontSize.sm,
     color: Colors.textPrimary,
-    fontWeight: '600',
     marginTop: 1,
   },
   securityRow: {
@@ -397,13 +590,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   securityHeading: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.semiBold,
     fontSize: FontSize.xs,
     color: Colors.textPrimary,
-    fontWeight: '700',
   },
   securityDesc: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     lineHeight: 16,
@@ -416,10 +608,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   pingBtnText: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.medium,
     fontSize: FontSize.xs,
-    color: '#0ea5e9',
-    fontWeight: '600',
+    color: Colors.primary,
   },
   telemetryBox: {
     backgroundColor: '#F8FAFC',
@@ -435,15 +626,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   telemetryLabel: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
   },
   telemetryVal: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.semiBold,
     fontSize: FontSize.xs,
     color: Colors.textPrimary,
-    fontWeight: '700',
   },
   statusDot: {
     width: 7,
@@ -463,16 +653,179 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   logoutBtnText: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.semiBold,
     fontSize: FontSize.sm,
     color: '#ef4444',
-    fontWeight: '700',
   },
   versionText: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     textAlign: 'center',
     marginTop: 16,
+  },
+  liveSyncBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  liveSyncText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 10,
+    color: '#059669',
+  },
+  scheduleSubtitle: {
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+    marginBottom: 12,
+    lineHeight: 16,
+  },
+  subHeadingLabel: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: FontSize.xs,
+    color: Colors.textPrimary,
+    marginBottom: 8,
+  },
+  daysRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 4,
+  },
+  dayPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  dayPillActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  dayPillText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+  },
+  dayPillTextActive: {
+    color: '#FFFFFF',
+  },
+  hoursRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  hourBox: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 10,
+  },
+  hourBoxLabel: {
+    fontFamily: FontFamily.medium,
+    fontSize: FontSize.xs,
+    color: Colors.textPrimary,
+  },
+  leaveSectionBox: {
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 14,
+  },
+  leaveSectionTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.xs,
+    color: '#92400E',
+  },
+  leaveSectionDesc: {
+    fontFamily: FontFamily.regular,
+    fontSize: 11,
+    color: '#78350F',
+    lineHeight: 15,
+    marginBottom: 8,
+  },
+  leaveQuickActionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  quickLeaveBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+    paddingVertical: 7,
+    borderRadius: 8,
+  },
+  quickLeaveBtnText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 11,
+    color: '#92400E',
+  },
+  leaveDateItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 4,
+  },
+  leaveDateText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 11,
+    color: '#B91C1C',
+  },
+  cancelLeaveText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 11,
+    color: Colors.primary,
+  },
+  noLeaveBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 6,
+  },
+  noLeaveText: {
+    fontFamily: FontFamily.regular,
+    fontSize: 11,
+    color: '#047857',
+  },
+  saveScheduleBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 14,
+  },
+  saveScheduleBtnText: {
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.sm,
+    color: '#FFFFFF',
   },
 });

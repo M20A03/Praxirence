@@ -195,9 +195,8 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
                       <Text
                         style={{
                           fontSize: FontSize.xs,
-                          fontFamily: FontFamily.mono,
+                          fontFamily: FontFamily.medium,
                           color: pat.consent_status ? '#10b981' : '#f59e0b',
-                          fontWeight: '600',
                         }}
                       >
                         {pat.consent_status ? 'DPDP Consent Active' : 'Consent Pending'}
@@ -231,7 +230,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
       </ScrollView>
 
       {/* Patient Care Plans & History Modal */}
-      <Modal visible={!!selectedPatient} transparent animationType="slide">
+      <Modal visible={!!selectedPatient} transparent animationType="slide" onRequestClose={() => setSelectedPatient(null)}>
         <View style={styles.modalOverlay}>
           <View style={styles.carePlansModalContent}>
             {/* Header */}
@@ -372,7 +371,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
       </Modal>
 
       {/* Add Patient Modal */}
-      <Modal visible={modalVisible} transparent animationType="slide">
+      <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
@@ -522,7 +521,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   patientPhone: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginTop: 2,
@@ -629,20 +628,19 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   modalSubtitle: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.semiBold,
     fontSize: FontSize.xs,
-    color: '#0ea5e9',
-    letterSpacing: 1,
+    color: Colors.primary,
+    letterSpacing: 0.5,
     marginBottom: 2,
   },
   modalTitle: {
-    fontFamily: FontFamily.display,
+    fontFamily: FontFamily.bold,
     fontSize: FontSize.xl,
     color: Colors.textPrimary,
-    fontWeight: '700',
   },
   modalPhone: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginTop: 2,
@@ -655,7 +653,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginTop: 10,
@@ -665,14 +663,13 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   emptyCarePlansTitle: {
-    fontFamily: FontFamily.display,
+    fontFamily: FontFamily.bold,
     fontSize: FontSize.md,
     color: Colors.textPrimary,
-    fontWeight: '700',
     marginTop: 12,
   },
   emptyCarePlansSubtitle: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     textAlign: 'center',
@@ -689,24 +686,28 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   startFirstConsultBtnText: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.semiBold,
     fontSize: FontSize.sm,
     color: '#ffffff',
-    fontWeight: '700',
   },
   archiveHeader: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.semiBold,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginBottom: 12,
   },
   visitCard: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderRadius: 14,
     padding: 16,
     marginBottom: 14,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
   },
   visitHeader: {
     flexDirection: 'row',
@@ -715,36 +716,34 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   visitDate: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.medium,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
   },
   visitDiagnosis: {
-    fontFamily: FontFamily.display,
+    fontFamily: FontFamily.bold,
     fontSize: FontSize.md,
     color: Colors.textPrimary,
-    fontWeight: '700',
     marginTop: 2,
   },
   verifiedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#ECFDF5',
+    backgroundColor: '#F0FDF4',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#A7F3D0',
+    borderColor: '#DCFCE7',
   },
   verifiedText: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.semiBold,
     fontSize: FontSize.xs,
-    color: '#059669',
-    fontWeight: '700',
+    color: '#166534',
   },
   summarySection: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
     borderRadius: 10,
     padding: 12,
     marginBottom: 10,
@@ -752,26 +751,27 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   sectionLabel: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.semiBold,
     fontSize: FontSize.xs,
-    color: '#0284C7',
-    fontWeight: '700',
+    color: Colors.textSecondary,
     marginBottom: 4,
     letterSpacing: 0.5,
   },
   summaryContent: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
     color: Colors.textPrimary,
     lineHeight: 18,
   },
   medicinesSection: {
-    backgroundColor: '#F0FDFA',
+    backgroundColor: '#FFFFFF',
     borderRadius: 10,
     padding: 12,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#CCFBF1',
+    borderColor: '#E2E8F0',
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.primary,
   },
   medicineRow: {
     flexDirection: 'row',
@@ -783,32 +783,31 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: Colors.teal || '#0D9488',
+    backgroundColor: Colors.primary,
     marginTop: 6,
   },
   medName: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.semiBold,
     fontSize: FontSize.sm,
     color: Colors.textPrimary,
-    fontWeight: '700',
   },
   medDose: {
-    color: '#0D9488',
-    fontWeight: '600',
+    color: Colors.primary,
+    fontFamily: FontFamily.medium,
   },
   medInstructions: {
-    fontFamily: FontFamily.sans,
+    fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginTop: 1,
   },
   remindersSection: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#F8FAFC',
     borderRadius: 10,
     padding: 12,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
+    borderColor: '#E2E8F0',
   },
   remindersChipsRow: {
     flexDirection: 'row',
@@ -825,20 +824,21 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#BAE6FD',
+    borderColor: '#E2E8F0',
   },
   reminderChipText: {
-    fontFamily: FontFamily.mono,
+    fontFamily: FontFamily.medium,
     fontSize: FontSize.xs,
-    color: '#0369A1',
-    fontWeight: '600',
+    color: Colors.textSecondary,
   },
   adviceSection: {
-    backgroundColor: '#FFFBEB',
+    backgroundColor: '#F8FAFC',
     borderRadius: 10,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#FDE68A',
+    borderColor: '#E2E8F0',
+    borderLeftWidth: 3,
+    borderLeftColor: '#F59E0B',
   },
   adviceContent: {
     fontFamily: FontFamily.sans,

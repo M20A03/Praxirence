@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     # Redis & Background Tasks
     REDIS_URL: str = "redis://localhost:6379/0"
 
+    # Google Gemini AI (Multimodal Audio & Clinical Extraction)
+    GEMINI_API_KEY: Optional[str] = None
+    GEMINI_MODEL: str = "gemini-3.6-flash"
+
     # OpenAI API (Whisper & GPT-4)
     OPENAI_API_KEY: Optional[str] = None
     OPENAI_WHISPER_MODEL: str = "whisper-1"
@@ -46,6 +50,14 @@ class Settings(BaseSettings):
 
     # Firebase Cloud Messaging
     FIREBASE_CREDENTIALS_PATH: Optional[str] = None
+    FIREBASE_CREDENTIALS_BASE64: Optional[str] = None
+
+    # Google Auth & Cloud
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    GOOGLE_PROJECT_ID: Optional[str] = None
+
+    # Groq API (Ultra-low Latency LPU Whisper & Inference)
+    GROQ_API_KEY: Optional[str] = None
 
     # SMTP / Noreply Email Configuration (Email OTP Verification)
     SMTP_HOST: Optional[str] = None

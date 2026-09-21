@@ -5,12 +5,14 @@ import {
   Text,
   StyleSheet,
   StatusBar,
+  Modal,
 } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import * as Notifications from 'expo-notifications';
 
 import { Colors } from './src/theme/colors';
 import { FontFamily, FontSize } from './src/theme/typography';
@@ -27,6 +29,9 @@ import { ChatbotScreen } from './src/screens/ChatbotScreen';
 import { DoctorSearchScreen } from './src/screens/DoctorSearchScreen';
 
 import { mobileApi } from './src/services/api';
+import { NotificationService } from './src/services/NotificationService';
+
+export const navigationRef = createNavigationContainerRef<any>();
 
 const Tab = createBottomTabNavigator();
 
@@ -34,6 +39,43 @@ export default function App() {
   const [showSplash, setShowSplash] = useState<boolean>(true);
   const [currentPatient, setCurrentPatient] = useState<PatientUser | null>(null);
   const [loadingSession, setLoadingSession] = useState<boolean>(true);
+  const [showConsentModal, setShowConsentModal] = useState<boolean>(false);
+
+  useEffect(() => {
+    // Initialize notification channels for Android
+    NotificationService.initChannels().catch(() => {});
+
+    // Deep link response listener when user taps a push notification
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      try {
+        const data = response?.notification?.request?.content?.data as Record<string, any> | undefined;
+        if (!navigationRef.isReady()) return;
+
+        const notifType = data?.type || '';
+        if (
+          notifType === 'NEW_PRESCRIPTION' ||
+          notifType === 'medicine_reminder' ||
+          notifType === 'vault' ||
+          notifType === 'CARE_PLAN'
+        ) {
+          navigationRef.navigate('Vault');
+        } else if (notifType === 'SPECIALISTS' || notifType === 'DOCTOR_SEARCH') {
+          navigationRef.navigate('Specialists');
+        } else if (notifType === 'CHATBOT') {
+          navigationRef.navigate('Assistant');
+        } else {
+          // Default for QUEUE_UPDATE, CALL_NEXT, DOCTOR_LEAVE, DOCTOR_DELAY
+          navigationRef.navigate('Today');
+        }
+      } catch (err) {
+        console.warn('Error navigating on notification response:', err);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     const restore = async () => {
@@ -98,7 +140,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <Tab.Navigator
           screenOptions={({ route }) => ({
             headerShown: false,
@@ -112,12 +154,10 @@ export default function App() {
                 iconName = focused ? 'today' : 'today-outline';
               } else if (route.name === 'Vault') {
                 iconName = focused ? 'document-text' : 'document-text-outline';
+              } else if (route.name === 'Specialists') {
+                iconName = focused ? 'medical' : 'medical-outline';
               } else if (route.name === 'Assistant') {
                 iconName = focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline';
-              } else if (route.name === 'Specialists') {
-                iconName = focused ? 'search' : 'search-outline';
-              } else if (route.name === 'Consent') {
-                iconName = focused ? 'shield-checkmark' : 'shield-checkmark-outline';
               } else if (route.name === 'Profile') {
                 iconName = focused ? 'person-circle' : 'person-circle-outline';
               }
@@ -139,7 +179,7 @@ export default function App() {
             {(props) => (
               <DashboardScreen
                 user={currentPatient}
-                onNavigateToConsent={() => props.navigation.navigate('Consent')}
+                onNavigateToConsent={() => setShowConsentModal(true)}
                 onNavigateToChatbot={() => props.navigation.navigate('Assistant')}
                 onNavigateToDoctors={() => props.navigation.navigate('Specialists')}
                 onNavigateToVisits={() => props.navigation.navigate('Vault')}
@@ -152,6 +192,13 @@ export default function App() {
             options={{ tabBarLabel: 'Vault' }}
           >
             {() => <VisitsScreen user={currentPatient} />}
+          </Tab.Screen>
+
+          <Tab.Screen
+            name="Specialists"
+            options={{ tabBarLabel: 'Doctors' }}
+          >
+            {() => <DoctorSearchScreen user={currentPatient} />}
           </Tab.Screen>
 
           <Tab.Screen
@@ -168,25 +215,6 @@ export default function App() {
           </Tab.Screen>
 
           <Tab.Screen
-            name="Specialists"
-            options={{ tabBarLabel: 'Doctors' }}
-          >
-            {() => <DoctorSearchScreen user={currentPatient} />}
-          </Tab.Screen>
-
-          <Tab.Screen
-            name="Consent"
-            options={{ tabBarLabel: 'Consent' }}
-          >
-            {() => (
-              <ConsentScreen
-                user={currentPatient}
-                onConsentUpdated={handleConsentUpdated}
-              />
-            )}
-          </Tab.Screen>
-
-          <Tab.Screen
             name="Profile"
             options={{ tabBarLabel: 'Profile' }}
           >
@@ -195,11 +223,28 @@ export default function App() {
                 user={currentPatient}
                 role="patient"
                 onLogout={handleLogout}
+                onNavigateToConsent={() => setShowConsentModal(true)}
               />
             )}
           </Tab.Screen>
         </Tab.Navigator>
       </NavigationContainer>
+
+      {/* Global ABDM & DPDP Consent Modal with Android Back Gesture Handling */}
+      <Modal
+        visible={showConsentModal}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowConsentModal(false)}
+      >
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+          <ConsentScreen
+            user={currentPatient}
+            onConsentUpdated={handleConsentUpdated}
+            onClose={() => setShowConsentModal(false)}
+          />
+        </SafeAreaView>
+      </Modal>
     </SafeAreaProvider>
   );
 }

@@ -16,7 +16,7 @@ from app.models.user import User
 from app.models.patient import Patient
 from app.models.audit_log import AuditLog
 from app import auth
-from app.routes import visits, patients, recordings, chat, realtime
+from app.routes import visits, patients, recordings, chat, realtime, doctors
 from ml.inference import model_loader
 
 # Configure logging
@@ -57,6 +57,32 @@ def auto_migrate_schema():
                 "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45);",
                 "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS details JSONB;",
                 "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS timestamp TIMESTAMP;",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS city VARCHAR(100) DEFAULT 'Bangalore';",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS state VARCHAR(100) DEFAULT 'Karnataka';",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS pincode VARCHAR(20) DEFAULT '560038';",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS clinic_address VARCHAR(255) DEFAULT '12th Main, Indiranagar, Bangalore';",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION DEFAULT 12.9716;",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION DEFAULT 77.5946;",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS available_days JSONB DEFAULT '[\"Mon\", \"Tue\", \"Wed\", \"Thu\", \"Fri\", \"Sat\"]';",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS working_hours_start VARCHAR(10) DEFAULT '09:00';",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS working_hours_end VARCHAR(10) DEFAULT '18:00';",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS slot_duration_mins INTEGER DEFAULT 30;",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS unavailable_dates JSONB DEFAULT '[]';",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS consultation_fee INTEGER DEFAULT 500;",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS current_delay_mins INTEGER DEFAULT 0;",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS delay_updated_at TIMESTAMP;",
+                "ALTER TABLE patients ADD COLUMN IF NOT EXISTS primary_account_phone VARCHAR(32);",
+                "ALTER TABLE patients ADD COLUMN IF NOT EXISTS family_relation VARCHAR(30) DEFAULT 'Self';",
+                "ALTER TABLE visits ADD COLUMN IF NOT EXISTS appointment_date VARCHAR(20);",
+                "ALTER TABLE visits ADD COLUMN IF NOT EXISTS time_slot VARCHAR(20);",
+                "ALTER TABLE visits ADD COLUMN IF NOT EXISTS booking_type VARCHAR(30) DEFAULT 'in_person';",
+                "ALTER TABLE visits ADD COLUMN IF NOT EXISTS chief_complaint TEXT;",
+                "ALTER TABLE visits ADD COLUMN IF NOT EXISTS token_number INTEGER;",
+                "ALTER TABLE visits ADD COLUMN IF NOT EXISTS triage_level VARCHAR(30) DEFAULT 'Routine';",
+                "ALTER TABLE visits ADD COLUMN IF NOT EXISTS skip_count INTEGER DEFAULT 0;",
+                "ALTER TABLE visits ADD COLUMN IF NOT EXISTS deferred_at TIMESTAMP;",
+                "ALTER TABLE visits ADD COLUMN IF NOT EXISTS signature_hash VARCHAR(64);",
+                "ALTER TABLE visits ADD COLUMN IF NOT EXISTS retention_until TIMESTAMP;",
             ]
             for ddl in ddls:
                 try:
@@ -67,7 +93,58 @@ def auto_migrate_schema():
                     logger.warning(f"DDL execution notice ({ddl}): {e}")
             logger.info("PostgreSQL schema auto-migration completed successfully.")
         elif dialect == "sqlite":
-            logger.info("SQLite schema verified.")
+            with engine.connect() as conn:
+                # check users columns
+                user_cols = [row[1] for row in conn.execute(text("PRAGMA table_info(users)")).fetchall()]
+                user_ddls = {
+                    "city": "ALTER TABLE users ADD COLUMN city VARCHAR(100) DEFAULT 'Bangalore'",
+                    "state": "ALTER TABLE users ADD COLUMN state VARCHAR(100) DEFAULT 'Karnataka'",
+                    "pincode": "ALTER TABLE users ADD COLUMN pincode VARCHAR(20) DEFAULT '560038'",
+                    "clinic_address": "ALTER TABLE users ADD COLUMN clinic_address VARCHAR(255) DEFAULT '12th Main, Indiranagar, Bangalore'",
+                    "latitude": "ALTER TABLE users ADD COLUMN latitude FLOAT DEFAULT 12.9716",
+                    "longitude": "ALTER TABLE users ADD COLUMN longitude FLOAT DEFAULT 77.5946",
+                    "available_days": "ALTER TABLE users ADD COLUMN available_days JSON DEFAULT '[\"Mon\", \"Tue\", \"Wed\", \"Thu\", \"Fri\", \"Sat\"]'",
+                    "working_hours_start": "ALTER TABLE users ADD COLUMN working_hours_start VARCHAR(10) DEFAULT '09:00'",
+                    "working_hours_end": "ALTER TABLE users ADD COLUMN working_hours_end VARCHAR(10) DEFAULT '18:00'",
+                    "slot_duration_mins": "ALTER TABLE users ADD COLUMN slot_duration_mins INTEGER DEFAULT 30",
+                    "unavailable_dates": "ALTER TABLE users ADD COLUMN unavailable_dates JSON DEFAULT '[]'",
+                    "consultation_fee": "ALTER TABLE users ADD COLUMN consultation_fee INTEGER DEFAULT 500",
+                    "current_delay_mins": "ALTER TABLE users ADD COLUMN current_delay_mins INTEGER DEFAULT 0",
+                    "delay_updated_at": "ALTER TABLE users ADD COLUMN delay_updated_at TIMESTAMP",
+                }
+                for col, ddl in user_ddls.items():
+                    if col not in user_cols:
+                        conn.execute(text(ddl))
+
+                # check patients columns
+                patient_cols = [row[1] for row in conn.execute(text("PRAGMA table_info(patients)")).fetchall()]
+                patient_ddls = {
+                    "primary_account_phone": "ALTER TABLE patients ADD COLUMN primary_account_phone VARCHAR(32)",
+                    "family_relation": "ALTER TABLE patients ADD COLUMN family_relation VARCHAR(30) DEFAULT 'Self'",
+                }
+                for col, ddl in patient_ddls.items():
+                    if col not in patient_cols:
+                        conn.execute(text(ddl))
+
+                # check visits columns
+                visit_cols = [row[1] for row in conn.execute(text("PRAGMA table_info(visits)")).fetchall()]
+                visit_ddls = {
+                    "appointment_date": "ALTER TABLE visits ADD COLUMN appointment_date VARCHAR(20)",
+                    "time_slot": "ALTER TABLE visits ADD COLUMN time_slot VARCHAR(20)",
+                    "booking_type": "ALTER TABLE visits ADD COLUMN booking_type VARCHAR(30) DEFAULT 'in_person'",
+                    "chief_complaint": "ALTER TABLE visits ADD COLUMN chief_complaint TEXT",
+                    "token_number": "ALTER TABLE visits ADD COLUMN token_number INTEGER",
+                    "triage_level": "ALTER TABLE visits ADD COLUMN triage_level VARCHAR(30) DEFAULT 'Routine'",
+                    "skip_count": "ALTER TABLE visits ADD COLUMN skip_count INTEGER DEFAULT 0",
+                    "deferred_at": "ALTER TABLE visits ADD COLUMN deferred_at TIMESTAMP",
+                    "signature_hash": "ALTER TABLE visits ADD COLUMN signature_hash VARCHAR(64)",
+                    "retention_until": "ALTER TABLE visits ADD COLUMN retention_until TIMESTAMP",
+                }
+                for col, ddl in visit_ddls.items():
+                    if col not in visit_cols:
+                        conn.execute(text(ddl))
+                conn.commit()
+            logger.info("SQLite schema auto-migration completed successfully.")
     except Exception as e:
         logger.error(f"Error during schema auto-migration: {e}", exc_info=True)
 
@@ -85,7 +162,19 @@ def seed_initial_data():
                 phone="+919876543210",
                 specialty="Chief Medical Officer & Physician",
                 clinic_name="Praxirence Clinical Centre",
-                reg_number="NMC-2024-84920"
+                reg_number="NMC-2024-84920",
+                city="Bangalore",
+                state="Karnataka",
+                pincode="560038",
+                clinic_address="12th Main, Indiranagar, Bangalore",
+                latitude=12.9716,
+                longitude=77.5946,
+                available_days=["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+                working_hours_start="09:00",
+                working_hours_end="18:00",
+                slot_duration_mins=30,
+                unavailable_dates=[],
+                consultation_fee=500
             )
             db.add(real_doctor)
             db.commit()
@@ -100,7 +189,146 @@ def seed_initial_data():
                 doctor.clinic_name = "Praxirence Clinical Centre"
             if hasattr(doctor, "reg_number") and not doctor.reg_number:
                 doctor.reg_number = "NMC-2024-84920"
+            if hasattr(doctor, "city") and not doctor.city:
+                doctor.city = "Bangalore"
+            if hasattr(doctor, "state") and not doctor.state:
+                doctor.state = "Karnataka"
+            if hasattr(doctor, "clinic_address") and not doctor.clinic_address:
+                doctor.clinic_address = "12th Main, Indiranagar, Bangalore"
+            if hasattr(doctor, "latitude") and not doctor.latitude:
+                doctor.latitude = 12.9716
+            if hasattr(doctor, "longitude") and not doctor.longitude:
+                doctor.longitude = 77.5946
+            if hasattr(doctor, "available_days") and not doctor.available_days:
+                doctor.available_days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+            if hasattr(doctor, "working_hours_start") and not doctor.working_hours_start:
+                doctor.working_hours_start = "09:00"
+            if hasattr(doctor, "working_hours_end") and not doctor.working_hours_end:
+                doctor.working_hours_end = "18:00"
+            if hasattr(doctor, "consultation_fee") and not doctor.consultation_fee:
+                doctor.consultation_fee = 500
             db.commit()
+
+        # Seed network doctors across Karnataka and Uttar Pradesh
+        extra_clinicians = [
+            {
+                "email": "dr.aarav.mehta@praxirence.com",
+                "name": "Dr. Aarav Mehta",
+                "phone": "+919820011223",
+                "specialty": "Pediatrics & Child Specialist",
+                "clinic_name": "Apollo Clinic Indira Nagar",
+                "reg_number": "UPMC-2021-49201",
+                "city": "Lucknow",
+                "state": "Uttar Pradesh",
+                "pincode": "226016",
+                "clinic_address": "Sector 14, Indira Nagar, Lucknow",
+                "latitude": 26.8833,
+                "longitude": 80.9984,
+                "available_days": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+                "working_hours_start": "10:00",
+                "working_hours_end": "17:00",
+                "consultation_fee": 600
+            },
+            {
+                "email": "dr.priya.sharma@praxirence.com",
+                "name": "Dr. Priya Sharma",
+                "phone": "+919830022334",
+                "specialty": "Cardiology & Preventive Heart Care",
+                "clinic_name": "Swaroop Heart & Vitals Centre",
+                "reg_number": "UPMC-2019-33829",
+                "city": "Kanpur",
+                "state": "Uttar Pradesh",
+                "pincode": "208002",
+                "clinic_address": "Swaroop Nagar, Kanpur",
+                "latitude": 26.4755,
+                "longitude": 80.3150,
+                "available_days": ["Mon", "Wed", "Fri", "Sat"],
+                "working_hours_start": "09:30",
+                "working_hours_end": "16:30",
+                "consultation_fee": 800
+            },
+            {
+                "email": "dr.vikram.gowda@praxirence.com",
+                "name": "Dr. Vikram Gowda",
+                "phone": "+919840033445",
+                "specialty": "Orthopedics & Joint Care",
+                "clinic_name": "Mysore Bone & Joint Specialty",
+                "reg_number": "KMC-2020-58190",
+                "city": "Mysore",
+                "state": "Karnataka",
+                "pincode": "570012",
+                "clinic_address": "Jayalakshmipuram, Mysore",
+                "latitude": 12.3168,
+                "longitude": 76.6358,
+                "available_days": ["Mon", "Tue", "Thu", "Fri", "Sat"],
+                "working_hours_start": "09:00",
+                "working_hours_end": "18:00",
+                "consultation_fee": 550
+            },
+            {
+                "email": "dr.ananya.verma@praxirence.com",
+                "name": "Dr. Ananya Verma",
+                "phone": "+919850044556",
+                "specialty": "Pulmonology & Chest Medicine",
+                "clinic_name": "Noida Respiratory Health Institute",
+                "reg_number": "DMC-2022-77189",
+                "city": "Noida",
+                "state": "Uttar Pradesh",
+                "pincode": "201309",
+                "clinic_address": "Block B, Sector 62, Noida",
+                "latitude": 28.6256,
+                "longitude": 77.3732,
+                "available_days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+                "working_hours_start": "09:00",
+                "working_hours_end": "19:00",
+                "consultation_fee": 700
+            },
+            {
+                "email": "dr.rajesh.tripathi@praxirence.com",
+                "name": "Dr. Rajesh Tripathi",
+                "phone": "+919860055667",
+                "specialty": "General Physician & Diabetologist",
+                "clinic_name": "Kashi Clinical Wellness",
+                "reg_number": "UPMC-2018-29401",
+                "city": "Varanasi",
+                "state": "Uttar Pradesh",
+                "pincode": "221010",
+                "clinic_address": "Sigra, Varanasi",
+                "latitude": 25.3176,
+                "longitude": 82.9739,
+                "available_days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+                "working_hours_start": "08:30",
+                "working_hours_end": "17:30",
+                "consultation_fee": 450
+            }
+        ]
+
+        for item in extra_clinicians:
+            existing = db.query(User).filter(User.email == item["email"]).first()
+            if not existing:
+                new_doc = User(
+                    email=item["email"],
+                    hashed_password=get_password_hash("Doctor123!"),
+                    name=item["name"],
+                    phone=item["phone"],
+                    specialty=item["specialty"],
+                    clinic_name=item["clinic_name"],
+                    reg_number=item["reg_number"],
+                    city=item["city"],
+                    state=item["state"],
+                    pincode=item["pincode"],
+                    clinic_address=item["clinic_address"],
+                    latitude=item["latitude"],
+                    longitude=item["longitude"],
+                    available_days=item["available_days"],
+                    working_hours_start=item["working_hours_start"],
+                    working_hours_end=item["working_hours_end"],
+                    slot_duration_mins=30,
+                    unavailable_dates=[],
+                    consultation_fee=item["consultation_fee"]
+                )
+                db.add(new_doc)
+        db.commit()
 
         sample_patient = db.query(Patient).first()
         if not sample_patient:
@@ -249,6 +477,9 @@ async def audit_logging_middleware(request: Request, call_next):
 app.include_router(auth.router)
 app.include_router(patients.router)
 app.include_router(visits.router)
+app.include_router(visits.router, prefix="/api/v1")
+app.include_router(doctors.router)
+app.include_router(doctors.router, prefix="/api/v1")
 app.include_router(recordings.router)
 app.include_router(chat.router)
 app.include_router(realtime.router)

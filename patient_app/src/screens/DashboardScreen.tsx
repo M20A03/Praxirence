@@ -10,18 +10,21 @@ import {
   Modal,
   TextInput,
   Image,
+  BackHandler,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
-import { PatientUser, Visit, MedicineItem, ReminderItem, VitalsRecord } from '../types';
+import { PatientUser, Visit, MedicineItem, ReminderItem, VitalsRecord, QueueStatusResponse, FamilyMemberProfile } from '../types';
 import { mobileApi } from '../services/api';
 import { registerForPushNotificationsAsync } from '../services/notifications';
+import { patientRealtime } from '../services/realtime';
 import { BrandLogoMobile } from '../components/BrandLogoMobile';
 import { PillTrackerCard } from '../components/PillTrackerCard';
 import { VitalsTrackerModal } from '../components/VitalsTrackerModal';
 import { EmptyState } from '../components/EmptyState';
 import * as Haptics from 'expo-haptics';
+import { NotificationService } from '../services/NotificationService';
 import {
   SupportedLanguage,
   SUPPORTED_LANGUAGES,
@@ -74,10 +77,27 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   // Multilingual State
   const [currentLang, setCurrentLang] = useState<SupportedLanguage>('en');
   const [showLangModal, setShowLangModal] = useState<boolean>(false);
+  const [queueStatus, setQueueStatus] = useState<QueueStatusResponse | null>(null);
+
+  // Family Member Management State
+  const [familyMembers, setFamilyMembers] = useState<FamilyMemberProfile[]>([]);
+  const [selectedMemberId, setSelectedMemberId] = useState<string>('self');
+  const [showAddFamilyModal, setShowAddFamilyModal] = useState<boolean>(false);
+  const [newMemberName, setNewMemberName] = useState<string>('');
+  const [newMemberRelation, setNewMemberRelation] = useState<'child' | 'spouse' | 'parent' | 'other'>('child');
+  const [newMemberDob, setNewMemberDob] = useState<string>('');
+  const [savingMember, setSavingMember] = useState<boolean>(false);
+
+  // Doctor Leave / Reschedule Alert State
+  const [pendingReschedules, setPendingReschedules] = useState<Visit[]>([]);
+  const [showRescheduleModal, setShowRescheduleModal] = useState<boolean>(false);
+  const [selectedRescheduleVisit, setSelectedRescheduleVisit] = useState<Visit | null>(null);
+  const [rescheduleSlot, setRescheduleSlot] = useState<string>('10:00 AM');
+  const [rescheduling, setRescheduling] = useState<boolean>(false);
 
   useEffect(() => {
     AsyncStorage.getItem('@praxirence_patient_lang').then((saved) => {
-      if (saved && ['en', 'hi', 'ta', 'te'].includes(saved)) {
+      if (saved && ['en', 'hi', 'kn', 'bho', 'ur', 'ta', 'te', 'mr', 'bn', 'gu', 'pa', 'ml'].includes(saved)) {
         setCurrentLang(saved as SupportedLanguage);
       }
     });
@@ -90,10 +110,78 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   };
 
   useEffect(() => {
+    const onBackPress = () => {
+      if (showAddFamilyModal) {
+        setShowAddFamilyModal(false);
+        return true;
+      }
+      if (showRescheduleModal) {
+        setShowRescheduleModal(false);
+        return true;
+      }
+      if (showVitalsModal) {
+        setShowVitalsModal(false);
+        return true;
+      }
+      if (showLangModal) {
+        setShowLangModal(false);
+        return true;
+      }
+      return false;
+    };
+    const backSub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => backSub.remove();
+  }, [showAddFamilyModal, showRescheduleModal, showVitalsModal, showLangModal]);
+
+  useEffect(() => {
     loadDashboardData();
     loadVitalsData();
     checkPushPermissions();
     measureLatency();
+
+    // Connect Realtime WebSocket for live queue and prescription updates
+    if (user?.id) {
+      patientRealtime.connect(user.id);
+    }
+
+    const unsubQueue = patientRealtime.on('QUEUE_UPDATE', () => {
+      loadDashboardDataSilently();
+    });
+
+    const unsubPrescription = patientRealtime.on('NEW_PRESCRIPTION', () => {
+      loadDashboardDataSilently();
+    });
+
+    const unsubLeave = patientRealtime.on('DOCTOR_LEAVE', () => {
+      loadDashboardDataSilently();
+    });
+
+    const unsubDelay = patientRealtime.on('DOCTOR_DELAY', () => {
+      loadDashboardDataSilently();
+    });
+
+    // 10s auto-polling fallback if WebSocket disconnects
+    const pollInterval = setInterval(() => {
+      loadDashboardDataSilently();
+    }, 10000);
+
+    // Load today's persisted dose compliance
+    const todayStr = new Date().toISOString().slice(0, 10);
+    AsyncStorage.getItem(`@praxirence_doses_${user.id}_${todayStr}`).then((raw) => {
+      if (raw) {
+        try {
+          setTakenReminders(JSON.parse(raw));
+        } catch (_) {}
+      }
+    });
+
+    return () => {
+      unsubQueue();
+      unsubPrescription();
+      unsubLeave();
+      unsubDelay();
+      clearInterval(pollInterval);
+    };
   }, [user.id]);
 
   const measureLatency = async () => {
@@ -103,20 +191,83 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   };
 
   const checkPushPermissions = async () => {
-    const token = await registerForPushNotificationsAsync();
+    const token = await registerForPushNotificationsAsync(user.id);
     if (token) {
       setNotificationsEnabled(true);
+      if (user?.id) {
+        mobileApi.updateFcmToken(user.id, token).catch(() => {});
+      }
     }
+  };
+
+  const syncQueueStatusForVisits = async (visitList: Visit[]) => {
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const activeAppt = visitList.find((v) => {
+      const vDate = v.appointment_date || v.date?.slice(0, 10);
+      return vDate === todayIso && ['scheduled', 'in_progress', 'draft'].includes(v.status);
+    });
+
+    if (activeAppt) {
+      try {
+        const qStatus = await mobileApi.getVisitQueueStatus(activeAppt.id);
+        setQueueStatus(qStatus);
+      } catch (e) {
+        setQueueStatus({
+          visit_id: activeAppt.id,
+          doctor_id: activeAppt.doctor_id || '',
+          doctor_name: activeAppt.doctor_name || 'Dr. Mayank Raj',
+          patient_id: user.id,
+          patient_name: user.name,
+          appointment_date: todayIso,
+          time_slot: activeAppt.time_slot || '10:00 AM',
+          token_number: activeAppt.token_number || 1,
+          token_display: activeAppt.token_display || `PX-0${activeAppt.token_number || 1}`,
+          current_serving_token: 'PX-01',
+          current_serving_token_number: 1,
+          patients_ahead: activeAppt.patients_ahead || 0,
+          estimated_wait_mins: activeAppt.estimated_wait_mins || 0,
+          status: activeAppt.status,
+          clinic_name: activeAppt.clinic_name || 'Praxirence Centre',
+          clinic_address: activeAppt.clinic_address || 'Clinic OPD',
+        });
+      }
+    } else {
+      setQueueStatus(null);
+    }
+  };
+
+  const loadDashboardDataSilently = async () => {
+    try {
+      const [data, reschedules] = await Promise.all([
+        mobileApi.getVisits(user.id),
+        mobileApi.getPendingReschedules(user.id).catch(() => []),
+      ]);
+      if (data && data.length > 0) {
+        setVisits(data);
+        syncQueueStatusForVisits(data);
+      }
+      setPendingReschedules(reschedules || []);
+    } catch (e) {}
   };
 
   const loadDashboardData = async () => {
     const cacheKey = `praxirence_careplan_${user.id}`;
     try {
       setLoading(true);
-      const data = await mobileApi.getVisits(user.id);
-      setVisits(data);
+      const [data, family, reschedules] = await Promise.all([
+        mobileApi.getVisits(user.id),
+        mobileApi.getFamilyMembers(user.id).catch(() => []),
+        mobileApi.getPendingReschedules(user.id).catch(() => []),
+      ]);
+      setVisits(data || []);
+      setFamilyMembers(family || []);
+      setPendingReschedules(reschedules || []);
+
       if (data && data.length > 0) {
         await AsyncStorage.setItem(cacheKey, JSON.stringify(data));
+        // Automatically schedule native recurring alarm notifications
+        NotificationService.scheduleCarePlanReminders(data).catch(() => {});
+        syncQueueStatusForVisits(data);
       }
       setIsOfflineCached(false);
       setIsLive(true);
@@ -130,6 +281,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           const parsed = JSON.parse(cached);
           setVisits(parsed);
           setIsOfflineCached(true);
+          NotificationService.scheduleCarePlanReminders(parsed).catch(() => {});
+          syncQueueStatusForVisits(parsed);
         }
       } catch (cacheErr) {
         console.log('Error reading offline cache:', cacheErr);
@@ -137,6 +290,51 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const handleAddFamilyMember = async () => {
+    if (!newMemberName.trim()) {
+      Alert.alert('Required', 'Please enter the family member full name.');
+      return;
+    }
+    setSavingMember(true);
+    try {
+      await mobileApi.addFamilyMember(
+        user.id,
+        newMemberName.trim(),
+        newMemberRelation,
+        newMemberDob.trim() || undefined
+      );
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
+      Alert.alert('Family Member Added', `${newMemberName.trim()} has been linked to your primary account.`);
+      setShowAddFamilyModal(false);
+      setNewMemberName('');
+      setNewMemberDob('');
+      const updatedList = await mobileApi.getFamilyMembers(user.id);
+      setFamilyMembers(updatedList);
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Could not add family member');
+    } finally {
+      setSavingMember(false);
+    }
+  };
+
+  const handleConfirmReschedule = async () => {
+    if (!selectedRescheduleVisit) return;
+    setRescheduling(true);
+    try {
+      const todayIso = new Date().toISOString().slice(0, 10);
+      await mobileApi.rescheduleVisit(selectedRescheduleVisit.id, todayIso, rescheduleSlot);
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
+      Alert.alert('Rescheduled Successfully', `Your appointment has been rescheduled to ${rescheduleSlot}. Your queue token has been reserved.`);
+      setShowRescheduleModal(false);
+      setSelectedRescheduleVisit(null);
+      loadDashboardData();
+    } catch (e: any) {
+      Alert.alert('Reschedule Failed', e.message || 'Could not reschedule visit');
+    } finally {
+      setRescheduling(false);
     }
   };
 
@@ -186,11 +384,16 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const activeMedicines: MedicineItem[] = latestVisit?.medicines || [];
   const upcomingReminders: ReminderItem[] = latestVisit?.reminders || [];
 
-  const handleMarkTaken = (key: string) => {
+  const handleMarkTaken = async (key: string) => {
     try {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (_) {}
-    setTakenReminders((prev) => ({ ...prev, [key]: true }));
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const updated = { ...takenReminders, [key]: true };
+    setTakenReminders(updated);
+    try {
+      await AsyncStorage.setItem(`@praxirence_doses_${user.id}_${todayStr}`, JSON.stringify(updated));
+    } catch (_) {}
     Alert.alert('Dose Logged', 'Great job staying on track with your medication schedule!');
   };
 
@@ -263,6 +466,67 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </View>
       </View>
 
+      {/* Family Member Profile Selector Chips */}
+      <View style={styles.familyBar}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.familyScroll}>
+          <TouchableOpacity
+            style={[styles.familyChip, selectedMemberId === 'self' && styles.familyChipActive]}
+            onPress={() => setSelectedMemberId('self')}
+          >
+            <Ionicons name="person" size={13} color={selectedMemberId === 'self' ? '#FFFFFF' : '#0D9488'} />
+            <Text style={[styles.familyChipText, selectedMemberId === 'self' && styles.familyChipTextActive]}>
+              Self ({user.name.split(' ')[0]})
+            </Text>
+          </TouchableOpacity>
+
+          {familyMembers.map((member) => (
+            <TouchableOpacity
+              key={member.id}
+              style={[styles.familyChip, selectedMemberId === member.id && styles.familyChipActive]}
+              onPress={() => setSelectedMemberId(member.id)}
+            >
+              <Ionicons name="people" size={13} color={selectedMemberId === member.id ? '#FFFFFF' : '#0D9488'} />
+              <Text style={[styles.familyChipText, selectedMemberId === member.id && styles.familyChipTextActive]}>
+                {member.name} ({member.family_relation})
+              </Text>
+            </TouchableOpacity>
+          ))}
+
+          <TouchableOpacity
+            style={styles.addFamilyChip}
+            onPress={() => setShowAddFamilyModal(true)}
+          >
+            <Ionicons name="add-circle" size={14} color="#0D9488" />
+            <Text style={styles.addFamilyChipText}>+ Add Member</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+
+      {/* Doctor Emergency Leave / Reschedule Alert Banner */}
+      {pendingReschedules.length > 0 && (
+        <View style={styles.rescheduleAlertBanner}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+            <Ionicons name="warning" size={24} color="#DC2626" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rescheduleAlertTitle}>Doctor On Leave — Reschedule Required</Text>
+              <Text style={styles.rescheduleAlertDesc}>
+                Dr. {pendingReschedules[0].doctor_name || 'Your Doctor'} had to take emergency leave. Your appointment slot can be rescheduled now with zero waiting fee.
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.rescheduleActionBtn}
+            onPress={() => {
+              setSelectedRescheduleVisit(pendingReschedules[0]);
+              setShowRescheduleModal(true);
+            }}
+          >
+            <Text style={styles.rescheduleActionBtnText}>Choose Slot</Text>
+            <Ionicons name="calendar" size={14} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Quick Action Navigation Grid with Bespoke Feature Emblems */}
       <View style={styles.quickActionsGrid}>
         <TouchableOpacity
@@ -306,6 +570,95 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </TouchableOpacity>
       </View>
 
+      {/* ==================== LIVE OPD QUEUE POSITION TRACKER ==================== */}
+      {queueStatus && (
+        <View style={styles.liveQueueCard}>
+          <View style={styles.liveQueueHeaderRow}>
+            <View style={styles.liveQueueIndicatorRow}>
+              <View style={styles.liveQueuePulseDot} />
+              <Text style={styles.liveQueueHeaderTitle}>LIVE OPD QUEUE TRACKER</Text>
+            </View>
+            <View style={[
+              styles.liveQueueStatusBadge,
+              { backgroundColor: queueStatus.status === 'in_progress' ? '#DCFCE7' : '#EFF6FF' }
+            ]}>
+              <Text style={[
+                styles.liveQueueStatusBadgeText,
+                { color: queueStatus.status === 'in_progress' ? '#166534' : '#1E40AF' }
+              ]}>
+                {queueStatus.status === 'in_progress' ? 'Consulting Now' : 'In Waiting Lounge'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.liveQueueDoctorInfo}>
+            <Ionicons name="medical" size={15} color={Colors.primary} />
+            <Text style={styles.liveQueueDoctorText}>
+              {queueStatus.doctor_name || 'Dr. Mayank Raj'} • {queueStatus.time_slot}
+            </Text>
+          </View>
+
+          <View style={styles.liveQueueMetricsGrid}>
+            <View style={[styles.liveQueueMetricBox, styles.liveQueueTokenBox]}>
+              <Text style={styles.liveQueueMetricLabel}>YOUR TOKEN</Text>
+              <Text style={styles.liveQueueTokenText}>{queueStatus.token_display || `PX-0${queueStatus.token_number}`}</Text>
+              <Text style={styles.liveQueueSubLabel}>Reserved</Text>
+            </View>
+
+            <View style={[styles.liveQueueMetricBox, styles.liveQueueServingBox]}>
+              <Text style={[styles.liveQueueMetricLabel, { color: '#0369A1' }]}>NOW SERVING</Text>
+              <Text style={[styles.liveQueueTokenText, { color: '#0284C7' }]}>
+                {queueStatus.current_serving_token || 'PX-01'}
+              </Text>
+              <Text style={[styles.liveQueueSubLabel, { color: '#0284C7' }]}>In Chamber</Text>
+            </View>
+
+            <View style={[styles.liveQueueMetricBox, styles.liveQueueWaitBox]}>
+              <Text style={[styles.liveQueueMetricLabel, { color: '#B45309' }]}>ESTIMATED WAIT</Text>
+              <Text style={[styles.liveQueueWaitText, { color: '#D97706' }]}>
+                {queueStatus.patients_ahead === 0
+                  ? 'Next!'
+                  : `~${queueStatus.estimated_wait_mins || (queueStatus.patients_ahead * 15)}m`}
+              </Text>
+              <Text style={[styles.liveQueueSubLabel, { color: '#B45309' }]}>
+                {queueStatus.patients_ahead === 0
+                  ? 'Get Ready'
+                  : `${queueStatus.patients_ahead} patient${queueStatus.patients_ahead > 1 ? 's' : ''} ahead`}
+              </Text>
+            </View>
+          </View>
+
+          {/* Doctor Delay Alert Banner */}
+          {queueStatus.doctor_delay_mins && queueStatus.doctor_delay_mins > 0 ? (
+            <View style={styles.delayAlertRow}>
+              <Ionicons name="time" size={15} color="#D97706" />
+              <Text style={styles.delayAlertText}>
+                Doctor running ~{queueStatus.doctor_delay_mins}m behind schedule. Commute advice updated.
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Commute Guidance / When to Leave Home */}
+          {queueStatus.recommended_departure_time && (
+            <View style={styles.commuteAdvisoryCard}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Ionicons name="navigate-circle" size={18} color="#0D9488" />
+                  <Text style={styles.commuteAdvisoryTitle}>WHEN TO LEAVE HOME</Text>
+                </View>
+                <View style={styles.commuteBadge}>
+                  <Ionicons name="car-outline" size={12} color="#0F766E" />
+                  <Text style={styles.commuteBadgeText}>Leave by {queueStatus.recommended_departure_time}</Text>
+                </View>
+              </View>
+              <Text style={styles.commuteAdvisoryDesc}>
+                Calculated based on live OPD throughput to arrive ~10 mins before your token is called in chamber.
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
+
       {/* Real Interactive Vitals Tracker Card */}
       <View style={styles.vitalsCard}>
         <View style={styles.vitalsHeaderRow}>
@@ -323,69 +676,69 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
         <View style={styles.vitalsGrid}>
           {/* BP */}
-          <View style={[styles.vitalBox, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
+          <View style={styles.vitalBox}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Ionicons name="pulse" size={13} color="#2563EB" />
-              <Text style={[styles.vitalLabel, { color: '#1D4ED8' }]}>Blood Pressure</Text>
+              <Ionicons name="pulse" size={13} color="#0284C7" />
+              <Text style={styles.vitalLabel}>Blood Pressure</Text>
             </View>
-            <Text style={[styles.vitalValue, { color: '#1E40AF' }]}>{vitals.bloodPressureSystolic}/{vitals.bloodPressureDiastolic}</Text>
+            <Text style={styles.vitalValue}>{vitals.bloodPressureSystolic}/{vitals.bloodPressureDiastolic}</Text>
             <Text style={styles.vitalUnit}>mmHg</Text>
-            <View style={[styles.vitalStatusPill, { backgroundColor: '#DBEAFE', flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
+            <View style={[styles.vitalStatusPill, { backgroundColor: vitals.bloodPressureSystolic < 130 ? '#F0FDF4' : '#FFFBEB', flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
               <Ionicons
                 name={vitals.bloodPressureSystolic < 130 ? "checkmark-circle" : "warning"}
                 size={11}
-                color={vitals.bloodPressureSystolic < 130 ? "#1D4ED8" : "#D97706"}
+                color={vitals.bloodPressureSystolic < 130 ? "#16A34A" : "#D97706"}
               />
-              <Text style={[styles.vitalStatusText, { color: '#1E40AF' }]}>
+              <Text style={[styles.vitalStatusText, { color: vitals.bloodPressureSystolic < 130 ? '#16A34A' : '#D97706' }]}>
                 {vitals.bloodPressureSystolic < 130 ? 'Optimal' : 'Elevated'}
               </Text>
             </View>
           </View>
 
           {/* Pulse */}
-          <View style={[styles.vitalBox, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
+          <View style={styles.vitalBox}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Ionicons name="heart" size={13} color="#E11D48" />
-              <Text style={[styles.vitalLabel, { color: '#BE123C' }]}>Heart Rate</Text>
+              <Text style={styles.vitalLabel}>Heart Rate</Text>
             </View>
-            <Text style={[styles.vitalValue, { color: '#9F1239' }]}>{vitals.heartRate}</Text>
+            <Text style={styles.vitalValue}>{vitals.heartRate}</Text>
             <Text style={styles.vitalUnit}>bpm</Text>
-            <View style={[styles.vitalStatusPill, { backgroundColor: '#FFE4E6', flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
-              <Ionicons name="heart" size={11} color="#E11D48" />
-              <Text style={[styles.vitalStatusText, { color: '#BE123C' }]}>Steady</Text>
+            <View style={[styles.vitalStatusPill, { backgroundColor: '#F0FDF4', flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
+              <Ionicons name="heart" size={11} color="#16A34A" />
+              <Text style={[styles.vitalStatusText, { color: '#16A34A' }]}>Steady</Text>
             </View>
           </View>
 
           {/* SpO2 */}
-          <View style={[styles.vitalBox, { backgroundColor: '#ECFEFF', borderColor: '#A5F3FC' }]}>
+          <View style={styles.vitalBox}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Ionicons name="fitness" size={13} color="#0891B2" />
-              <Text style={[styles.vitalLabel, { color: '#0E7490' }]}>Blood Oxygen</Text>
+              <Ionicons name="fitness" size={13} color="#0D9488" />
+              <Text style={styles.vitalLabel}>Blood Oxygen</Text>
             </View>
-            <Text style={[styles.vitalValue, { color: '#155E75' }]}>{vitals.spo2}%</Text>
+            <Text style={styles.vitalValue}>{vitals.spo2}%</Text>
             <Text style={styles.vitalUnit}>SpO2</Text>
-            <View style={[styles.vitalStatusPill, { backgroundColor: '#CFFAFE', flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
+            <View style={[styles.vitalStatusPill, { backgroundColor: vitals.spo2 >= 95 ? '#F0FDF4' : '#FEF2F2', flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
               <Ionicons
                 name={vitals.spo2 >= 95 ? "checkmark-circle" : "warning"}
                 size={11}
-                color={vitals.spo2 >= 95 ? "#0E7490" : "#D97706"}
+                color={vitals.spo2 >= 95 ? "#16A34A" : "#DC2626"}
               />
-              <Text style={[styles.vitalStatusText, { color: '#155E75' }]}>
+              <Text style={[styles.vitalStatusText, { color: vitals.spo2 >= 95 ? '#16A34A' : '#DC2626' }]}>
                 {vitals.spo2 >= 95 ? 'Normal' : 'Low'}
               </Text>
             </View>
           </View>
 
           {/* Sugar */}
-          <View style={[styles.vitalBox, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
+          <View style={styles.vitalBox}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Ionicons name="water" size={13} color="#D97706" />
-              <Text style={[styles.vitalLabel, { color: '#B45309' }]}>Blood Glucose</Text>
+              <Text style={styles.vitalLabel}>Blood Glucose</Text>
             </View>
-            <Text style={[styles.vitalValue, { color: '#92400E' }]}>{vitals.bloodSugar || 96}</Text>
+            <Text style={styles.vitalValue}>{vitals.bloodSugar || 96}</Text>
             <Text style={styles.vitalUnit}>mg/dL</Text>
-            <View style={[styles.vitalStatusPill, { backgroundColor: '#FEF3C7' }]}>
-              <Text style={[styles.vitalStatusText, { color: '#92400E' }]}>Fasting</Text>
+            <View style={[styles.vitalStatusPill, { backgroundColor: '#F8FAFC' }]}>
+              <Text style={[styles.vitalStatusText, { color: '#64748B' }]}>Fasting</Text>
             </View>
           </View>
         </View>
@@ -422,7 +775,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
 
       {/* Daily Pill Tracker & Adherence Streak Checklist */}
-      <PillTrackerCard lang={currentLang} />
+      <PillTrackerCard
+        lang={currentLang}
+        medicines={activeMedicines}
+        reminders={upcomingReminders}
+      />
 
       {/* Next Upcoming Reminder Card */}
       {upcomingReminders.length > 0 && (
@@ -432,7 +789,24 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               <Ionicons name="alarm-outline" size={13} color={Colors.primary} />
               <Text style={styles.nextDoseLabel}>NEXT SCHEDULED DOSE</Text>
             </View>
-            <Text style={styles.nextDoseTime}>{upcomingReminders[0].time}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <TouchableOpacity
+                style={styles.testAlarmPill}
+                onPress={async () => {
+                  try {
+                    await NotificationService.triggerTestReminder(
+                      upcomingReminders[0].medicine_name,
+                      upcomingReminders[0].dosage
+                    );
+                    Alert.alert('Alarm Triggered', 'Medication reminder scheduled to fire in 2 seconds.');
+                  } catch (_) {}
+                }}
+              >
+                <Ionicons name="notifications-outline" size={12} color="#0284C7" />
+                <Text style={styles.testAlarmPillText}>Test Alarm</Text>
+              </TouchableOpacity>
+              <Text style={styles.nextDoseTime}>{upcomingReminders[0].time}</Text>
+            </View>
           </View>
 
           <Text style={styles.nextDoseMedicine}>
@@ -632,27 +1006,147 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             Choose your preferred language for medication schedules and care summaries.
           </Text>
 
-          {SUPPORTED_LANGUAGES.map((lang) => {
-            const isSelected = currentLang === lang.code;
-            return (
-              <TouchableOpacity
-                key={lang.code}
-                style={[styles.langOptionItem, isSelected && styles.langOptionSelected]}
-                onPress={() => handleSelectLang(lang.code)}
-                activeOpacity={0.7}
-              >
-                <View>
-                  <Text style={[styles.langOptionNative, isSelected && { color: Colors.primaryDark }]}>
-                    {lang.nativeLabel}
-                  </Text>
-                  <Text style={styles.langOptionEnglish}>{lang.label}</Text>
-                </View>
-                {isSelected && <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />}
-              </TouchableOpacity>
-            );
-          })}
+          <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={true}>
+            {SUPPORTED_LANGUAGES.map((lang) => {
+              const isSelected = currentLang === lang.code;
+              return (
+                <TouchableOpacity
+                  key={lang.code}
+                  style={[styles.langOptionItem, isSelected && styles.langOptionSelected]}
+                  onPress={() => handleSelectLang(lang.code)}
+                  activeOpacity={0.7}
+                >
+                  <View>
+                    <Text style={[styles.langOptionNative, isSelected && { color: Colors.primaryDark }]}>
+                      {lang.nativeLabel}
+                    </Text>
+                    <Text style={styles.langOptionEnglish}>{lang.label}</Text>
+                  </View>
+                  {isSelected && <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
       </TouchableOpacity>
+    </Modal>
+
+    {/* Add Family Member Modal */}
+    <Modal
+      visible={showAddFamilyModal}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setShowAddFamilyModal(false)}
+    >
+      <View style={styles.modalBackdrop}>
+        <View style={styles.actionModalCard}>
+          <View style={styles.actionModalHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="people" size={20} color={Colors.primary} />
+              <Text style={styles.actionModalTitle}>Add Family Member</Text>
+            </View>
+            <TouchableOpacity onPress={() => setShowAddFamilyModal(false)}>
+              <Ionicons name="close" size={22} color="#64748B" />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.actionModalSub}>
+            Link family members under this phone number to manage their prescriptions and track live OPD appointments.
+          </Text>
+
+          <Text style={styles.fieldLabel}>FULL NAME *</Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="e.g. Ramesh Sharma"
+            placeholderTextColor="#94A3B8"
+            value={newMemberName}
+            onChangeText={setNewMemberName}
+          />
+
+          <Text style={styles.fieldLabel}>RELATIONSHIP</Text>
+          <View style={styles.relationRow}>
+            {(['child', 'spouse', 'parent', 'other'] as const).map((rel) => (
+              <TouchableOpacity
+                key={rel}
+                style={[styles.relationChip, newMemberRelation === rel && styles.relationChipActive]}
+                onPress={() => setNewMemberRelation(rel)}
+              >
+                <Text style={[styles.relationChipText, newMemberRelation === rel && styles.relationChipTextActive]}>
+                  {rel.charAt(0).toUpperCase() + rel.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.fieldLabel}>YEAR OF BIRTH / AGE (OPTIONAL)</Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="e.g. 1995 or 12 yrs"
+            placeholderTextColor="#94A3B8"
+            value={newMemberDob}
+            onChangeText={setNewMemberDob}
+          />
+
+          <TouchableOpacity
+            style={[styles.primaryActionBtn, savingMember && { opacity: 0.7 }]}
+            onPress={handleAddFamilyMember}
+            disabled={savingMember}
+          >
+            <Text style={styles.primaryActionBtnText}>
+              {savingMember ? 'Saving...' : 'Link Family Member'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+
+    {/* Doctor Leave Reschedule Modal */}
+    <Modal
+      visible={showRescheduleModal}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setShowRescheduleModal(false)}
+    >
+      <View style={styles.modalBackdrop}>
+        <View style={styles.actionModalCard}>
+          <View style={styles.actionModalHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="calendar" size={20} color="#DC2626" />
+              <Text style={styles.actionModalTitle}>Reschedule Appointment</Text>
+            </View>
+            <TouchableOpacity onPress={() => setShowRescheduleModal(false)}>
+              <Ionicons name="close" size={22} color="#64748B" />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.actionModalSub}>
+            Your doctor had an emergency. Select an available upcoming slot for Dr. {selectedRescheduleVisit?.doctor_name || 'your physician'}.
+          </Text>
+
+          <Text style={styles.fieldLabel}>SELECT NEW TIME SLOT</Text>
+          <View style={styles.slotGrid}>
+            {['09:30 AM', '10:30 AM', '11:30 AM', '02:00 PM', '04:30 PM', '06:00 PM'].map((slot) => (
+              <TouchableOpacity
+                key={slot}
+                style={[styles.slotChip, rescheduleSlot === slot && styles.slotChipActive]}
+                onPress={() => setRescheduleSlot(slot)}
+              >
+                <Text style={[styles.slotChipText, rescheduleSlot === slot && styles.slotChipTextActive]}>
+                  {slot}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <TouchableOpacity
+            style={[styles.primaryActionBtn, { backgroundColor: Colors.primary }, rescheduling && { opacity: 0.7 }]}
+            onPress={handleConfirmReschedule}
+            disabled={rescheduling}
+          >
+            <Text style={styles.primaryActionBtnText}>
+              {rescheduling ? 'Rescheduling...' : 'Confirm Rescheduled Slot'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </Modal>
   </View>
   );
@@ -663,13 +1157,257 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  familyBar: {
+    marginBottom: 12,
+  },
+  familyScroll: {
+    gap: 8,
+    paddingVertical: 4,
+  },
+  familyChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+  },
+  familyChipActive: {
+    backgroundColor: '#0D9488',
+    borderColor: '#0F766E',
+  },
+  familyChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0F766E',
+  },
+  familyChipTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  addFamilyChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#0D9488',
+    backgroundColor: '#FFFFFF',
+  },
+  addFamilyChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0D9488',
+  },
+  rescheduleAlertBanner: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    gap: 10,
+  },
+  rescheduleAlertTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#991B1B',
+  },
+  rescheduleAlertDesc: {
+    fontSize: 12,
+    color: '#B91C1C',
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  rescheduleActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#DC2626',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  rescheduleActionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  delayAlertRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 8,
+    padding: 8,
+    marginTop: 10,
+  },
+  delayAlertText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#92400E',
+    flex: 1,
+  },
+  commuteAdvisoryCard: {
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 10,
+  },
+  commuteAdvisoryTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#0F766E',
+    letterSpacing: 0.5,
+  },
+  commuteBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#CCFBF1',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  commuteBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0F766E',
+  },
+  commuteAdvisoryDesc: {
+    fontSize: 10,
+    color: '#115E59',
+    marginTop: 4,
+    lineHeight: 14,
+  },
+  actionModalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 20,
+    width: '90%',
+    maxWidth: 420,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  actionModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  actionModalTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  actionModalSub: {
+    fontSize: 12,
+    color: '#64748B',
+    marginBottom: 14,
+    lineHeight: 16,
+  },
+  fieldLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#475569',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+    marginTop: 8,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 13,
+    color: '#0F172A',
+    backgroundColor: '#F8FAFC',
+  },
+  relationRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
+  relationChip: {
+    flex: 1,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+  },
+  relationChipActive: {
+    backgroundColor: '#0D9488',
+    borderColor: '#0F766E',
+  },
+  relationChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  relationChipTextActive: {
+    color: '#FFFFFF',
+  },
+  slotGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  slotChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#F8FAFC',
+  },
+  slotChipActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primaryDark,
+  },
+  slotChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  slotChipTextActive: {
+    color: '#FFFFFF',
+  },
+  primaryActionBtn: {
+    backgroundColor: '#0D9488',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  primaryActionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
   content: {
     paddingHorizontal: 16,
     paddingVertical: 20,
     paddingBottom: 40,
-    maxWidth: 680,
     width: '100%',
-    alignSelf: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -690,18 +1428,17 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   switchRoleBadge: {
-    backgroundColor: 'rgba(13, 148, 136, 0.1)',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: 'rgba(13, 148, 136, 0.3)',
-    paddingHorizontal: 10,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: 8,
   },
   switchRoleBadgeText: {
-    fontFamily: FontFamily.bold,
+    fontFamily: FontFamily.medium,
     fontSize: FontSize.caption,
-    letterSpacing: LetterSpacing.wide,
-    color: Colors.primary,
+    color: Colors.textSecondary,
   },
   consentBadge: {
     paddingHorizontal: 12,
@@ -831,12 +1568,17 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   nextDoseCard: {
-    backgroundColor: Colors.card,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.3)',
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 24,
+    borderColor: Colors.border,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
   nextDoseHeader: {
     flexDirection: 'row',
@@ -845,17 +1587,32 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   nextDoseLabel: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.caption,
-    color: Colors.primaryLight,
-    letterSpacing: LetterSpacing.wider,
+    fontFamily: FontFamily.semiBold,
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+    letterSpacing: LetterSpacing.wide,
     textTransform: 'uppercase',
   },
   nextDoseTime: {
-    fontFamily: FontFamily.extraBold,
-    fontSize: FontSize.lg,
-    color: Colors.cyan,
-    letterSpacing: LetterSpacing.tight,
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.md,
+    color: Colors.primary,
+  },
+  testAlarmPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F0F9FF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  testAlarmPillText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 10,
+    color: '#0284C7',
   },
   nextDoseMedicine: {
     fontFamily: FontFamily.bold,
@@ -1091,13 +1848,13 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginBottom: 18,
-    borderWidth: 1.5,
-    borderColor: 'rgba(13, 148, 136, 0.2)',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
   vitalsHeaderRow: {
     flexDirection: 'row',
@@ -1114,17 +1871,17 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   logVitalsButton: {
-    backgroundColor: 'rgba(13, 148, 136, 0.1)',
+    backgroundColor: '#F1F5F9',
     borderWidth: 1,
-    borderColor: 'rgba(13, 148, 136, 0.25)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   logVitalsButtonText: {
-    fontFamily: FontFamily.bold,
+    fontFamily: FontFamily.medium,
     fontSize: 12,
-    color: Colors.primaryDark,
+    color: Colors.textSecondary,
   },
   vitalsGrid: {
     flexDirection: 'row',
@@ -1134,21 +1891,21 @@ const styles = StyleSheet.create({
   vitalBox: {
     flex: 1,
     minWidth: '46%',
-    backgroundColor: Colors.background,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 10,
+    padding: 12,
     borderWidth: 1,
     borderColor: Colors.border,
   },
   vitalLabel: {
     fontFamily: FontFamily.medium,
-    fontSize: 11,
+    fontSize: 12,
     color: Colors.textSecondary,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   vitalValue: {
-    fontFamily: FontFamily.extraBold,
-    fontSize: 18,
+    fontFamily: FontFamily.bold,
+    fontSize: 20,
     color: Colors.text,
   },
   vitalUnit: {
@@ -1319,6 +2076,109 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  liveQueueCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 18,
+    borderWidth: 1.5,
+    borderColor: '#38BDF8',
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  liveQueueHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  liveQueueIndicatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  liveQueuePulseDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#0284C7',
+  },
+  liveQueueHeaderTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.xs,
+    color: '#0369A1',
+    letterSpacing: LetterSpacing.wide,
+  },
+  liveQueueStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  liveQueueStatusBadgeText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 10,
+  },
+  liveQueueDoctorInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+  },
+  liveQueueDoctorText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+  },
+  liveQueueMetricsGrid: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  liveQueueMetricBox: {
+    flex: 1,
+    borderRadius: 12,
+    padding: 10,
+    alignItems: 'center',
+  },
+  liveQueueTokenBox: {
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+  },
+  liveQueueServingBox: {
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  liveQueueWaitBox: {
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  liveQueueMetricLabel: {
+    fontFamily: FontFamily.bold,
+    fontSize: 9,
+    letterSpacing: LetterSpacing.wide,
+    color: Colors.primaryDark,
+    marginBottom: 4,
+  },
+  liveQueueTokenText: {
+    fontFamily: FontFamily.extraBold,
+    fontSize: 20,
+    color: Colors.primaryDark,
+  },
+  liveQueueWaitText: {
+    fontFamily: FontFamily.extraBold,
+    fontSize: 18,
+  },
+  liveQueueSubLabel: {
+    fontFamily: FontFamily.medium,
+    fontSize: 10,
+    color: Colors.textMuted,
     marginTop: 2,
   },
 });

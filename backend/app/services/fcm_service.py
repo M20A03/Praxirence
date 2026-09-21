@@ -13,7 +13,7 @@ class FCMService:
         self._enabled = False
 
         # 1. Check for base64-encoded credentials (ideal for cloud hosts like Railway)
-        b64_creds = os.getenv("FIREBASE_CREDENTIALS_BASE64")
+        b64_creds = getattr(settings, "FIREBASE_CREDENTIALS_BASE64", None) or os.getenv("FIREBASE_CREDENTIALS_BASE64")
         if b64_creds:
             try:
                 import json

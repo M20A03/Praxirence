@@ -8,7 +8,11 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Linking,
+  Share,
+  BackHandler,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../../theme';
 import { PatientSummary, MedicineItem, ReminderItem, DoctorUser, ConsultationSummarizeResult } from '../../types';
@@ -52,9 +56,105 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
   const [medDosage, setMedDosage] = useState('');
   const [medFreq, setMedFreq] = useState('Twice daily');
   const [medDuration, setMedDuration] = useState('5');
+  const [medMealRelation, setMedMealRelation] = useState<'before_meal' | 'after_meal' | 'empty_stomach' | 'with_meal'>('after_meal');
+  const [medIsSos, setMedIsSos] = useState(false);
   const [showAddMed, setShowAddMed] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
+
+  // Restore unsaved draft if found on patient selection
+  useEffect(() => {
+    const checkDraft = async () => {
+      if (!selectedPatientId) return;
+      try {
+        const draftKey = `@praxirence_consult_draft_${selectedPatientId}`;
+        const savedDraft = await AsyncStorage.getItem(draftKey);
+        if (savedDraft) {
+          const data = JSON.parse(savedDraft);
+          Alert.alert(
+            'Restore Unsaved Draft?',
+            'An unsaved consultation draft for this patient was found from your previous session.',
+            [
+              { text: 'Discard Draft', style: 'destructive', onPress: () => AsyncStorage.removeItem(draftKey) },
+              {
+                text: 'Restore Draft',
+                onPress: () => {
+                  if (data.diagnosis) setDiagnosis(data.diagnosis);
+                  if (data.medicines) setMedicines(data.medicines);
+                  if (data.reminders) setReminders(data.reminders);
+                  if (data.patientSummary) setPatientSummary(data.patientSummary);
+                  if (data.doctorAdvice) setDoctorAdvice(data.doctorAdvice);
+                  if (data.conversationText) setConversationText(data.conversationText);
+                },
+              },
+            ]
+          );
+        }
+      } catch (e) {}
+    };
+    checkDraft();
+  }, [selectedPatientId]);
+
+  // Debounced auto-save draft to device storage
+  useEffect(() => {
+    if (!selectedPatientId) return;
+    const draftKey = `@praxirence_consult_draft_${selectedPatientId}`;
+    if (diagnosis || medicines.length > 0 || conversationText) {
+      const timer = setTimeout(() => {
+        AsyncStorage.setItem(
+          draftKey,
+          JSON.stringify({
+            diagnosis,
+            medicines,
+            reminders,
+            patientSummary,
+            doctorAdvice,
+            conversationText,
+            updatedAt: new Date().toISOString(),
+          })
+        ).catch(() => {});
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedPatientId, diagnosis, medicines, reminders, patientSummary, doctorAdvice, conversationText]);
+
+  // Exit guard confirming unsaved changes
+  const confirmExit = () => {
+    if (diagnosis || medicines.length > 0 || conversationText) {
+      Alert.alert(
+        'Unsaved Consultation',
+        'Do you want to save this consultation as a draft or discard changes?',
+        [
+          { text: 'Keep Editing', style: 'cancel' },
+          {
+            text: 'Discard & Exit',
+            style: 'destructive',
+            onPress: async () => {
+              if (selectedPatientId) {
+                await AsyncStorage.removeItem(`@praxirence_consult_draft_${selectedPatientId}`).catch(() => {});
+              }
+              onCancel();
+            },
+          },
+          {
+            text: 'Save Draft & Exit',
+            onPress: onCancel,
+          },
+        ]
+      );
+    } else {
+      onCancel();
+    }
+  };
+
+  useEffect(() => {
+    const backAction = () => {
+      confirmExit();
+      return true;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => sub.remove();
+  }, [diagnosis, medicines, conversationText, selectedPatientId]);
 
   useEffect(() => {
     loadPatients();
@@ -142,8 +242,8 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
       }
 
       Alert.alert(
-        '✨ Consultation Summarized!',
-        'AI has structured the clinical diagnosis, medications, and generated an easy-to-understand explanation for your patient.'
+        'Care Plan Generated',
+        'Clinical diagnosis and medications structured into clear patient instructions.'
       );
     } catch (e: any) {
       Alert.alert('Notice', e.message || 'Consultation summarized using offline clinical intelligence.');
@@ -184,26 +284,48 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
       Alert.alert('Incomplete', 'Please enter medicine name and dosage amount.');
       return;
     }
+    const instructionStr = medMealRelation === 'empty_stomach'
+      ? 'Take on empty stomach 30 mins before breakfast'
+      : medMealRelation === 'before_meal'
+      ? 'Take 30 mins before meals'
+      : 'Take after meals';
+
     const newMed: MedicineItem = {
       name: medName.trim(),
       dosage: medDosage.trim(),
       frequency: medFreq.trim(),
-      instructions: 'Take as advised',
+      instructions: instructionStr,
       duration_days: parseInt(medDuration) || 5,
+      meal_relation: medMealRelation,
+      is_sos: medIsSos,
     };
     setMedicines((prev) => [...prev, newMed]);
-    setReminders((prev) => [
-      ...prev,
-      {
-        medicine_name: newMed.name,
-        dosage: newMed.dosage,
-        time: '09:00',
-        frequency: 'daily',
-        instructions: newMed.instructions,
-      },
-    ]);
+
+    const defaultTime = medMealRelation === 'empty_stomach'
+      ? '07:30'
+      : medMealRelation === 'before_meal'
+      ? '08:00'
+      : '09:00';
+
+    if (!medIsSos) {
+      setReminders((prev) => [
+        ...prev,
+        {
+          medicine_name: newMed.name,
+          dosage: newMed.dosage,
+          time: defaultTime,
+          frequency: 'daily',
+          instructions: newMed.instructions,
+        },
+      ]);
+    }
+
     setMedName('');
     setMedDosage('');
+    setMedFreq('Twice daily');
+    setMedDuration('5');
+    setMedMealRelation('after_meal');
+    setMedIsSos(false);
     setShowAddMed(false);
   };
 
@@ -236,6 +358,8 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
 
     setSubmitting(true);
     try {
+      const selectedPat = patients.find((p) => p.id === selectedPatientId);
+
       // 1. Create structured visit with patient summary & doctor advice
       const createdVisit = await mobileApi.createStructuredVisit({
         patient_id: selectedPatientId,
@@ -247,17 +371,72 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
         raw_transcription: conversationText.trim() || `Consultation by ${doctor.name} (${doctor.specialty})`,
       });
 
-      // 2. Approve and trigger WhatsApp delivery
+      // 2. Approve visit on clinical cloud
       try {
         await mobileApi.approveVisit(createdVisit.id, 'en');
       } catch (appErr) {
-        console.warn('WhatsApp trigger notice:', appErr);
+        console.warn('Backend approval sync notice:', appErr);
+      }
+
+      // 3. Format Native WhatsApp Clinical Dispatch
+      const docName = doctor.name.startsWith('Dr.') ? doctor.name : `Dr. ${doctor.name}`;
+      const clinicName = doctor.clinic_name || 'Praxirence Clinical Practice';
+      const regNumber = doctor.reg_number ? `Reg: ${doctor.reg_number}` : '';
+
+      const medScheduleText = medicines
+        .map((m, idx) => `${idx + 1}. *${m.name}* (${m.dosage})\n   - Frequency: ${m.frequency}\n   - Note: ${m.instructions || 'Take as advised'}`)
+        .join('\n\n');
+
+      const message = `*${clinicName.toUpperCase()}*\n` +
+        `*${docName}* • ${doctor.specialty}\n` +
+        (regNumber ? `${regNumber}\n` : '') +
+        `──────────────────────\n` +
+        `*PATIENT CARE PLAN & PRESCRIPTION*\n` +
+        `*Patient:* ${selectedPat?.name || 'Patient'}\n` +
+        `*Date:* ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}\n\n` +
+        `*Confirmed Diagnosis:*\n${diagnosis.trim()}\n\n` +
+        (patientSummary.trim() ? `*Plain-Language Summary:*\n${patientSummary.trim()}\n\n` : '') +
+        `*Prescribed Medications:*\n${medScheduleText}\n\n` +
+        (doctorAdvice.trim() ? `*Doctor's Instructions & Care:*\n${doctorAdvice.trim()}\n\n` : '') +
+        `*Emergency Warning Signs:*\nIf you experience severe dizziness, breathlessness, or persistent high fever, please contact the clinic or visit the nearest emergency room immediately.\n\n` +
+        `*Praxirence Health Vault:*\nOpen your Praxirence app to access your automated medication alarm reminders and digital health vault.`;
+
+      let cleanPhone = (selectedPat?.phone || '').replace(/[^0-9]/g, '');
+      if (cleanPhone.length === 10) {
+        cleanPhone = '91' + cleanPhone;
+      } else if (cleanPhone.length === 11 && cleanPhone.startsWith('0')) {
+        cleanPhone = '91' + cleanPhone.slice(1);
+      }
+
+      const encoded = encodeURIComponent(message);
+      const whatsappUrl = cleanPhone.length >= 10
+        ? `whatsapp://send?phone=${cleanPhone}&text=${encoded}`
+        : `whatsapp://send?text=${encoded}`;
+      const webWhatsappUrl = cleanPhone.length >= 10
+        ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encoded}`
+        : `https://api.whatsapp.com/send?text=${encoded}`;
+
+      try {
+        await Linking.openURL(whatsappUrl);
+      } catch (nativeErr) {
+        try {
+          await Linking.openURL(webWhatsappUrl);
+        } catch (_) {
+          await Share.share({
+            title: `Care Plan - ${selectedPat?.name || 'Patient'}`,
+            message,
+          });
+        }
+      }
+
+      if (selectedPatientId) {
+        await AsyncStorage.removeItem(`@praxirence_consult_draft_${selectedPatientId}`).catch(() => {});
       }
 
       Alert.alert(
-        'Care Plan Delivered!',
-        'Consultation recorded and care plan with plain-language explanation delivered to patient via WhatsApp.',
-        [{ text: 'View Dashboard', onPress: onConsultationSaved }]
+        'Care Plan Dispatched',
+        'Consultation recorded and delivered to patient with structured dosage schedule.',
+        [{ text: 'Return to Dashboard', onPress: onConsultationSaved }]
       );
     } catch (err: any) {
       Alert.alert('Notice', err.message || 'Consultation recorded successfully in offline vault.');
@@ -271,6 +450,20 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
       <View style={styles.header}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={confirmExit}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={18} color={Colors.textPrimary} />
+            <Text style={styles.backBtnText}>Exit</Text>
+          </TouchableOpacity>
+          <View style={styles.draftIndicator}>
+            <Ionicons name="cloud-done-outline" size={14} color="#10B981" />
+            <Text style={styles.draftIndicatorText}>Auto-Drafting</Text>
+          </View>
+        </View>
         <Text style={styles.title}>New Clinical Consultation</Text>
         <Text style={styles.subtitle}>
           Create care plan with AI structured dosing & automated WhatsApp dispatch
@@ -339,28 +532,28 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
         {/* Quick Scenario Presets */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetScroll}>
           <TouchableOpacity
-            style={[styles.presetChip, { backgroundColor: '#F0F9FF', borderColor: '#BAE6FD' }]}
+            style={styles.presetChip}
             onPress={() => handleApplyPreset('bronchitis')}
           >
-            <Text style={[styles.presetChipText, { color: '#0284C7' }]}>Bronchitis & Wheezing</Text>
+            <Text style={styles.presetChipText}>Bronchitis & Wheezing</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.presetChip, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}
+            style={styles.presetChip}
             onPress={() => handleApplyPreset('diabetes')}
           >
-            <Text style={[styles.presetChipText, { color: '#B45309' }]}>Type 2 Diabetes Review</Text>
+            <Text style={styles.presetChipText}>Type 2 Diabetes Review</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.presetChip, { backgroundColor: '#F5F3FF', borderColor: '#DDD6FE' }]}
+            style={styles.presetChip}
             onPress={() => handleApplyPreset('migraine')}
           >
-            <Text style={[styles.presetChipText, { color: '#7C3AED' }]}>Acute Migraine Attack</Text>
+            <Text style={styles.presetChipText}>Acute Migraine Attack</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.presetChip, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}
+            style={styles.presetChip}
             onPress={() => handleApplyPreset('hypertension')}
           >
-            <Text style={[styles.presetChipText, { color: '#E11D48' }]}>Stage 1 Hypertension</Text>
+            <Text style={styles.presetChipText}>Stage 1 Hypertension</Text>
           </TouchableOpacity>
         </ScrollView>
 
@@ -490,6 +683,60 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
               value={medFreq}
               onChangeText={setMedFreq}
             />
+
+            <Text style={styles.inputSublabel}>Meal Timing & Condition:</Text>
+            <View style={styles.chipRow}>
+              {[
+                { id: 'empty_stomach', label: 'Khali Pet', icon: 'water-outline' as const },
+                { id: 'after_meal', label: 'After Meal', icon: 'restaurant-outline' as const },
+                { id: 'before_meal', label: 'Before Meal', icon: 'time-outline' as const },
+                { id: 'with_meal', label: 'With Meal', icon: 'nutrition-outline' as const },
+              ].map((m) => (
+                <TouchableOpacity
+                  key={m.id}
+                  style={[
+                    styles.medTimingChip,
+                    medMealRelation === m.id && styles.medTimingChipActive,
+                  ]}
+                  onPress={() => setMedMealRelation(m.id as any)}
+                >
+                  <Ionicons
+                    name={m.icon}
+                    size={12}
+                    color={medMealRelation === m.id ? '#FFFFFF' : '#475569'}
+                    style={{ marginRight: 4 }}
+                  />
+                  <Text style={[
+                    styles.medTimingChipText,
+                    medMealRelation === m.id && styles.medTimingChipTextActive,
+                  ]}>
+                    {m.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+
+              <TouchableOpacity
+                style={[
+                  styles.medTimingChip,
+                  medIsSos && styles.sosChipActive,
+                ]}
+                onPress={() => setMedIsSos(!medIsSos)}
+              >
+                <Ionicons
+                  name="flash-outline"
+                  size={12}
+                  color={medIsSos ? '#FFFFFF' : '#DC2626'}
+                  style={{ marginRight: 4 }}
+                />
+                <Text style={[
+                  styles.medTimingChipText,
+                  medIsSos && styles.sosChipTextActive,
+                ]}>
+                  SOS
+                </Text>
+              </TouchableOpacity>
+            </View>
+
             <TouchableOpacity style={styles.confirmAddBtn} onPress={handleAddMedicine}>
               <Text style={styles.confirmAddText}>Confirm & Add to Prescription</Text>
             </TouchableOpacity>
@@ -502,17 +749,41 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
               <View style={{ flex: 1 }}>
                 <Text style={styles.medName}>{med.name}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 5, flexWrap: 'wrap' }}>
-                  <View style={{ backgroundColor: '#F0FDFA', borderWidth: 1, borderColor: '#99F6E4', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#0F766E' }}>{med.dosage}</Text>
+                  <View style={styles.medTag}>
+                    <Text style={styles.medTagText}>{med.dosage}</Text>
                   </View>
-                  <View style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
-                    <Text style={{ fontSize: 11, fontWeight: '600', color: '#1D4ED8' }}>{med.frequency}</Text>
+                  <View style={styles.medTag}>
+                    <Text style={styles.medTagText}>{med.frequency}</Text>
                   </View>
                   {med.duration_days ? (
-                    <View style={{ backgroundColor: '#F5F3FF', borderWidth: 1, borderColor: '#DDD6FE', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 }}>
-                      <Text style={{ fontSize: 11, fontWeight: '600', color: '#6D28D9' }}>{med.duration_days} days</Text>
+                    <View style={styles.medTag}>
+                      <Text style={styles.medTagText}>{med.duration_days} days</Text>
                     </View>
                   ) : null}
+                  {med.meal_relation === 'empty_stomach' && (
+                    <View style={[styles.medTag, { backgroundColor: '#FEF3C7', borderColor: '#FCD34D', flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+                      <Ionicons name="water-outline" size={11} color="#B45309" />
+                      <Text style={[styles.medTagText, { color: '#B45309' }]}>Khali Pet</Text>
+                    </View>
+                  )}
+                  {med.meal_relation === 'after_meal' && (
+                    <View style={[styles.medTag, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0', flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+                      <Ionicons name="restaurant-outline" size={11} color="#16A34A" />
+                      <Text style={[styles.medTagText, { color: '#16A34A' }]}>After Meal</Text>
+                    </View>
+                  )}
+                  {med.meal_relation === 'before_meal' && (
+                    <View style={[styles.medTag, { backgroundColor: '#F0F9FF', borderColor: '#BAE6FD', flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+                      <Ionicons name="time-outline" size={11} color="#0284C7" />
+                      <Text style={[styles.medTagText, { color: '#0284C7' }]}>Before Meal</Text>
+                    </View>
+                  )}
+                  {med.is_sos && (
+                    <View style={[styles.medTag, { backgroundColor: '#FEE2E2', borderColor: '#FECACA', flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+                      <Ionicons name="flash-outline" size={11} color="#DC2626" />
+                      <Text style={[styles.medTagText, { color: '#DC2626' }]}>SOS</Text>
+                    </View>
+                  )}
                 </View>
                 {med.instructions ? (
                   <Text style={styles.medInstructions}>Instructions: {med.instructions}</Text>
@@ -619,31 +890,26 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
-    paddingVertical: 20,
+    paddingVertical: 16,
     paddingBottom: 50,
-    maxWidth: 680,
-    width: '100%',
-    alignSelf: 'center',
   },
   header: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   title: {
-    fontFamily: FontFamily.bold,
+    fontFamily: FontFamily.display,
     fontSize: FontSize.xl,
-    lineHeight: 28,
-    letterSpacing: LetterSpacing.tight,
-    color: Colors.text,
+    color: Colors.textPrimary,
   },
   subtitle: {
-    fontFamily: FontFamily.regular,
-    fontSize: FontSize.sm,
+    fontFamily: FontFamily.sans,
+    fontSize: FontSize.xs,
     color: Colors.textSecondary,
-    marginTop: 4,
+    marginTop: 3,
     lineHeight: 18,
   },
   section: {
-    marginBottom: 20,
+    marginBottom: 18,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -652,16 +918,15 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   sectionTitle: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.body,
-    letterSpacing: LetterSpacing.tight,
-    color: Colors.text,
+    fontFamily: FontFamily.display,
+    fontSize: FontSize.base,
+    color: Colors.textPrimary,
   },
   badgeText: {
     fontFamily: FontFamily.semiBold,
     fontSize: FontSize.caption,
-    color: Colors.primaryDark,
-    backgroundColor: 'rgba(13, 148, 136, 0.1)',
+    color: Colors.primary,
+    backgroundColor: '#F0F9FF',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -670,7 +935,7 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
-    marginBottom: 10,
+    marginBottom: 8,
     lineHeight: 16,
   },
   presetScroll: {
@@ -678,12 +943,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   presetChip: {
-    backgroundColor: Colors.card,
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#E2E8F0',
     paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
+    paddingVertical: 6,
+    borderRadius: 8,
     marginRight: 8,
   },
   presetChipText: {
@@ -696,48 +961,42 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.card,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 10,
+    padding: 12,
     fontSize: FontSize.sm,
-    color: Colors.text,
-    minHeight: 120,
+    color: Colors.textPrimary,
+    minHeight: 110,
     textAlignVertical: 'top',
     lineHeight: 20,
   },
   summarizeBtn: {
     backgroundColor: Colors.primary,
-    borderRadius: 12,
-    paddingVertical: 13,
+    borderRadius: 10,
+    paddingVertical: 12,
     alignItems: 'center',
     marginTop: 10,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
   },
   summarizeBtnText: {
-    fontFamily: FontFamily.bold,
+    fontFamily: FontFamily.semiBold,
     color: '#FFFFFF',
     fontSize: FontSize.sm,
-    letterSpacing: LetterSpacing.wide,
   },
   patientPreviewCard: {
     backgroundColor: '#F0FDF4',
-    borderWidth: 1.5,
-    borderColor: '#86EFAC',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 18,
   },
   patientPreviewHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   patientPreviewTitle: {
-    fontFamily: FontFamily.bold,
+    fontFamily: FontFamily.display,
     fontSize: FontSize.base,
     color: '#166534',
   },
@@ -756,7 +1015,7 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.semiBold,
     fontSize: FontSize.xs,
     color: '#166534',
-    marginBottom: 5,
+    marginBottom: 4,
     marginTop: 4,
   },
   previewInput: {
@@ -764,13 +1023,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#BBF7D0',
-    borderRadius: 10,
+    borderRadius: 8,
     padding: 10,
     fontSize: FontSize.sm,
     color: '#1F2937',
-    minHeight: 65,
+    minHeight: 60,
     textAlignVertical: 'top',
-    marginBottom: 10,
+    marginBottom: 8,
     lineHeight: 18,
   },
   warningItem: {
@@ -786,8 +1045,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   addMedToggle: {
-    fontFamily: FontFamily.bold,
-    fontSize: FontSize.sm,
+    fontFamily: FontFamily.semiBold,
+    fontSize: FontSize.xs,
     color: Colors.primary,
   },
   patientPickerScroll: {
@@ -798,99 +1057,111 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.card,
     borderWidth: 1,
     borderColor: Colors.border,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-    marginRight: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginRight: 8,
   },
   patientChipActive: {
-    backgroundColor: 'rgba(13, 148, 136, 0.12)',
+    backgroundColor: '#F0F9FF',
     borderColor: Colors.primary,
   },
   patientChipText: {
     fontFamily: FontFamily.medium,
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
     color: Colors.textSecondary,
   },
   patientChipTextActive: {
-    fontFamily: FontFamily.bold,
-    color: Colors.primaryDark,
+    fontFamily: FontFamily.semiBold,
+    color: Colors.primary,
   },
   diagnosisInput: {
     fontFamily: FontFamily.medium,
     backgroundColor: Colors.card,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 10,
+    padding: 12,
     fontSize: FontSize.base,
-    color: Colors.text,
-    minHeight: 60,
+    color: Colors.textPrimary,
+    minHeight: 56,
     textAlignVertical: 'top',
   },
   addMedCard: {
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: 'rgba(13, 148, 136, 0.3)',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 14,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
   },
   addMedTitle: {
-    fontFamily: FontFamily.bold,
+    fontFamily: FontFamily.display,
     fontSize: FontSize.base,
-    color: Colors.primaryDark,
-    marginBottom: 10,
+    color: Colors.textPrimary,
+    marginBottom: 8,
   },
   rowInputs: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
   },
   input: {
-    fontFamily: FontFamily.medium,
-    backgroundColor: Colors.card,
+    fontFamily: FontFamily.regular,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 10,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: FontSize.base,
-    color: Colors.text,
-    marginBottom: 10,
+    paddingVertical: 8,
+    fontSize: FontSize.sm,
+    color: Colors.textPrimary,
+    marginBottom: 8,
   },
   confirmAddBtn: {
     backgroundColor: Colors.primary,
-    borderRadius: 10,
-    paddingVertical: 10,
+    borderRadius: 8,
+    paddingVertical: 9,
     alignItems: 'center',
   },
   confirmAddText: {
-    fontFamily: FontFamily.bold,
+    fontFamily: FontFamily.semiBold,
     color: '#FFFFFF',
-    fontSize: FontSize.sm,
-    letterSpacing: LetterSpacing.wide,
+    fontSize: FontSize.xs,
   },
   medCard: {
     backgroundColor: Colors.card,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
   },
   medHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
   medName: {
-    fontFamily: FontFamily.bold,
+    fontFamily: FontFamily.display,
     fontSize: FontSize.base,
-    color: Colors.text,
+    color: Colors.textPrimary,
+  },
+  medTag: {
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  medTagText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 11,
+    color: '#334155',
   },
   medDosage: {
     fontFamily: FontFamily.semiBold,
     fontSize: FontSize.xs,
-    color: Colors.primaryDark,
+    color: Colors.textSecondary,
     marginTop: 2,
   },
   medInstructions: {
@@ -906,7 +1177,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   removeBtn: {
-    padding: 6,
+    padding: 4,
   },
   removeBtnText: {
     fontFamily: FontFamily.bold,
@@ -914,84 +1185,80 @@ const styles = StyleSheet.create({
     color: Colors.rose,
   },
   actionRow: {
-    marginTop: 10,
-    gap: 12,
+    marginTop: 8,
+    gap: 10,
   },
   submitBtn: {
     backgroundColor: Colors.whatsapp,
-    borderRadius: 14,
-    paddingVertical: 15,
+    borderRadius: 10,
+    paddingVertical: 13,
     paddingHorizontal: 12,
     alignItems: 'center',
-    shadowColor: Colors.whatsapp,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 3,
   },
   submitBtnText: {
-    fontFamily: FontFamily.bold,
+    fontFamily: FontFamily.semiBold,
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: FontSize.sm,
     textAlign: 'center',
     flexShrink: 1,
   },
   cancelBtn: {
-    paddingVertical: 12,
+    paddingVertical: 10,
     alignItems: 'center',
   },
   cancelBtnText: {
-    fontFamily: FontFamily.semiBold,
-    fontSize: FontSize.sm,
+    fontFamily: FontFamily.medium,
+    fontSize: FontSize.xs,
     color: Colors.textMuted,
   },
   verificationCard: {
-    backgroundColor: '#FFFBEB',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1.5,
-    borderColor: '#FCD34D',
-    marginTop: 10,
-    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginTop: 8,
+    marginBottom: 14,
   },
   verificationCardApproved: {
-    borderColor: '#86EFAC',
+    borderColor: '#10B981',
     backgroundColor: '#F0FDF4',
   },
   verificationHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   verificationIconBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#FEF3C7',
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#F8FAFC',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   verificationTitle: {
     fontFamily: FontFamily.display,
-    fontSize: FontSize.sm,
+    fontSize: FontSize.base,
     color: Colors.textPrimary,
-    fontWeight: '700',
   },
   verificationSubtitle: {
-    fontFamily: FontFamily.mono,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
+    fontFamily: FontFamily.medium,
+    fontSize: FontSize.caption,
+    color: Colors.textMuted,
     marginTop: 1,
   },
   verificationDetailsBox: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#FDE68A',
-    gap: 4,
+    borderColor: '#E2E8F0',
+    gap: 3,
   },
   verificationDetailItem: {
     fontFamily: FontFamily.sans,
@@ -1004,20 +1271,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     backgroundColor: '#FFFFFF',
-    padding: 12,
-    borderRadius: 10,
+    padding: 10,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
   verificationCheckboxRowActive: {
-    backgroundColor: 'rgba(16, 185, 129, 0.12)',
-    borderColor: 'rgba(16, 185, 129, 0.3)',
+    backgroundColor: '#F0FDF4',
+    borderColor: '#86EFAC',
   },
   checkboxSquare: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 2,
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1.5,
     borderColor: Colors.textSecondary,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1035,35 +1302,102 @@ const styles = StyleSheet.create({
   },
   submitBtnVerified: {
     backgroundColor: '#10b981',
-    shadowColor: '#10b981',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
   submitBtnUnverified: {
     backgroundColor: '#94A3B8',
-    shadowOpacity: 0,
-    elevation: 0,
   },
   sharePdfBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#F0F9FF',
-    borderWidth: 1.5,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
     borderColor: '#0284C7',
     borderRadius: 10,
-    paddingVertical: 13,
+    paddingVertical: 11,
     paddingHorizontal: 12,
-    marginBottom: 12,
+    marginBottom: 6,
   },
   sharePdfBtnText: {
     color: '#0284C7',
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: FontSize.xs,
+    fontFamily: FontFamily.semiBold,
     textAlign: 'center',
     flexShrink: 1,
+  },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F1F5F9',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
+  backBtnText: {
+    fontSize: 12,
+    fontFamily: FontFamily.semiBold,
+    color: Colors.textPrimary,
+  },
+  draftIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#ECFDF5',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  draftIndicatorText: {
+    fontSize: 11,
+    fontFamily: FontFamily.medium,
+    color: '#065F46',
+  },
+  inputSublabel: {
+    fontSize: 11,
+    fontFamily: FontFamily.semiBold,
+    color: '#64748B',
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    gap: 6,
+    flexWrap: 'wrap',
+    marginBottom: 10,
+  },
+  medTimingChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+  },
+  medTimingChipActive: {
+    backgroundColor: '#0D9488',
+    borderColor: '#0D9488',
+  },
+  medTimingChipText: {
+    fontSize: 11,
+    fontFamily: FontFamily.medium,
+    color: '#334155',
+  },
+  medTimingChipTextActive: {
+    color: '#FFFFFF',
+    fontFamily: FontFamily.semiBold,
+  },
+  sosChipActive: {
+    backgroundColor: '#DC2626',
+    borderColor: '#DC2626',
+  },
+  sosChipTextActive: {
+    color: '#FFFFFF',
+    fontFamily: FontFamily.semiBold,
   },
 });

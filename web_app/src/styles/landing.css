@@ -35,24 +35,26 @@ html, body {
   max-width: 100vw;
   background-color: var(--landing-bg);
   color: var(--landing-text-main);
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   position: relative;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Subtle Ambient Background Lighting */
+/* Subtle Institutional Background Tinting */
 .landing-ambient-top {
   position: absolute;
-  top: -120px;
+  top: -140px;
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
   max-width: 900px;
-  height: 480px;
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.08) 0%, rgba(16, 185, 129, 0.05) 50%, transparent 70%);
+  height: 400px;
+  background: radial-gradient(circle, rgba(13, 148, 136, 0.04) 0%, rgba(15, 23, 42, 0.02) 50%, transparent 70%);
   pointer-events: none;
   z-index: 0;
-  filter: blur(60px);
+  filter: blur(80px);
 }
 
 .landing-ambient-mid {
@@ -61,10 +63,10 @@ html, body {
   right: -100px;
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.06) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(13, 148, 136, 0.03) 0%, transparent 65%);
   pointer-events: none;
   z-index: 0;
-  filter: blur(70px);
+  filter: blur(90px);
 }
 
 .landing-ambient-bottom {
@@ -73,10 +75,10 @@ html, body {
   left: -100px;
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.07) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(15, 23, 42, 0.02) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
-  filter: blur(70px);
+  filter: blur(90px);
 }
 
 /* Base Layout */

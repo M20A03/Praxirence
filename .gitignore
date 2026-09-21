@@ -37,6 +37,9 @@ env/
 .pytest_cache/
 .coverage
 htmlcov/
+*.db
+*.sqlite
+*.sqlite3
 
 # Node / Web / Mobile
 node_modules/

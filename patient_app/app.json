@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Praxirence Care",
-    "slug": "praxirence-care",
+    "name": "Praxirence Health",
+    "slug": "praxirence-health",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -22,8 +22,13 @@
       "package": "com.praxirence.patient",
       "googleServicesFile": "./google-services.json",
       "permissions": [
-        "RECEIVE_BOOT_COMPLETED",
-        "SCHEDULE_EXACT_ALARM"
+        "POST_NOTIFICATIONS",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "VIBRATE",
+        "WAKE_LOCK"
       ]
     },
     "web": {

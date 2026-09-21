@@ -26,11 +26,16 @@ interface ChatbotScreenProps {
 
 const SUPPORTED_LANGUAGES = [
   { code: 'English', label: 'English' },
+  { code: 'Kannada', label: 'ಕನ್ನಡ (Kannada)' },
   { code: 'Hindi', label: 'हिन्दी (Hindi)' },
-  { code: 'Bengali', label: 'বাংলা (Bengali)' },
-  { code: 'Tamil', label: 'தமிழ் (Tamil)' },
+  { code: 'Bhojpuri', label: 'भोजपुरी (Bhojpuri)' },
+  { code: 'Urdu', label: 'اردو (Urdu)' },
   { code: 'Telugu', label: 'తెలుగు (Telugu)' },
+  { code: 'Tamil', label: 'தமிழ் (Tamil)' },
   { code: 'Marathi', label: 'मराठी (Marathi)' },
+  { code: 'Malayalam', label: 'മലയാളം (Malayalam)' },
+  { code: 'Punjabi', label: 'ਪੰਜਾਬੀ (Punjabi)' },
+  { code: 'Bengali', label: 'বাংলা (Bengali)' },
   { code: 'Gujarati', label: 'ગુજરાતી (Gujarati)' },
   { code: 'Hinglish', label: 'Hinglish' },
 ];
@@ -64,10 +69,28 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
   };
 
   const initializeWelcomeMessage = (lang: string) => {
-    const isHindi = ['Hindi', 'हिन्दी', 'Hinglish'].includes(lang);
-    const initialGreeting = isHindi
-      ? `नमस्ते ${user.name}! मैं आपका प्रैक्सिरेंस एआई स्वास्थ्य सहायक हूँ। मैं आपकी दवाओं, खुराक और डॉक्टर परामर्श में मदद कर सकता हूँ।`
-      : `Hello ${user.name}! I am your Praxirence AI Clinical Assistant. I can help explain your active prescription, medication schedule, and connect you with verified specialists.`;
+    let initialGreeting = `Hello ${user.name}! I am your Praxirence AI Clinical Assistant. I can help explain your active prescription, medication schedule, and connect you with verified specialists.`;
+    let quickSuggestions = ['Explain my medication schedule', 'What are potential side effects?', 'Find a verified specialist', 'How to download prescription PDF?'];
+
+    if (lang === 'Kannada' || lang === 'ಕನ್ನಡ') {
+      initialGreeting = `ನಮಸ್ಕಾರ ${user.name}! ನಾನು ನಿಮ್ಮ ಪ್ರ್ಯಾಕ್ಸಿರೆನ್ಸ್ AI ಆರೋಗ್ಯ ಸಹಾಯಕ. ನಿಮ್ಮ ಔಷಧಿ ವೇಳಾಪಟ್ಟಿ, ಮಾತ್ರೆಗಳ ವಿವರ ಮತ್ತು ವೈದ್ಯರ ಭೇಟಿಯಲ್ಲಿ ನಾನು ನಿಮಗೆ ಸಹಾಯ ಮಾಡಬಲ್ಲೆ.`;
+      quickSuggestions = ['ನನ್ನ ಔಷಧಿ ವೇಳಾಪಟ್ಟಿ ವಿವರಿಸಿ', 'ಮಾತ್ರೆಗಳ ಅಡ್ಡಪರಿಣಾಮಗಳೇನು?', 'ತಜ್ಞ ವೈದ್ಯರನ್ನು ಹುಡುಕಿ', 'ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ'];
+    } else if (lang === 'Bhojpuri' || lang === 'भोजपुरी') {
+      initialGreeting = `प्रणाम ${user.name}! हम रउआ के प्रैक्सिरेंस एआई स्वास्थ्य सहायक हईं। दवाई, खुराक आ डॉक्टर सलाह में हम रउआ के पूरा मदद करब।`;
+      quickSuggestions = ['हमार दवाई आ खुराक समझाईं', 'दवाई के साइड इफेक्ट का बा?', 'सत्यापित डॉक्टर खोजीं', 'परचा डाउनलोड करीं'];
+    } else if (lang === 'Urdu' || lang === 'اردو') {
+      initialGreeting = `السلام علیکم ${user.name}! میں آپ کا پریکسیرینس AI طبی معاون ہوں۔ میں آپ کی ادویات، خوراک اور ڈاکٹر کے مشورے میں مدد کر سکتا ہوں۔`;
+      quickSuggestions = ['میری ادویات کا شیڈول سمجھائیں', 'دوا کے مضر اثرات کیا ہیں؟', 'ماہر ڈاکٹر تلاش کریں', 'نسخہ ڈاؤن لوڈ کریں'];
+    } else if (['Hindi', 'हिन्दी', 'Hinglish'].includes(lang)) {
+      initialGreeting = `नमस्ते ${user.name}! मैं आपका प्रैक्सिरेंस एआई स्वास्थ्य सहायक हूँ। मैं आपकी दवाओं, खुराक और डॉक्टर परामर्श में मदद कर सकता हूँ।`;
+      quickSuggestions = ['मेरी दवाएं और खुराक समझाइए', 'दवा के दुष्प्रभाव क्या हैं?', 'सत्यापित डॉक्टर खोजें', 'प्रिस्क्रिप्शन डाउनलोड करें'];
+    } else if (lang === 'Telugu' || lang === 'తెలుగు') {
+      initialGreeting = `నమస్కారం ${user.name}! నేను మీ ప్రాక్సిరెన్స్ AI క్లినికల్ అసిస్టెంట్‌ని. మీ మందుల షెడ్యూల్ మరియు ప్రిస్క్రిప్షన్ వివరాలలో నేను మీకు సహాయం చేయగలను.`;
+      quickSuggestions = ['నా మందుల షెడ్యూల్ వివరించండి', 'సైడ్ ఎఫెక్ట్స్ ఏమిటి?', 'డాక్టర్లను కనుగొనండి', 'ప్రిస్క్రిప్షన్ డౌన్‌లోడ్'];
+    } else if (lang === 'Tamil' || lang === 'தமிழ்') {
+      initialGreeting = `வணக்கம் ${user.name}! நான் உங்கள் பிராக்சிரென்ஸ் AI மருத்துவ உதவியாளர். உங்கள் மருந்துகள் மற்றும் மருத்துவ ஆலோசனைகளுக்கு நான் உதவ முடியும்.`;
+      quickSuggestions = ['மருந்து அட்டவணையை விளக்குங்கள்', 'பக்க விளைவுகள் என்ன?', 'மருத்துவரைத் தேடுங்கள்', 'மருந்துச் சீட்டு பதிவிறக்கு'];
+    }
 
     const welcomeMsg: ChatMessage = {
       id: 'welcome_1',
@@ -75,9 +98,7 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
       text: initialGreeting,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       language: lang,
-      quickSuggestions: isHindi
-        ? ['मेरी दवाएं और खुराक समझाइए', 'दवा के दुष्प्रभाव क्या हैं?', 'सत्यापित डॉक्टर खोजें', 'प्रिस्क्रिप्शन डाउनलोड करें']
-        : ['Explain my medication schedule', 'What are potential side effects?', 'Find a verified specialist', 'How to download prescription PDF?'],
+      quickSuggestions,
     };
     setMessages([welcomeMsg]);
   };

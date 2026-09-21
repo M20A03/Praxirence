@@ -206,7 +206,7 @@ export const PrescriptionModal: React.FC<PrescriptionModalProps> = ({
         {/* ========================================================================= */}
         {/* PRINTABLE PRESCRIPTION LETTERHEAD                                         */}
         {/* ========================================================================= */}
-        <div id="printable-prescription" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+        <div id="printable-prescription" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }}>
           {/* Clinic & Doctor Header */}
           <div style={{
             display: 'flex',

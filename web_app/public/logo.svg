@@ -38,7 +38,7 @@
 
   <!-- Brand Typography -->
   <g transform="translate(68, 42)">
-    <text font-family="'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="32" font-weight="800" letter-spacing="-0.03em" fill="#0f172a">
+    <text font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="32" font-weight="800" letter-spacing="-0.03em" fill="#0f172a">
       prax<tspan fill="#06b6d4">i</tspan><tspan fill="url(#text-grad)">rence</tspan>
     </text>
   </g>

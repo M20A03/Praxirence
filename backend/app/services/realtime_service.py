@@ -72,6 +72,30 @@ class RealtimeConnectionManager:
         for dead in dead_connections:
             targets.discard(dead)
 
+    def emit_to_doctor_sync(self, doctor_id: str, event: str, payload: Any):
+        """Dispatches event to doctor from synchronous route handlers."""
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                loop.create_task(self.emit_to_doctor(doctor_id, event, payload))
+            else:
+                loop.run_until_complete(self.emit_to_doctor(doctor_id, event, payload))
+        except Exception as e:
+            logger.warning(f"Sync emit to doctor notice: {e}")
+
+    def emit_to_patient_sync(self, patient_id: str, event: str, payload: Any):
+        """Dispatches event to patient from synchronous route handlers."""
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                loop.create_task(self.emit_to_patient(patient_id, event, payload))
+            else:
+                loop.run_until_complete(self.emit_to_patient(patient_id, event, payload))
+        except Exception as e:
+            logger.warning(f"Sync emit to patient notice: {e}")
+
     async def broadcast_vital_alert(self, doctor_id: str, patient_name: str, metric: str, value: str):
         """Broadcasts critical vital spike alert to doctor's device."""
         await self.emit_to_doctor(doctor_id, "CRITICAL_VITAL_ALERT", {

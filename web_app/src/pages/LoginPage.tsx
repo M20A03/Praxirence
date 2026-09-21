@@ -200,8 +200,8 @@ export const LoginPage: React.FC = () => {
       const res = await api.requestDoctorOtp(docPhone, 'whatsapp');
       setDocOtpSent(true);
       setDocOtpCountdown(60);
-      setDemoCodeHint(res.demo_code || '123456');
-      setSuccessMsg(`Access code dispatched to WhatsApp (${docPhone}). Dev Demo Code: ${res.demo_code || '123456'}`);
+      setDemoCodeHint(res.demo_code || '987654');
+      setSuccessMsg(`Access code dispatched to WhatsApp (${docPhone}). Dev Demo Code: ${res.demo_code || '987654'}`);
     } catch (err: any) {
       setError(err.message || 'Failed to dispatch WhatsApp OTP for doctor.');
     } finally {
@@ -231,8 +231,8 @@ export const LoginPage: React.FC = () => {
       const res = await api.requestPatientOtp(patPhone, 'whatsapp');
       setPatOtpSent(true);
       setPatOtpCountdown(60);
-      setDemoCodeHint(res.demo_code || '123456');
-      setSuccessMsg(`Verification code dispatched to WhatsApp (${patPhone}). Dev Demo Code: ${res.demo_code || '123456'}`);
+      setDemoCodeHint(res.demo_code || '987654');
+      setSuccessMsg(`Verification code dispatched to WhatsApp (${patPhone}). Dev Demo Code: ${res.demo_code || '987654'}`);
     } catch (err: any) {
       setError(err.message || 'Failed to send WhatsApp OTP.');
     } finally {
@@ -783,7 +783,7 @@ export const LoginPage: React.FC = () => {
                             autoFocus
                             className="input-field"
                             style={{ paddingLeft: '42px', letterSpacing: '4px', fontSize: '1.1rem', fontWeight: 700 }}
-                            placeholder="123456"
+                            placeholder="987654"
                             value={docOtpCode}
                             onChange={(e) => setDocOtpCode(e.target.value)}
                           />
@@ -801,13 +801,13 @@ export const LoginPage: React.FC = () => {
                           style={{
                             background: 'none',
                             border: 'none',
-                            color: docOtpCountdown > 0 ? 'var(--text-muted)' : '#06b6d4',
+                            color: docOtpCountdown > 0 ? 'var(--text-muted)' : '#0284c7',
                             fontSize: '0.75rem',
                             fontWeight: 600,
                             cursor: docOtpCountdown > 0 ? 'not-allowed' : 'pointer'
                           }}
                         >
-                          Resend WhatsApp OTP
+                          Resend via WhatsApp
                         </button>
                       </div>
 
@@ -818,11 +818,11 @@ export const LoginPage: React.FC = () => {
                         style={{
                           width: '100%',
                           padding: '12px',
-                          background: 'linear-gradient(135deg, #10b981, #0891b2)',
-                          borderColor: '#10b981'
+                          background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                          borderColor: '#0284c7'
                         }}
                       >
-                        <span>{loading ? 'Authenticating Doctor...' : 'Verify & Open Clinical EHR'}</span>
+                        <span>{loading ? 'Authenticating Clinician...' : 'Verify OTP & Open Dashboard'}</span>
                         <ArrowRight size={18} />
                       </button>
                     </div>
@@ -952,7 +952,7 @@ export const LoginPage: React.FC = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px' }}>
               <button
                 type="button"
-                onClick={() => loginDoctorOtp('+919876543210', '123456')}
+                onClick={() => loginDoctorOtp('+919876543210', '987654')}
                 disabled={loading}
                 className="btn btn-secondary"
                 style={{
@@ -1068,7 +1068,7 @@ export const LoginPage: React.FC = () => {
                         autoFocus
                         className="input-field"
                         style={{ paddingLeft: '42px', letterSpacing: '4px', fontSize: '1.1rem', fontWeight: 700 }}
-                        placeholder="123456"
+                        placeholder="987654"
                         value={patOtpCode}
                         onChange={(e) => setPatOtpCode(e.target.value)}
                       />
@@ -1133,7 +1133,7 @@ export const LoginPage: React.FC = () => {
 
             <button
               type="button"
-              onClick={() => loginPatientOtp('+919835139865', '123456')}
+              onClick={() => loginPatientOtp('+919835139865', '987654')}
               disabled={loading}
               className="btn btn-secondary"
               style={{

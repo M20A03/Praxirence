@@ -54,6 +54,27 @@ export const VitalsTrackerModal: React.FC<VitalsTrackerModalProps> = ({
   const [weightInput, setWeightInput] = useState('68.5');
   const [isEditing, setIsEditing] = useState(false);
 
+  const [vitalsHistory, setVitalsHistory] = useState<PatientVitals[]>([
+    {
+      bloodPressureSys: 120,
+      bloodPressureDia: 80,
+      bloodSugar: 96,
+      heartRate: 72,
+      spo2: 98,
+      weightKg: 68.5,
+      recordedAt: 'Yesterday, 08:30 AM',
+    },
+    {
+      bloodPressureSys: 124,
+      bloodPressureDia: 82,
+      bloodSugar: 102,
+      heartRate: 75,
+      spo2: 97,
+      weightKg: 68.6,
+      recordedAt: '3 days ago',
+    },
+  ]);
+
   useEffect(() => {
     loadSavedVitals();
   }, []);
@@ -70,6 +91,10 @@ export const VitalsTrackerModal: React.FC<VitalsTrackerModalProps> = ({
         setPulseInput(parsed.heartRate.toString());
         setSpo2Input(parsed.spo2.toString());
         setWeightInput(parsed.weightKg.toString());
+      }
+      const histSaved = await AsyncStorage.getItem('praxirence_patient_vitals_history');
+      if (histSaved) {
+        setVitalsHistory(JSON.parse(histSaved));
       }
     } catch (e) {}
   };
@@ -89,16 +114,19 @@ export const VitalsTrackerModal: React.FC<VitalsTrackerModalProps> = ({
       heartRate: pulse,
       spo2: oxygen,
       weightKg: weight,
-      recordedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      recordedAt: `Today, ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
     };
 
     setVitals(newVitals);
+    const updatedHistory = [newVitals, ...vitalsHistory.filter((_, i) => i < 8)];
+    setVitalsHistory(updatedHistory);
     setIsEditing(false);
 
     try {
       await AsyncStorage.setItem('praxirence_patient_vitals', JSON.stringify(newVitals));
+      await AsyncStorage.setItem('praxirence_patient_vitals_history', JSON.stringify(updatedHistory));
       onVitalsUpdated?.(newVitals);
-      Alert.alert('✓ Vitals Saved', 'Your health vitals have been updated.');
+      Alert.alert('Vitals Recorded', 'Your reading has been added to your durable health trend history.');
     } catch (e) {}
   };
 
@@ -195,6 +223,28 @@ export const VitalsTrackerModal: React.FC<VitalsTrackerModalProps> = ({
                     {vitals.weightKg} <Text style={styles.vitalsUnit}>kg (BMI 22.4 - Healthy Range)</Text>
                   </Text>
                 </View>
+
+                {/* Historical Vitals Trend */}
+                {vitalsHistory.length > 0 && (
+                  <View style={styles.historySection}>
+                    <Text style={styles.historySectionTitle}>Recent Readings Trend</Text>
+                    {vitalsHistory.map((item, idx) => (
+                      <View key={idx} style={styles.historyRow}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.historyTime}>{item.recordedAt}</Text>
+                          <Text style={styles.historyMetrics}>
+                            BP: {item.bloodPressureSys}/{item.bloodPressureDia} • Glucose: {item.bloodSugar} mg/dL
+                          </Text>
+                        </View>
+                        <View style={styles.historyPill}>
+                          <Text style={styles.historyPillText}>
+                            HR {item.heartRate} | {item.spo2}%
+                          </Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
 
                 {/* Action to Edit */}
                 <TouchableOpacity
@@ -433,5 +483,54 @@ const styles = StyleSheet.create({
     color: '#475569',
     fontSize: 14,
     fontWeight: '600',
+  },
+  historySection: {
+    marginTop: 14,
+    marginBottom: 14,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  historySectionTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  historyTime: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  historyMetrics: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginTop: 2,
+  },
+  historyPill: {
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  historyPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0369A1',
   },
 });

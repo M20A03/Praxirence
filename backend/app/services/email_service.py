@@ -92,21 +92,24 @@ class EmailService:
         self.from_email = settings.SMTP_FROM_EMAIL
         self.from_name = settings.SMTP_FROM_NAME
         self.resend_api_key = getattr(settings, "RESEND_API_KEY", None)
+        self.brevo_api_key = getattr(settings, "BREVO_API_KEY", None)
 
     def _send_mime_email(self, subject: str, plain_text: str, html_content: str, recipient_email: str) -> bool:
         """
-        Dispatches email with dual-port fallback (Port 587 STARTTLS -> Port 465 SSL)
-        and optional Resend HTTPS REST API support.
+        Dispatches email via HTTPS REST APIs (Port 443 - never blocked by cloud firewalls like Railway)
+        with automated fallback to dual-port SMTP (Port 587 STARTTLS -> Port 465 SSL).
         """
-        # 1. Try Resend HTTPS REST API if key is present
+        # 1. Try Resend HTTPS REST API (Port 443)
         if self.resend_api_key:
             try:
                 import urllib.request
                 import json
+                # Resend requires onboarding@resend.dev unless a custom domain is verified
+                resend_sender = "Praxirence <onboarding@resend.dev>" if "@gmail.com" in self.from_email.lower() else f"{self.from_name} <{self.from_email}>"
                 req = urllib.request.Request(
                     "https://api.resend.com/emails",
                     data=json.dumps({
-                        "from": f"{self.from_name} <{self.from_email}>",
+                        "from": resend_sender,
                         "to": [recipient_email],
                         "subject": subject,
                         "html": html_content,
@@ -122,9 +125,36 @@ class EmailService:
                         logger.info(f"Dispatched email to {recipient_email} via Resend HTTPS API")
                         return True
             except Exception as e:
-                logger.warning(f"Resend HTTPS dispatch failed, attempting SMTP: {e}")
+                logger.warning(f"Resend HTTPS dispatch notice: {e}")
 
-        # 2. Try SMTP if credentials exist
+        # 2. Try Brevo (Sendinblue) HTTPS REST API (Port 443)
+        if self.brevo_api_key:
+            try:
+                import urllib.request
+                import json
+                req = urllib.request.Request(
+                    "https://api.brevo.com/v3/smtp/email",
+                    data=json.dumps({
+                        "sender": {"name": self.from_name, "email": self.from_email},
+                        "to": [{"email": recipient_email}],
+                        "subject": subject,
+                        "htmlContent": html_content,
+                        "textContent": plain_text
+                    }).encode("utf-8"),
+                    headers={
+                        "api-key": self.brevo_api_key,
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    }
+                )
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    if resp.status in (200, 201):
+                        logger.info(f"Dispatched email to {recipient_email} via Brevo HTTPS API")
+                        return True
+            except Exception as e:
+                logger.warning(f"Brevo HTTPS dispatch notice: {e}")
+
+        # 3. Try SMTP if credentials exist (works locally; blocked by cloud firewalls like Railway)
         if not (self.smtp_host and self.smtp_user and self.smtp_password):
             return False
 

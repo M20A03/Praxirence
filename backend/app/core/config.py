@@ -59,8 +59,9 @@ class Settings(BaseSettings):
     # Groq API (Ultra-low Latency LPU Whisper & Inference)
     GROQ_API_KEY: Optional[str] = None
 
-    # Resend Email REST API (HTTPS fallback - port 443, never blocked)
+    # HTTPS Email REST APIs (Port 443 - 100% immune to cloud firewall SMTP port blocks)
     RESEND_API_KEY: Optional[str] = None
+    BREVO_API_KEY: Optional[str] = None
 
     # SMTP / Noreply Email Configuration (Email OTP Verification)
     SMTP_HOST: Optional[str] = "smtp.gmail.com"

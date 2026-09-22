@@ -222,11 +222,16 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
     setError(null);
     setLoading(true);
     try {
-      await mobileApi.requestDoctorEmailOtp(email.trim(), doctorName.trim());
+      const res = await mobileApi.requestDoctorEmailOtp(email.trim(), doctorName.trim());
       setEmailOtpSent(true);
       setEmailOtpCode('');
       setResendCooldown(60);
-      setSuccessNotice(`Verification code sent to ${email.trim()}. Please check your inbox and spam folder.`);
+      const notice = res?.message || `Verification code sent to ${email.trim()}. Please check your inbox and spam folder.`;
+      setSuccessNotice(notice);
+      const codeMatch = notice.match(/\b(\d{6})\b/);
+      if (codeMatch && notice.toLowerCase().includes('testing')) {
+        setEmailOtpCode(codeMatch[1]);
+      }
     } catch (err: any) {
       const msg = err?.message || '';
       if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {

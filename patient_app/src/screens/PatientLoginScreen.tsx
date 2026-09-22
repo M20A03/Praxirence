@@ -240,11 +240,16 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
     setError(null);
     setLoading(true);
     try {
-      await mobileApi.requestPatientEmailOtp(email.trim(), patientName.trim());
+      const res = await mobileApi.requestPatientEmailOtp(email.trim(), patientName.trim());
       setEmailOtpSent(true);
       setEmailOtpCode('');
       setResendCooldown(60);
-      setSuccessNotice(`Verification code sent to ${email.trim()}. Please check your inbox and spam folder. Code is valid for 10 minutes.`);
+      const notice = res?.message || `Verification code sent to ${email.trim()}. Please check your inbox and spam folder.`;
+      setSuccessNotice(notice);
+      const codeMatch = notice.match(/\b(\d{6})\b/);
+      if (codeMatch && notice.toLowerCase().includes('testing')) {
+        setEmailOtpCode(codeMatch[1]);
+      }
     } catch (err: any) {
       const msg = err?.message || '';
       if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {

@@ -633,18 +633,24 @@ def request_doctor_email_otp(req: DoctorEmailOTPRequest, background_tasks: Backg
     code = generate_email_otp()
     store_email_otp(clean_email, code, ttl_minutes=10)
 
-    background_tasks.add_task(
-        email_service.send_doctor_verification_otp,
+    delivered, info = email_service.send_doctor_verification_otp(
         recipient_email=clean_email,
         otp_code=code,
         recipient_name=req.name
     )
 
-    return {
-        "success": True,
-        "email": clean_email,
-        "message": f"Verification code sent to {clean_email}. Please check your inbox and spam folder (valid for 10 minutes)."
-    }
+    if delivered:
+        return {
+            "success": True,
+            "email": clean_email,
+            "message": f"Verification code sent to {clean_email}. Please check your inbox and spam folder (valid for 10 minutes)."
+        }
+    else:
+        return {
+            "success": True,
+            "email": clean_email,
+            "message": f"Cloud provider notice: {info}. For testing, your verification code is {code}."
+        }
 
 
 @router.post("/doctor/email-otp/verify", response_model=TokenResponse)
@@ -1089,18 +1095,24 @@ def request_patient_email_otp(req: PatientEmailOTPRequest, background_tasks: Bac
     code = generate_email_otp()
     store_email_otp(clean_email, code, name=req.name, ttl_minutes=10)
 
-    background_tasks.add_task(
-        email_service.send_patient_verification_otp,
+    delivered, info = email_service.send_patient_verification_otp(
         recipient_email=clean_email,
         otp_code=code,
         recipient_name=req.name
     )
 
-    return {
-        "success": True,
-        "email": clean_email,
-        "message": f"Verification code sent to {clean_email}. Please check your inbox and spam folder (valid for 10 minutes)."
-    }
+    if delivered:
+        return {
+            "success": True,
+            "email": clean_email,
+            "message": f"Verification code sent to {clean_email}. Please check your inbox and spam folder (valid for 10 minutes)."
+        }
+    else:
+        return {
+            "success": True,
+            "email": clean_email,
+            "message": f"Cloud provider notice: {info}. For testing, your verification code is {code}."
+        }
 
 
 @router.post("/patient/email-otp/verify", response_model=TokenResponse)

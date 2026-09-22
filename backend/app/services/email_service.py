@@ -9,7 +9,7 @@ import ssl
 import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from typing import Optional, Dict
+from typing import Optional, Dict, Tuple
 from datetime import datetime, timedelta, timezone
 from app.core.config import settings
 
@@ -91,21 +91,68 @@ class EmailService:
         self.smtp_password = settings.SMTP_PASSWORD
         self.from_email = settings.SMTP_FROM_EMAIL
         self.from_name = settings.SMTP_FROM_NAME
+        self.gmail_webhook_url = getattr(settings, "GMAIL_WEBHOOK_URL", None)
         self.resend_api_key = getattr(settings, "RESEND_API_KEY", None)
         self.brevo_api_key = getattr(settings, "BREVO_API_KEY", None)
 
-    def _send_mime_email(self, subject: str, plain_text: str, html_content: str, recipient_email: str) -> bool:
+    def _send_mime_email(self, subject: str, plain_text: str, html_content: str, recipient_email: str) -> Tuple[bool, str]:
         """
         Dispatches email via HTTPS REST APIs (Port 443 - never blocked by cloud firewalls like Railway)
         with automated fallback to dual-port SMTP (Port 587 STARTTLS -> Port 465 SSL).
+        
+        Returns:
+            Tuple[bool, str]: (is_success, delivery_info_or_failure_reason)
         """
-        # 1. Try Resend HTTPS REST API (Port 443)
+        import urllib.request
+        import urllib.error
+        import json
+
+        last_error = "No active email dispatch provider found"
+
+        # 1. Google Apps Script Webhook (Port 443 HTTPS - Zero-Domain required, sends to ANY recipient from user's Gmail)
+        if self.gmail_webhook_url:
+            try:
+                payload = {
+                    "to": recipient_email,
+                    "subject": subject,
+                    "html": html_content,
+                    "text": plain_text
+                }
+                webhook_sent = False
+                try:
+                    import httpx
+                    with httpx.Client(follow_redirects=True, timeout=15.0) as client:
+                        resp = client.post(
+                            self.gmail_webhook_url,
+                            json=payload,
+                            headers={"Content-Type": "application/json"}
+                        )
+                        if resp.status_code in (200, 201, 302):
+                            logger.info(f"Dispatched email to {recipient_email} via Google Apps Script Webhook (httpx)")
+                            return True, "Google Apps Script Webhook"
+                except ImportError:
+                    pass
+
+                if not webhook_sent:
+                    req = urllib.request.Request(
+                        self.gmail_webhook_url,
+                        data=json.dumps(payload).encode("utf-8"),
+                        headers={
+                            "Content-Type": "application/json",
+                            "User-Agent": "Mozilla/5.0 (compatible; PraxirenceCloud/2.0; +https://praxirence.com)"
+                        }
+                    )
+                    with urllib.request.urlopen(req, timeout=15) as resp:
+                        if resp.status in (200, 201, 302):
+                            logger.info(f"Dispatched email to {recipient_email} via Google Apps Script Webhook (urllib)")
+                            return True, "Google Apps Script Webhook"
+            except Exception as e:
+                logger.warning(f"Google Apps Script Webhook dispatch notice: {e}")
+                last_error = f"Google Webhook error: {e}"
+
+        # 2. Resend HTTPS REST API (Port 443)
         if self.resend_api_key:
             try:
-                import urllib.request
-                import urllib.error
-                import json
-                # Resend requires onboarding@resend.dev unless a custom domain is verified
                 resend_sender = "Praxirence <onboarding@resend.dev>" if "@gmail.com" in self.from_email.lower() else f"{self.from_name} <{self.from_email}>"
                 req = urllib.request.Request(
                     "https://api.resend.com/emails",
@@ -125,19 +172,23 @@ class EmailService:
                 with urllib.request.urlopen(req, timeout=10) as resp:
                     if resp.status in (200, 201):
                         logger.info(f"Dispatched email to {recipient_email} via Resend HTTPS API")
-                        return True
+                        return True, "Resend HTTPS API"
             except urllib.error.HTTPError as http_err:
                 err_body = http_err.read().decode("utf-8", errors="ignore")
                 logger.warning(f"Resend HTTPS HTTPError {http_err.code} for {recipient_email}: {err_body}")
+                if http_err.code == 403 or "only send testing emails" in err_body:
+                    last_error = f"Resend sandbox permits live delivery only to account owner ({self.from_email}) until custom domain DNS is configured"
+                elif http_err.code == 422:
+                    last_error = f"Resend validation error for {recipient_email}"
+                else:
+                    last_error = f"Resend HTTP {http_err.code}: {err_body}"
             except Exception as e:
                 logger.warning(f"Resend HTTPS dispatch notice: {e}")
+                last_error = f"Resend API error: {e}"
 
-        # 2. Try Brevo (Sendinblue) HTTPS REST API (Port 443)
+        # 3. Brevo (Sendinblue) HTTPS REST API (Port 443)
         if self.brevo_api_key:
             try:
-                import urllib.request
-                import urllib.error
-                import json
                 req = urllib.request.Request(
                     "https://api.brevo.com/v3/smtp/email",
                     data=json.dumps({
@@ -157,49 +208,51 @@ class EmailService:
                 with urllib.request.urlopen(req, timeout=10) as resp:
                     if resp.status in (200, 201):
                         logger.info(f"Dispatched email to {recipient_email} via Brevo HTTPS API")
-                        return True
+                        return True, "Brevo HTTPS API"
             except urllib.error.HTTPError as http_err:
                 err_body = http_err.read().decode("utf-8", errors="ignore")
                 logger.warning(f"Brevo HTTPS HTTPError {http_err.code} for {recipient_email}: {err_body}")
+                last_error = f"Brevo HTTP {http_err.code}: {err_body}"
             except Exception as e:
                 logger.warning(f"Brevo HTTPS dispatch notice: {e}")
+                last_error = f"Brevo API error: {e}"
 
-        # 3. Try SMTP if credentials exist (works locally; blocked by cloud firewalls like Railway)
-        if not (self.smtp_host and self.smtp_user and self.smtp_password):
-            return False
+        # 4. SMTP fallback (Dual-port 587 STARTTLS -> 465 SSL)
+        if self.smtp_host and self.smtp_user and self.smtp_password:
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = subject
+            msg["From"] = f"{self.from_name} <{self.from_email}>"
+            msg["To"] = recipient_email
+            msg["Reply-To"] = self.from_email
+            msg.attach(MIMEText(plain_text, "plain"))
+            msg.attach(MIMEText(html_content, "html"))
 
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"] = f"{self.from_name} <{self.from_email}>"
-        msg["To"] = recipient_email
-        msg["Reply-To"] = self.from_email
-        msg.attach(MIMEText(plain_text, "plain"))
-        msg.attach(MIMEText(html_content, "html"))
+            # Port 587
+            try:
+                context = ssl.create_default_context()
+                with smtplib.SMTP(self.smtp_host, 587, timeout=10) as server:
+                    server.starttls(context=context)
+                    server.login(self.smtp_user, self.smtp_password)
+                    server.sendmail(self.from_email, recipient_email, msg.as_string())
+                logger.info(f"Dispatched verification email to {recipient_email} via SMTP (Port 587 STARTTLS)")
+                return True, "SMTP (Port 587 STARTTLS)"
+            except Exception as e587:
+                logger.warning(f"SMTP Port 587 STARTTLS notice for {recipient_email} ({e587}), attempting Port 465 SSL fallback...")
+                last_error = f"SMTP 587 failed: {e587}"
 
-        # Try Port 587 with STARTTLS first
-        try:
-            context = ssl.create_default_context()
-            with smtplib.SMTP(self.smtp_host, 587, timeout=10) as server:
-                server.starttls(context=context)
-                server.login(self.smtp_user, self.smtp_password)
-                server.sendmail(self.from_email, recipient_email, msg.as_string())
-            logger.info(f"Dispatched verification email to {recipient_email} via SMTP (Port 587 STARTTLS)")
-            return True
-        except Exception as e587:
-            logger.warning(f"SMTP Port 587 STARTTLS notice for {recipient_email} ({e587}), attempting Port 465 SSL fallback...")
+            # Port 465
+            try:
+                context = ssl.create_default_context()
+                with smtplib.SMTP_SSL(self.smtp_host, 465, context=context, timeout=10) as server:
+                    server.login(self.smtp_user, self.smtp_password)
+                    server.sendmail(self.from_email, recipient_email, msg.as_string())
+                logger.info(f"Dispatched verification email to {recipient_email} via SMTP_SSL (Port 465 SSL)")
+                return True, "SMTP (Port 465 SSL)"
+            except Exception as e465:
+                logger.error(f"SMTP Port 465 SSL also failed for {recipient_email}: {e465}")
+                last_error = f"SMTP 465 failed: {e465}"
 
-        # Fallback to Port 465 with direct SSL (bypasses cloud datacenter port 587 blocking)
-        try:
-            context = ssl.create_default_context()
-            with smtplib.SMTP_SSL(self.smtp_host, 465, context=context, timeout=10) as server:
-                server.login(self.smtp_user, self.smtp_password)
-                server.sendmail(self.from_email, recipient_email, msg.as_string())
-            logger.info(f"Dispatched verification email to {recipient_email} via SMTP_SSL (Port 465 SSL)")
-            return True
-        except Exception as e465:
-            logger.error(f"SMTP Port 465 SSL also failed for {recipient_email}: {e465}")
-
-        return False
+        return False, last_error
 
     def send_doctor_verification_otp(
         self,
@@ -272,30 +325,31 @@ class EmailService:
             f"— Praxirence Team"
         )
 
-        # Live Delivery with Dual-Port Fallback (Port 587 STARTTLS -> Port 465 SSL) and Resend API
-        if self._send_mime_email(subject, plain_text, html_content, recipient_email):
-            logger.info(f"Successfully dispatched real verification email to {recipient_email}")
-            return True
+        # Live Delivery via Webhook / Resend API / Brevo / Dual-Port SMTP
+        success, info = self._send_mime_email(subject, plain_text, html_content, recipient_email)
+        if success:
+            logger.info(f"Successfully dispatched real verification email to {recipient_email} via {info}")
+            return True, info
         
-        # Local / Test Fallback: Clean simulated logging
-        logger.info(
+        # Simulated logging when delivery fails or sandbox is active
+        logger.warning(
             f"\n"
             f"===============================================================\n"
-            f"📧 PRAXIRENCE CLINICAL EMAIL DISPATCH (noreply@praxirence.com)\n"
+            f"📧 PRAXIRENCE CLINICAL EMAIL NOTICE (noreply@praxirence.com)\n"
             f"To: {recipient_email} ({name_display})\n"
             f"Subject: {subject}\n"
-            f"VERIFICATION CODE: {otp_code}\n"
-            f"Status: Delivered (10m TTL)\n"
+            f"STATUS: Live delivery unavailable ({info})\n"
+            f"FALLBACK OTP CODE: {otp_code} (10m TTL)\n"
             f"===============================================================\n"
         )
-        return True
+        return False, info
 
     def send_patient_verification_otp(
         self,
         recipient_email: str,
         otp_code: str,
         recipient_name: Optional[str] = None
-    ) -> bool:
+    ) -> Tuple[bool, str]:
         """
         Sends an official verification email with 6-digit OTP code to a patient.
         """
@@ -357,22 +411,23 @@ class EmailService:
             f"This code is valid for 10 minutes. Please enter it in the app to log in.\n\n"
             f"— Praxirence Team"
         )
-        # Live Delivery with Dual-Port Fallback (Port 587 STARTTLS -> Port 465 SSL) and Resend API
-        if self._send_mime_email(subject, plain_text, html_content, recipient_email):
-            logger.info(f"Successfully dispatched real patient verification email to {recipient_email}")
-            return True
+        # Live Delivery via Webhook / Resend API / Brevo / Dual-Port SMTP
+        success, info = self._send_mime_email(subject, plain_text, html_content, recipient_email)
+        if success:
+            logger.info(f"Successfully dispatched real patient verification email to {recipient_email} via {info}")
+            return True, info
 
-        logger.info(
+        logger.warning(
             f"\n"
             f"===============================================================\n"
-            f"📧 PRAXIRENCE CARE PATIENT EMAIL DISPATCH (noreply@praxirence.com)\n"
+            f"📧 PRAXIRENCE CARE PATIENT EMAIL NOTICE (noreply@praxirence.com)\n"
             f"To: {recipient_email} ({name_display})\n"
             f"Subject: {subject}\n"
-            f"VERIFICATION CODE: {otp_code}\n"
-            f"Status: Delivered (10m TTL)\n"
+            f"STATUS: Live delivery unavailable ({info})\n"
+            f"FALLBACK OTP CODE: {otp_code} (10m TTL)\n"
             f"===============================================================\n"
         )
-        return True
+        return False, info
 
 
 email_service = EmailService()

@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     GROQ_API_KEY: Optional[str] = None
 
     # HTTPS Email REST APIs (Port 443 - 100% immune to cloud firewall SMTP port blocks)
-    GMAIL_WEBHOOK_URL: Optional[str] = None
+    GMAIL_WEBHOOK_URL: Optional[str] = os.environ.get("GMAIL_WEBHOOK_URL", "https://script.google.com/macros/s/AKfycbyycjZp4I1uebXZ2XkOCF5YHfE37IIvAEkNephBOxgGnSJp-jm9NIbK5RJKuYBWN_zX7A/exec")
     RESEND_API_KEY: Optional[str] = os.environ.get("RESEND_API_KEY") or base64.b64decode("cmVfQmhSMWVzN05fQzVDa2VkYnZtU1Z5bVJ0b1g4M3BkZmhx").decode()
     BREVO_API_KEY: Optional[str] = None
 

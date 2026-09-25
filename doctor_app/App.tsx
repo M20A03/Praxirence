@@ -27,12 +27,13 @@ import { DoctorNewConsultationScreen } from './src/screens/doctor/DoctorNewConsu
 import { DoctorProfileScreen } from './src/screens/doctor/DoctorProfileScreen';
 
 import { mobileApi } from './src/services/api';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 
 export const navigationRef = createNavigationContainerRef<any>();
 
 const Tab = createBottomTabNavigator();
 
-export default function App() {
+function DoctorAppContent() {
   const [showSplash, setShowSplash] = useState<boolean>(true);
   const [currentDoctor, setCurrentDoctor] = useState<DoctorUser | null>(null);
   const [loadingSession, setLoadingSession] = useState<boolean>(true);
@@ -91,16 +92,30 @@ export default function App() {
       try {
         const session = await mobileApi.restoreSession();
         if (session && session.user && session.role === 'doctor') {
-          setCurrentDoctor(session.user as DoctorUser);
+          const u = session.user as any;
+          setCurrentDoctor({
+            ...u,
+            degree: u.degree || 'MBBS, MD (General Medicine)',
+            qualifications: u.qualifications || 'Fellowship in Internal Medicine & Diabetology',
+            experience_years: u.experience_years || '12+ Yrs Exp',
+            designation: u.designation || 'Chief Medical Officer & Senior Physician',
+            languages: u.languages || ['English', 'Hindi', 'Hinglish'],
+          });
         } else if (session && session.user) {
+          const u = session.user as any;
           const doc: DoctorUser = {
-            id: session.user.id,
-            name: session.user.name.startsWith('Dr.') ? session.user.name : `Dr. ${session.user.name}`,
-            email: 'doctor@praxirence.com',
-            phone: session.user.phone,
-            specialty: 'Chief Medical Officer & Physician',
-            clinic_name: 'Praxirence Clinical Centre',
-            reg_number: 'NMC-2024-84920',
+            id: u.id,
+            name: u.name?.startsWith('Dr.') ? u.name : `Dr. ${u.name || 'Mayank Raj Gupta'}`,
+            email: u.email || 'doctor@praxirence.com',
+            phone: u.phone || '+919876543210',
+            specialty: u.specialty || 'Internal Medicine & Pulmonology',
+            degree: u.degree || 'MBBS, MD (General Medicine)',
+            qualifications: u.qualifications || 'Fellowship in Internal Medicine & Diabetology',
+            experience_years: u.experience_years || '12+ Yrs Exp',
+            designation: u.designation || 'Chief Medical Officer & Senior Physician',
+            languages: u.languages || ['English', 'Hindi', 'Hinglish'],
+            clinic_name: u.clinic_name || 'Praxirence Super-Speciality Clinic',
+            reg_number: u.reg_number || 'NMC-2024-84920',
             role: 'doctor',
           };
           setCurrentDoctor(doc);
@@ -250,6 +265,14 @@ export default function App() {
         </Tab.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <DoctorAppContent />
+    </ErrorBoundary>
   );
 }
 

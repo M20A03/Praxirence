@@ -120,8 +120,12 @@ class DoctorRealtimeService {
   private startHeartbeat() {
     this.stopHeartbeat();
     this.pingInterval = setInterval(() => {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({ event: 'PING', payload: Date.now() }));
+      try {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          this.ws.send(JSON.stringify({ event: 'PING', payload: Date.now() }));
+        }
+      } catch (e) {
+        // Safe socket heartbeat catch
       }
     }, 12000);
   }
@@ -134,11 +138,15 @@ class DoctorRealtimeService {
   }
 
   public sendPrescriptionNotification(patientId: string, diagnosis: string, medicinesCount: number) {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({
-        event: 'PRESCRIPTION_SENT',
-        payload: { patient_id: patientId, diagnosis, medicines_count: medicinesCount }
-      }));
+    try {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({
+          event: 'PRESCRIPTION_SENT',
+          payload: { patient_id: patientId, diagnosis, medicines_count: medicinesCount }
+        }));
+      }
+    } catch (e) {
+      // Safe socket send catch
     }
   }
 

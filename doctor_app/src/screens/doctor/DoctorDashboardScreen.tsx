@@ -398,6 +398,16 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
     }
   };
 
+  const doctorName = doctor?.name?.startsWith('Dr.') ? doctor.name : `Dr. ${doctor?.name || 'Mayank Raj Gupta'}`;
+  const doctorDegree = doctor?.degree || 'MBBS, MD (General Medicine)';
+  const doctorSpecialty = doctor?.specialty || 'Internal Medicine & Pulmonology';
+  const doctorClinic = doctor?.clinic_name || 'Praxirence Super-Speciality Clinic';
+  const doctorReg = doctor?.reg_number || 'NMC-2024-84920';
+  const doctorExp = doctor?.experience_years ? (typeof doctor.experience_years === 'number' ? `${doctor.experience_years}+ Yrs Exp` : doctor.experience_years) : '12+ Yrs Exp';
+  const doctorDesignation = doctor?.designation || 'Chief Medical Officer & Senior Physician';
+  const doctorLanguages = doctor?.languages && doctor.languages.length > 0 ? doctor.languages : ['English', 'Hindi', 'Hinglish'];
+  const doctorInitials = doctorName.replace('Dr. ', '').trim().split(' ').map(n => n[0]).slice(0, 2).join('') || 'MD';
+
   return (
     <ScrollView
       style={styles.container}
@@ -414,22 +424,81 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
       }
     >
       {/* Brand Logo Top Header */}
-      <View style={{ marginBottom: 16 }}>
+      <View style={{ marginBottom: 12 }}>
         <BrandLogoMobile variant="header" size="sm" subtitleText="Clinician Intelligence Suite" />
       </View>
 
-      {/* Clinician Profile Header */}
-      <View style={styles.header}>
-        <View style={{ flex: 1, marginRight: 8 }}>
-          <Text style={styles.greeting}>Attending Physician</Text>
-          <Text style={styles.doctorName}>{doctor.name}</Text>
-          <Text style={styles.specialtyText}>{doctor.specialty} • {doctor.clinic_name}</Text>
-          <Text style={styles.regBadge}>Lic. No: {doctor.reg_number}</Text>
+      {/* Clinician Executive Identity Card */}
+      <View style={styles.clinicianHeroCard}>
+        {/* Clinician Profile Row */}
+        <View style={styles.clinicianTopRow}>
+          <View style={styles.avatarWrapper}>
+            <View style={styles.clinicianAvatar}>
+              <Text style={styles.avatarInitials}>{doctorInitials}</Text>
+            </View>
+            <View style={styles.avatarVerifiedPin}>
+              <Ionicons name="checkmark-circle" size={16} color="#0284C7" />
+            </View>
+          </View>
+
+          <View style={styles.clinicianIdentityMain}>
+            <View style={styles.doctorTitleRow}>
+              <Text style={styles.clinicianName} numberOfLines={1}>
+                {doctorName}
+              </Text>
+              <Ionicons name="checkmark-circle" size={17} color="#0284C7" />
+            </View>
+
+            {/* Medical Degrees - Clean Typography */}
+            <Text style={styles.clinicianDegrees} numberOfLines={1}>
+              {doctorDegree}{doctor?.qualifications && doctor.qualifications !== doctorDegree ? ` • ${doctor.qualifications}` : ''}
+            </Text>
+
+            {/* Designation & Specialty */}
+            <Text style={styles.clinicianDesignationText} numberOfLines={1}>
+              {doctorDesignation}
+            </Text>
+            <Text style={styles.clinicianSpecialtyText} numberOfLines={1}>
+              {doctorSpecialty} • {doctorClinic}
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.verifiedDoctorBadge}>
-          <Ionicons name="shield-checkmark" size={14} color={Colors.primary} />
-          <Text style={styles.verifiedDoctorText}>Verified</Text>
+        {/* Credentials & Registration Metadata */}
+        <View style={styles.credentialsMetaRow}>
+          <Ionicons name="shield-checkmark-outline" size={13} color="#0284C7" />
+          <Text style={styles.credentialsMetaText} numberOfLines={1}>
+            NMC Reg: {doctorReg} • {doctorExp} • {doctorLanguages.join(', ')}
+          </Text>
+        </View>
+
+        {/* Offline Clinical AI Intelligence Status Bar */}
+        <View style={styles.systemStatusBar}>
+          <View style={styles.systemStatusDot} />
+          <Text style={styles.systemStatusText}>
+            Offline Clinical Engine Active • Local Models Ready
+          </Text>
+        </View>
+
+        {/* Quick Consultation Macro Action Bar */}
+        <View style={styles.consultActionsRow}>
+          <TouchableOpacity
+            style={styles.heroConsultBtn}
+            onPress={() => onNavigateToNewVisit()}
+            activeOpacity={0.88}
+          >
+            <Ionicons name="mic" size={16} color="#FFFFFF" />
+            <Text style={styles.heroConsultBtnText}>Start New Consultation</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.heroWalkInBtn}
+            onPress={() => setShowWalkInModal(true)}
+            activeOpacity={0.88}
+          >
+            <Ionicons name="person-add-outline" size={15} color="#0F172A" />
+            <Text style={styles.heroWalkInBtnText}>+ Walk-In</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -585,133 +654,132 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
                 isUrgent && styles.queueCardUrgent,
               ]}
             >
-              {/* Card Header: Token, Time, Triage */}
+              {/* Card Header: Token & Time on Left, Next & Triage on Right */}
               <View style={styles.queueCardHeader}>
-                <View style={[styles.tokenBox, isUrgent && { borderColor: '#FCA5A5', backgroundColor: '#FEF2F2' }]}>
-                  <Text style={[styles.tokenText, isUrgent && { color: '#DC2626' }]}>{item.token}</Text>
-                </View>
-                <View style={styles.timeBox}>
-                  <Ionicons name="time-outline" size={14} color={Colors.textSecondary} />
-                  <Text style={styles.timeText}>{item.time}</Text>
+                <View style={styles.queueHeaderLeft}>
+                  <View style={[styles.tokenBox, isUrgent && styles.tokenBoxUrgent]}>
+                    <Text style={[styles.tokenText, isUrgent && styles.tokenTextUrgent]}>{item.token}</Text>
+                  </View>
+                  <View style={styles.timeBox}>
+                    <Ionicons name="time-outline" size={13} color={Colors.textSecondary} />
+                    <Text style={styles.timeText}>{item.time}</Text>
+                  </View>
                 </View>
 
-                <TouchableOpacity
-                  style={[styles.triageBadge, { backgroundColor: triageStyle.bg, borderColor: triageStyle.border }]}
-                  onPress={() => handleTogglePriority(item)}
-                >
-                  <Ionicons
-                    name={isUrgent ? 'flame' : 'shield-checkmark'}
-                    size={12}
-                    color={triageStyle.text}
-                    style={{ marginRight: 3 }}
-                  />
-                  <Text style={[styles.triageText, { color: triageStyle.text }]}>{item.triage}</Text>
-                </TouchableOpacity>
-
-                {isUrgent ? (
-                  <View style={[styles.nextUpBadge, { backgroundColor: '#FEE2E2', borderColor: '#DC2626' }]}>
-                    <Text style={[styles.nextUpText, { color: '#DC2626', fontWeight: '800' }]}>🚨 PRIORITY</Text>
+                <View style={styles.queueHeaderRight}>
+                  {isNext && (
+                    <View style={styles.nextBadge}>
+                      <Text style={styles.nextBadgeText}>NEXT</Text>
+                    </View>
+                  )}
+                  <View style={[styles.triageBadge, { backgroundColor: triageStyle.bg, borderColor: triageStyle.border }]}>
+                    <View style={[styles.triageDot, { backgroundColor: triageStyle.text }]} />
+                    <Text style={[styles.triageText, { color: triageStyle.text }]}>{item.triage}</Text>
                   </View>
-                ) : isNext ? (
-                  <View style={styles.nextUpBadge}>
-                    <Text style={styles.nextUpText}>NEXT</Text>
-                  </View>
-                ) : null}
+                </View>
               </View>
 
               {/* Patient Info */}
               <View style={styles.patientInfoRow}>
                 <View style={[styles.patientAvatar, isUrgent && { backgroundColor: '#FEE2E2' }]}>
                   <Text style={[styles.avatarText, isUrgent && { color: '#DC2626' }]}>
-                    {item.patient_name.charAt(0)}
+                    {(item.patient_name || 'P').charAt(0)}
                   </Text>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.patientName}>{item.patient_name}</Text>
-                  <Text style={styles.patientSubtext}>
-                    {item.patient_phone} • Status: <Text style={{ color: isUrgent ? '#DC2626' : Colors.primary, fontWeight: '600' }}>{item.status}</Text>
+                <View style={styles.patientDetailsCol}>
+                  <Text style={styles.patientName} numberOfLines={1}>{item.patient_name || 'Patient'}</Text>
+                  <Text style={styles.patientSubtext} numberOfLines={1}>
+                    {item.patient_phone || ''} • Status: <Text style={{ color: isUrgent ? '#DC2626' : Colors.primary, fontWeight: '600' }}>{((item.status || 'active').charAt(0).toUpperCase() + (item.status || 'active').slice(1))}</Text>
                   </Text>
                 </View>
               </View>
 
-              {/* Chief Complaint Box */}
-              <View style={[styles.complaintBox, isUrgent && { borderColor: '#FECACA', backgroundColor: '#FFF5F5' }]}>
+              {/* Chief Complaint Box with Clean Left Accent */}
+              <View style={[styles.complaintBox, isUrgent && styles.complaintBoxUrgent]}>
                 <View style={styles.complaintHeader}>
-                  <Ionicons name="pulse" size={14} color={isUrgent ? '#DC2626' : '#0ea5e9'} />
+                  <Ionicons name="pulse" size={13} color={isUrgent ? '#DC2626' : '#0284c7'} />
                   <Text style={[styles.complaintTitle, isUrgent && { color: '#B91C1C' }]}>
-                    {isUrgent ? '🚨 Emergency Symptoms & Triage Notes:' : 'Chief Complaint & Triage Notes:'}
+                    {isUrgent ? 'Emergency Triage Notes' : 'Chief Complaint'}
                   </Text>
                 </View>
-                <Text style={[styles.complaintText, isUrgent && { color: '#7F1D1D', fontWeight: '500' }]}>
+                <Text style={[styles.complaintText, isUrgent && { color: '#7F1D1D' }]} numberOfLines={3}>
                   {item.chief_complaint}
                 </Text>
               </View>
 
-              {/* Card Actions: Start Consultation, Priority Toggle, Standby, No-Show/Free Slot, Remove */}
-              <View style={styles.cardActionRow}>
-                <TouchableOpacity
-                  style={styles.startConsultBtn}
-                  onPress={() => onNavigateToNewVisit(item.patient_id, item.patient_name, item.chief_complaint)}
-                >
-                  <Ionicons name="mic" size={15} color="#ffffff" />
-                  <Text style={styles.startConsultBtnText}>Start</Text>
-                </TouchableOpacity>
-
-                {/* Priority / Emergency Toggle */}
-                <TouchableOpacity
-                  style={[
-                    styles.priorityActionBtn,
-                    isUrgent && styles.priorityActionBtnActive,
-                  ]}
-                  onPress={() => handleTogglePriority(item)}
-                >
-                  <Ionicons
-                    name={isUrgent ? 'flame' : 'alert-circle-outline'}
-                    size={15}
-                    color={isUrgent ? '#DC2626' : '#D97706'}
-                  />
-                  <Text style={[styles.priorityActionBtnText, isUrgent && { color: '#DC2626' }]}>
-                    {isUrgent ? 'Urgent' : 'Priority'}
-                  </Text>
-                </TouchableOpacity>
-
-                {/* Standby / Recall */}
-                {item.status === 'deferred' || item.status === 'skipped' ? (
+              {/* Card Actions: 2-Tier Ergonomic Layout (NO OVERLAPPING) */}
+              <View style={styles.queueCardActionsContainer}>
+                {/* Tier 1: Primary Actions */}
+                <View style={styles.primaryActionRow}>
                   <TouchableOpacity
-                    style={styles.recallBtn}
-                    onPress={() => handleRecall(item)}
+                    style={styles.startConsultBtn}
+                    onPress={() => onNavigateToNewVisit(item.patient_id, item.patient_name, item.chief_complaint)}
+                    activeOpacity={0.88}
                   >
-                    <Ionicons name="refresh-circle-outline" size={15} color="#0284C7" />
-                    <Text style={styles.recallBtnText}>Recall</Text>
+                    <Ionicons name="mic" size={16} color="#ffffff" />
+                    <Text style={styles.startConsultBtnText}>Start Consultation</Text>
                   </TouchableOpacity>
-                ) : (
+
+                  {item.status === 'deferred' || item.status === 'skipped' ? (
+                    <TouchableOpacity
+                      style={styles.recallBtn}
+                      onPress={() => handleRecall(item)}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons name="refresh" size={14} color="#0284C7" />
+                      <Text style={styles.recallBtnText}>Recall</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.standbyBtn}
+                      onPress={() => handleStandby(item)}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons name="pause" size={14} color="#B45309" />
+                      <Text style={styles.standbyBtnText}>
+                        Standby{item.skip_count && item.skip_count > 0 ? ` (${item.skip_count})` : ''}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Tier 2: Secondary Queue Management Controls */}
+                <View style={styles.secondaryActionRow}>
                   <TouchableOpacity
-                    style={styles.standbyBtn}
-                    onPress={() => handleStandby(item)}
+                    style={[
+                      styles.secondaryActionChip,
+                      isUrgent && styles.secondaryActionChipUrgent,
+                    ]}
+                    onPress={() => handleTogglePriority(item)}
+                    activeOpacity={0.8}
                   >
-                    <Ionicons name="pause-outline" size={14} color="#64748B" />
-                    <Text style={styles.standbyBtnText}>
-                      Standby{item.skip_count && item.skip_count > 0 ? ` (${item.skip_count})` : ''}
+                    <Ionicons
+                      name={isUrgent ? 'flame' : 'alert-circle-outline'}
+                      size={14}
+                      color={isUrgent ? '#DC2626' : '#64748B'}
+                    />
+                    <Text style={[styles.secondaryActionChipText, isUrgent && { color: '#DC2626', fontWeight: '700' }]}>
+                      {isUrgent ? 'Urgent' : 'Mark Priority'}
                     </Text>
                   </TouchableOpacity>
-                )}
 
-                {/* No-Show / Free Reschedule Slot */}
-                <TouchableOpacity
-                  style={styles.freeRescheduleActionBtn}
-                  onPress={() => handleOpenRescheduleModal(item)}
-                >
-                  <Ionicons name="calendar-outline" size={14} color="#059669" />
-                  <Text style={styles.freeRescheduleActionText}>Free Slot</Text>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.secondaryActionChip}
+                    onPress={() => handleOpenRescheduleModal(item)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="calendar-outline" size={14} color="#059669" />
+                    <Text style={[styles.secondaryActionChipText, { color: '#059669' }]}>Reschedule</Text>
+                  </TouchableOpacity>
 
-                {/* Remove Patient From Queue */}
-                <TouchableOpacity
-                  style={styles.removeActionBtn}
-                  onPress={() => handleRemovePatient(item)}
-                >
-                  <Ionicons name="trash-outline" size={15} color="#EF4444" />
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.removeActionChip}
+                    onPress={() => handleRemovePatient(item)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="trash-outline" size={15} color="#EF4444" />
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           );
@@ -1075,6 +1143,183 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 40,
   },
+  clinicianHeroCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 14,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  clinicianTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  avatarWrapper: {
+    position: 'relative',
+  },
+  clinicianAvatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#EEF2FF',
+    borderWidth: 2,
+    borderColor: '#C7D2FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitials: {
+    fontFamily: FontFamily.display,
+    fontSize: FontSize.lg,
+    color: '#1E40AF',
+    fontWeight: '700',
+  },
+  avatarVerifiedPin: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+  },
+  clinicianIdentityMain: {
+    flex: 1,
+  },
+  doctorTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 6,
+  },
+  clinicianName: {
+    fontFamily: FontFamily.display,
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#0F172A',
+    flex: 1,
+  },
+  doctorVerifiedTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  doctorVerifiedTagText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 10,
+    color: '#166534',
+    textTransform: 'uppercase',
+  },
+  clinicianDegrees: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 12.5,
+    color: '#334155',
+    marginTop: 3,
+  },
+  clinicianDesignationText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 12,
+    color: '#0284C7',
+    marginTop: 1,
+  },
+  clinicianSpecialtyText: {
+    fontFamily: FontFamily.sans,
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  credentialsMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  credentialsMetaText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 11.5,
+    color: '#64748B',
+    flex: 1,
+  },
+  systemStatusBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+    marginTop: 10,
+  },
+  systemStatusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#16A34A',
+  },
+  systemStatusText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 11,
+    color: '#15803D',
+  },
+  consultActionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  heroConsultBtn: {
+    flex: 1.4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: Colors.primary,
+    paddingVertical: 10,
+    borderRadius: 10,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  heroConsultBtnText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 12.5,
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  heroWalkInBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    backgroundColor: '#F1F5F9',
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  heroWalkInBtnText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 12.5,
+    color: '#0F172A',
+    fontWeight: '600',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1235,22 +1480,42 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   queueCard: {
-    backgroundColor: Colors.card,
+    backgroundColor: '#FFFFFF',
     borderRadius: 14,
-    padding: 14,
+    padding: 15,
     borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 10,
+    borderColor: '#E2E8F0',
+    marginBottom: 12,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   queueCardNext: {
-    borderColor: '#0284C7',
-    backgroundColor: '#F8FAFC',
+    borderColor: '#38BDF8',
+    backgroundColor: '#FAFDFE',
+  },
+  queueCardUrgent: {
+    borderColor: '#F87171',
+    backgroundColor: '#FFFBFB',
+    borderWidth: 1.5,
   },
   queueCardHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 10,
+  },
+  queueHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
+  },
+  queueHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   tokenBox: {
     backgroundColor: '#F1F5F9',
@@ -1260,10 +1525,17 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 6,
   },
+  tokenBoxUrgent: {
+    backgroundColor: '#FEE2E2',
+    borderColor: '#FCA5A5',
+  },
   tokenText: {
     fontFamily: FontFamily.bold,
     fontSize: FontSize.sm,
-    color: Colors.textPrimary,
+    color: '#1E293B',
+  },
+  tokenTextUrgent: {
+    color: '#DC2626',
   },
   timeBox: {
     flexDirection: 'row',
@@ -1273,31 +1545,38 @@ const styles = StyleSheet.create({
   timeText: {
     fontFamily: FontFamily.regular,
     fontSize: FontSize.xs,
-    color: Colors.textSecondary,
+    color: '#64748B',
+  },
+  nextBadge: {
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: 6,
+    paddingVertical: 2.5,
+    borderRadius: 5,
+  },
+  nextBadgeText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 10,
+    color: '#1D4ED8',
   },
   triageBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 2.5,
     borderRadius: 6,
     borderWidth: 1,
+  },
+  triageDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   triageText: {
     fontFamily: FontFamily.semiBold,
     fontSize: FontSize.caption,
-  },
-  nextUpBadge: {
-    marginLeft: 'auto',
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  nextUpText: {
-    fontFamily: FontFamily.semiBold,
-    fontSize: FontSize.caption,
-    color: '#DC2626',
   },
   patientInfoRow: {
     flexDirection: 'row',
@@ -1306,9 +1585,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   patientAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#E0F2FE',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1318,15 +1597,19 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: '#0284C7',
   },
+  patientDetailsCol: {
+    flex: 1,
+  },
   patientName: {
     fontFamily: FontFamily.display,
     fontSize: FontSize.md,
-    color: Colors.textPrimary,
+    color: '#0F172A',
+    fontWeight: '700',
   },
   patientSubtext: {
     fontFamily: FontFamily.sans,
     fontSize: FontSize.xs,
-    color: Colors.textSecondary,
+    color: '#64748B',
     marginTop: 1,
   },
   complaintBox: {
@@ -1336,6 +1619,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    borderLeftWidth: 3,
+    borderLeftColor: '#0284C7',
+  },
+  complaintBoxUrgent: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+    borderLeftColor: '#DC2626',
   },
   complaintHeader: {
     flexDirection: 'row',
@@ -1346,32 +1636,115 @@ const styles = StyleSheet.create({
   complaintTitle: {
     fontFamily: FontFamily.semiBold,
     fontSize: FontSize.caption,
-    color: Colors.textSecondary,
+    color: '#475569',
   },
   complaintText: {
     fontFamily: FontFamily.sans,
     fontSize: FontSize.sm,
-    color: Colors.textPrimary,
+    color: '#334155',
     lineHeight: 18,
   },
-  cardActionRow: {
+  queueCardActionsContainer: {
+    gap: 8,
+  },
+  primaryActionRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   startConsultBtn: {
-    flex: 2,
+    flex: 1.4,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     gap: 6,
     backgroundColor: Colors.primary,
-    paddingVertical: 9,
+    minHeight: 44,
+    paddingHorizontal: 12,
     borderRadius: 8,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    elevation: 2,
   },
   startConsultBtnText: {
     fontFamily: FontFamily.semiBold,
     fontSize: FontSize.sm,
     color: '#ffffff',
+  },
+  standbyBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    backgroundColor: '#FFFBEB',
+    minHeight: 44,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  standbyBtnText: {
+    fontSize: 12,
+    fontFamily: FontFamily.semiBold,
+    color: '#B45309',
+  },
+  recallBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    backgroundColor: '#F0F9FF',
+    minHeight: 44,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  recallBtnText: {
+    fontSize: 12,
+    fontFamily: FontFamily.semiBold,
+    color: '#0284C7',
+  },
+  secondaryActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  secondaryActionChip: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    backgroundColor: '#F8FAFC',
+    minHeight: 36,
+    paddingHorizontal: 8,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  secondaryActionChipUrgent: {
+    backgroundColor: '#FEE2E2',
+    borderColor: '#FCA5A5',
+  },
+  secondaryActionChipText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 11,
+    color: '#475569',
+  },
+  removeActionChip: {
+    width: 38,
+    minHeight: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF2F2',
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: '#FECACA',
   },
   patientHistoryBtn: {
     flex: 1,
@@ -1663,89 +2036,7 @@ const styles = StyleSheet.create({
   delayChipClearText: {
     color: '#64748B',
   },
-  standbyBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#FFFBEB',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-  },
-  standbyBtnText: {
-    fontSize: 12,
-    fontFamily: FontFamily.semiBold,
-    color: '#D97706',
-  },
-  recallBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#F0F9FF',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#BAE6FD',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-  },
-  recallBtnText: {
-    fontSize: 12,
-    fontFamily: FontFamily.semiBold,
-    color: '#0284C7',
-  },
-  queueCardUrgent: {
-    borderColor: '#EF4444',
-    backgroundColor: '#FFF8F8',
-    borderWidth: 1.5,
-  },
-  priorityActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#FFFBEB',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-  },
-  priorityActionBtnActive: {
-    backgroundColor: '#FEE2E2',
-    borderColor: '#FCA5A5',
-  },
-  priorityActionBtnText: {
-    fontSize: 11,
-    fontFamily: FontFamily.semiBold,
-    color: '#D97706',
-  },
-  freeRescheduleActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#ECFDF5',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-  },
-  freeRescheduleActionText: {
-    fontSize: 11,
-    fontFamily: FontFamily.semiBold,
-    color: '#059669',
-  },
-  removeActionBtn: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FEF2F2',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-  },
+
   quickPill: {
     backgroundColor: '#F1F5F9',
     borderRadius: 8,

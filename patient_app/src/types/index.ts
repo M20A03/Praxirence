@@ -9,6 +9,11 @@ export interface DoctorUser {
   clinic_name: string;
   reg_number: string;
   role: 'doctor';
+  degree?: string; // e.g. "MBBS, MD (Medicine), DNB"
+  qualifications?: string; // e.g. "Fellowship in Internal Medicine & Diabetology"
+  experience_years?: number | string; // e.g. "12+ Yrs Exp"
+  languages?: string[]; // e.g. ["English", "Hindi", "Hinglish"]
+  designation?: string; // e.g. "Senior Consultant Physician"
   city?: string;
   state?: string;
   pincode?: string;

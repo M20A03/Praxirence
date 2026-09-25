@@ -1,7 +1,7 @@
 """
 Praxirence FastAPI Backend Application Entrypoint
-Integrates Whisper LoRA ASR, Mistral QLoRA Care-Plan LLM, Celery,
-Meta WhatsApp Cloud API, and Fast2SMS OTP.
+Integrates Whisper LoRA ASR, Mistral QLoRA Care-Plan LLM, and
+In-App Native Care Plan Synchronization (100% Local, Zero External APIs).
 """
 
 import logging
@@ -382,7 +382,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Praxirence Healthcare Platform API",
-    description="Full-stack AI Clinical Consultation, WhatsApp Care Plan Delivery & Patient Reminder System",
+    description="Full-stack AI Clinical Consultation, In-App Care Plan Sync & Patient Medication Reminder System",
     version="2.0.0",
     lifespan=lifespan
 )
@@ -519,8 +519,8 @@ def health_check():
         },
         "models_loaded": model_loader._models_loaded,
         "device": model_loader.device,
-        "whatsapp_provider": "Meta WhatsApp Cloud API / Twilio Fallback",
-        "otp_provider": "Fast2SMS / WhatsApp Multi-Channel"
+        "care_plan_sync": "In-App Native Care Vault & WebSocket Gateway",
+        "auth_provider": "Email OTP & Clinical Credentials"
     }
 
 

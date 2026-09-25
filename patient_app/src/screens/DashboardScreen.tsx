@@ -475,7 +475,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           >
             <Ionicons name="person" size={13} color={selectedMemberId === 'self' ? '#FFFFFF' : '#0D9488'} />
             <Text style={[styles.familyChipText, selectedMemberId === 'self' && styles.familyChipTextActive]}>
-              Self ({user.name.split(' ')[0]})
+              Self ({(user?.name || 'Patient').split(' ')[0]})
             </Text>
           </TouchableOpacity>
 
@@ -594,7 +594,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <View style={styles.liveQueueDoctorInfo}>
             <Ionicons name="medical" size={15} color={Colors.primary} />
             <Text style={styles.liveQueueDoctorText}>
-              {queueStatus.doctor_name || 'Dr. Mayank Raj'} • {queueStatus.time_slot}
+              {queueStatus.doctor_name ? (queueStatus.doctor_name.startsWith('Dr.') ? queueStatus.doctor_name : `Dr. ${queueStatus.doctor_name}`) : 'Dr. Mayank Raj Gupta'} • {queueStatus.time_slot}
             </Text>
           </View>
 
@@ -853,10 +853,19 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               <View style={{ flex: 1 }}>
                 <Text style={styles.diagnosisLabel}>DIAGNOSIS</Text>
                 <Text style={styles.diagnosisText}>{latestVisit.diagnosis}</Text>
-                <Text style={styles.doctorInfo}>Dr. {latestVisit.doctor_name || 'Care Team'}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                  <Text style={styles.doctorInfo}>
+                    {latestVisit.doctor_name ? (latestVisit.doctor_name.startsWith('Dr.') ? latestVisit.doctor_name : `Dr. ${latestVisit.doctor_name}`) : 'Dr. Mayank Raj Gupta'}
+                  </Text>
+                  <View style={{ backgroundColor: '#EEF2FF', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: '#C7D2FE' }}>
+                    <Text style={{ fontFamily: FontFamily.semiBold, fontSize: 10, color: '#1E40AF' }}>
+                      {(latestVisit as any).doctor_degree || 'MBBS, MD'}
+                    </Text>
+                  </View>
+                </View>
               </View>
-              <View style={{ backgroundColor: 'rgba(37, 211, 102, 0.12)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
-                <Text style={{ fontFamily: FontFamily.bold, fontSize: 10, color: Colors.whatsapp }}>WhatsApp Sent</Text>
+              <View style={{ backgroundColor: 'rgba(5, 150, 105, 0.12)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
+                <Text style={{ fontFamily: FontFamily.bold, fontSize: 10, color: '#059669' }}>Synced to App</Text>
               </View>
             </View>
 

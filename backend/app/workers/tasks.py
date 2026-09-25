@@ -5,7 +5,6 @@ from app.models.visit import Visit
 from app.models.patient import Patient
 from app.models.user import User
 from app.models.audit_log import AuditLog
-from app.services.twilio_service import twilio_service
 from app.services.fcm_service import fcm_service
 
 logger = logging.getLogger("praxirence.tasks")
@@ -13,7 +12,8 @@ logger = logging.getLogger("praxirence.tasks")
 
 def send_whatsapp_care_plan_task(visit_id: str):
     """
-    Background worker task to dispatch approved care plan via WhatsApp.
+    Background worker task to finalize approved care plan and synchronize to patient's in-app care vault.
+    Zero external APIs (no Twilio, no WhatsApp cloud egress).
     """
     db = SessionLocal()
     try:
@@ -27,44 +27,21 @@ def send_whatsapp_care_plan_task(visit_id: str):
             logger.error(f"Task error: Patient for visit {visit_id} not found.")
             return
 
-        doctor_name = "Care Team"
-        if visit.doctor_id:
-            doctor = db.query(User).filter(User.id == visit.doctor_id).first()
-            if doctor:
-                doctor_name = doctor.name
+        visit.status = "approved"
+        db.commit()
+        logger.info(f"Care plan synchronized in-app for visit {visit_id} to patient {patient.name}.")
 
-        # Decrypted patient phone
-        patient_phone = patient.phone
-        logger.info(f"Processing WhatsApp care plan for visit {visit_id} to {patient.name}")
-
-        result = twilio_service.send_whatsapp_care_plan(
-            to_phone=patient_phone,
-            patient_name=patient.name,
-            doctor_name=doctor_name,
-            diagnosis=visit.diagnosis or "Consultation Assessment",
-            medicines=visit.medicines or [],
-            reminders=visit.reminders or []
+        # Audit log entry
+        audit = AuditLog(
+            actor_id="system",
+            actor_role="system",
+            action="in_app_care_plan_sync",
+            resource="visit",
+            resource_id=visit_id,
+            details={"status": "approved", "patient_id": str(patient.id)}
         )
-
-        if result.get("success"):
-            visit.status = "sent"
-            visit.whatsapp_message_id = result.get("message_sid")
-            db.commit()
-            logger.info(f"Visit {visit_id} status updated to 'sent'.")
-
-            # Audit log entry
-            audit = AuditLog(
-                actor_id="system",
-                actor_role="system",
-                action="whatsapp_dispatch",
-                resource="visit",
-                resource_id=visit_id,
-                details={"whatsapp_sid": result.get("message_sid"), "status": "sent"}
-            )
-            db.add(audit)
-            db.commit()
-        else:
-            logger.error(f"Failed to dispatch WhatsApp for visit {visit_id}: {result.get('error')}")
+        db.add(audit)
+        db.commit()
 
     except Exception as e:
         logger.error(f"Unexpected error in send_whatsapp_care_plan_task: {e}")

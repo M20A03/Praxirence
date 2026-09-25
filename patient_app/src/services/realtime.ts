@@ -120,8 +120,12 @@ class PatientRealtimeService {
   private startHeartbeat() {
     this.stopHeartbeat();
     this.pingInterval = setInterval(() => {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({ event: 'PING', payload: Date.now() }));
+      try {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          this.ws.send(JSON.stringify({ event: 'PING', payload: Date.now() }));
+        }
+      } catch (e) {
+        // Ignore socket heartbeat errors
       }
     }, 12000);
   }
@@ -134,20 +138,28 @@ class PatientRealtimeService {
   }
 
   public sendPillConfirmation(doctorId: string, medicineName: string, dosageWindow: string) {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({
-        event: 'PILL_TAKEN',
-        payload: { doctor_id: doctorId, medicine_name: medicineName, dosage_window: dosageWindow }
-      }));
+    try {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({
+          event: 'PILL_TAKEN',
+          payload: { doctor_id: doctorId, medicine_name: medicineName, dosage_window: dosageWindow }
+        }));
+      }
+    } catch (e) {
+      // Safe socket send catch
     }
   }
 
   public sendVitalUpdate(doctorId: string, vitals: any) {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({
-        event: 'VITAL_RECORDED',
-        payload: { doctor_id: doctorId, vitals }
-      }));
+    try {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({
+          event: 'VITALS_LOGGED',
+          payload: { doctor_id: doctorId, vitals }
+        }));
+      }
+    } catch (e) {
+      // Safe socket send catch
     }
   }
 

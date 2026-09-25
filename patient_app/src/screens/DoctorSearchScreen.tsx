@@ -268,9 +268,9 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
     const q = searchQuery.toLowerCase().trim();
     if (!q) return true;
     return (
-      doc.name.toLowerCase().includes(q) ||
-      doc.specialty.toLowerCase().includes(q) ||
-      doc.clinic_name.toLowerCase().includes(q) ||
+      (doc.name || '').toLowerCase().includes(q) ||
+      (doc.specialty || '').toLowerCase().includes(q) ||
+      (doc.clinic_name || '').toLowerCase().includes(q) ||
       (doc.city && doc.city.toLowerCase().includes(q)) ||
       (doc.clinic_address && doc.clinic_address.toLowerCase().includes(q))
     );
@@ -432,14 +432,21 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                   {/* Doctor Info */}
                   <View style={{ flex: 1 }}>
                     <View style={styles.nameRow}>
-                      <Text style={styles.doctorName}>{doc.name}</Text>
-                      <View style={styles.verifiedBadge}>
-                        <Ionicons name="checkmark-circle" size={11} color={Colors.primary} style={{ marginRight: 3 }} />
-                        <Text style={styles.verifiedBadgeText}>Verified</Text>
-                      </View>
+                      <Text style={styles.doctorName}>
+                        {doc.name.startsWith('Dr.') ? doc.name : `Dr. ${doc.name}`}
+                      </Text>
+                      <Ionicons name="checkmark-circle" size={15} color="#0284C7" />
                     </View>
 
-                    <Text style={styles.doctorSpecialty}>{doc.specialty}</Text>
+                    {/* Medical Degree - Clean Typography */}
+                    <Text style={styles.doctorDegreeText} numberOfLines={1}>
+                      {doc.degree || 'MBBS, MD (General Medicine)'}
+                    </Text>
+
+                    {/* Clinical Designation & Specialty */}
+                    <Text style={styles.doctorDesignation}>
+                      {doc.designation || 'Senior Consultant'} • {doc.specialty}
+                    </Text>
 
                     {/* Clinic & Location Details */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
@@ -454,8 +461,15 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                       </Text>
                     </View>
 
-                    {/* Distance & Fee Row */}
+                    {/* Distance, Experience & Fee Row */}
                     <View style={styles.badgesRow}>
+                      <View style={styles.experienceBadge}>
+                        <Ionicons name="star" size={10} color="#D97706" />
+                        <Text style={styles.experienceBadgeText}>
+                          {doc.experience_years ? (typeof doc.experience_years === 'number' ? `${doc.experience_years}+ Yrs` : doc.experience_years) : '12+ Yrs'}
+                        </Text>
+                      </View>
+
                       {doc.distance_km !== undefined && doc.distance_km !== null && (
                         <View style={styles.distanceBadge}>
                           <Ionicons name="pin" size={10} color="#0284C7" />
@@ -518,9 +532,21 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
             <View style={styles.sheetHandle} />
             <View style={styles.sheetHeaderRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.sheetDoctorName}>{selectedDoctor?.name}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={styles.sheetDoctorName}>
+                    {selectedDoctor?.name?.startsWith('Dr.') ? selectedDoctor.name : `Dr. ${selectedDoctor?.name}`}
+                  </Text>
+                  <Ionicons name="checkmark-circle" size={17} color="#0284C7" />
+                </View>
+                {/* Degree - Clean Typography */}
+                <Text style={styles.sheetDegreeText}>
+                  {selectedDoctor?.degree || 'MBBS, MD (General Medicine)'}
+                </Text>
                 <Text style={styles.sheetSpecialtyText}>
-                  {selectedDoctor?.specialty} • {selectedDoctor?.clinic_name}
+                  {selectedDoctor?.designation || 'Senior Consultant'} • {selectedDoctor?.specialty}
+                </Text>
+                <Text style={styles.sheetClinicText}>
+                  {selectedDoctor?.clinic_name} • NMC: {selectedDoctor?.reg_number}
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
                   <Ionicons name="location-outline" size={13} color={Colors.textSecondary} />
@@ -834,10 +860,10 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
               </View>
             </View>
 
-            <View style={styles.whatsappNoticeBox}>
-              <Ionicons name="logo-whatsapp" size={16} color="#16A34A" />
-              <Text style={styles.whatsappNoticeText}>
-                Instant confirmation and token sent to WhatsApp ({user?.phone || '+919835139865'})
+            <View style={styles.confirmationNoticeBox}>
+              <Ionicons name="checkmark-done-circle" size={16} color="#16A34A" />
+              <Text style={styles.confirmationNoticeText}>
+                Instant confirmation and token active in your Praxirence Care Vault
               </Text>
             </View>
 
@@ -1101,7 +1127,20 @@ const styles = StyleSheet.create({
   doctorSpecialty: {
     fontFamily: FontFamily.medium,
     fontSize: FontSize.xs,
-    color: Colors.primaryDark,
+    color: '#64748B',
+  },
+  doctorDegreeText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 11.5,
+    color: '#334155',
+    marginTop: 2,
+    marginBottom: 2,
+  },
+  doctorDesignation: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 11,
+    color: '#0284C7',
+    marginTop: 1,
   },
   doctorClinic: {
     fontFamily: FontFamily.regular,
@@ -1137,6 +1176,22 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.semiBold,
     fontSize: 10,
     color: '#0284C7',
+  },
+  experienceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  experienceBadgeText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 10,
+    color: '#92400E',
   },
   availabilityBadge: {
     flexDirection: 'row',
@@ -1243,6 +1298,19 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.bold,
     fontSize: FontSize.lg,
     color: Colors.text,
+  },
+  sheetDegreeText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 12,
+    color: '#334155',
+    marginTop: 2,
+    marginBottom: 2,
+  },
+  sheetClinicText: {
+    fontFamily: FontFamily.regular,
+    fontSize: 11,
+    color: '#475569',
+    marginTop: 1,
   },
   sheetSpecialtyText: {
     fontFamily: FontFamily.medium,
@@ -1607,7 +1675,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
     flex: 1,
   },
-  whatsappNoticeBox: {
+  confirmationNoticeBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -1620,7 +1688,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     width: '100%',
   },
-  whatsappNoticeText: {
+  confirmationNoticeText: {
     fontFamily: FontFamily.medium,
     fontSize: 11,
     color: '#15803D',

@@ -33,13 +33,13 @@ CONSENT_SUMMARY = "Praxirence Plain-Language Telehealth & Patient Consent Agreem
 CONSENT_BULLET_POINTS = [
     "Your consultation voice recording is converted into clinical notes using fine-tuned open-source clinical AI models.",
     "Voice recordings are permanently and automatically shredded from storage after transcription unless marked for legal retention.",
-    "Approved care plans, medication instructions, and reminders will be securely delivered to your WhatsApp via Meta Cloud API.",
-    "Your mobile phone number is encrypted at rest using industry-standard AES-256 encryption.",
+    "Approved care plans, medication instructions, and reminders will be securely synced directly to your Praxirence app with automated alarms.",
+    "Your demographic and clinical data is encrypted at rest using industry-standard AES-256 encryption.",
     "You have the absolute right to revoke this consent at any time inside the app with a single tap, which immediately pauses automated reminders."
 ]
 CONSENT_PLAIN_TEXT = (
     "I understand and agree that Praxirence assists my doctor in transcribing our consultation notes, "
-    "generating my medical care plan, and delivering scheduled medication reminders via WhatsApp and push notifications. "
+    "generating my medical care plan, and delivering scheduled in-app medication reminders and alarms. "
     "My data is encrypted, voice recordings are purged after processing, and I can grant or revoke consent anytime."
 )
 
@@ -410,7 +410,7 @@ def update_consent_preferences(
 ):
     """
     DPDP Act 2023 / ABDM explicit consent governance endpoint:
-    Allows patient to specify core processing, secondary research, WhatsApp reminders,
+    Allows patient to specify core processing, secondary research, in-app medication reminders,
     or submit a formal Right to Erasure request.
     """
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
@@ -419,7 +419,7 @@ def update_consent_preferences(
 
     core_consent = payload.get("core_consent", True)
     secondary_consent = payload.get("secondary_consent", False)
-    whatsapp_consent = payload.get("whatsapp_consent", True)
+    notifications_consent = payload.get("notifications_consent", payload.get("whatsapp_consent", True))
     erasure_requested = payload.get("erasure_requested", False)
 
     patient.consent_status = core_consent
@@ -446,7 +446,7 @@ def update_consent_preferences(
         details={
             "core_consent": core_consent,
             "secondary_consent": secondary_consent,
-            "whatsapp_consent": whatsapp_consent,
+            "notifications_consent": notifications_consent,
             "erasure_requested": erasure_requested
         }
     )

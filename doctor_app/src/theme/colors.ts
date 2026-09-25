@@ -47,8 +47,6 @@ export const Colors = {
   purpleSurface: '#F5F3FF',     // Purple 50
   purpleBorder: '#DDD6FE',      // Purple 200
 
-  whatsapp: '#25D366',          // Official WhatsApp Green
-  whatsappSurface: '#F0FDF4',   // Emerald 50 soft tint
 
   // Semantic Clinical Category Tints
   vitalsBp: {

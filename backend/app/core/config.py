@@ -29,36 +29,8 @@ class Settings(BaseSettings):
     # Redis & Background Tasks
     REDIS_URL: str = "redis://localhost:6379/0"
 
-    # Google Gemini AI (Multimodal Audio & Clinical Extraction)
-    GEMINI_API_KEY: Optional[str] = None
-    GEMINI_MODEL: str = "gemini-3.6-flash"
-
-    # OpenAI API (Whisper & GPT-4)
-    OPENAI_API_KEY: Optional[str] = None
-    OPENAI_WHISPER_MODEL: str = "whisper-1"
-    OPENAI_GPT_MODEL: str = "gpt-4o"
-
-    # Twilio (WhatsApp & Verify OTP)
-    TWILIO_ACCOUNT_SID: Optional[str] = None
-    TWILIO_AUTH_TOKEN: Optional[str] = None
-    TWILIO_WHATSAPP_FROM: str = "whatsapp:+14155238886"  # Standard Twilio sandbox number
-    TWILIO_VERIFY_SERVICE_SID: Optional[str] = None
-
-    # Meta WhatsApp Cloud API
-    META_WHATSAPP_TOKEN: Optional[str] = None
-    META_PHONE_NUMBER_ID: Optional[str] = None
-    META_WABA_ID: Optional[str] = None
-
-    # Firebase Cloud Messaging
-    FIREBASE_CREDENTIALS_PATH: Optional[str] = None
-    FIREBASE_CREDENTIALS_BASE64: Optional[str] = None
-
-    # Google Auth & Cloud
-    GOOGLE_CLIENT_ID: Optional[str] = None
-    GOOGLE_PROJECT_ID: Optional[str] = None
-
-    # Groq API (Ultra-low Latency LPU Whisper & Inference)
-    GROQ_API_KEY: Optional[str] = None
+    # In-House Local ML Engine (Zero API Dependency, 100% On-Premise)
+    USE_LOCAL_ML: bool = True
 
     # HTTPS Email REST APIs (Port 443 - 100% immune to cloud firewall SMTP port blocks)
     GMAIL_WEBHOOK_URL: Optional[str] = os.environ.get("GMAIL_WEBHOOK_URL", "https://script.google.com/macros/s/AKfycbyycjZp4I1uebXZ2XkOCF5YHfE37IIvAEkNephBOxgGnSJp-jm9NIbK5RJKuYBWN_zX7A/exec")

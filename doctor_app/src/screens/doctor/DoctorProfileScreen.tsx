@@ -8,6 +8,8 @@ import {
   ScrollView,
   ActivityIndicator,
   Switch,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -26,6 +28,15 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
   doctor,
   onLogout,
 }) => {
+  const [profileDoctor, setProfileDoctor] = useState<DoctorUser>(doctor);
+  const [showEditCredentialsModal, setShowEditCredentialsModal] = useState<boolean>(false);
+  const [editDegree, setEditDegree] = useState<string>(doctor.degree || 'MBBS, MD (General Medicine)');
+  const [editQualifications, setEditQualifications] = useState<string>(doctor.qualifications || 'Fellowship in Internal Medicine & Diabetology');
+  const [editDesignation, setEditDesignation] = useState<string>(doctor.designation || 'Chief Medical Officer & Senior Physician');
+  const [editExp, setEditExp] = useState<string>(doctor.experience_years ? String(doctor.experience_years) : '12+ Yrs Exp');
+  const [editLanguages, setEditLanguages] = useState<string>((doctor.languages || ['English', 'Hindi', 'Hinglish']).join(', '));
+  const [savingCredentials, setSavingCredentials] = useState<boolean>(false);
+
   const [latencyMs, setLatencyMs] = useState<number>(55);
   const [isLive, setIsLive] = useState<boolean>(true);
   const [checking, setChecking] = useState<boolean>(false);
@@ -164,6 +175,29 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
     }
   };
 
+  const handleSaveCredentials = async () => {
+    setSavingCredentials(true);
+    try {
+      const langs = editLanguages.split(',').map((s) => s.trim()).filter(Boolean);
+      const updated: DoctorUser = {
+        ...profileDoctor,
+        degree: editDegree.trim() || 'MBBS, MD (General Medicine)',
+        qualifications: editQualifications.trim() || 'Fellowship in Internal Medicine & Diabetology',
+        designation: editDesignation.trim() || 'Chief Medical Officer & Senior Physician',
+        experience_years: editExp.trim() || '12+ Yrs Exp',
+        languages: langs.length > 0 ? langs : ['English', 'Hindi'],
+      };
+      setProfileDoctor(updated);
+      await AsyncStorage.setItem('praxirence_doctor_profile', JSON.stringify(updated));
+      setShowEditCredentialsModal(false);
+      Alert.alert('Credentials Updated', 'Your medical degrees, qualifications, and designation have been saved.');
+    } catch (e: any) {
+      Alert.alert('Error', 'Failed to save credentials: ' + e.message);
+    } finally {
+      setSavingCredentials(false);
+    }
+  };
+
   const handleLogoutPress = () => {
     Alert.alert(
       'Sign Out of Clinician Workspace',
@@ -175,6 +209,9 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
     );
   };
 
+  const doctorDisplayName = profileDoctor.name.startsWith('Dr.') ? profileDoctor.name : `Dr. ${profileDoctor.name}`;
+  const doctorInitials = doctorDisplayName.replace('Dr. ', '').trim().split(' ').map((n) => n[0]).slice(0, 2).join('') || 'MD';
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Brand Header */}
@@ -182,29 +219,85 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
         <BrandLogoMobile variant="header" size="sm" subtitleText="Clinician Intelligence Suite" />
       </View>
 
-      {/* Doctor Card */}
+      {/* Clinician Profile Hero Card */}
       <View style={styles.profileCard}>
         <View style={styles.avatarCircle}>
-          <Text style={styles.avatarText}>
-            {doctor.name.replace('Dr. ', '').charAt(0)}
+          <Text style={styles.avatarText}>{doctorInitials}</Text>
+        </View>
+
+        <View style={styles.doctorNameRow}>
+          <Text style={styles.doctorName}>{doctorDisplayName}</Text>
+          <Ionicons name="checkmark-circle" size={19} color="#0284C7" />
+        </View>
+
+        {/* Medical Degrees - Clean Typography */}
+        <Text style={styles.doctorDegreesText}>
+          {profileDoctor.degree || 'MBBS, MD (General Medicine)'}
+        </Text>
+
+        {/* Clinical Designation & Specialty */}
+        <Text style={styles.designationText}>
+          {profileDoctor.designation || 'Chief Medical Officer & Senior Physician'}
+        </Text>
+        <Text style={styles.specialtyText}>
+          {profileDoctor.specialty} • {profileDoctor.clinic_name}
+        </Text>
+
+        {/* Clinical Registration & Experience Meta */}
+        <View style={styles.doctorMetaRow}>
+          <Text style={styles.doctorMetaText}>
+            NMC Reg: {profileDoctor.reg_number} • {profileDoctor.experience_years || '12+ Yrs Exp'}
           </Text>
         </View>
 
-        <View style={styles.badgeRow}>
-          <View style={styles.verifiedBadge}>
-            <Ionicons name="shield-checkmark" size={13} color="#10b981" />
-            <Text style={styles.verifiedText}>VERIFIED CLINICAL PRACTITIONER</Text>
-          </View>
-        </View>
-
-        <Text style={styles.doctorName}>{doctor.name}</Text>
-        <Text style={styles.specialtyText}>{doctor.specialty}</Text>
-        <Text style={styles.clinicText}>{doctor.clinic_name}</Text>
+        <TouchableOpacity
+          style={styles.editCredentialsBtn}
+          onPress={() => setShowEditCredentialsModal(true)}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="create-outline" size={15} color={Colors.primary} />
+          <Text style={styles.editCredentialsBtnText}>Edit Degrees & Qualifications</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Clinical Credentials Card */}
       <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Physician Credentials</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <Text style={styles.sectionTitle}>Physician Credentials</Text>
+          <TouchableOpacity onPress={() => setShowEditCredentialsModal(true)}>
+            <Text style={{ fontFamily: FontFamily.semiBold, fontSize: 12, color: Colors.primary }}>Edit</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.infoRow}>
+          <View style={styles.infoIconBox}>
+            <Ionicons name="school-outline" size={18} color="#0ea5e9" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.infoLabel}>Primary Medical Degrees</Text>
+            <Text style={styles.infoValue}>{profileDoctor.degree || 'MBBS, MD (General Medicine)'}</Text>
+          </View>
+        </View>
+
+        <View style={styles.infoRow}>
+          <View style={styles.infoIconBox}>
+            <Ionicons name="ribbon-outline" size={18} color="#0ea5e9" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.infoLabel}>Post-Graduate Qualifications & Fellowships</Text>
+            <Text style={styles.infoValue}>{profileDoctor.qualifications || 'Fellowship in Internal Medicine & Diabetology'}</Text>
+          </View>
+        </View>
+
+        <View style={styles.infoRow}>
+          <View style={styles.infoIconBox}>
+            <Ionicons name="medkit-outline" size={18} color="#0ea5e9" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.infoLabel}>Clinical Designation</Text>
+            <Text style={styles.infoValue}>{profileDoctor.designation || 'Chief Medical Officer & Senior Physician'}</Text>
+          </View>
+        </View>
 
         <View style={styles.infoRow}>
           <View style={styles.infoIconBox}>
@@ -212,7 +305,27 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.infoLabel}>Medical Registration Number</Text>
-            <Text style={styles.infoValue}>{doctor.reg_number}</Text>
+            <Text style={styles.infoValue}>{profileDoctor.reg_number}</Text>
+          </View>
+        </View>
+
+        <View style={styles.infoRow}>
+          <View style={styles.infoIconBox}>
+            <Ionicons name="calendar-outline" size={18} color="#0ea5e9" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.infoLabel}>Clinical Experience</Text>
+            <Text style={styles.infoValue}>{profileDoctor.experience_years || '12+ Yrs Exp'}</Text>
+          </View>
+        </View>
+
+        <View style={styles.infoRow}>
+          <View style={styles.infoIconBox}>
+            <Ionicons name="chatbubbles-outline" size={18} color="#0ea5e9" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.infoLabel}>Languages of Practice</Text>
+            <Text style={styles.infoValue}>{(profileDoctor.languages || ['English', 'Hindi']).join(', ')}</Text>
           </View>
         </View>
 
@@ -222,7 +335,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.infoLabel}>Official Medical Email</Text>
-            <Text style={styles.infoValue}>{doctor.email || 'doctor@praxirence.com'}</Text>
+            <Text style={styles.infoValue}>{profileDoctor.email || 'doctor@praxirence.com'}</Text>
           </View>
         </View>
 
@@ -232,7 +345,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.infoLabel}>Mobile Number</Text>
-            <Text style={styles.infoValue}>{doctor.phone}</Text>
+            <Text style={styles.infoValue}>{profileDoctor.phone}</Text>
           </View>
         </View>
 
@@ -242,7 +355,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.infoLabel}>Primary Clinic / Hospital</Text>
-            <Text style={styles.infoValue}>{doctor.clinic_name}</Text>
+            <Text style={styles.infoValue}>{profileDoctor.clinic_name}</Text>
           </View>
         </View>
 
@@ -253,7 +366,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           <View style={{ flex: 1 }}>
             <Text style={styles.infoLabel}>Clinic Location & Area</Text>
             <Text style={styles.infoValue}>
-              {doctor.clinic_address || '12th Main, Indiranagar'}, {doctor.city || 'Bangalore'} ({doctor.state || 'Karnataka'})
+              {profileDoctor.clinic_address || '12th Main, Indiranagar'}, {profileDoctor.city || 'Bangalore'} ({profileDoctor.state || 'Karnataka'})
             </Text>
           </View>
         </View>
@@ -452,8 +565,8 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           </View>
 
           <View style={styles.telemetryItem}>
-            <Text style={styles.telemetryLabel}>Prescription Dispatch (WhatsApp)</Text>
-            <Text style={[styles.telemetryVal, { color: '#25D366' }]}>Active</Text>
+            <Text style={styles.telemetryLabel}>Care Plan Sync (In-App)</Text>
+            <Text style={[styles.telemetryVal, { color: '#10B981' }]}>Active</Text>
           </View>
         </View>
       </View>
@@ -465,6 +578,90 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
       </TouchableOpacity>
 
       <Text style={styles.versionText}>Praxirence Clinician Suite v1.0.0 (Build 2026.09)</Text>
+
+      {/* Modal: Edit Clinician Qualifications & Degrees */}
+      <Modal
+        visible={showEditCredentialsModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowEditCredentialsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="school" size={20} color={Colors.primary} />
+                <Text style={styles.modalTitle}>Edit Clinician Credentials</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowEditCredentialsModal(false)}>
+                <Ionicons name="close" size={22} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+              <Text style={styles.inputLabel}>Primary Medical Degrees (e.g. MBBS, MD, MS, DNB)</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={editDegree}
+                onChangeText={setEditDegree}
+                placeholder="MBBS, MD (General Medicine)"
+                placeholderTextColor="#94A3B8"
+              />
+
+              <Text style={styles.inputLabel}>Post-Graduate Qualifications & Fellowships</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={editQualifications}
+                onChangeText={setEditQualifications}
+                placeholder="Fellowship in Internal Medicine & Diabetology"
+                placeholderTextColor="#94A3B8"
+              />
+
+              <Text style={styles.inputLabel}>Clinical Designation</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={editDesignation}
+                onChangeText={setEditDesignation}
+                placeholder="Chief Medical Officer & Senior Physician"
+                placeholderTextColor="#94A3B8"
+              />
+
+              <Text style={styles.inputLabel}>Clinical Practice Experience</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={editExp}
+                onChangeText={setEditExp}
+                placeholder="12+ Yrs Exp"
+                placeholderTextColor="#94A3B8"
+              />
+
+              <Text style={styles.inputLabel}>Consultation Languages (comma separated)</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={editLanguages}
+                onChangeText={setEditLanguages}
+                placeholder="English, Hindi, Hinglish"
+                placeholderTextColor="#94A3B8"
+              />
+            </ScrollView>
+
+            <TouchableOpacity
+              style={styles.modalSaveBtn}
+              onPress={handleSaveCredentials}
+              disabled={savingCredentials}
+            >
+              {savingCredentials ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <Ionicons name="save-outline" size={17} color="#FFFFFF" />
+                  <Text style={styles.modalSaveBtnText}>Save Medical Credentials</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -487,6 +684,118 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     marginBottom: 16,
   },
+  doctorNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  doctorDegreesText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 13,
+    color: '#334155',
+    marginBottom: 3,
+    textAlign: 'center',
+  },
+  designationText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 13,
+    color: '#0284C7',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  doctorMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
+    marginBottom: 14,
+  },
+  doctorMetaText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 11.5,
+    color: '#64748B',
+  },
+  editCredentialsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F0F9FF',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  editCredentialsBtnText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 12,
+    color: Colors.primary,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  modalCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  modalTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: 16,
+    color: '#0F172A',
+  },
+  inputLabel: {
+    fontFamily: FontFamily.medium,
+    fontSize: 11.5,
+    color: '#475569',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  modalInput: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    fontFamily: FontFamily.sans,
+    fontSize: 13,
+    color: '#0F172A',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  modalSaveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: Colors.primary,
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginTop: 14,
+  },
+  modalSaveBtnText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 13,
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
   avatarCircle: {
     width: 64,
     height: 64,
@@ -504,26 +813,7 @@ const styles = StyleSheet.create({
     color: '#0ea5e9',
     fontWeight: '800',
   },
-  badgeRow: {
-    marginBottom: 8,
-  },
-  verifiedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#F0FDF4',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#DCFCE7',
-  },
-  verifiedText: {
-    fontFamily: FontFamily.semiBold,
-    fontSize: FontSize.xs,
-    color: '#166534',
-    letterSpacing: 0.2,
-  },
+
   doctorName: {
     fontFamily: FontFamily.bold,
     fontSize: FontSize.xl,

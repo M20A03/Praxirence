@@ -55,9 +55,7 @@ services:
       CELERY_BROKER_URL: redis://redis:6379/0
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-rV8_NqjH6_t5z9oEwM11x2_4pX-9yK0Z7Q_3uI6v8w0=}
       PHONE_HASH_SALT: ${PHONE_HASH_SALT:-praxirence-phone-blind-index-salt-v1}
-      META_WHATSAPP_TOKEN: ${META_WHATSAPP_TOKEN:-}
-      META_PHONE_NUMBER_ID: ${META_PHONE_NUMBER_ID:-}
-      FAST2SMS_API_KEY: ${FAST2SMS_API_KEY:-}
+      USE_LOCAL_ML: "true"
       WHISPER_BASE_MODEL: ${WHISPER_BASE_MODEL:-openai/whisper-small}
       LLM_BASE_MODEL: ${LLM_BASE_MODEL:-mistralai/Mistral-7B-Instruct-v0.2}
       ALLOWED_ORIGINS: '["http://localhost:5173", "http://localhost:3000", "http://localhost:8080"]'
@@ -88,9 +86,7 @@ services:
       CELERY_BROKER_URL: redis://redis:6379/0
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-rV8_NqjH6_t5z9oEwM11x2_4pX-9yK0Z7Q_3uI6v8w0=}
       PHONE_HASH_SALT: ${PHONE_HASH_SALT:-praxirence-phone-blind-index-salt-v1}
-      META_WHATSAPP_TOKEN: ${META_WHATSAPP_TOKEN:-}
-      META_PHONE_NUMBER_ID: ${META_PHONE_NUMBER_ID:-}
-      FAST2SMS_API_KEY: ${FAST2SMS_API_KEY:-}
+      USE_LOCAL_ML: "true"
     depends_on:
       db:
         condition: service_healthy
@@ -100,21 +96,6 @@ services:
       - ./backend:/app
       - audio_recordings:/tmp/praxirence_recordings
 
-  # ----------------------------------------------------------------------------
-  # Doctor Web App (React + Vite)
-  # ----------------------------------------------------------------------------
-  web_app:
-    build:
-      context: ./web_app
-      dockerfile: Dockerfile
-    container_name: praxirence-web
-    restart: unless-stopped
-    ports:
-      - "5173:5173"
-    environment:
-      VITE_API_BASE_URL: http://localhost:8000
-    depends_on:
-      - backend
 
 volumes:
   pgdata:

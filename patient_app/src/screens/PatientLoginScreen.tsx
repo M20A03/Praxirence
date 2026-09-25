@@ -25,7 +25,7 @@ interface PatientLoginScreenProps {
 }
 
 export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthenticated }) => {
-  const [authMode, setAuthMode] = useState<'phone' | 'email' | 'register'>('phone');
+  const [authMode, setAuthMode] = useState<'email' | 'register'>('email');
 
   // Hidden 5-Tap Pilot Testing Bypass
   const [logoTaps, setLogoTaps] = useState(0);
@@ -118,16 +118,9 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
   const [patientName, setPatientName] = useState('');
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [emailOtpCode, setEmailOtpCode] = useState('');
-
-  // Phone WhatsApp States
-  const [phoneDigits, setPhoneDigits] = useState('');
-  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
-  const [phoneOtpCode, setPhoneOtpCode] = useState('');
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
-
   const [resendCooldown, setResendCooldown] = useState(0);
 
   useEffect(() => {
@@ -138,7 +131,7 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
     return () => clearInterval(timer);
   }, [resendCooldown]);
 
-  const fullPhone = `+91${phoneDigits}`;
+
 
 
   // Handle Auth Success & Check Demographic Onboarding
@@ -226,6 +219,7 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
 
   // Patient Registration States
   const [regName, setRegName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regAge, setRegAge] = useState('');
   const [regGender, setRegGender] = useState<'Male' | 'Female' | 'Other'>('Male');
@@ -285,59 +279,10 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
     }
   };
 
-  // Request WhatsApp OTP
-  const handleRequestPhoneOtp = async () => {
-    if (phoneDigits.length < 10) {
-      setError('Please enter a valid 10-digit mobile number.');
-      return;
-    }
-    setError(null);
-    setLoading(true);
-    try {
-      await mobileApi.requestPatientOtp(fullPhone, 'whatsapp');
-      setPhoneOtpSent(true);
-      setPhoneOtpCode('');
-      setResendCooldown(60);
-      setSuccessNotice(`Verification code dispatched to ${fullPhone}. Code valid for 10 minutes.`);
-    } catch (err: any) {
-      const msg = err?.message || '';
-      if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
-        setError('Connection timed out. Please check your internet connection and try again.');
-      } else {
-        setError(msg || 'Failed to dispatch WhatsApp verification code. Please try again.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Verify WhatsApp OTP
-  const handleVerifyPhoneOtp = async () => {
-    if (!phoneOtpCode.trim()) {
-      setError('Please enter the 6-digit code received on WhatsApp.');
-      return;
-    }
-    setError(null);
-    setLoading(true);
-    try {
-      const res = await mobileApi.verifyPatientOtp(fullPhone, phoneOtpCode.trim());
-      await handleAuthSuccess(res.user);
-    } catch (err: any) {
-      const msg = err?.message || '';
-      if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
-        setError('Connection timed out. Please check your internet connection and try again.');
-      } else {
-        setError(msg || 'Invalid verification code');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Patient Registration Handler
   const handleRegisterPatient = async () => {
-    if (!regName.trim() || regPhone.length < 10) {
-      setError('Please enter your full name and a valid 10-digit mobile number.');
+    if (!regName.trim() || !regEmail.trim() || !regEmail.includes('@')) {
+      setError('Please enter your full name and a valid email address.');
       return;
     }
     setError(null);
@@ -345,7 +290,8 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
     try {
       const res = await mobileApi.registerPatient({
         name: regName.trim(),
-        phone: `+91${regPhone}`,
+        email: regEmail.trim(),
+        phone: regPhone.trim() ? (regPhone.startsWith('+') ? regPhone.trim() : `+91${regPhone.trim()}`) : undefined,
         age: regAge.trim() || undefined,
         gender: regGender,
         language: regLanguage,
@@ -386,24 +332,14 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
           <Text style={styles.subtitle}>
             Access your doctor's prescriptions, medication timing reminders, and care plans
           </Text>
-        </TouchableOpacity>
-
-        {/* Auth Mode Tabs */}
+        </TouchableOpacity>        {/* Auth Mode Tabs */}
         <View style={styles.tabBar}>
           <TouchableOpacity
             style={[styles.tabBtn, authMode === 'email' && styles.tabBtnActive]}
             onPress={() => { setAuthMode('email'); setError(null); setSuccessNotice(null); }}
           >
             <Ionicons name="mail" size={16} color={authMode === 'email' ? '#10b981' : Colors.textSecondary} />
-            <Text style={[styles.tabText, authMode === 'email' && styles.tabTextActive]}>Email OTP</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tabBtn, authMode === 'phone' && styles.tabBtnActive]}
-            onPress={() => { setAuthMode('phone'); setError(null); setSuccessNotice(null); }}
-          >
-            <Ionicons name="logo-whatsapp" size={16} color={authMode === 'phone' ? '#25D366' : Colors.textSecondary} />
-            <Text style={[styles.tabText, authMode === 'phone' && styles.tabTextActive]}>WhatsApp</Text>
+            <Text style={[styles.tabText, authMode === 'email' && styles.tabTextActive]}>Email Login</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -535,104 +471,6 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                 </View>
               )}
             </View>
-          ) : authMode === 'phone' ? (
-            /* WHATSAPP PHONE OTP FLOW */
-            <View>
-              <Text style={styles.label}>Your Full Name</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="person-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your full name"
-                  placeholderTextColor={Colors.textSecondary}
-                  value={patientName}
-                  onChangeText={setPatientName}
-                />
-              </View>
-
-              <Text style={styles.label}>Mobile Phone Number (for WhatsApp Reminders)</Text>
-              <View style={styles.phoneInputRow}>
-                <View style={styles.countryCodeBox}>
-                  <Text style={styles.countryCodeText}>+91</Text>
-                </View>
-                <TextInput
-                  style={[styles.input, { flex: 1 }]}
-                  placeholder="9876543210"
-                  placeholderTextColor={Colors.textSecondary}
-                  value={phoneDigits}
-                  onChangeText={setPhoneDigits}
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                />
-              </View>
-
-              {!phoneOtpSent ? (
-                <TouchableOpacity
-                  style={styles.primaryBtn}
-                  onPress={handleRequestPhoneOtp}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#ffffff" />
-                  ) : (
-                    <>
-                      <Ionicons name="logo-whatsapp" size={18} color="#ffffff" />
-                      <Text style={styles.primaryBtnText}>Get WhatsApp OTP</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              ) : (
-                <View style={{ marginTop: 12 }}>
-                  <Text style={styles.label}>Enter 6-Digit WhatsApp Code</Text>
-                  <View style={styles.inputContainer}>
-                    <Ionicons name="key-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-                    <TextInput
-                      style={[styles.input, { letterSpacing: 6, fontWeight: '700' }]}
-                      placeholder="• • • • • •"
-                      placeholderTextColor={Colors.textSecondary}
-                      value={phoneOtpCode}
-                      onChangeText={setPhoneOtpCode}
-                      keyboardType="number-pad"
-                      maxLength={6}
-                    />
-                  </View>
-                  <Text style={{ fontSize: 12, color: Colors.textSecondary, marginTop: 4, marginBottom: 12 }}>
-                    💬 Please check your WhatsApp messages. Code expires in 10 minutes.
-                  </Text>
-
-                  <TouchableOpacity
-                    style={styles.primaryBtn}
-                    onPress={handleVerifyPhoneOtp}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <ActivityIndicator color="#ffffff" />
-                    ) : (
-                      <>
-                        <Ionicons name="checkmark-done" size={18} color="#ffffff" />
-                        <Text style={styles.primaryBtnText}>Verify & Access My Health Vault</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-                    <TouchableOpacity
-                      onPress={handleRequestPhoneOtp}
-                      disabled={loading || resendCooldown > 0}
-                      style={{ paddingVertical: 8 }}
-                    >
-                      <Text style={[styles.resendText, resendCooldown > 0 && { color: Colors.textSecondary }]}>
-                        {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend WhatsApp OTP'}
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity onPress={() => setPhoneOtpSent(false)} style={{ paddingVertical: 8 }}>
-                      <Text style={styles.resendText}>Change number</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
-            </View>
           ) : (
             /* PATIENT REGISTRATION FLOW */
             <View>
@@ -648,7 +486,21 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                 />
               </View>
 
-              <Text style={styles.label}>Mobile Number (WhatsApp Enabled)</Text>
+              <Text style={styles.label}>Email Address (for Login & Care Plan Access)</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="at-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="name@gmail.com"
+                  placeholderTextColor={Colors.textSecondary}
+                  value={regEmail}
+                  onChangeText={setRegEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+
+              <Text style={styles.label}>Mobile Phone Number (Optional)</Text>
               <View style={styles.phoneInputRow}>
                 <View style={styles.countryCodeBox}>
                   <Text style={styles.countryCodeText}>+91</Text>
@@ -745,10 +597,10 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() => { setAuthMode('phone'); setError(null); setSuccessNotice(null); }}
+                onPress={() => { setAuthMode('email'); setError(null); setSuccessNotice(null); }}
                 style={[styles.resendBtn, { marginTop: 12 }]}
               >
-                <Text style={styles.resendText}>Already have an account? Login via WhatsApp</Text>
+                <Text style={styles.resendText}>Already have an account? Sign in with Email</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -802,26 +654,26 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                   {/* 1-Tap Preset Switchers */}
                   <View style={styles.presetRow}>
                     <TouchableOpacity
-                      style={[styles.presetBtn, activeServerUrl.includes('railway') && styles.presetBtnActive]}
-                      onPress={() => handleSelectPreset('https://praxirence-production.up.railway.app')}
+                      style={[styles.presetBtn, (activeServerUrl.includes('localhost') || activeServerUrl.includes('127.0.0.1')) && styles.presetBtnActive]}
+                      onPress={() => handleSelectPreset('http://localhost:8000')}
                     >
-                      <Ionicons name="cloud-outline" size={13} color={activeServerUrl.includes('railway') ? '#FFFFFF' : Colors.textPrimary} />
-                      <Text style={[styles.presetBtnText, activeServerUrl.includes('railway') && styles.presetBtnTextActive]}>
-                        Railway
+                      <Ionicons name="desktop-outline" size={13} color={(activeServerUrl.includes('localhost') || activeServerUrl.includes('127.0.0.1')) ? '#FFFFFF' : Colors.textPrimary} />
+                      <Text style={[styles.presetBtnText, (activeServerUrl.includes('localhost') || activeServerUrl.includes('127.0.0.1')) && styles.presetBtnTextActive]}>
+                        Localhost (8000)
                       </Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                       style={[
                         styles.presetBtn,
-                        (activeServerUrl.includes('192.168.') || activeServerUrl.includes('localhost')) && !activeServerUrl.includes('10.0.2.2') && styles.presetBtnActive
+                        (activeServerUrl.includes('10.51.') || activeServerUrl.includes('192.168.')) && !activeServerUrl.includes('10.0.2.2') && styles.presetBtnActive
                       ]}
-                      onPress={() => handleSelectPreset('http://192.168.0.8:8001')}
+                      onPress={() => handleSelectPreset('http://10.51.113.76:8000')}
                     >
-                      <Ionicons name="wifi-outline" size={13} color={(activeServerUrl.includes('192.168.') || activeServerUrl.includes('localhost')) && !activeServerUrl.includes('10.0.2.2') ? '#FFFFFF' : Colors.textPrimary} />
+                      <Ionicons name="wifi-outline" size={13} color={(activeServerUrl.includes('10.51.') || activeServerUrl.includes('192.168.')) && !activeServerUrl.includes('10.0.2.2') ? '#FFFFFF' : Colors.textPrimary} />
                       <Text style={[
                         styles.presetBtnText,
-                        (activeServerUrl.includes('192.168.') || activeServerUrl.includes('localhost')) && !activeServerUrl.includes('10.0.2.2') && styles.presetBtnTextActive
+                        (activeServerUrl.includes('10.51.') || activeServerUrl.includes('192.168.')) && !activeServerUrl.includes('10.0.2.2') && styles.presetBtnTextActive
                       ]}>
                         Local Wi-Fi
                       </Text>
@@ -829,7 +681,7 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
 
                     <TouchableOpacity
                       style={[styles.presetBtn, activeServerUrl.includes('10.0.2.2') && styles.presetBtnActive]}
-                      onPress={() => handleSelectPreset('http://10.0.2.2:8001')}
+                      onPress={() => handleSelectPreset('http://10.0.2.2:8000')}
                     >
                       <Ionicons name="phone-portrait-outline" size={13} color={activeServerUrl.includes('10.0.2.2') ? '#FFFFFF' : Colors.textPrimary} />
                       <Text style={[styles.presetBtnText, activeServerUrl.includes('10.0.2.2') && styles.presetBtnTextActive]}>
@@ -844,7 +696,7 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                       style={styles.customUrlInput}
                       value={customServerInput}
                       onChangeText={setCustomServerInput}
-                      placeholder="http://192.168.x.x:8001"
+                      placeholder="http://10.51.113.76:8000"
                       placeholderTextColor="#94A3B8"
                       autoCapitalize="none"
                       autoCorrect={false}
@@ -912,9 +764,9 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                 <TouchableOpacity
                   style={[styles.pilotOptionBtn, { backgroundColor: '#F8FAFC' }]}
                   onPress={() => {
-                    setPhoneDigits('9876543210');
+                    setEmail('patient.test@praxirence.com');
                     setPatientName('Ramesh Kumar');
-                    setAuthMode('phone');
+                    setAuthMode('email');
                     setShowPilotModal(false);
                   }}
                 >
@@ -923,7 +775,7 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.pilotOptionTitle}>Auto-Fill Test Credentials</Text>
-                    <Text style={styles.pilotOptionSub}>Fill 9876543210 into WhatsApp input</Text>
+                    <Text style={styles.pilotOptionSub}>Fill patient.test@praxirence.com into Email input</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
                 </TouchableOpacity>
@@ -1217,7 +1069,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.whatsapp,
+    backgroundColor: '#10b981',
     paddingVertical: 12,
     borderRadius: 10,
     marginTop: 12,

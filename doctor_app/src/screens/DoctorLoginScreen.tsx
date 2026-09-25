@@ -25,7 +25,7 @@ interface DoctorLoginScreenProps {
 }
 
 export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenticated }) => {
-  const [authMode, setAuthMode] = useState<'email' | 'phone' | 'register'>('email');
+  const [authMode, setAuthMode] = useState<'email' | 'register'>('email');
 
   // Hidden 5-Tap Pilot Testing Bypass
   const [logoTaps, setLogoTaps] = useState(0);
@@ -118,11 +118,9 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [emailOtpCode, setEmailOtpCode] = useState('');
 
-  // Phone OTP States
+
+
   const [phoneDigits, setPhoneDigits] = useState('');
-  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
-  const [phoneOtpCode, setPhoneOtpCode] = useState('');
-  const [demoCode, setDemoCode] = useState<string | null>(null);
 
   // Registration States
   const [regSpecialty, setRegSpecialty] = useState('');
@@ -184,24 +182,42 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
       const loginRes = await mobileApi.loginDoctor('doctor@praxirence.com', 'Doctor123!');
       const base = loginRes.user || {
         id: 'doc_' + Date.now(),
-        name: profile.name || 'Dr. Mayank Raj',
+        name: profile.name || 'Dr. Mayank Raj Gupta',
         email: profile.email || 'doctor@praxirence.com',
         phone: profile.phone || '+919876543210',
-        specialty: profile.specialty || 'Chief Medical Officer & Pulmonology',
+        specialty: profile.specialty || 'Internal Medicine & Pulmonology',
+        degree: profile.degree || 'MBBS, MD (General Medicine)',
+        qualifications: profile.qualifications || 'Fellowship in Diabetology & Critical Care',
+        designation: profile.designation || 'Chief Medical Officer & Senior Physician',
+        experience_years: profile.experience_years || '12+ Yrs Exp',
+        languages: profile.languages || ['English', 'Hindi', 'Hinglish'],
         clinic_name: profile.clinic_name || 'Praxirence Super-Speciality Clinic',
         reg_number: profile.reg_number || 'NMC-2024-8849',
         role: 'doctor' as const,
       };
-      const finalDoc: DoctorUser = { ...base, ...profile };
+      const finalDoc: DoctorUser = {
+        degree: 'MBBS, MD (General Medicine)',
+        qualifications: 'Fellowship in Diabetology & Critical Care',
+        designation: 'Chief Medical Officer & Senior Physician',
+        experience_years: '12+ Yrs Exp',
+        languages: ['English', 'Hindi', 'Hinglish'],
+        ...base,
+        ...profile,
+      };
       await AsyncStorage.setItem('praxirence_doctor_profile', JSON.stringify(finalDoc));
       onAuthenticated(finalDoc);
     } catch (e: any) {
       const fallback: DoctorUser = {
         id: 'doc_pilot',
-        name: profile.name || 'Dr. Mayank Raj',
+        name: profile.name || 'Dr. Mayank Raj Gupta',
         email: profile.email || 'doctor@praxirence.com',
         phone: profile.phone || '+919876543210',
-        specialty: profile.specialty || 'Chief Medical Officer',
+        specialty: profile.specialty || 'Internal Medicine & Pulmonology',
+        degree: profile.degree || 'MBBS, MD (General Medicine)',
+        qualifications: profile.qualifications || 'Fellowship in Diabetology & Critical Care',
+        designation: profile.designation || 'Chief Medical Officer & Senior Physician',
+        experience_years: profile.experience_years || '12+ Yrs Exp',
+        languages: profile.languages || ['English', 'Hindi', 'Hinglish'],
         clinic_name: profile.clinic_name || 'Praxirence Super-Speciality Clinic',
         reg_number: profile.reg_number || 'NMC-2024-8849',
         role: 'doctor',
@@ -267,61 +283,10 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
     }
   };
 
-  // Phone WhatsApp OTP Request
-  const handleRequestPhoneOtp = async () => {
-    if (phoneDigits.length < 10) {
-      setError('Please enter a valid 10-digit mobile number.');
-      return;
-    }
-    setError(null);
-    setLoading(true);
-    const fullPhone = `+91${phoneDigits}`;
-    try {
-      await mobileApi.requestDoctorOtp(fullPhone, 'whatsapp');
-      setPhoneOtpSent(true);
-      setPhoneOtpCode('');
-      setResendCooldown(60);
-      setSuccessNotice(`Verification code dispatched to ${fullPhone}. Please check your WhatsApp.`);
-    } catch (err: any) {
-      const msg = err?.message || '';
-      if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
-        setError('Connection timed out. Please check your internet connection and try again.');
-      } else {
-        setError(msg || 'Failed to dispatch verification code. Please try again.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Phone OTP Verify
-  const handleVerifyPhoneOtp = async () => {
-    if (!phoneOtpCode.trim()) {
-      setError('Please enter the code sent via WhatsApp.');
-      return;
-    }
-    setError(null);
-    setLoading(true);
-    const fullPhone = `+91${phoneDigits}`;
-    try {
-      const res = await mobileApi.verifyDoctorOtp(fullPhone, phoneOtpCode.trim());
-      await handleAuthSuccess(res.user);
-    } catch (err: any) {
-      const msg = err?.message || '';
-      if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
-        setError('Connection timed out. Please check your internet connection and try again.');
-      } else {
-        setError(msg || 'Invalid or expired verification code. Please request a new code.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Doctor Registration
   const handleRegisterDoctor = async () => {
-    if (!doctorName.trim() || !email.trim() || phoneDigits.length < 10) {
-      setError('Please fill all required physician credentials.');
+    if (!doctorName.trim() || !email.trim()) {
+      setError('Please provide your name and email address.');
       return;
     }
     setError(null);
@@ -330,7 +295,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
       const res = await mobileApi.registerDoctor({
         name: doctorName.trim().startsWith('Dr.') ? doctorName.trim() : `Dr. ${doctorName.trim()}`,
         email: email.trim(),
-        phone: `+91${phoneDigits}`,
+        phone: phoneDigits ? `+91${phoneDigits}` : undefined,
         specialty: regSpecialty.trim(),
         clinic_name: regClinic.trim(),
         reg_number: regNumber.trim(),
@@ -380,15 +345,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
             onPress={() => { setAuthMode('email'); setError(null); }}
           >
             <Ionicons name="mail" size={16} color={authMode === 'email' ? '#0ea5e9' : Colors.textSecondary} />
-            <Text style={[styles.tabText, authMode === 'email' && styles.tabTextActive]}>Medical Email</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tabBtn, authMode === 'phone' && styles.tabBtnActive]}
-            onPress={() => { setAuthMode('phone'); setError(null); }}
-          >
-            <Ionicons name="logo-whatsapp" size={16} color={authMode === 'phone' ? '#25D366' : Colors.textSecondary} />
-            <Text style={[styles.tabText, authMode === 'phone' && styles.tabTextActive]}>WhatsApp</Text>
+            <Text style={[styles.tabText, authMode === 'email' && styles.tabTextActive]}>Medical Email OTP</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -507,86 +464,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
             </View>
           )}
 
-          {authMode === 'phone' && (
-            <View>
-              <Text style={styles.label}>Registered Doctor Mobile (India)</Text>
-              <View style={styles.phoneInputRow}>
-                <View style={styles.countryCodeBox}>
-                  <Text style={styles.countryCodeText}>+91</Text>
-                </View>
-                <TextInput
-                  style={[styles.input, { flex: 1 }]}
-                  placeholder="9876543210"
-                  placeholderTextColor={Colors.textSecondary}
-                  value={phoneDigits}
-                  onChangeText={setPhoneDigits}
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                />
-              </View>
 
-              {!phoneOtpSent ? (
-                <TouchableOpacity
-                  style={[styles.primaryBtn, { backgroundColor: '#25D366' }]}
-                  onPress={handleRequestPhoneOtp}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#ffffff" />
-                  ) : (
-                    <>
-                      <Ionicons name="logo-whatsapp" size={18} color="#ffffff" />
-                      <Text style={styles.primaryBtnText}>Get WhatsApp OTP</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              ) : (
-                <View style={{ marginTop: 12 }}>
-                  <Text style={styles.label}>WhatsApp Verification Code</Text>
-                  <View style={styles.inputContainer}>
-                    <Ionicons name="key" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-                    <TextInput
-                      style={[styles.input, { letterSpacing: 6, fontWeight: '700' }]}
-                      placeholder="• • • • • •"
-                      placeholderTextColor={Colors.textSecondary}
-                      value={phoneOtpCode}
-                      onChangeText={setPhoneOtpCode}
-                      keyboardType="number-pad"
-                      maxLength={6}
-                    />
-                  </View>
-                  <Text style={{ fontSize: 12, color: Colors.textSecondary, marginTop: 4, marginBottom: 12 }}>
-                    📬 Please check your WhatsApp messages. Code expires in 10 minutes.
-                  </Text>
-
-                  <TouchableOpacity
-                    style={[styles.primaryBtn, { backgroundColor: '#25D366' }]}
-                    onPress={handleVerifyPhoneOtp}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <ActivityIndicator color="#ffffff" />
-                    ) : (
-                      <>
-                        <Ionicons name="checkmark-done" size={18} color="#ffffff" />
-                        <Text style={styles.primaryBtnText}>Verify OTP & Sign In</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.resendBtn}
-                    onPress={handleRequestPhoneOtp}
-                    disabled={loading || resendCooldown > 0}
-                  >
-                    <Text style={[styles.resendText, resendCooldown > 0 && { color: Colors.textMuted }]}>
-                      {resendCooldown > 0 ? `Resend WhatsApp OTP in ${resendCooldown}s` : "Didn't receive OTP? Resend"}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          )}
 
           {authMode === 'register' && (
             <View>
@@ -734,26 +612,26 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                   {/* 1-Tap Preset Switchers */}
                   <View style={styles.presetRow}>
                     <TouchableOpacity
-                      style={[styles.presetBtn, activeServerUrl.includes('railway') && styles.presetBtnActive]}
-                      onPress={() => handleSelectPreset('https://praxirence-production.up.railway.app')}
+                      style={[styles.presetBtn, (activeServerUrl.includes('localhost') || activeServerUrl.includes('127.0.0.1')) && styles.presetBtnActive]}
+                      onPress={() => handleSelectPreset('http://localhost:8000')}
                     >
-                      <Ionicons name="cloud-outline" size={13} color={activeServerUrl.includes('railway') ? '#FFFFFF' : Colors.textPrimary} />
-                      <Text style={[styles.presetBtnText, activeServerUrl.includes('railway') && styles.presetBtnTextActive]}>
-                        Railway
+                      <Ionicons name="desktop-outline" size={13} color={(activeServerUrl.includes('localhost') || activeServerUrl.includes('127.0.0.1')) ? '#FFFFFF' : Colors.textPrimary} />
+                      <Text style={[styles.presetBtnText, (activeServerUrl.includes('localhost') || activeServerUrl.includes('127.0.0.1')) && styles.presetBtnTextActive]}>
+                        Localhost (8000)
                       </Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                       style={[
                         styles.presetBtn,
-                        (activeServerUrl.includes('192.168.') || activeServerUrl.includes('localhost')) && !activeServerUrl.includes('10.0.2.2') && styles.presetBtnActive
+                        (activeServerUrl.includes('10.51.') || activeServerUrl.includes('192.168.')) && !activeServerUrl.includes('10.0.2.2') && styles.presetBtnActive
                       ]}
-                      onPress={() => handleSelectPreset('http://192.168.0.8:8001')}
+                      onPress={() => handleSelectPreset('http://10.51.113.76:8000')}
                     >
-                      <Ionicons name="wifi-outline" size={13} color={(activeServerUrl.includes('192.168.') || activeServerUrl.includes('localhost')) && !activeServerUrl.includes('10.0.2.2') ? '#FFFFFF' : Colors.textPrimary} />
+                      <Ionicons name="wifi-outline" size={13} color={(activeServerUrl.includes('10.51.') || activeServerUrl.includes('192.168.')) && !activeServerUrl.includes('10.0.2.2') ? '#FFFFFF' : Colors.textPrimary} />
                       <Text style={[
                         styles.presetBtnText,
-                        (activeServerUrl.includes('192.168.') || activeServerUrl.includes('localhost')) && !activeServerUrl.includes('10.0.2.2') && styles.presetBtnTextActive
+                        (activeServerUrl.includes('10.51.') || activeServerUrl.includes('192.168.')) && !activeServerUrl.includes('10.0.2.2') && styles.presetBtnTextActive
                       ]}>
                         Local Wi-Fi
                       </Text>
@@ -761,7 +639,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
 
                     <TouchableOpacity
                       style={[styles.presetBtn, activeServerUrl.includes('10.0.2.2') && styles.presetBtnActive]}
-                      onPress={() => handleSelectPreset('http://10.0.2.2:8001')}
+                      onPress={() => handleSelectPreset('http://10.0.2.2:8000')}
                     >
                       <Ionicons name="phone-portrait-outline" size={13} color={activeServerUrl.includes('10.0.2.2') ? '#FFFFFF' : Colors.textPrimary} />
                       <Text style={[styles.presetBtnText, activeServerUrl.includes('10.0.2.2') && styles.presetBtnTextActive]}>
@@ -776,7 +654,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                       style={styles.customUrlInput}
                       value={customServerInput}
                       onChangeText={setCustomServerInput}
-                      placeholder="http://192.168.x.x:8001"
+                      placeholder="http://10.51.113.76:8000"
                       placeholderTextColor="#94A3B8"
                       autoCapitalize="none"
                       autoCorrect={false}
@@ -802,9 +680,14 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                 <TouchableOpacity
                   style={styles.pilotOptionBtn}
                   onPress={() => handlePilotBypass({
-                    name: 'Dr. Mayank Raj',
+                    name: 'Dr. Mayank Raj Gupta',
+                    degree: 'MBBS, MD (General Medicine)',
+                    qualifications: 'Fellowship in Diabetology & Critical Care',
+                    designation: 'Chief Medical Officer & Senior Physician',
+                    experience_years: '12+ Yrs Exp',
+                    languages: ['English', 'Hindi', 'Hinglish'],
                     email: 'doctor@praxirence.com',
-                    specialty: 'Chief Medical Officer & Pulmonology',
+                    specialty: 'Internal Medicine & Pulmonology',
                     clinic_name: 'Praxirence Super-Speciality Clinic',
                     reg_number: 'NMC-2024-8849',
                   })}
@@ -813,8 +696,8 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                     <Ionicons name="shield-checkmark" size={18} color="#0284c7" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.pilotOptionTitle}>Dr. Mayank Raj (CMO)</Text>
-                    <Text style={styles.pilotOptionSub}>Super-Speciality Clinic • NMC-2024-8849</Text>
+                    <Text style={styles.pilotOptionTitle}>Dr. Mayank Raj Gupta (MBBS, MD)</Text>
+                    <Text style={styles.pilotOptionSub}>CMO • 12+ Yrs Exp • NMC-2024-8849</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
                 </TouchableOpacity>
@@ -823,6 +706,11 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                   style={styles.pilotOptionBtn}
                   onPress={() => handlePilotBypass({
                     name: 'Dr. Sunita Sharma',
+                    degree: 'MBBS, DNB (Internal Medicine)',
+                    qualifications: 'Fellowship in Diabetology & Endocrinology',
+                    designation: 'Senior Consultant Physician',
+                    experience_years: '9+ Yrs Exp',
+                    languages: ['English', 'Hindi'],
                     email: 'sunita.sharma@delhiclinic.org',
                     specialty: 'Consultant Physician & Diabetologist',
                     clinic_name: 'Sharma Health Care & Diagnostics',
@@ -833,8 +721,8 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                     <Ionicons name="fitness" size={18} color="#16a34a" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.pilotOptionTitle}>Dr. Sunita Sharma (Internal Med)</Text>
-                    <Text style={styles.pilotOptionSub}>Diagnostics & OPD • DMC-2021-4921</Text>
+                    <Text style={styles.pilotOptionTitle}>Dr. Sunita Sharma (MBBS, DNB)</Text>
+                    <Text style={styles.pilotOptionSub}>Consultant • 9+ Yrs Exp • DMC-2021-4921</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
                 </TouchableOpacity>

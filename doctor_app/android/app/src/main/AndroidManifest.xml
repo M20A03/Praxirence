@@ -36,8 +36,6 @@
   <uses-permission android:name="android.permission.READ_APP_BADGE" tools:node="remove"/>
 
   <queries>
-    <package android:name="com.whatsapp"/>
-    <package android:name="com.whatsapp.w4b"/>
     <intent>
       <action android:name="android.intent.action.VIEW"/>
       <category android:name="android.intent.category.BROWSABLE"/>

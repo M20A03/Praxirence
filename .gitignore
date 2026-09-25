@@ -93,3 +93,4 @@ ml_pipeline/models/
 *.zip
 Praxirence/
 firebase-service-account.json
+archive/

@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  ScrollView,
   Animated,
   Alert,
   ActivityIndicator,
@@ -40,6 +41,7 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
   const [isPlaying, setIsPlaying] = useState(false);
   const [uploadFailed, setUploadFailed] = useState<boolean>(false);
   const [backgroundPaused, setBackgroundPaused] = useState<boolean>(false);
+  const [selectedLanguage, setSelectedLanguage] = useState<'hi' | 'en' | 'kn' | 'te' | 'ta'>('hi');
 
   // Pulse & Waveform Animation Refs
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -195,10 +197,40 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
+        staysActiveInBackground: true,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false,
       });
 
+      // Clinical Speech-Optimized ASR Audio Configuration (16kHz Mono)
+      const speechRecordingOptions: Audio.RecordingOptions = {
+        isMeteringEnabled: true,
+        android: {
+          extension: '.m4a',
+          outputFormat: Audio.AndroidOutputFormat.MPEG_4,
+          audioEncoder: Audio.AndroidAudioEncoder.AAC,
+          sampleRate: 16000,
+          numberOfChannels: 1,
+          bitRate: 64000,
+        },
+        ios: {
+          extension: '.m4a',
+          audioQuality: Audio.IOSAudioQuality.HIGH,
+          sampleRate: 16000,
+          numberOfChannels: 1,
+          bitRate: 64000,
+          linearPCMBitDepth: 16,
+          linearPCMIsBigEndian: false,
+          linearPCMIsFloat: false,
+        },
+        web: {
+          mimeType: 'audio/webm',
+          bitsPerSecond: 64000,
+        },
+      };
+
       const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
+        speechRecordingOptions
       );
 
       setRecording(newRecording);
@@ -319,6 +351,7 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
         audioUri: uri,
         patientName,
         doctorName,
+        language: selectedLanguage,
       });
 
       // Clear local offline cache on successful upload
@@ -426,6 +459,33 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
           {formatTime(durationSec)} {isPaused ? '(Paused)' : ''}
         </Text>
       </View>
+
+      {/* Consultation Language Hint Selector */}
+      {!isRecording && (
+        <View style={styles.langSelectorContainer}>
+          <Text style={styles.langSelectorLabel}>Consultation Language:</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.langScroll}>
+            {[
+              { code: 'hi', label: 'Hinglish / हिन्दी' },
+              { code: 'en', label: 'English' },
+              { code: 'kn', label: 'ಕನ್ನಡ' },
+              { code: 'te', label: 'తెలుగు' },
+              { code: 'ta', label: 'தமிழ்' },
+            ].map((item) => (
+              <TouchableOpacity
+                key={item.code}
+                style={[styles.langChip, selectedLanguage === item.code && styles.langChipActive]}
+                onPress={() => setSelectedLanguage(item.code as any)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.langChipText, selectedLanguage === item.code && styles.langChipTextActive]}>
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
       {/* Main Action Controls */}
       <View style={styles.controlsRow}>
@@ -847,5 +907,39 @@ const styles = StyleSheet.create({
     color: '#0284C7',
     fontWeight: '600',
     flex: 1,
+  },
+  langSelectorContainer: {
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  langSelectorLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+    marginBottom: 6,
+  },
+  langScroll: {
+    gap: 8,
+    paddingVertical: 2,
+  },
+  langChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  langChipActive: {
+    backgroundColor: '#0284C7',
+    borderColor: '#0284C7',
+  },
+  langChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  langChipTextActive: {
+    color: '#FFFFFF',
   },
 });

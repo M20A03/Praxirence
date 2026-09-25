@@ -19,12 +19,18 @@ logger = logging.getLogger("praxirence.preprocess_text")
 INPUT_METADATA = os.path.join(os.path.dirname(__file__), "..", "data", "processed", "metadata.json")
 DATASET_DIR = os.path.join(os.path.dirname(__file__), "..", "dataset")
 
-SYSTEM_INSTRUCTION = (
-    "You are Praxirence Clinical AI, an expert medical documentation assistant. "
-    "Analyze the doctor-patient consultation transcript and output a structured care plan in valid JSON format. "
-    "The JSON must have three top-level keys: 'diagnosis' (string), 'medicines' (list of objects with 'name', 'dosage', 'frequency'), "
-    "and 'reminders' (list of formatted reminder strings with timing and medicine instructions)."
-)
+try:
+    import sys
+    backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "backend"))
+    if backend_dir not in sys.path:
+        sys.path.insert(0, backend_dir)
+    from app.prompts.care_plan_prompt import CARE_PLAN_SYSTEM_PROMPT as SYSTEM_INSTRUCTION
+except Exception:
+    SYSTEM_INSTRUCTION = (
+        "You are Praxirence Clinical AI, an expert medical documentation assistant. "
+        "Analyze the doctor-patient consultation transcript and output a structured care plan in valid JSON format. "
+        "The JSON must have keys: 'diagnosis', 'patient_summary', 'doctor_advice', 'warning_signs', 'medicines', and 'reminders'."
+    )
 
 
 def rule_based_care_plan_extractor(transcript: str) -> Dict[str, Any]:

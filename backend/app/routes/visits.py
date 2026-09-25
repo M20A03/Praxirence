@@ -38,7 +38,7 @@ from app.schemas.visit import (
 from app.services.storage_service import storage_service
 from app.services.ai_service import ai_service
 from ml.inference import model_loader
-from app.tasks import send_whatsapp_care_plan_celery, purge_voice_recording_celery, dispatch_task
+from app.tasks import purge_voice_recording_celery, dispatch_task
 from app.routes.deps import get_current_doctor, get_current_user_or_patient
 
 router = APIRouter(prefix="/visits", tags=["Visits & Consultations"])
@@ -100,13 +100,37 @@ def summarize_consultation(
     else:
         pat_sum = str(pat_sum)
 
+    clean_meds = []
+    for m in result.get("medicines", []):
+        if isinstance(m, dict) and "name" in m:
+            clean_meds.append(MedicineItem(
+                name=str(m.get("name", "Medication")),
+                dosage=str(m.get("dosage", "1 tablet")),
+                frequency=str(m.get("frequency", "Once daily")),
+                instructions=str(m.get("instructions", "Take with water")),
+                duration_days=int(m.get("duration_days", 5)) if str(m.get("duration_days", "")).isdigit() else 5,
+                meal_relation=str(m.get("meal_relation", "after_food")),
+                is_sos=bool(m.get("is_sos", False))
+            ))
+
+    clean_rems = []
+    for r in result.get("reminders", []):
+        if isinstance(r, dict) and "time" in r:
+            clean_rems.append(ReminderItem(
+                medicine_name=str(r.get("medicine_name", clean_meds[0].name if clean_meds else "Medication")),
+                dosage=str(r.get("dosage", clean_meds[0].dosage if clean_meds else "1 dose")),
+                time=str(r.get("time", "08:30")),
+                frequency=str(r.get("frequency", "daily")),
+                instructions=str(r.get("instructions", "Take as directed")) if r.get("instructions") else None
+            ))
+
     return ConsultationSummarizeResponse(
         patient_summary=pat_sum,
         doctor_advice=doc_adv,
         warning_signs=result.get("warning_signs", []),
         diagnosis=result.get("diagnosis", "Clinical Consultation"),
-        medicines=[MedicineItem(**m) for m in result.get("medicines", [])],
-        reminders=[ReminderItem(**r) for r in result.get("reminders", [])],
+        medicines=clean_meds,
+        reminders=clean_rems,
         follow_up_days=result.get("follow_up_days", 5)
     )
 
@@ -185,6 +209,7 @@ def create_structured_visit(
 async def upload_consultation_audio(
     patient_id: str = Form(...),
     keep_recording: bool = Form(False),
+    language: Optional[str] = Form(None),
     audio_file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_doctor = Depends(get_current_doctor)
@@ -210,8 +235,12 @@ async def upload_consultation_audio(
     saved_path, filename = await storage_service.save_upload_audio(audio_file)
 
     try:
-        # Step 1: Transcribe with Whisper model loader
-        transcription = model_loader.transcribe(saved_path)
+        # Step 1: Transcribe with in-house local ASR model (Zero external API)
+        try:
+            transcription = ai_service.transcribe_audio(saved_path, language=language)
+        except Exception as t_err:
+            logger.warning(f"Audio transcription notice ({t_err}), trying model_loader.")
+            transcription = model_loader.transcribe(saved_path, language=language)
 
         # Step 2: Extract Care Plan with 7B LLM / Resilient Clinical Parser
         care_plan = model_loader.extract_care_plan(transcription)
@@ -468,7 +497,7 @@ def approve_and_send_care_plan(
     """
     Doctor approves the care plan.
     - Sets visit status to 'approved'.
-    - Dispatches Meta WhatsApp Cloud API delivery via Celery background worker.
+    - Synchronizes care plan in-app with patient Praxirence app.
     """
     visit = db.query(Visit).filter(Visit.id == visit_id).first()
     if not visit:
@@ -485,13 +514,10 @@ def approve_and_send_care_plan(
     db.commit()
     db.refresh(visit)
 
-    # Trigger Celery background task for Meta WhatsApp Cloud API
-    dispatch_task(send_whatsapp_care_plan_celery, visit_id=visit.id)
-
     audit = AuditLog(
         actor_id=current_doctor.id,
         actor_role="doctor",
-        action="approve_care_plan_meta_whatsapp",
+        action="approve_care_plan_in_app",
         resource="visit",
         resource_id=visit.id
     )
@@ -503,9 +529,9 @@ def approve_and_send_care_plan(
     return VisitApproveResponse(
         visit_id=visit.id,
         status="approved",
-        whatsapp_status="dispatched_via_meta_cloud_api",
+        whatsapp_status="in_app_synced",
         scheduled_reminders_count=len(visit.reminders or []),
-        message="Care plan & consultation summary approved. Dispatched to patient via Meta WhatsApp Cloud API.",
+        message="Care plan & consultation summary approved. Synced to patient Praxirence app with automated alarms.",
         patient_summary=pat_summary
     )
 

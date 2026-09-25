@@ -21,6 +21,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
 import { PatientUser, Visit, QueueStatusResponse } from '../types';
 import { mobileApi } from '../services/api';
+import { NotificationService } from '../services/NotificationService';
 import { BrandLogoMobile } from '../components/BrandLogoMobile';
 import { EmptyState } from '../components/EmptyState';
 
@@ -137,12 +138,24 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
   }, [activeScheduledVisit?.id]);
 
   const loadVisits = async () => {
+    const cacheKey = `praxirence_careplan_${user.id}`;
     try {
       setLoading(true);
       const data = await mobileApi.getVisits(user.id);
       setVisits(data);
+      if (data && data.length > 0) {
+        await AsyncStorage.setItem(cacheKey, JSON.stringify(data));
+        // Automatically schedule native recurring medication alarms
+        NotificationService.scheduleCarePlanReminders(data).catch(() => {});
+      }
     } catch (err) {
-      console.log('Error loading visits:', err);
+      console.log('Error loading visits, checking offline cache:', err);
+      try {
+        const cached = await AsyncStorage.getItem(cacheKey);
+        if (cached) {
+          setVisits(JSON.parse(cached));
+        }
+      } catch (_) {}
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -457,8 +470,8 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
                 <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                   <View style={styles.statusBadge}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Ionicons name="checkmark-circle" size={13} color={Colors.whatsapp} />
-                      <Text style={styles.statusText}>WhatsApp Delivered</Text>
+                      <Ionicons name="checkmark-circle" size={13} color="#059669" />
+                      <Text style={styles.statusText}>Care Plan Synced</Text>
                     </View>
                   </View>
                   {visit.signature_hash && (

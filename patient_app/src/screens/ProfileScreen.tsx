@@ -100,7 +100,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>ABHA Health ID</Text>
             <Text style={[styles.infoValue, { color: Colors.primaryDark, fontFamily: FontFamily.bold }]}>
-              {user.name.toLowerCase().replace(/[^a-z0-9]/g, '')}@abdm
+              {((user?.name || 'patient').toLowerCase().replace(/[^a-z0-9]/g, '') || 'patient')}@abdm
             </Text>
           </View>
         )}

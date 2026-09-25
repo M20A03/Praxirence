@@ -9,7 +9,8 @@ from app.core.database import get_db
 from app.models.visit import Visit
 from app.models.patient import Patient
 from app.models.user import User
-from app.services.ai_service import AIService
+from app.services.ai_service import AIService, ai_service
+from app.routes.visits import parse_transcription_and_summary
 
 logger = logging.getLogger("praxirence.chat")
 router = APIRouter(prefix="/chat", tags=["Patient Multilingual Assistant"])
@@ -45,7 +46,7 @@ class ChatResponse(BaseModel):
 SYSTEM_HEALTH_KNOWLEDGE = {
     "app_features": {
         "download_pdf": "You can download your official clinical prescription PDF directly from the 'Visits' tab by tapping 'Download PDF'.",
-        "whatsapp": "Once your consultation is finalized by your clinician, the full Care Plan is securely dispatched to your WhatsApp via Meta Cloud API.",
+        "care_plan": "Once your consultation is finalized by your clinician, the full Care Plan is securely synchronized to your Praxirence app.",
         "consent": "Praxirence protects your health records with AES-256 blind indexing and HIPAA/ABDM security. You can toggle or revoke doctor access anytime from the 'Consent' tab.",
         "vitals": "Log daily Blood Pressure, Heart Rate, SpO2, and Blood Glucose on the 'Today' tab to track health trends over time.",
         "find_doctors": "Browse verified clinicians with active National Medical Commission (NMC) credentials on the 'Doctors' tab."
@@ -57,11 +58,16 @@ def build_fallback_response(
     query: str,
     language: str,
     medicines: List[Dict[str, Any]],
-    doctors: List[User]
+    doctors: List[User],
+    latest_diagnosis: Optional[str] = None,
+    latest_summary: Optional[str] = None,
+    latest_doc_advice: Optional[str] = None,
+    doctor_name: Optional[str] = None,
+    patient_name: Optional[str] = None
 ) -> ChatResponse:
     """
     High-fidelity clinical response generator covering Multilingual queries,
-    prescription explanations, doctor matching, and app navigation.
+    consultation dialogue explanations, prescription explanations, doctor matching, and app navigation.
     """
     q_lower = query.lower()
     intent = "general_health"
@@ -82,8 +88,68 @@ def build_fallback_response(
     is_punjabi = language.lower() in ["punjabi", "ਪੰਜਾਬੀ", "pa"]
     is_gujarati = language.lower() in ["gujarati", "ગુજરાતી", "gu"]
 
-    # 1. Prescription / Medicine Queries
-    if any(k in q_lower for k in ["medicine", "medication", "prescription", "dose", "dosage", "tablet", "syrup", "pill", "schedule", "timing", "side effect", "दवा", "दवाई", "औषध", "ಔಷಧ", "ಮಾತ್ರೆ", "மருந்து", "మందు", "دوا"]):
+    doc_display = doctor_name or "Dr. Mayank Raj"
+    pat_display = patient_name or "Patient"
+
+    # 1. Consultation, Diagnosis & Doctor Advice Queries
+    if any(k in q_lower for k in [
+        "diagnos", "advice", "consultation", "visit", "said", "summary", "problem", "condition",
+        "doctor note", "what did the doctor", "what did doctor", "डॉक्टर ने क्या कहा", "बीमारी",
+        "निदान", "सलाह", "रोग", "सुझाव", "ಪರೀಕ್ಷೆ", "ರೋಗನಿರ್ಣಯ", "ಸಲಹೆ", "تشخیص", "مشورہ"
+    ]) and (latest_diagnosis or latest_summary or latest_doc_advice):
+        intent = "consultation_explanation"
+        diag_str = latest_diagnosis or "Clinical Evaluation"
+        summary_str = latest_summary or f"During your consultation, {doc_display} evaluated your health status."
+        advice_str = latest_doc_advice or "Follow your prescription schedule and maintain adequate rest and hydration."
+
+        if is_kannada:
+            reply_text = (
+                f"📋 **ನಿಮ್ಮ ಇತ್ತೀಚಿನ ಸಮಾಲೋಚನೆ ವಿವರ ({doc_display}):**\n\n"
+                f"• **ರೋಗನಿರ್ಣಯ:** {diag_str}\n"
+                f"• **ವೈದ್ಯರ ವಿವರಣೆ:** {summary_str}\n"
+                f"• **ಜೀವನಶೈಲಿ ಮತ್ತು ಸಲಹೆ:** {advice_str}\n\n"
+                f"ನಿಮ್ಮ ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್ ವಿವರಗಳನ್ನು 'Visits' ಟ್ಯಾಬ್‌ನಲ್ಲಿ ವೀಕ್ಷಿಸಬಹುದು."
+            )
+            suggestions = ["ನನ್ನ ಔಷಧಗಳನ್ನು ವಿವರಿಸಿ", "ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ", "ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ"]
+        elif is_bhojpuri:
+            reply_text = (
+                f"📋 **रउआ के सबसे हाल के परामर्श विवरण ({doc_display}):**\n\n"
+                f"• **बीमारी / निदान:** {diag_str}\n"
+                f"• **डॉक्टर साहेब के समझावल बात:** {summary_str}\n"
+                f"• **घरेलू सलाह आ परहेज़:** {advice_str}\n\n"
+                f"रउआ आपन पूरा परचा 'Visits' टैब में देख सकत बानी।"
+            )
+            suggestions = ["हमार दवाई समझाईं", "परचा डाउनलोड करीं", "डॉक्टर से बात करीं"]
+        elif is_urdu:
+            reply_text = (
+                f"📋 **آپ کے حالیہ طبی مشورے کی تفصیل ({doc_display}):**\n\n"
+                f"• **تشخیص:** {diag_str}\n"
+                f"• **ڈاکٹر کی وضاحت:** {summary_str}\n"
+                f"• **گھریلو پرہیز اور مشورہ:** {advice_str}\n\n"
+                f"مکمل نسخہ دیکھنے کے لیے 'Visits' ٹیب ملاحظہ کریں۔"
+            )
+            suggestions = ["میری ادویات سمجھائیں", "نسخہ ڈاؤن لوڈ کریں", "ڈاکٹر سے رابطہ کریں"]
+        elif is_hindi:
+            reply_text = (
+                f"📋 **आपके हालिया परामर्श का विवरण ({doc_display}):**\n\n"
+                f"• **निदान (Diagnosis):** {diag_str}\n"
+                f"• **डॉक्टर की समझाइश:** {summary_str}\n"
+                f"• **घरेलू सलाह व परहेज:** {advice_str}\n\n"
+                f"विस्तृत पर्चा देखने के लिए 'Visits' टैब पर जाएं।"
+            )
+            suggestions = ["मेरी दवाएं समझाइए", "प्रिस्क्रिप्शन डाउनलोड करें", "डॉक्टर से संपर्क करें"]
+        else:
+            reply_text = (
+                f"📋 **Summary of Your Consultation with {doc_display}:**\n\n"
+                f"• **Clinical Diagnosis:** {diag_str}\n"
+                f"• **What Doctor Explained:** {summary_str}\n"
+                f"• **Doctor's Lifestyle & Home Care Advice:** {advice_str}\n\n"
+                f"You can review your complete medication schedule and alarms under the **Visits** tab."
+            )
+            suggestions = ["Explain my medicines", "Download Rx PDF", "Contact Doctor"]
+
+    # 2. Prescription / Medicine Queries
+    elif any(k in q_lower for k in ["medicine", "medication", "prescription", "dose", "dosage", "tablet", "syrup", "pill", "schedule", "timing", "side effect", "दवा", "दवाई", "औषध", "ಔಷಧ", "ಮಾತ್ರೆ", "மருந்து", "మందు", "دوا"]):
         intent = "prescription_explanation"
         if medicines:
             meds_ref = medicines
@@ -192,8 +258,10 @@ def build_fallback_response(
                 reply_text = "No active prescription records found. You can book an encounter with a specialist under the 'Doctors' tab."
                 suggestions = ["Find General Physician", "Book Consultation", "How to sync vitals?"]
 
-    # 2. Doctor Search / Recommendation Queries
-    elif any(k in q_lower for k in ["doctor", "specialist", "pediatrician", "cardiologist", "physician", "clinic", "डॉक्टर", "ವೈದ್ಯ", "ڈاکٹر", "হাসপাতাল"]):
+    # 3. Doctor Search / Recommendation Queries
+    # Exclude queries that are clearly about a past consultation/advice (those belong to intent #1)
+    elif (any(k in q_lower for k in ["doctor", "specialist", "pediatrician", "cardiologist", "physician", "clinic", "डॉक्टर", "ವೈದ್ಯ", "ڈاکٹر", "হাসপাতাল"])
+          and not any(k in q_lower for k in ["advice", "advise", "consultation", "said", "note", "diagnos", "summary", "what did", "सलाह", "निदान", "परामर्श", "ಸಲಹೆ", "مشورہ"])):
         intent = "doctor_recommendation"
         for doc in doctors[:4]:
             rec_docs.append(RecommendedDoctor(
@@ -244,14 +312,14 @@ def build_fallback_response(
             )
             suggestions = ["Book with Dr. Mayank Raj", "Find Pediatrician", "Clinic Hours"]
 
-    # 3. App Features / Navigation Queries
-    elif any(k in q_lower for k in ["download", "pdf", "whatsapp", "consent", "privacy", "feature", "vitals", "app"]):
+    # 4. App Features / Navigation Queries
+    elif any(k in q_lower for k in ["download", "pdf", "sync", "consent", "privacy", "feature", "vitals", "app"]):
         intent = "app_navigation"
         if is_kannada:
             reply_text = (
                 "📱 **Praxirence ಆ್ಯಪ್‌ನ ಮುಖ್ಯ ಸೌಲಭ್ಯಗಳು:**\n\n"
                 "1. **ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್ PDF ಡೌನ್‌ಲೋಡ್:** 'Visits' ಟ್ಯಾಬ್‌ಗೆ ಹೋಗಿ 'Download PDF' ಮೇಲೆ ಒತ್ತಿ.\n"
-                "2. **WhatsApp ಅಲರ್ಟ್‌ಗಳು:** ವೈದ್ಯರು ಸಲಹೆ ನೀಡಿದ ತಕ್ಷಣ ಪೂರ್ಣ ಆರೈಕೆ ಯೋಜನೆ ನಿಮ್ಮ WhatsApp ಗೆ ಬರುತ್ತದೆ.\n"
+                "2. **ಆ್ಯಪ್‌ನಲ್ಲಿ ಆರೈಕೆ ಯೋಜನೆ:** ವೈದ್ಯರು ಸಲಹೆ ನೀಡಿದ ತಕ್ಷಣ ಪೂರ್ಣ ಆರೈಕೆ ಯೋಜನೆ ನಿಮ್ಮ ಆ್ಯಪ್‌ನಲ್ಲಿ ಸಿಂಕ್ ಆಗುತ್ತದೆ.\n"
                 "3. **ಗೌಪ್ಯತೆ ಮತ್ತು ಸಮ್ಮತಿ:** 'Consent' ಟ್ಯಾಬ್‌ನಲ್ಲಿ ನಿಮ್ಮ ವೈದ್ಯಕೀಯ ಡೇಟಾ ಅನುಮತಿಯನ್ನು ನಿಯಂತ್ರಿಸಿ.\n"
                 "4. **ವೈಟಲ್ಸ್ ಟ್ರ್ಯಾಕರ್:** 'Today' ಟ್ಯಾಬ್‌ನಲ್ಲಿ ನಿಮ್ಮ ರಕ್ತದೊತ್ತಡ, ಸಕ್ಕರೆ ಮಟ್ಟ ಮತ್ತು ನಾಡಿಮಿಡಿತ ದಾಖಲಿಸಿ."
             )
@@ -260,7 +328,7 @@ def build_fallback_response(
             reply_text = (
                 "📱 **Praxirence ऐप के मुख्य सुविधा:**\n\n"
                 "1. **परचा PDF डाउनलोड:** 'Visits' टैब पर जाईं आ 'Download PDF' दबाईं।\n"
-                "2. **WhatsApp पर अलर्ट:** डॉक्टर के परामर्श पूरा होते ही पूरा केयर प्लान WhatsApp पर आ जाई।\n"
+                "2. **ऐप में केयर प्लान:** डॉक्टर के परामर्श पूरा होते ही पूरा केयर प्लान सीधे ऐप में आ जाई।\n"
                 "3. **गोपनीयता आ सहमति:** 'Consent' टैब से रउआ आपन डेटा अनुमति कभी भी बदल सकत बानी।\n"
                 "4. **वाइटल्स ट्रैकर:** 'Today' टैब पर बीपी, शुगर आ दिल के धड़कन दर्ज करीं।"
             )
@@ -269,7 +337,7 @@ def build_fallback_response(
             reply_text = (
                 "📱 **Praxirence ایپ کی اہم خصوصیات:**\n\n"
                 "1. **نسخہ PDF ڈاؤن لوڈ:** 'Visits' ٹیب میں جا کر 'Download PDF' پر کلک کریں۔\n"
-                "2. **واٹس ایپ الرٹس:** ڈاکٹر کے نسخہ تیار کرتے ہی نگہداشت کا مکمل پلان آپ کے واٹس ایپ پر موصول ہو جاتا ہے۔\n"
+                "2. **ایپ میں کیئر پلان:** ڈاکٹر کے نسخہ تیار کرتے ہی نگہداشت کا مکمل پلان آپ کی ایپ پر محفوظ ہو جاتا ہے۔\n"
                 "3. **رضامندی اور رازداری:** 'Consent' ٹیب میں جا کر اپنے ڈیٹا کی رسائی کو منظم کریں۔\n"
                 "4. **وائٹلز ٹریکر:** 'Today' ٹیب پر بی پی، شوگر اور نبض ریکارڈ کریں۔"
             )
@@ -278,7 +346,7 @@ def build_fallback_response(
             reply_text = (
                 "📱 **Praxirence ऐप की मुख्य विशेषताएं:**\n\n"
                 "1. **प्रिस्क्रिप्शन PDF डाउनलोड:** 'Visits' टैब पर जाएं और 'Download PDF' पर टैप करें।\n"
-                "2. **WhatsApp अलर्ट:** डॉक्टर द्वारा परामर्श पूरा होते ही पूरा केयर प्लान आपके WhatsApp पर आ जाता है।\n"
+                "2. **इन-ऐप केयर प्लान:** डॉक्टर द्वारा परामर्श पूरा होते ही पूरा केयर प्लान और दवा अलार्म आपके ऐप में आ जाता है।\n"
                 "3. **गोपनीयता और सहमति:** 'Consent' टैब में जाकर आप किसी भी समय अपनी डेटा अनुमति प्रबंधित कर सकते हैं।\n"
                 "4. **वाइटल्स ट्रैकर:** 'Today' टैब पर अपना बीपी, शुगर और हार्ट रेट रिकॉर्ड करें।"
             )
@@ -287,13 +355,13 @@ def build_fallback_response(
             reply_text = (
                 "📱 **Praxirence App Features & Navigation:**\n\n"
                 "1. **Download Rx PDF:** Tap the **Visits** tab and select 'Download PDF' for an official stamped copy.\n"
-                "2. **WhatsApp Delivery:** Your care plan is automatically delivered to your phone via Meta WhatsApp Cloud API.\n"
+                "2. **In-App Care Plan Sync:** Your care plan is automatically synchronized directly to your Praxirence app with automated alarms.\n"
                 "3. **Consent & Privacy:** View and control healthcare provider data access in the **Consent** tab (HIPAA & ABDM compliant).\n"
                 "4. **Vitals Monitoring:** Track daily Blood Pressure, Pulse, and Blood Sugar on the **Today** tab."
             )
             suggestions = ["How does Consent work?", "Download Latest Rx", "Log Today's Vitals"]
 
-    # 4. General Medical & Emergency Support
+    # 5. General Medical & Emergency Support
     else:
         intent = "general_support"
         if is_kannada:
@@ -342,7 +410,7 @@ def build_fallback_response(
                 "I can help you with:\n"
                 "• Explaining your active medicines, dosages, and food rules 💊\n"
                 "• Finding verified doctors & specialists in our clinic network 👨‍⚕️\n"
-                "• Guiding you through app features (PDF downloads, WhatsApp sync, consent) 📱\n\n"
+                "• Guiding you through app features (PDF downloads, care plan sync, consent) 📱\n\n"
                 "⚠️ **Medical Notice:** For life-threatening emergencies (e.g. severe chest pressure or shortness of breath), immediately call emergency services or visit the nearest ER."
             )
             suggestions = ["Explain my medication schedule 💊", "Find a Doctor 👨‍⚕️", "How to download prescription? 📄"]
@@ -364,25 +432,42 @@ def patient_chat_assistant(
 ):
     """
     Multilingual AI Health Assistant endpoint.
-    Retrieves patient context and doctor directory from PostgreSQL to provide
-    clinically sound, multilingual guidance.
+    Retrieves patient context, clinical consultation dialogue, and doctor directory
+    from PostgreSQL to provide clinically sound, multilingual guidance.
     """
-    # 1. Fetch Patient's latest prescription / medicines if patient_id is provided
+    # 1. Fetch Patient's latest prescription / medicines / consultation if patient_id is provided
     medicines = req.active_medications or []
-    if not medicines and req.patient_id:
+    latest_diagnosis = None
+    latest_summary = None
+    latest_doc_advice = None
+    doc_name = None
+    pat_name = None
+
+    if req.patient_id:
+        patient = db.query(Patient).filter(Patient.id == req.patient_id).first()
+        if patient:
+            pat_name = patient.name
+
         latest_visit = db.query(Visit).filter(
             Visit.patient_id == req.patient_id
         ).order_by(Visit.created_at.desc()).first()
 
-        if latest_visit and latest_visit.care_plan:
-            cp = latest_visit.care_plan
-            if isinstance(cp, str):
-                try:
-                    cp = json.loads(cp)
-                except Exception:
-                    cp = {}
-            if isinstance(cp, dict):
-                medicines = cp.get("medicines", [])
+        if latest_visit:
+            if not medicines and latest_visit.medicines:
+                if isinstance(latest_visit.medicines, list):
+                    medicines = latest_visit.medicines
+                elif isinstance(latest_visit.medicines, str):
+                    try:
+                        medicines = json.loads(latest_visit.medicines)
+                    except Exception:
+                        medicines = []
+
+            latest_diagnosis = latest_visit.diagnosis
+            raw_t, pat_sum, doc_adv = parse_transcription_and_summary(latest_visit.raw_transcription)
+            latest_summary = pat_sum
+            latest_doc_advice = doc_adv
+            if latest_visit.doctor:
+                doc_name = latest_visit.doctor.name
 
     # 2. Fetch verified doctors for referral
     doctors = db.query(User).all()
@@ -392,7 +477,12 @@ def patient_chat_assistant(
         query=req.message,
         language=req.language,
         medicines=medicines,
-        doctors=doctors
+        doctors=doctors,
+        latest_diagnosis=latest_diagnosis,
+        latest_summary=latest_summary,
+        latest_doc_advice=latest_doc_advice,
+        doctor_name=doc_name,
+        patient_name=pat_name
     )
 
     return response

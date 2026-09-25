@@ -30,12 +30,13 @@ import { DoctorSearchScreen } from './src/screens/DoctorSearchScreen';
 
 import { mobileApi } from './src/services/api';
 import { NotificationService } from './src/services/NotificationService';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 
 export const navigationRef = createNavigationContainerRef<any>();
 
 const Tab = createBottomTabNavigator();
 
-export default function App() {
+function PatientAppContent() {
   const [showSplash, setShowSplash] = useState<boolean>(true);
   const [currentPatient, setCurrentPatient] = useState<PatientUser | null>(null);
   const [loadingSession, setLoadingSession] = useState<boolean>(true);
@@ -246,6 +247,14 @@ export default function App() {
         </SafeAreaView>
       </Modal>
     </SafeAreaProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <PatientAppContent />
+    </ErrorBoundary>
   );
 }
 

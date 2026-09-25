@@ -230,7 +230,7 @@ export const generatePrescriptionHtml = (data: PrescriptionPdfData): string => {
             <div class="patient-value">${currentDate}</div>
           </div>
           <div>
-            <div class="patient-label">Contact (WhatsApp)</div>
+            <div class="patient-label">Contact Number</div>
             <div class="patient-value">${data.patient.phone}</div>
           </div>
         </div>

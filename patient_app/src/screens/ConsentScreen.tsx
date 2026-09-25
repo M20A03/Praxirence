@@ -35,7 +35,7 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({
 
   // Granular DPDP Consent Preferences
   const [coreConsent, setCoreConsent] = useState<boolean>(user.consent_status);
-  const [whatsappConsent, setWhatsappConsent] = useState<boolean>(true);
+  const [notificationsConsent, setNotificationsConsent] = useState<boolean>(true);
   const [secondaryConsent, setSecondaryConsent] = useState<boolean>(false);
 
   // Right to Erasure Modal State
@@ -114,19 +114,19 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({
 
   const handleSavePreferences = async (
     newCore: boolean,
-    newWhatsApp: boolean,
+    newNotifications: boolean,
     newSecondary: boolean
   ) => {
     setSaving(true);
     try {
       await mobileApi.updateConsentPreferences(user.id, {
         core_consent: newCore,
-        whatsapp_consent: newWhatsApp,
+        notifications_consent: newNotifications,
         secondary_consent: newSecondary,
       });
 
       setCoreConsent(newCore);
-      setWhatsappConsent(newWhatsApp);
+      setNotificationsConsent(newNotifications);
       setSecondaryConsent(newSecondary);
       onConsentUpdated(newCore);
 
@@ -134,7 +134,7 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({
         'Preferences Updated',
         newCore
           ? 'Consent settings updated. Praxirence will continue securely managing your digital care plans and scheduled medication timings.'
-          : 'Data processing paused. Automated care plan generation and WhatsApp reminders have been halted.'
+          : 'Data processing paused. Automated care plan generation and in-app medication reminders have been halted.'
       );
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to update consent preferences');
@@ -147,14 +147,14 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({
     if (!val) {
       Alert.alert(
         'Pause Data Processing?',
-        'Withdrawing consent means your doctor cannot dispatch automated digital care plans or WhatsApp medication reminders to you.',
+        'Withdrawing consent means your doctor cannot dispatch automated digital care plans or medication reminders to you.',
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Yes, Pause', style: 'destructive', onPress: () => handleSavePreferences(false, whatsappConsent, secondaryConsent) },
+          { text: 'Yes, Pause', style: 'destructive', onPress: () => handleSavePreferences(false, notificationsConsent, secondaryConsent) },
         ]
       );
     } else {
-      handleSavePreferences(true, whatsappConsent, secondaryConsent);
+      handleSavePreferences(true, notificationsConsent, secondaryConsent);
     }
   };
 
@@ -188,14 +188,14 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({
     try {
       await mobileApi.updateConsentPreferences(user.id, {
         core_consent: false,
-        whatsapp_consent: false,
+        notifications_consent: false,
         secondary_consent: false,
         erasure_requested: true,
       });
 
       setShowErasureModal(false);
       setCoreConsent(false);
-      setWhatsappConsent(false);
+      setNotificationsConsent(false);
       setSecondaryConsent(false);
       onConsentUpdated(false);
 
@@ -262,7 +262,7 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({
           <Text style={styles.statusBannerSubtitle}>
             {coreConsent
               ? 'Authorized to generate AI clinical notes and deliver medication timing reminders'
-              : 'Automated care plans and WhatsApp timing reminders are currently disabled'}
+              : 'Automated care plans and medication timing reminders are currently disabled'}
           </Text>
         </View>
       </View>
@@ -289,22 +289,22 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({
 
         <View style={styles.divider} />
 
-        {/* WhatsApp Reminders Toggle */}
+        {/* In-App Medication Reminders Toggle */}
         <View style={styles.toggleRow}>
           <View style={{ flex: 1, paddingRight: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-              <Ionicons name="logo-whatsapp" size={16} color="#25D366" />
-              <Text style={styles.toggleTitle}>WhatsApp Medication Reminders</Text>
+              <Ionicons name="notifications-outline" size={16} color="#10b981" />
+              <Text style={styles.toggleTitle}>In-App Medication Reminders</Text>
             </View>
             <Text style={styles.toggleDesc}>
-              Receive scheduled alerts on WhatsApp when it is time to eat medicines (Morning, Afternoon, Night; before/after food).
+              Receive scheduled notifications and alarms in your app when it is time to take medicines (Morning, Afternoon, Night; before/after food).
             </Text>
           </View>
           <Switch
-            value={whatsappConsent}
+            value={notificationsConsent}
             onValueChange={(val) => handleSavePreferences(coreConsent, val, secondaryConsent)}
-            trackColor={{ false: '#334155', true: '#25D366' }}
-            thumbColor={whatsappConsent ? '#ffffff' : '#94a3b8'}
+            trackColor={{ false: '#334155', true: '#10b981' }}
+            thumbColor={notificationsConsent ? '#ffffff' : '#94a3b8'}
             disabled={saving || !coreConsent}
           />
         </View>
@@ -324,7 +324,7 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({
           </View>
           <Switch
             value={secondaryConsent}
-            onValueChange={(val) => handleSavePreferences(coreConsent, whatsappConsent, val)}
+            onValueChange={(val) => handleSavePreferences(coreConsent, notificationsConsent, val)}
             trackColor={{ false: '#334155', true: '#0ea5e9' }}
             thumbColor={secondaryConsent ? '#ffffff' : '#94a3b8'}
             disabled={saving || !coreConsent}
@@ -454,7 +454,7 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({
             <View style={styles.erasureConsequencesBox}>
               <Text style={styles.consequencesTitle}>What will happen:</Text>
               <Text style={styles.consequencesItem}>• Your prescription history and care plans will be permanently purged.</Text>
-              <Text style={styles.consequencesItem}>• All automated WhatsApp pill reminders will immediately terminate.</Text>
+              <Text style={styles.consequencesItem}>• All automated in-app pill reminders will immediately terminate.</Text>
               <Text style={styles.consequencesItem}>• This action is irreversible once processed by the compliance officer.</Text>
             </View>
 

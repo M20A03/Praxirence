@@ -170,7 +170,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
             <View key={pat.id} style={styles.patientCard}>
               <View style={styles.patientInfoRow}>
                 <View style={styles.avatarCircle}>
-                  <Text style={styles.avatarText}>{pat.name.slice(0, 1).toUpperCase()}</Text>
+                  <Text style={styles.avatarText}>{(pat.name || 'P').slice(0, 1).toUpperCase()}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.patientName}>{pat.name}</Text>
@@ -390,7 +390,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
               onChangeText={setNewName}
             />
 
-            <Text style={styles.inputLabel}>Mobile Phone (for WhatsApp Care Plan)</Text>
+            <Text style={styles.inputLabel}>Mobile Phone (for Patient Portal)</Text>
             <TextInput
               style={styles.modalInput}
               placeholder="+919876543210"

@@ -1,0 +1,29 @@
+{
+  "name": "Praxirence | Ambient Clinical AI & Care Vault",
+  "short_name": "Praxirence",
+  "description": "Ambient clinical voice intelligence, doctor-verified care plans, and synchronized native in-app care vaults for clinicians and patients.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0284c7",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/logo-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": [
+    "medical",
+    "healthcare",
+    "productivity"
+  ]
+}

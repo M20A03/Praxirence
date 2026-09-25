@@ -8,6 +8,8 @@
     "patient:start": "cd patient_app && npm start",
     "patient:android": "cd patient_app && npm run android",
     "patient:studio": "bash patient_app/open_android_studio.sh",
+    "web:dev": "cd web_app && npm run dev",
+    "web:build": "cd web_app && npm run build",
     "backend:start": "cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
   }
 }

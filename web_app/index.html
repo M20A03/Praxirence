@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Primary Page Title & Core Meta -->
+    <title>Praxirence | Ambient Clinical AI, Digital Care Vault & OPD Management Platform</title>
+    <meta name="title" content="Praxirence | Ambient Clinical AI, Digital Care Vault & OPD Management Platform" />
+    <meta name="description" content="Ambient clinical voice intelligence for doctors and patients in India. Doctor-verified care plans, automated prescriptions, and synchronized native in-app care vaults compliant with DPDP Act 2023 & ABDM standards." />
+    <meta name="keywords" content="ambient clinical AI, medical voice notes, clinical speech to text, doctor prescription software, ABDM FHIR, DPDP Act 2023, patient care vault, OPD queue management, offline medical AI, healthcare app India" />
+    <meta name="author" content="Praxirence Healthcare Technologies" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://praxirence.com/" />
+    
+    <!-- Geographic & Regional Targeting (India Healthcare Focus) -->
+    <meta name="geo.region" content="IN" />
+    <meta name="geo.placename" content="New Delhi, India" />
+    <meta name="language" content="English, Hindi" />
+
+    <!-- Open Graph / Facebook / LinkedIn / WhatsApp -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Praxirence" />
+    <meta property="og:url" content="https://praxirence.com/" />
+    <meta property="og:title" content="Praxirence | Ambient Clinical AI, Digital Care Vault & OPD Management Platform" />
+    <meta property="og:description" content="Ambient clinical voice intelligence for doctors and patients. Doctor-verified care plans, automated prescriptions, and synchronized native in-app care vaults compliant with DPDP Act 2023 & ABDM standards." />
+    <meta property="og:image" content="https://praxirence.com/logo.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Praxirence Ambient Clinical Intelligence Architecture" />
+    <meta property="og:locale" content="en_IN" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://praxirence.com/" />
+    <meta name="twitter:title" content="Praxirence | Ambient Clinical AI & Care Vault Platform" />
+    <meta name="twitter:description" content="Empowering Indian clinicians with ambient voice intelligence and patients with instant offline-ready care vaults." />
+    <meta name="twitter:image" content="https://praxirence.com/logo.png" />
+    <meta name="twitter:creator" content="@PraxirenceMed" />
+
+    <!-- Mobile Device, PWA & Browser Theming -->
+    <meta name="theme-color" content="#0284c7" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Praxirence" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/logo-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="/logo-icon.svg" />
+    <link rel="apple-touch-icon" href="/logo-icon.png" />
+
+    <!-- High-Performance Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+    <!-- Structured Data: Organization & Healthcare Software Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "MedicalOrganization",
+          "@id": "https://praxirence.com/#organization",
+          "name": "Praxirence Healthcare Technologies",
+          "url": "https://praxirence.com/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://praxirence.com/logo.png",
+            "width": "600",
+            "height": "600"
+          },
+          "description": "Provider of ambient clinical voice intelligence, doctor-verified care plans, and secure in-app care vaults compliant with the Digital Personal Data Protection (DPDP) Act 2023 and ABDM standards.",
+          "address": {
+            "@type": "PostalAddress",
+            "addressCountry": "IN"
+          },
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "Clinical Support & Hospital Inquiries",
+            "email": "contact@praxirence.com",
+            "availableLanguage": ["English", "Hindi"]
+          },
+          "knowsAbout": [
+            "Ambient Clinical Intelligence",
+            "Electronic Health Records (EHR)",
+            "Ayushman Bharat Digital Mission (ABDM)",
+            "DPDP Act 2023 Compliance",
+            "Telemedicine Practice Guidelines"
+          ]
+        },
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://praxirence.com/#software",
+          "name": "Praxirence Clinical Intelligence Suite",
+          "operatingSystem": "Android, iOS, Web",
+          "applicationCategory": "HealthApplication",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "INR"
+          },
+          "description": "Cross-platform ambient AI consultation recording, local Whisper ASR transcription, doctor verification, and synchronized care vault for clinics and hospitals.",
+          "featureList": [
+            "Zero Audio Retention RAM-only transcription",
+            "Doctor-verified tamper-proof prescriptions with SHA-256 signatures",
+            "Native offline care plan sync via WebSocket Gateway",
+            "ABDM FHIR M2 interoperability",
+            "OPD queue management with sequential tokens"
+          ]
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://praxirence.com/#faq",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Does Praxirence store or record consultation audio?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No. Praxirence strictly implements a Zero Audio Retention architecture. Audio streams are processed ephemerally in RAM during the consultation solely to generate the textual transcript. Once parsed, the raw audio buffer is permanently erased from memory. Audio is never stored on disk or used for training without explicit clinical authorization."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Why is physician verification mandatory before care plan dispatch?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "In compliance with established telemedicine practice guidelines and medico-legal standards, AI can propose clinical notes, but only a qualified attending physician can legally prescribe and dispatch treatments. Praxirence locks the dispatch button until the clinician reviews and checks the clinical sign-off box."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How does offline mode work when the clinic has no internet?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Both Praxirence mobile apps feature local offline SQLite and SQLiteCipher vaults. If internet is lost during a consultation, care plans are queued and signed locally with cryptographic timestamps. When connectivity is restored, plans sync automatically to the cloud engine."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How do patients receive and access their care plan?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Patients receive their full signed care plan, vernacular voice guidance, prescription PDF, and scheduled medication alarms directly inside the native Praxirence Care App with full offline access and complete biometric encryption."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How does Praxirence comply with the DPDP Act 2023 and ABDM?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Praxirence acts as a compliant Data Processor under the Digital Personal Data Protection Act 2023. Patient health data is encrypted using AES-256 GCM, consent logs are immutably recorded, and patients can request data erasure or export at any time. Our schema is natively compatible with ABDM FHIR M2 health standards."
+              }
+            }
+          ]
+        },
+        {
+          "@type": "BreadcrumbList",
+          "@id": "https://praxirence.com/#breadcrumbs",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://praxirence.com/"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Mobile Apps",
+              "item": "https://praxirence.com/#apps"
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "name": "Clinical Architecture",
+              "item": "https://praxirence.com/#architecture"
+            },
+            {
+              "@type": "ListItem",
+              "position": 4,
+              "name": "Compliance & Security",
+              "item": "https://praxirence.com/#technology"
+            },
+            {
+              "@type": "ListItem",
+              "position": 5,
+              "name": "FAQs",
+              "item": "https://praxirence.com/#faq"
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

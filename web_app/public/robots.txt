@@ -1,0 +1,13 @@
+# Praxirence Clinical Intelligence Suite - Search Engine Directive
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /auth/
+Disallow: /admin/
+Disallow: /portal/private/
+
+# Sitemap location
+Sitemap: https://praxirence.com/sitemap.xml
+
+# Crawl-delay for gentle indexing
+Crawl-delay: 1

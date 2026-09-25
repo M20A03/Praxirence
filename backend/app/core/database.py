@@ -11,6 +11,18 @@ db_url = settings.DATABASE_URL or ""
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 
+# Ensure compatible driver prefix for SQLAlchemy (supports both psycopg v3 and psycopg2)
+if db_url.startswith("postgresql://"):
+    try:
+        import psycopg
+        db_url = db_url.replace("postgresql://", "postgresql+psycopg://", 1)
+    except ImportError:
+        try:
+            import psycopg2
+            db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+        except ImportError:
+            pass
+
 # 2. Resilient local fallback if Railway template variable is unexpanded or invalid outside Railway runtime
 if not db_url or "://" not in db_url or db_url.startswith("${{"):
     db_url = "sqlite:///./praxirence_dev.db"

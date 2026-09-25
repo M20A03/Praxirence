@@ -24,6 +24,12 @@ import { BrandLogoMobile } from '../components/BrandLogoMobile';
 import { PillTrackerCard } from '../components/PillTrackerCard';
 import { VitalsTrackerModal } from '../components/VitalsTrackerModal';
 import { EmptyState } from '../components/EmptyState';
+import {
+  LiveQueueTrackerCard,
+  VitalsTelemetryGrid,
+  FollowupCheckinModule,
+  ConsultationFeedbackModule,
+} from '../components/dashboard';
 import * as Haptics from 'expo-haptics';
 import { NotificationService } from '../services/NotificationService';
 import {
@@ -644,350 +650,29 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </View>
       )}
 
-      {/* ==================== 3-DAY & 7-DAY CLINICAL FOLLOW-UP TELEMETRY ==================== */}
-      {pendingCheckins.length > 0 && (
-        <View style={styles.clinicalFollowupCard}>
-          <View style={styles.clinicalFollowupHeader}>
-            <View style={styles.clinicalHeaderBadge}>
-              <Ionicons
-                name={pendingCheckins[0].day === 3 ? "pulse-outline" : "fitness-outline"}
-                size={14}
-                color="#0F766E"
-              />
-              <Text style={styles.clinicalHeaderBadgeText}>
-                {pendingCheckins[0].day === 3 ? '3-Day Clinical Follow-up' : '1-Week Health Evaluation'}
-              </Text>
-            </View>
-            <Text style={styles.clinicalDoctorLabel}>{pendingCheckins[0].doctor_name}</Text>
-          </View>
-
-          <Text style={styles.clinicalCardTitle}>
-            {pendingCheckins[0].day === 3 ? 'Recovery Evaluation' : '1-Week Health Follow-up'}
-          </Text>
-          <Text style={styles.clinicalCardSubtitle}>
-            {pendingCheckins[0].day === 3
-              ? `How is your recovery progressing following your consultation with ${pendingCheckins[0].doctor_name}?`
-              : `One week has elapsed since your visit with ${pendingCheckins[0].doctor_name}. Please report your recovery status.`}
-          </Text>
-
-          <Text style={styles.clinicalFieldLabel}>Select Clinical Status</Text>
-          <View style={styles.clinicalStatusSelector}>
-            {pendingCheckins[0].day === 3 ? (
-              <>
-                <TouchableOpacity
-                  style={[
-                    styles.clinicalStatusPill,
-                    checkinStatus === 'feeling_better' && styles.statusPillImproved
-                  ]}
-                  onPress={() => setCheckinStatus('feeling_better')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="trending-up-outline"
-                    size={16}
-                    color={checkinStatus === 'feeling_better' ? '#065F46' : '#64748B'}
-                  />
-                  <Text style={[
-                    styles.clinicalStatusPillText,
-                    checkinStatus === 'feeling_better' && styles.statusTextImproved
-                  ]}>
-                    Improved
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.clinicalStatusPill,
-                    checkinStatus === 'recovering' && styles.statusPillSteady
-                  ]}
-                  onPress={() => setCheckinStatus('recovering')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="remove-outline"
-                    size={16}
-                    color={checkinStatus === 'recovering' ? '#0369A1' : '#64748B'}
-                  />
-                  <Text style={[
-                    styles.clinicalStatusPillText,
-                    checkinStatus === 'recovering' && styles.statusTextSteady
-                  ]}>
-                    Steady
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.clinicalStatusPill,
-                    checkinStatus === 'worse' && styles.statusPillWorsening
-                  ]}
-                  onPress={() => setCheckinStatus('worse')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="alert-circle-outline"
-                    size={16}
-                    color={checkinStatus === 'worse' ? '#BE123C' : '#64748B'}
-                  />
-                  <Text style={[
-                    styles.clinicalStatusPillText,
-                    checkinStatus === 'worse' && styles.statusTextWorsening
-                  ]}>
-                    Worsening
-                  </Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <TouchableOpacity
-                  style={[
-                    styles.clinicalStatusPill,
-                    checkinStatus === 'feeling_better' && styles.statusPillImproved
-                  ]}
-                  onPress={() => setCheckinStatus('feeling_better')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="checkmark-circle-outline"
-                    size={16}
-                    color={checkinStatus === 'feeling_better' ? '#065F46' : '#64748B'}
-                  />
-                  <Text style={[
-                    styles.clinicalStatusPillText,
-                    checkinStatus === 'feeling_better' && styles.statusTextImproved
-                  ]}>
-                    Fully Recovered
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.clinicalStatusPill,
-                    checkinStatus === 'recovering' && styles.statusPillSteady
-                  ]}
-                  onPress={() => setCheckinStatus('recovering')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="pulse-outline"
-                    size={16}
-                    color={checkinStatus === 'recovering' ? '#0369A1' : '#64748B'}
-                  />
-                  <Text style={[
-                    styles.clinicalStatusPillText,
-                    checkinStatus === 'recovering' && styles.statusTextSteady
-                  ]}>
-                    Ongoing Symptoms
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.clinicalStatusPill,
-                    checkinStatus === 'worse' && styles.statusPillWorsening
-                  ]}
-                  onPress={() => setCheckinStatus('worse')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="calendar-outline"
-                    size={16}
-                    color={checkinStatus === 'worse' ? '#BE123C' : '#64748B'}
-                  />
-                  <Text style={[
-                    styles.clinicalStatusPillText,
-                    checkinStatus === 'worse' && styles.statusTextWorsening
-                  ]}>
-                    Follow-up Needed
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-
-          {/* Inline Re-Schedule Action if symptoms persist on Day 7 */}
-          {pendingCheckins[0].day === 7 && (checkinStatus === 'recovering' || checkinStatus === 'worse') && (
-            <View style={styles.clinicalReferralBanner}>
-              <View style={styles.clinicalReferralIconWrap}>
-                <Ionicons name="calendar-outline" size={18} color="#0F766E" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.clinicalReferralTitle}>Schedule Follow-up Consultation</Text>
-                <Text style={styles.clinicalReferralDesc}>
-                  Consult directly with {pendingCheckins[0].doctor_name} for a clinical re-assessment.
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={styles.clinicalReferralActionBtn}
-                onPress={() => onNavigateToDoctors?.()}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.clinicalReferralActionBtnText}>Book</Text>
-                <Ionicons name="chevron-forward" size={13} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-          )}
-
-          <TextInput
-            style={styles.clinicalNoteInput}
-            placeholder="Describe any ongoing symptoms or questions for your doctor (optional)..."
-            placeholderTextColor="#94A3B8"
-            value={checkinNotes}
-            onChangeText={setCheckinNotes}
-            multiline
-            numberOfLines={2}
-          />
-
-          <TouchableOpacity
-            style={styles.clinicalSubmitBtn}
-            disabled={submittingCheckin}
-            onPress={() => handleAnswerCheckin(pendingCheckins[0])}
-            activeOpacity={0.8}
-          >
-            {submittingCheckin ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
-                <Text style={styles.clinicalSubmitBtnText}>Submit Evaluation</Text>
-                <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
+      <FollowupCheckinModule
+        pendingCheckins={pendingCheckins}
+        checkinStatus={checkinStatus}
+        setCheckinStatus={setCheckinStatus}
+        checkinNotes={checkinNotes}
+        setCheckinNotes={setCheckinNotes}
+        submittingCheckin={submittingCheckin}
+        onAnswerCheckin={handleAnswerCheckin}
+        onNavigateToDoctors={onNavigateToDoctors}
+      />
 
       {/* ==================== OPTIONAL DOCTOR CONSULTATION FEEDBACK ==================== */}
-      {(() => {
-        const activeReview = pendingReviews.find((r) => !dismissedReviews[r.doctor_id]);
-        if (!activeReview) return null;
-        const currentWords = reviewText.trim().split(/\s+/).filter(Boolean);
-        const wordCount = reviewText.trim() === '' ? 0 : currentWords.length;
-        const isReady = wordCount >= 10 && reviewRating >= 1;
-        const progressPct = Math.min(100, (wordCount / 10) * 100);
-
-        return (
-          <View style={styles.feedbackCardContainer}>
-            <View style={styles.feedbackCardHeader}>
-              <View style={styles.feedbackHeaderBadge}>
-                <Ionicons name="shield-checkmark-outline" size={13} color="#0F766E" />
-                <Text style={styles.feedbackHeaderBadgeText}>
-                  {activeReview.is_first_visit ? 'First Consultation Feedback' : 'Consultation Feedback'}
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={styles.feedbackSkipAction}
-                onPress={() => handleDismissReview(activeReview.doctor_id)}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              >
-                <Text style={styles.feedbackSkipActionText}>Skip for now</Text>
-                <Ionicons name="close" size={14} color="#94A3B8" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.feedbackPromptTitle}>
-              How was your consultation with {activeReview.doctor_name}?
-            </Text>
-            <Text style={styles.feedbackPromptSubtitle}>
-              Optional reference for other patients. Please write at least 10 words about the clinician's explanation and care quality.
-            </Text>
-
-            {/* 5-Star Clinical Rating Selector */}
-            <View style={styles.feedbackStarsContainer}>
-              <View style={styles.feedbackStarsRow}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <TouchableOpacity
-                    key={star}
-                    onPress={() => setReviewRating(star)}
-                    style={styles.feedbackStarTouch}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons
-                      name={star <= reviewRating ? "star" : "star-outline"}
-                      size={24}
-                      color={star <= reviewRating ? "#D97706" : "#CBD5E1"}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <Text style={styles.feedbackRatingLabel}>
-                {reviewRating.toFixed(1)} / 5.0 • {
-                  reviewRating === 5 ? 'Excellent Care' :
-                  reviewRating === 4 ? 'Good Experience' :
-                  reviewRating === 3 ? 'Standard Visit' :
-                  reviewRating === 2 ? 'Suboptimal' : 'Unsatisfactory'
-                }
-              </Text>
-            </View>
-
-            {/* Structured Feedback Textarea */}
-            <TextInput
-              style={styles.feedbackTextarea}
-              placeholder="Share details regarding the doctor's explanation, treatment clarity, and waiting time..."
-              placeholderTextColor="#94A3B8"
-              value={reviewText}
-              onChangeText={setReviewText}
-              multiline
-              numberOfLines={3}
-            />
-
-            {/* Sleek 10-Word Verification Progress Meter */}
-            <View style={styles.wordCounterContainer}>
-              <View style={styles.wordCounterHeaderRow}>
-                <Text style={styles.wordCounterText}>
-                  {wordCount < 10
-                    ? `${wordCount} of 10 words minimum (${10 - wordCount} more required)`
-                    : `${wordCount} words recorded`}
-                </Text>
-                {isReady && (
-                  <View style={styles.wordCounterVerifiedBadge}>
-                    <Ionicons name="checkmark-circle" size={13} color="#059669" />
-                    <Text style={styles.wordCounterVerifiedText}>Ready to submit</Text>
-                  </View>
-                )}
-              </View>
-              <View style={styles.wordCounterTrack}>
-                <View
-                  style={[
-                    styles.wordCounterFill,
-                    { width: `${progressPct}%` },
-                    isReady && { backgroundColor: '#0D9488' }
-                  ]}
-                />
-              </View>
-            </View>
-
-            {/* Action Buttons */}
-            <View style={styles.feedbackActionRow}>
-              <TouchableOpacity
-                style={styles.feedbackDismissBtn}
-                onPress={() => handleDismissReview(activeReview.doctor_id)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.feedbackDismissBtnText}>Maybe Later</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.feedbackSubmitBtn,
-                  !isReady && styles.feedbackSubmitBtnDisabled
-                ]}
-                disabled={!isReady || submittingReview}
-                onPress={() => handleSubmitReview(activeReview)}
-                activeOpacity={0.8}
-              >
-                {submittingReview ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Text style={styles.feedbackSubmitBtnText}>Submit Feedback</Text>
-                    <Ionicons name="checkmark" size={15} color="#FFFFFF" />
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        );
-      })()}
+      <ConsultationFeedbackModule
+        pendingReviews={pendingReviews}
+        dismissedReviews={dismissedReviews}
+        reviewRating={reviewRating}
+        setReviewRating={setReviewRating}
+        reviewText={reviewText}
+        setReviewText={setReviewText}
+        submittingReview={submittingReview}
+        onSubmitReview={handleSubmitReview}
+        onDismissReview={handleDismissReview}
+      />
 
       {/* ==================== QUICK CLINICAL ACTIONS ==================== */}
       <View style={styles.quickActionsGrid}>
@@ -1041,178 +726,13 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       </View>
 
       {/* ==================== LIVE OPD QUEUE POSITION TRACKER ==================== */}
-      {queueStatus && (
-        <View style={styles.liveQueueCard}>
-          <View style={styles.liveQueueHeaderRow}>
-            <View style={styles.liveQueueIndicatorRow}>
-              <View style={styles.liveQueuePulseDot} />
-              <Text style={styles.liveQueueHeaderTitle}>LIVE OPD QUEUE TRACKER</Text>
-            </View>
-            <View style={[
-              styles.liveQueueStatusBadge,
-              { backgroundColor: queueStatus.status === 'in_progress' ? '#DCFCE7' : '#EFF6FF' }
-            ]}>
-              <Text style={[
-                styles.liveQueueStatusBadgeText,
-                { color: queueStatus.status === 'in_progress' ? '#166534' : '#1E40AF' }
-              ]}>
-                {queueStatus.status === 'in_progress' ? 'Consulting Now' : 'In Waiting Lounge'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.liveQueueDoctorInfo}>
-            <Ionicons name="medical" size={15} color={Colors.primary} />
-            <Text style={styles.liveQueueDoctorText}>
-              {queueStatus.doctor_name ? (queueStatus.doctor_name.startsWith('Dr.') ? queueStatus.doctor_name : `Dr. ${queueStatus.doctor_name}`) : 'Attending Physician'} • {queueStatus.time_slot}
-            </Text>
-          </View>
-
-          <View style={styles.liveQueueMetricsGrid}>
-            <View style={[styles.liveQueueMetricBox, styles.liveQueueTokenBox]}>
-              <Text style={styles.liveQueueMetricLabel}>YOUR TOKEN</Text>
-              <Text style={styles.liveQueueTokenText}>{queueStatus.token_display || `PX-0${queueStatus.token_number}`}</Text>
-              <Text style={styles.liveQueueSubLabel}>Reserved</Text>
-            </View>
-
-            <View style={[styles.liveQueueMetricBox, styles.liveQueueServingBox]}>
-              <Text style={[styles.liveQueueMetricLabel, { color: '#0369A1' }]}>NOW SERVING</Text>
-              <Text style={[styles.liveQueueTokenText, { color: '#0284C7' }]}>
-                {queueStatus.current_serving_token || 'PX-01'}
-              </Text>
-              <Text style={[styles.liveQueueSubLabel, { color: '#0284C7' }]}>In Chamber</Text>
-            </View>
-
-            <View style={[styles.liveQueueMetricBox, styles.liveQueueWaitBox]}>
-              <Text style={[styles.liveQueueMetricLabel, { color: '#B45309' }]}>ESTIMATED WAIT</Text>
-              <Text style={[styles.liveQueueWaitText, { color: '#D97706' }]}>
-                {queueStatus.patients_ahead === 0
-                  ? 'Next!'
-                  : `~${queueStatus.estimated_wait_mins || (queueStatus.patients_ahead * 15)}m`}
-              </Text>
-              <Text style={[styles.liveQueueSubLabel, { color: '#B45309' }]}>
-                {queueStatus.patients_ahead === 0
-                  ? 'Get Ready'
-                  : `${queueStatus.patients_ahead} patient${queueStatus.patients_ahead > 1 ? 's' : ''} ahead`}
-              </Text>
-            </View>
-          </View>
-
-          {/* Doctor Delay Alert Banner */}
-          {queueStatus.doctor_delay_mins && queueStatus.doctor_delay_mins > 0 ? (
-            <View style={styles.delayAlertRow}>
-              <Ionicons name="time" size={15} color="#D97706" />
-              <Text style={styles.delayAlertText}>
-                Doctor running ~{queueStatus.doctor_delay_mins}m behind schedule. Commute advice updated.
-              </Text>
-            </View>
-          ) : null}
-
-          {/* Commute Guidance / When to Leave Home */}
-          {queueStatus.recommended_departure_time && (
-            <View style={styles.commuteAdvisoryCard}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Ionicons name="navigate-circle" size={18} color="#0D9488" />
-                  <Text style={styles.commuteAdvisoryTitle}>WHEN TO LEAVE HOME</Text>
-                </View>
-                <View style={styles.commuteBadge}>
-                  <Ionicons name="car-outline" size={12} color="#0F766E" />
-                  <Text style={styles.commuteBadgeText}>Leave by {queueStatus.recommended_departure_time}</Text>
-                </View>
-              </View>
-              <Text style={styles.commuteAdvisoryDesc}>
-                Calculated based on live OPD throughput to arrive ~10 mins before your token is called in chamber.
-              </Text>
-            </View>
-          )}
-        </View>
-      )}
+      {queueStatus && <LiveQueueTrackerCard queueStatus={queueStatus} />}
 
       {/* Real Interactive Vitals Tracker Card */}
-      <View style={styles.vitalsCard}>
-        <View style={styles.vitalsHeaderRow}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Ionicons name="pulse" size={20} color={Colors.primary} />
-            <Text style={styles.vitalsHeaderTitle}>Vitals Monitoring</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.logVitalsButton}
-            onPress={() => setShowVitalsModal(true)}
-          >
-            <Text style={styles.logVitalsButtonText}>+ Log Vitals</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.vitalsGrid}>
-          {/* BP */}
-          <View style={styles.vitalBox}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Ionicons name="pulse" size={13} color="#0284C7" />
-              <Text style={styles.vitalLabel}>Blood Pressure</Text>
-            </View>
-            <Text style={styles.vitalValue}>{vitals.bloodPressureSystolic}/{vitals.bloodPressureDiastolic}</Text>
-            <Text style={styles.vitalUnit}>mmHg</Text>
-            <View style={[styles.vitalStatusPill, { backgroundColor: vitals.bloodPressureSystolic < 130 ? '#F0FDF4' : '#FFFBEB', flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
-              <Ionicons
-                name={vitals.bloodPressureSystolic < 130 ? "checkmark-circle" : "warning"}
-                size={11}
-                color={vitals.bloodPressureSystolic < 130 ? "#16A34A" : "#D97706"}
-              />
-              <Text style={[styles.vitalStatusText, { color: vitals.bloodPressureSystolic < 130 ? '#16A34A' : '#D97706' }]}>
-                {vitals.bloodPressureSystolic < 130 ? 'Optimal' : 'Elevated'}
-              </Text>
-            </View>
-          </View>
-
-          {/* Pulse */}
-          <View style={styles.vitalBox}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Ionicons name="heart" size={13} color="#E11D48" />
-              <Text style={styles.vitalLabel}>Heart Rate</Text>
-            </View>
-            <Text style={styles.vitalValue}>{vitals.heartRate}</Text>
-            <Text style={styles.vitalUnit}>bpm</Text>
-            <View style={[styles.vitalStatusPill, { backgroundColor: '#F0FDF4', flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
-              <Ionicons name="heart" size={11} color="#16A34A" />
-              <Text style={[styles.vitalStatusText, { color: '#16A34A' }]}>Steady</Text>
-            </View>
-          </View>
-
-          {/* SpO2 */}
-          <View style={styles.vitalBox}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Ionicons name="fitness" size={13} color="#0D9488" />
-              <Text style={styles.vitalLabel}>Blood Oxygen</Text>
-            </View>
-            <Text style={styles.vitalValue}>{vitals.spo2}%</Text>
-            <Text style={styles.vitalUnit}>SpO2</Text>
-            <View style={[styles.vitalStatusPill, { backgroundColor: vitals.spo2 >= 95 ? '#F0FDF4' : '#FEF2F2', flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
-              <Ionicons
-                name={vitals.spo2 >= 95 ? "checkmark-circle" : "warning"}
-                size={11}
-                color={vitals.spo2 >= 95 ? "#16A34A" : "#DC2626"}
-              />
-              <Text style={[styles.vitalStatusText, { color: vitals.spo2 >= 95 ? '#16A34A' : '#DC2626' }]}>
-                {vitals.spo2 >= 95 ? 'Normal' : 'Low'}
-              </Text>
-            </View>
-          </View>
-
-          {/* Sugar */}
-          <View style={styles.vitalBox}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Ionicons name="water" size={13} color="#D97706" />
-              <Text style={styles.vitalLabel}>Blood Glucose</Text>
-            </View>
-            <Text style={styles.vitalValue}>{vitals.bloodSugar || 96}</Text>
-            <Text style={styles.vitalUnit}>mg/dL</Text>
-            <View style={[styles.vitalStatusPill, { backgroundColor: '#F8FAFC' }]}>
-              <Text style={[styles.vitalStatusText, { color: '#64748B' }]}>Fasting</Text>
-            </View>
-          </View>
-        </View>
-      </View>
+      <VitalsTelemetryGrid
+        vitals={vitals}
+        onLogVitalsPress={() => setShowVitalsModal(true)}
+      />
 
       {/* New Care Plan Alert */}
       {newPlanAlert && (

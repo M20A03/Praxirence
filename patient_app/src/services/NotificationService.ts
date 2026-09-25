@@ -86,8 +86,18 @@ export const NotificationService = {
         return 0;
       }
 
-      // Clear existing scheduled medication notifications to prevent duplicates
-      await Notifications.cancelAllScheduledNotificationsAsync();
+      // Selectively cancel only prior medication reminders to preserve Day 3 / Day 7 follow-ups
+      try {
+        const allScheduled = await Notifications.getAllScheduledNotificationsAsync();
+        for (const item of allScheduled) {
+          const notifType = item.content?.data?.type;
+          if (notifType === 'medicine_reminder' || !notifType) {
+            await Notifications.cancelScheduledNotificationAsync(item.identifier);
+          }
+        }
+      } catch (cancelErr) {
+        console.warn('Selective notification cancellation notice:', cancelErr);
+      }
 
       let scheduledCount = 0;
       // Use the latest active visit(s)

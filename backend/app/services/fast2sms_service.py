@@ -72,7 +72,7 @@ def store_otp(phone: str, code: str, ttl_seconds: int = 600):
         _otp_cache[c] = payload
 
     _save_vault_to_disk()
-    logger.info(f"Stored OTP {code} for phone candidates: {candidates}")
+    logger.info(f"Stored security OTP for candidates (count: {len(candidates)})")
 
 
 class Fast2SMSService:
@@ -94,7 +94,8 @@ class Fast2SMSService:
         # Store in local security vault
         store_otp(phone, otp_code)
 
-        logger.info(f"[PRAXIRENCE LOCAL OTP VAULT] Security OTP {otp_code} generated for {phone}")
+        masked_phone = f"***{phone[-4:]}" if len(phone) >= 4 else "***"
+        logger.info(f"[PRAXIRENCE LOCAL OTP VAULT] Security OTP generated for {masked_phone}")
 
         return {
             "success": True,
@@ -148,20 +149,16 @@ class Fast2SMSService:
                 return False
 
             expected_code = str(entry.get("code", "")).strip()
-            if clean_code in (expected_code, "123456"):
-                logger.info(f"Successfully verified OTP for {phone}")
+            if clean_code == expected_code:
+                masked_phone = f"***{phone[-4:]}" if len(phone) >= 4 else "***"
+                logger.info(f"Successfully verified OTP for {masked_phone}")
                 # Invalidate immediately to prevent replay attack
                 for c in candidates:
                     _otp_cache.pop(c, None)
                 _save_vault_to_disk()
                 return True
             else:
-                logger.warning(f"Mismatch OTP entered for {phone}")
-
-        # Universal fallback for instant offline developer testing
-        if clean_code == "123456":
-            logger.info(f"Universal developer OTP accepted for {phone}")
-            return True
+                logger.warning(f"Mismatch OTP entered for verification attempt")
 
         return False
 

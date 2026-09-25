@@ -12,38 +12,37 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     # Security & Auth
-    SECRET_KEY: str = "praxirence-super-secret-jwt-key-change-in-production-32bytes-min"
+    SECRET_KEY: str = os.environ.get("SECRET_KEY", "praxirence-dev-jwt-secret-key-at-least-32-chars")
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", str(60 * 24 * 7)))
 
     # Data Encryption at Rest (AES-256 via Fernet)
-    # Generated with: cryptography.fernet.Fernet.generate_key().decode()
-    ENCRYPTION_KEY: str = "rV8_NqjH6_t5z9oEwM11x2_4pX-9yK0Z7Q_3uI6v8w0="
-    PHONE_HASH_SALT: str = "praxirence-phone-blind-index-salt-v1"
+    ENCRYPTION_KEY: str = os.environ.get("ENCRYPTION_KEY", "rV8_NqjH6_t5z9oEwM11x2_4pX-9yK0Z7Q_3uI6v8w0=")
+    PHONE_HASH_SALT: str = os.environ.get("PHONE_HASH_SALT", "praxirence-phone-blind-index-salt-v1")
 
     # Database
-    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/praxirence"
+    DATABASE_URL: str = os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/praxirence")
     # Fallback SQLite DB for local unit tests without postgres
-    SQLITE_FALLBACK: bool = False
+    SQLITE_FALLBACK: bool = os.environ.get("SQLITE_FALLBACK", "False").lower() in ("true", "1")
 
     # Redis & Background Tasks
-    REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_URL: str = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 
     # In-House Local ML Engine (Zero API Dependency, 100% On-Premise)
-    USE_LOCAL_ML: bool = True
+    USE_LOCAL_ML: bool = os.environ.get("USE_LOCAL_ML", "True").lower() in ("true", "1")
 
     # HTTPS Email REST APIs (Port 443 - 100% immune to cloud firewall SMTP port blocks)
-    GMAIL_WEBHOOK_URL: Optional[str] = os.environ.get("GMAIL_WEBHOOK_URL", "https://script.google.com/macros/s/AKfycbyycjZp4I1uebXZ2XkOCF5YHfE37IIvAEkNephBOxgGnSJp-jm9NIbK5RJKuYBWN_zX7A/exec")
-    RESEND_API_KEY: Optional[str] = os.environ.get("RESEND_API_KEY") or base64.b64decode("cmVfQmhSMWVzN05fQzVDa2VkYnZtU1Z5bVJ0b1g4M3BkZmhx").decode()
-    BREVO_API_KEY: Optional[str] = None
+    GMAIL_WEBHOOK_URL: Optional[str] = os.environ.get("GMAIL_WEBHOOK_URL")
+    RESEND_API_KEY: Optional[str] = os.environ.get("RESEND_API_KEY")
+    BREVO_API_KEY: Optional[str] = os.environ.get("BREVO_API_KEY")
 
     # SMTP / Noreply Email Configuration (Email OTP Verification)
-    SMTP_HOST: Optional[str] = "smtp.gmail.com"
-    SMTP_PORT: int = 587
-    SMTP_USER: Optional[str] = "mayankrajgupta01@gmail.com"
-    SMTP_PASSWORD: Optional[str] = "yrlfeoaacdxmkfxq"
-    SMTP_FROM_EMAIL: str = "mayankrajgupta01@gmail.com"
-    SMTP_FROM_NAME: str = "Praxirence"
+    SMTP_HOST: Optional[str] = os.environ.get("SMTP_HOST", "smtp.gmail.com")
+    SMTP_PORT: int = int(os.environ.get("SMTP_PORT", 587))
+    SMTP_USER: Optional[str] = os.environ.get("SMTP_USER")
+    SMTP_PASSWORD: Optional[str] = os.environ.get("SMTP_PASSWORD")
+    SMTP_FROM_EMAIL: str = os.environ.get("SMTP_FROM_EMAIL", "noreply@praxirence.com")
+    SMTP_FROM_NAME: str = os.environ.get("SMTP_FROM_NAME", "Praxirence")
 
     # Audio Recording Storage
     AUDIO_UPLOAD_DIR: str = "/tmp/praxirence_recordings"

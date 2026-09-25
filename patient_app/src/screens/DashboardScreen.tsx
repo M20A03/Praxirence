@@ -628,98 +628,112 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </View>
       )}
 
-      {/* Post-Consultation Follow-Up Success Toast */}
+      {/* Clinical Update Success Toast */}
       {checkinSubmittedSuccess && (
-        <View style={styles.checkinSuccessCard}>
-          <Ionicons name="checkmark-circle" size={20} color="#059669" />
-          <Text style={styles.checkinSuccessText}>{checkinSubmittedSuccess}</Text>
+        <View style={styles.clinicalSuccessToast}>
+          <Ionicons name="checkmark-circle" size={18} color="#059669" />
+          <Text style={styles.clinicalSuccessToastText}>{checkinSubmittedSuccess}</Text>
         </View>
       )}
 
-      {/* Post-Consultation Follow-Up Success Toast */}
-      {checkinSubmittedSuccess && (
-        <View style={styles.checkinSuccessCard}>
-          <Ionicons name="checkmark-circle" size={20} color="#059669" />
-          <Text style={styles.checkinSuccessText}>{checkinSubmittedSuccess}</Text>
-        </View>
-      )}
-
-      {/* Doctor Review Success Toast */}
+      {/* Consultation Feedback Success Toast */}
       {reviewSubmittedSuccess && (
-        <View style={styles.checkinSuccessCard}>
-          <Ionicons name="star" size={20} color="#D97706" />
-          <Text style={styles.checkinSuccessText}>{reviewSubmittedSuccess}</Text>
+        <View style={styles.clinicalSuccessToast}>
+          <Ionicons name="checkmark-circle" size={18} color="#059669" />
+          <Text style={styles.clinicalSuccessToastText}>{reviewSubmittedSuccess}</Text>
         </View>
       )}
 
-      {/* Automated Day 3 / Day 7 Clinical Follow-Up Health Check-in */}
+      {/* ==================== 3-DAY & 7-DAY CLINICAL FOLLOW-UP TELEMETRY ==================== */}
       {pendingCheckins.length > 0 && (
-        <View style={styles.followupCheckinCard}>
-          <View style={styles.followupHeaderRow}>
-            <View style={styles.followupBadge}>
-              <Ionicons name={pendingCheckins[0].day === 3 ? "pulse" : "leaf"} size={13} color="#0D9488" />
-              <Text style={styles.followupBadgeText}>
-                {pendingCheckins[0].day === 3 ? '3-Day Health Check-in' : '7-Day Health Update'}
+        <View style={styles.clinicalFollowupCard}>
+          <View style={styles.clinicalFollowupHeader}>
+            <View style={styles.clinicalHeaderBadge}>
+              <Ionicons
+                name={pendingCheckins[0].day === 3 ? "pulse-outline" : "fitness-outline"}
+                size={14}
+                color="#0F766E"
+              />
+              <Text style={styles.clinicalHeaderBadgeText}>
+                {pendingCheckins[0].day === 3 ? '3-Day Clinical Follow-up' : '1-Week Health Evaluation'}
               </Text>
             </View>
-            <Text style={styles.followupDoctorTag}>{pendingCheckins[0].doctor_name}</Text>
+            <Text style={styles.clinicalDoctorLabel}>{pendingCheckins[0].doctor_name}</Text>
           </View>
 
-          <Text style={styles.followupPromptTitle}>
-            {pendingCheckins[0].day === 3
-              ? 'Are you feeling good now?'
-              : 'How is your health after 7 days?'}
+          <Text style={styles.clinicalCardTitle}>
+            {pendingCheckins[0].day === 3 ? 'Recovery Evaluation' : '1-Week Health Follow-up'}
           </Text>
-          <Text style={styles.followupPromptDesc}>
-            {pendingCheckins[0].prompt}
+          <Text style={styles.clinicalCardSubtitle}>
+            {pendingCheckins[0].day === 3
+              ? `How is your recovery progressing following your consultation with ${pendingCheckins[0].doctor_name}?`
+              : `One week has elapsed since your visit with ${pendingCheckins[0].doctor_name}. Please report your recovery status.`}
           </Text>
 
-          <Text style={styles.followupSectionSubtitle}>Select your current health status:</Text>
-          <View style={styles.followupOptionsRow}>
+          <Text style={styles.clinicalFieldLabel}>Select Clinical Status</Text>
+          <View style={styles.clinicalStatusSelector}>
             {pendingCheckins[0].day === 3 ? (
               <>
                 <TouchableOpacity
                   style={[
-                    styles.followupOptionChip,
-                    checkinStatus === 'feeling_better' && styles.followupOptionChipActive,
-                    { borderColor: '#10B981' }
+                    styles.clinicalStatusPill,
+                    checkinStatus === 'feeling_better' && styles.statusPillImproved
                   ]}
                   onPress={() => setCheckinStatus('feeling_better')}
                   activeOpacity={0.7}
                 >
-                  <Text style={{ fontSize: 16 }}>😊</Text>
-                  <Text style={[styles.followupOptionText, checkinStatus === 'feeling_better' && styles.followupOptionTextActive]}>
-                    Feeling Good
+                  <Ionicons
+                    name="trending-up-outline"
+                    size={16}
+                    color={checkinStatus === 'feeling_better' ? '#065F46' : '#64748B'}
+                  />
+                  <Text style={[
+                    styles.clinicalStatusPillText,
+                    checkinStatus === 'feeling_better' && styles.statusTextImproved
+                  ]}>
+                    Improved
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={[
-                    styles.followupOptionChip,
-                    checkinStatus === 'recovering' && styles.followupOptionChipActive,
-                    { borderColor: '#F59E0B' }
+                    styles.clinicalStatusPill,
+                    checkinStatus === 'recovering' && styles.statusPillSteady
                   ]}
                   onPress={() => setCheckinStatus('recovering')}
                   activeOpacity={0.7}
                 >
-                  <Text style={{ fontSize: 16 }}>⏳</Text>
-                  <Text style={[styles.followupOptionText, checkinStatus === 'recovering' && styles.followupOptionTextActive]}>
-                    Still Recovering
+                  <Ionicons
+                    name="remove-outline"
+                    size={16}
+                    color={checkinStatus === 'recovering' ? '#0369A1' : '#64748B'}
+                  />
+                  <Text style={[
+                    styles.clinicalStatusPillText,
+                    checkinStatus === 'recovering' && styles.statusTextSteady
+                  ]}>
+                    Steady
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={[
-                    styles.followupOptionChip,
-                    checkinStatus === 'worse' && styles.followupOptionChipActive,
-                    { borderColor: '#EF4444' }
+                    styles.clinicalStatusPill,
+                    checkinStatus === 'worse' && styles.statusPillWorsening
                   ]}
                   onPress={() => setCheckinStatus('worse')}
                   activeOpacity={0.7}
                 >
-                  <Text style={{ fontSize: 16 }}>⚠️</Text>
-                  <Text style={[styles.followupOptionText, checkinStatus === 'worse' && styles.followupOptionTextActive]}>
-                    Not Well
+                  <Ionicons
+                    name="alert-circle-outline"
+                    size={16}
+                    color={checkinStatus === 'worse' ? '#BE123C' : '#64748B'}
+                  />
+                  <Text style={[
+                    styles.clinicalStatusPillText,
+                    checkinStatus === 'worse' && styles.statusTextWorsening
+                  ]}>
+                    Worsening
                   </Text>
                 </TouchableOpacity>
               </>
@@ -727,71 +741,96 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               <>
                 <TouchableOpacity
                   style={[
-                    styles.followupOptionChip,
-                    checkinStatus === 'feeling_better' && styles.followupOptionChipActive,
-                    { borderColor: '#10B981' }
+                    styles.clinicalStatusPill,
+                    checkinStatus === 'feeling_better' && styles.statusPillImproved
                   ]}
                   onPress={() => setCheckinStatus('feeling_better')}
                   activeOpacity={0.7}
                 >
-                  <Text style={{ fontSize: 16 }}>😊</Text>
-                  <Text style={[styles.followupOptionText, checkinStatus === 'feeling_better' && styles.followupOptionTextActive]}>
-                    Health is Good
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={16}
+                    color={checkinStatus === 'feeling_better' ? '#065F46' : '#64748B'}
+                  />
+                  <Text style={[
+                    styles.clinicalStatusPillText,
+                    checkinStatus === 'feeling_better' && styles.statusTextImproved
+                  ]}>
+                    Fully Recovered
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={[
-                    styles.followupOptionChip,
-                    checkinStatus === 'recovering' && styles.followupOptionChipActive,
-                    { borderColor: '#F59E0B' }
+                    styles.clinicalStatusPill,
+                    checkinStatus === 'recovering' && styles.statusPillSteady
                   ]}
                   onPress={() => setCheckinStatus('recovering')}
                   activeOpacity={0.7}
                 >
-                  <Text style={{ fontSize: 16 }}>⚠️</Text>
-                  <Text style={[styles.followupOptionText, checkinStatus === 'recovering' && styles.followupOptionTextActive]}>
-                    Having Problems
+                  <Ionicons
+                    name="pulse-outline"
+                    size={16}
+                    color={checkinStatus === 'recovering' ? '#0369A1' : '#64748B'}
+                  />
+                  <Text style={[
+                    styles.clinicalStatusPillText,
+                    checkinStatus === 'recovering' && styles.statusTextSteady
+                  ]}>
+                    Ongoing Symptoms
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={[
-                    styles.followupOptionChip,
-                    checkinStatus === 'worse' && styles.followupOptionChipActive,
-                    { borderColor: '#0284C7' }
+                    styles.clinicalStatusPill,
+                    checkinStatus === 'worse' && styles.statusPillWorsening
                   ]}
                   onPress={() => setCheckinStatus('worse')}
                   activeOpacity={0.7}
                 >
-                  <Text style={{ fontSize: 16 }}>📅</Text>
-                  <Text style={[styles.followupOptionText, checkinStatus === 'worse' && styles.followupOptionTextActive]}>
-                    Schedule Meeting
+                  <Ionicons
+                    name="calendar-outline"
+                    size={16}
+                    color={checkinStatus === 'worse' ? '#BE123C' : '#64748B'}
+                  />
+                  <Text style={[
+                    styles.clinicalStatusPillText,
+                    checkinStatus === 'worse' && styles.statusTextWorsening
+                  ]}>
+                    Follow-up Needed
                   </Text>
                 </TouchableOpacity>
               </>
             )}
           </View>
 
-          {/* Quick Schedule Meeting Action on Day 7 if patient has problems or wants to follow-up */}
+          {/* Inline Re-Schedule Action if symptoms persist on Day 7 */}
           {pendingCheckins[0].day === 7 && (checkinStatus === 'recovering' || checkinStatus === 'worse') && (
-            <TouchableOpacity
-              style={styles.followupMeetingPromptBtn}
-              onPress={() => onNavigateToDoctors?.()}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="calendar" size={16} color="#0D9488" />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.followupMeetingPromptTitle}>Schedule Follow-up Meeting</Text>
-                <Text style={styles.followupMeetingPromptSub}>Tap to book an appointment with {pendingCheckins[0].doctor_name}</Text>
+            <View style={styles.clinicalReferralBanner}>
+              <View style={styles.clinicalReferralIconWrap}>
+                <Ionicons name="calendar-outline" size={18} color="#0F766E" />
               </View>
-              <Ionicons name="chevron-forward" size={16} color="#0D9488" />
-            </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.clinicalReferralTitle}>Schedule Follow-up Consultation</Text>
+                <Text style={styles.clinicalReferralDesc}>
+                  Consult directly with {pendingCheckins[0].doctor_name} for a clinical re-assessment.
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.clinicalReferralActionBtn}
+                onPress={() => onNavigateToDoctors?.()}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.clinicalReferralActionBtnText}>Book</Text>
+                <Ionicons name="chevron-forward" size={13} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
           )}
 
           <TextInput
-            style={styles.followupNotesInput}
-            placeholder="Add note on symptoms or questions for doctor (optional)..."
+            style={styles.clinicalNoteInput}
+            placeholder="Describe any ongoing symptoms or questions for your doctor (optional)..."
             placeholderTextColor="#94A3B8"
             value={checkinNotes}
             onChangeText={setCheckinNotes}
@@ -800,7 +839,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           />
 
           <TouchableOpacity
-            style={styles.followupSubmitBtn}
+            style={styles.clinicalSubmitBtn}
             disabled={submittingCheckin}
             onPress={() => handleAnswerCheckin(pendingCheckins[0])}
             activeOpacity={0.8}
@@ -809,76 +848,81 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <>
-                <Text style={styles.followupSubmitBtnText}>Submit Health Update</Text>
-                <Ionicons name="send" size={14} color="#FFFFFF" />
+                <Text style={styles.clinicalSubmitBtnText}>Submit Evaluation</Text>
+                <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
               </>
             )}
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Optional Doctor Experience Review Card (Non-compulsory, min 10 words for reference) */}
+      {/* ==================== OPTIONAL DOCTOR CONSULTATION FEEDBACK ==================== */}
       {(() => {
         const activeReview = pendingReviews.find((r) => !dismissedReviews[r.doctor_id]);
         if (!activeReview) return null;
         const currentWords = reviewText.trim().split(/\s+/).filter(Boolean);
         const wordCount = reviewText.trim() === '' ? 0 : currentWords.length;
         const isReady = wordCount >= 10 && reviewRating >= 1;
+        const progressPct = Math.min(100, (wordCount / 10) * 100);
 
         return (
-          <View style={styles.reviewCardContainer}>
-            <View style={styles.reviewCardHeader}>
-              <View style={styles.reviewBadge}>
-                <Ionicons name="star" size={13} color="#D97706" />
-                <Text style={styles.reviewBadgeText}>
-                  {activeReview.is_first_visit ? 'First Consultation Experience' : 'Doctor Review'}
+          <View style={styles.feedbackCardContainer}>
+            <View style={styles.feedbackCardHeader}>
+              <View style={styles.feedbackHeaderBadge}>
+                <Ionicons name="shield-checkmark-outline" size={13} color="#0F766E" />
+                <Text style={styles.feedbackHeaderBadgeText}>
+                  {activeReview.is_first_visit ? 'First Consultation Feedback' : 'Consultation Feedback'}
                 </Text>
               </View>
               <TouchableOpacity
-                style={styles.reviewDismissBtn}
+                style={styles.feedbackSkipAction}
                 onPress={() => handleDismissReview(activeReview.doctor_id)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
-                <Text style={styles.reviewDismissText}>Maybe Later</Text>
+                <Text style={styles.feedbackSkipActionText}>Skip for now</Text>
                 <Ionicons name="close" size={14} color="#94A3B8" />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.reviewPromptTitle}>
-              How was your experience with {activeReview.doctor_name}?
+            <Text style={styles.feedbackPromptTitle}>
+              How was your consultation with {activeReview.doctor_name}?
             </Text>
-            <Text style={styles.reviewPromptSubtitle}>
-              Optional reference for other patients. Please write at least 10 words about your consultation, doctor's explanation, or clinic care.
+            <Text style={styles.feedbackPromptSubtitle}>
+              Optional reference for other patients. Please write at least 10 words about the clinician's explanation and care quality.
             </Text>
 
-            {/* Interactive 5-Star Rating Selector */}
-            <View style={styles.starRatingRow}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <TouchableOpacity
-                  key={star}
-                  onPress={() => setReviewRating(star)}
-                  style={styles.starTouchTarget}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name={star <= reviewRating ? "star" : "star-outline"}
-                    size={28}
-                    color={star <= reviewRating ? "#F59E0B" : "#CBD5E1"}
-                  />
-                </TouchableOpacity>
-              ))}
-              <Text style={styles.ratingScoreLabel}>
-                {reviewRating === 5 ? 'Excellent (5/5)' :
-                 reviewRating === 4 ? 'Good (4/5)' :
-                 reviewRating === 3 ? 'Average (3/5)' :
-                 reviewRating === 2 ? 'Below Average (2/5)' : 'Poor (1/5)'}
+            {/* 5-Star Clinical Rating Selector */}
+            <View style={styles.feedbackStarsContainer}>
+              <View style={styles.feedbackStarsRow}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <TouchableOpacity
+                    key={star}
+                    onPress={() => setReviewRating(star)}
+                    style={styles.feedbackStarTouch}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={star <= reviewRating ? "star" : "star-outline"}
+                      size={24}
+                      color={star <= reviewRating ? "#D97706" : "#CBD5E1"}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={styles.feedbackRatingLabel}>
+                {reviewRating.toFixed(1)} / 5.0 • {
+                  reviewRating === 5 ? 'Excellent Care' :
+                  reviewRating === 4 ? 'Good Experience' :
+                  reviewRating === 3 ? 'Standard Visit' :
+                  reviewRating === 2 ? 'Suboptimal' : 'Unsatisfactory'
+                }
               </Text>
             </View>
 
-            {/* Review Text Input with Live Word Counter */}
+            {/* Structured Feedback Textarea */}
             <TextInput
-              style={styles.reviewTextInput}
-              placeholder="e.g. Dr. Mayank was extremely thorough and patient, explaining every medication clearly..."
+              style={styles.feedbackTextarea}
+              placeholder="Share details regarding the doctor's explanation, treatment clarity, and waiting time..."
               placeholderTextColor="#94A3B8"
               value={reviewText}
               onChangeText={setReviewText}
@@ -886,39 +930,46 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               numberOfLines={3}
             />
 
-            {/* Word Count Indicator */}
-            <View style={styles.wordCountRow}>
-              {wordCount < 10 ? (
-                <View style={styles.wordCountBadgePending}>
-                  <Ionicons name="pencil" size={12} color="#D97706" />
-                  <Text style={styles.wordCountTextPending}>
-                    {wordCount} / 10 words minimum ({10 - wordCount} more needed)
-                  </Text>
-                </View>
-              ) : (
-                <View style={styles.wordCountBadgeReady}>
-                  <Ionicons name="checkmark-circle" size={13} color="#059669" />
-                  <Text style={styles.wordCountTextReady}>
-                    ✓ {wordCount} words (Ready to submit)
-                  </Text>
-                </View>
-              )}
+            {/* Sleek 10-Word Verification Progress Meter */}
+            <View style={styles.wordCounterContainer}>
+              <View style={styles.wordCounterHeaderRow}>
+                <Text style={styles.wordCounterText}>
+                  {wordCount < 10
+                    ? `${wordCount} of 10 words minimum (${10 - wordCount} more required)`
+                    : `${wordCount} words recorded`}
+                </Text>
+                {isReady && (
+                  <View style={styles.wordCounterVerifiedBadge}>
+                    <Ionicons name="checkmark-circle" size={13} color="#059669" />
+                    <Text style={styles.wordCounterVerifiedText}>Ready to submit</Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.wordCounterTrack}>
+                <View
+                  style={[
+                    styles.wordCounterFill,
+                    { width: `${progressPct}%` },
+                    isReady && { backgroundColor: '#0D9488' }
+                  ]}
+                />
+              </View>
             </View>
 
             {/* Action Buttons */}
-            <View style={styles.reviewActionsRow}>
+            <View style={styles.feedbackActionRow}>
               <TouchableOpacity
-                style={styles.reviewSkipBtn}
+                style={styles.feedbackDismissBtn}
                 onPress={() => handleDismissReview(activeReview.doctor_id)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.reviewSkipBtnText}>Skip / Dismiss</Text>
+                <Text style={styles.feedbackDismissBtnText}>Maybe Later</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[
-                  styles.reviewSubmitBtn,
-                  !isReady && styles.reviewSubmitBtnDisabled
+                  styles.feedbackSubmitBtn,
+                  !isReady && styles.feedbackSubmitBtnDisabled
                 ]}
                 disabled={!isReady || submittingReview}
                 onPress={() => handleSubmitReview(activeReview)}
@@ -928,7 +979,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <>
-                    <Text style={styles.reviewSubmitBtnText}>Submit Review</Text>
+                    <Text style={styles.feedbackSubmitBtnText}>Submit Feedback</Text>
                     <Ionicons name="checkmark" size={15} color="#FFFFFF" />
                   </>
                 )}
@@ -938,46 +989,54 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         );
       })()}
 
-      {/* Quick Action Navigation Grid with Bespoke Feature Emblems */}
+      {/* ==================== QUICK CLINICAL ACTIONS ==================== */}
       <View style={styles.quickActionsGrid}>
         <TouchableOpacity
-          style={[styles.quickActionCard, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}
+          style={styles.cleanQuickCard}
           onPress={onNavigateToChatbot}
           activeOpacity={0.8}
         >
-          <Image source={require('../../assets/features/chatbot.png')} style={styles.featureAssetIcon} resizeMode="contain" />
-          <Text style={[styles.quickActionTitle, { color: '#166534' }]}>AI Health Bot</Text>
-          <Text style={[styles.quickActionSub, { color: '#15803D' }]}>Prescription Q&A</Text>
+          <View style={[styles.quickCardIconCircle, { backgroundColor: '#F0FDF4' }]}>
+            <Ionicons name="chatbubbles-outline" size={20} color="#15803D" />
+          </View>
+          <Text style={styles.quickCardTitle}>Clinical Assistant</Text>
+          <Text style={styles.quickCardSub}>Care & Medication Q&A</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.quickActionCard, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}
+          style={styles.cleanQuickCard}
           onPress={onNavigateToDoctors}
           activeOpacity={0.8}
         >
-          <Image source={require('../../assets/features/doctors.png')} style={styles.featureAssetIcon} resizeMode="contain" />
-          <Text style={[styles.quickActionTitle, { color: '#1E40AF' }]}>Find Doctors</Text>
-          <Text style={[styles.quickActionSub, { color: '#2563EB' }]}>Verified Clinics</Text>
+          <View style={[styles.quickCardIconCircle, { backgroundColor: '#EFF6FF' }]}>
+            <Ionicons name="people-outline" size={20} color="#1D4ED8" />
+          </View>
+          <Text style={styles.quickCardTitle}>Doctor Directory</Text>
+          <Text style={styles.quickCardSub}>Verified Clinicians</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.quickActionCard, { backgroundColor: '#F0FDFA', borderColor: '#99F6E4' }]}
+          style={styles.cleanQuickCard}
           onPress={onNavigateToVisits}
           activeOpacity={0.8}
         >
-          <Image source={require('../../assets/features/visits.png')} style={styles.featureAssetIcon} resizeMode="contain" />
-          <Text style={[styles.quickActionTitle, { color: '#0F766E' }]}>Active Rx</Text>
-          <Text style={[styles.quickActionSub, { color: '#0D9488' }]}>Download PDF</Text>
+          <View style={[styles.quickCardIconCircle, { backgroundColor: '#F0FDFA' }]}>
+            <Ionicons name="document-text-outline" size={20} color="#0F766E" />
+          </View>
+          <Text style={styles.quickCardTitle}>Care Plans</Text>
+          <Text style={styles.quickCardSub}>Digital Prescriptions</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.quickActionCard, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}
+          style={styles.cleanQuickCard}
           onPress={onNavigateToConsent}
           activeOpacity={0.8}
         >
-          <Image source={require('../../assets/features/vault.png')} style={styles.featureAssetIcon} resizeMode="contain" />
-          <Text style={[styles.quickActionTitle, { color: '#92400E' }]}>Data Vault</Text>
-          <Text style={[styles.quickActionSub, { color: '#B45309' }]}>ABDM / HIPAA</Text>
+          <View style={[styles.quickCardIconCircle, { backgroundColor: '#FAF5FF' }]}>
+            <Ionicons name="shield-checkmark-outline" size={20} color="#7E22CE" />
+          </View>
+          <Text style={styles.quickCardTitle}>Consent & Privacy</Text>
+          <Text style={styles.quickCardSub}>Encrypted Records</Text>
         </TouchableOpacity>
       </View>
 
@@ -2603,324 +2662,435 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     marginTop: 2,
   },
-  // Clinical Post-Consultation Follow-Up Check-in Styles
-  checkinSuccessCard: {
+  // Hospital-Grade Clinical Post-Consultation Follow-Up Telemetry Styles
+  clinicalSuccessToast: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#ECFDF5',
+    backgroundColor: '#F0FDF4',
     borderWidth: 1,
-    borderColor: '#6EE7B7',
+    borderColor: '#BBF7D0',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
+    shadowColor: '#166534',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  clinicalSuccessToastText: {
+    flex: 1,
+    fontFamily: FontFamily.medium,
+    fontSize: 13,
+    color: '#166534',
+    lineHeight: 18,
+  },
+  clinicalFollowupCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  clinicalFollowupHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  clinicalHeaderBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#F0FDFA',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+  },
+  clinicalHeaderBadgeText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 11,
+    color: '#0F766E',
+    letterSpacing: 0.3,
+  },
+  clinicalDoctorLabel: {
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    color: '#64748B',
+  },
+  clinicalCardTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: 16,
+    color: '#0F172A',
+    marginBottom: 4,
+    lineHeight: 22,
+  },
+  clinicalCardSubtitle: {
+    fontFamily: FontFamily.regular,
+    fontSize: 13,
+    color: '#475569',
+    lineHeight: 19,
+    marginBottom: 14,
+  },
+  clinicalFieldLabel: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 11,
+    color: '#64748B',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  clinicalStatusSelector: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 14,
+  },
+  clinicalStatusPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    minHeight: 46,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+  },
+  clinicalStatusPillText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 11,
+    color: '#475569',
+  },
+  statusPillImproved: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#10B981',
+  },
+  statusTextImproved: {
+    color: '#065F46',
+    fontWeight: '700',
+  },
+  statusPillSteady: {
+    backgroundColor: '#F0F9FF',
+    borderColor: '#0284C7',
+  },
+  statusTextSteady: {
+    color: '#0369A1',
+    fontWeight: '700',
+  },
+  statusPillWorsening: {
+    backgroundColor: '#FFF1F2',
+    borderColor: '#F43F5E',
+  },
+  statusTextWorsening: {
+    color: '#BE123C',
+    fontWeight: '700',
+  },
+  clinicalReferralBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#99F6E4',
     borderRadius: 14,
     padding: 12,
     marginBottom: 14,
   },
-  checkinSuccessText: {
-    flex: 1,
-    fontFamily: FontFamily.medium,
-    fontSize: 12,
-    color: '#065F46',
-    lineHeight: 17,
+  clinicalReferralIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#CCFBF1',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  followupCheckinCard: {
+  clinicalReferralTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: 13,
+    color: '#0F766E',
+  },
+  clinicalReferralDesc: {
+    fontFamily: FontFamily.regular,
+    fontSize: 11,
+    color: '#115E59',
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  clinicalReferralActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#0F766E',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  clinicalReferralActionBtnText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 12,
+    color: '#FFFFFF',
+  },
+  clinicalNoteInput: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 13,
+    color: '#1E293B',
+    lineHeight: 18,
+    marginBottom: 14,
+    minHeight: 52,
+    textAlignVertical: 'top',
+  },
+  clinicalSubmitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#0F766E',
+    minHeight: 48,
+    borderRadius: 12,
+    shadowColor: '#0F766E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  clinicalSubmitBtnText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 14,
+    color: '#FFFFFF',
+  },
+
+  // Hospital-Grade Consultation Feedback Card Styles
+  feedbackCardContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1.5,
-    borderColor: '#99F6E4',
-    shadowColor: '#0D9488',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
+    padding: 18,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
     shadowRadius: 10,
-    elevation: 3,
+    elevation: 2,
   },
-  followupHeaderRow: {
+  feedbackCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 10,
   },
-  followupBadge: {
+  feedbackHeaderBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     backgroundColor: '#F0FDFA',
-    paddingHorizontal: 9,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#CCFBF1',
   },
-  followupBadgeText: {
+  feedbackHeaderBadgeText: {
     fontFamily: FontFamily.bold,
     fontSize: 11,
     color: '#0F766E',
+    letterSpacing: 0.3,
   },
-  followupDoctorTag: {
-    fontFamily: FontFamily.semiBold,
-    fontSize: 11,
-    color: Colors.textSecondary,
-  },
-  followupPromptTitle: {
-    fontFamily: FontFamily.bold,
-    fontSize: 15,
-    color: Colors.textPrimary,
-    marginBottom: 4,
-  },
-  followupPromptDesc: {
-    fontFamily: FontFamily.regular,
-    fontSize: 12,
-    color: Colors.textSecondary,
-    lineHeight: 18,
-    marginBottom: 12,
-  },
-  followupSectionSubtitle: {
-    fontFamily: FontFamily.semiBold,
-    fontSize: 11,
-    color: Colors.textMuted,
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  followupOptionsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  followupOptionChip: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 6,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    backgroundColor: '#F8FAFC',
-  },
-  followupOptionChipActive: {
-    backgroundColor: '#0D9488',
-    borderColor: '#0F766E',
-  },
-  followupOptionText: {
-    fontFamily: FontFamily.semiBold,
-    fontSize: 11,
-    color: '#334155',
-  },
-  followupOptionTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  followupNotesInput: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 12,
-    color: Colors.textPrimary,
-    marginBottom: 12,
-  },
-  followupSubmitBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#0D9488',
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  followupSubmitBtnText: {
-    fontFamily: FontFamily.bold,
-    fontSize: 13,
-    color: '#FFFFFF',
-  },
-  followupMeetingPromptBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#F0FDFA',
-    borderWidth: 1,
-    borderColor: '#99F6E4',
-    borderRadius: 12,
-    padding: 10,
-    marginBottom: 12,
-  },
-  followupMeetingPromptTitle: {
-    fontFamily: FontFamily.bold,
-    fontSize: 12,
-    color: '#0F766E',
-  },
-  followupMeetingPromptSub: {
-    fontFamily: FontFamily.regular,
-    fontSize: 11,
-    color: '#115E59',
-  },
-
-  // Optional Doctor Experience Review Card Styles
-  reviewCardContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1.5,
-    borderColor: '#FDE68A',
-    shadowColor: '#D97706',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  reviewCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  reviewBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#FFFBEB',
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-  },
-  reviewBadgeText: {
-    fontFamily: FontFamily.bold,
-    fontSize: 11,
-    color: '#B45309',
-  },
-  reviewDismissBtn: {
+  feedbackSkipAction: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingVertical: 2,
+    paddingVertical: 4,
     paddingHorizontal: 6,
   },
-  reviewDismissText: {
+  feedbackSkipActionText: {
     fontFamily: FontFamily.medium,
-    fontSize: 11,
+    fontSize: 12,
     color: '#94A3B8',
   },
-  reviewPromptTitle: {
+  feedbackPromptTitle: {
     fontFamily: FontFamily.bold,
-    fontSize: 15,
-    color: Colors.textPrimary,
+    fontSize: 16,
+    color: '#0F172A',
     marginBottom: 4,
+    lineHeight: 22,
   },
-  reviewPromptSubtitle: {
+  feedbackPromptSubtitle: {
     fontFamily: FontFamily.regular,
-    fontSize: 12,
-    color: Colors.textSecondary,
-    lineHeight: 18,
-    marginBottom: 12,
+    fontSize: 13,
+    color: '#64748B',
+    lineHeight: 19,
+    marginBottom: 14,
   },
-  starRatingRow: {
+  feedbackStarsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 12,
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    marginBottom: 14,
   },
-  starTouchTarget: {
-    padding: 2,
+  feedbackStarsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  ratingScoreLabel: {
+  feedbackStarTouch: {
+    padding: 3,
+  },
+  feedbackRatingLabel: {
     fontFamily: FontFamily.semiBold,
     fontSize: 12,
-    color: '#D97706',
-    marginLeft: 6,
+    color: '#475569',
   },
-  reviewTextInput: {
+  feedbackTextarea: {
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
     borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 12,
-    color: Colors.textPrimary,
-    marginBottom: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 13,
+    color: '#1E293B',
+    lineHeight: 19,
+    minHeight: 80,
     textAlignVertical: 'top',
-    minHeight: 68,
+    marginBottom: 10,
   },
-  wordCountRow: {
-    flexDirection: 'row',
-    marginBottom: 12,
+  wordCounterContainer: {
+    marginBottom: 16,
   },
-  wordCountBadgePending: {
+  wordCounterHeaderRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#FFFBEB',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
+    marginBottom: 6,
   },
-  wordCountTextPending: {
+  wordCounterText: {
     fontFamily: FontFamily.medium,
     fontSize: 11,
-    color: '#B45309',
+    color: '#64748B',
   },
-  wordCountBadgeReady: {
+  wordCounterVerifiedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#ECFDF5',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
+    gap: 4,
   },
-  wordCountTextReady: {
+  wordCounterVerifiedText: {
     fontFamily: FontFamily.bold,
     fontSize: 11,
-    color: '#047857',
+    color: '#059669',
   },
-  reviewActionsRow: {
+  wordCounterTrack: {
+    height: 4,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  wordCounterFill: {
+    height: '100%',
+    backgroundColor: '#CBD5E1',
+    borderRadius: 2,
+  },
+  feedbackActionRow: {
     flexDirection: 'row',
-    gap: 10,
     alignItems: 'center',
+    gap: 10,
   },
-  reviewSkipBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+  feedbackDismissBtn: {
+    minHeight: 46,
+    paddingHorizontal: 16,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
   },
-  reviewSkipBtnText: {
-    fontFamily: FontFamily.medium,
-    fontSize: 12,
+  feedbackDismissBtnText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 13,
     color: '#64748B',
   },
-  reviewSubmitBtn: {
+  feedbackSubmitBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#0D9488',
-    paddingVertical: 10,
+    minHeight: 46,
     borderRadius: 12,
+    backgroundColor: '#0F766E',
+    shadowColor: '#0F766E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  reviewSubmitBtnDisabled: {
+  feedbackSubmitBtnDisabled: {
     backgroundColor: '#94A3B8',
-    opacity: 0.6,
+    shadowOpacity: 0,
+    elevation: 0,
   },
-  reviewSubmitBtnText: {
+  feedbackSubmitBtnText: {
     fontFamily: FontFamily.bold,
     fontSize: 13,
     color: '#FFFFFF',
+  },
+
+  // Clean Quick Action Cards (No Emojis, Pure Crisp Vector Aesthetics)
+  cleanQuickCard: {
+    flex: 1,
+    minWidth: '46%',
+    borderRadius: 16,
+    padding: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  quickCardIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  quickCardTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: 14,
+    color: '#0F172A',
+  },
+  quickCardSub: {
+    fontFamily: FontFamily.regular,
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
   },
 });

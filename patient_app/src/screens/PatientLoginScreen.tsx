@@ -334,9 +334,12 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                       maxLength={6}
                     />
                   </View>
-                  <Text style={{ fontSize: 12, color: Colors.textSecondary, marginTop: 4, marginBottom: 12 }}>
-                    📬 Please check your Inbox and Spam/Junk folder. Code expires in 10 minutes.
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, marginBottom: 12 }}>
+                    <Ionicons name="mail-outline" size={13} color={Colors.textSecondary} />
+                    <Text style={{ fontSize: 12, color: Colors.textSecondary, flex: 1 }}>
+                      Please check your Inbox and Spam/Junk folder. Code expires in 10 minutes.
+                    </Text>
+                  </View>
 
                   <TouchableOpacity
                     style={[styles.primaryBtn, { backgroundColor: '#10b981' }]}

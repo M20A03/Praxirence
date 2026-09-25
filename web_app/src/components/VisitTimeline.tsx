@@ -153,8 +153,9 @@ export const VisitTimeline: React.FC<VisitTimelineProps> = ({
                     </div>
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                       {visit.reminders.map((r, rIdx) => (
-                        <span key={rIdx} className="badge badge-cyan" style={{ fontSize: '0.75rem' }}>
-                          ⏰ {r.time} - {r.medicine_name}
+                        <span key={rIdx} className="badge badge-cyan" style={{ fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <Clock size={12} />
+                          <span>{r.time} - {r.medicine_name}</span>
                         </span>
                       ))}
                     </div>

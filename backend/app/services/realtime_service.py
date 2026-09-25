@@ -25,24 +25,24 @@ class RealtimeConnectionManager:
             if user_id not in self.doctor_connections:
                 self.doctor_connections[user_id] = set()
             self.doctor_connections[user_id].add(websocket)
-            logger.info(f"👨‍⚕️ Doctor {user_id} connected via WebSocket. (Total active: {len(self.doctor_connections[user_id])})")
+            logger.info(f"Doctor {user_id} connected via WebSocket. (Total active: {len(self.doctor_connections[user_id])})")
         elif role == "patient":
             if user_id not in self.patient_connections:
                 self.patient_connections[user_id] = set()
             self.patient_connections[user_id].add(websocket)
-            logger.info(f"👤 Patient {user_id} connected via WebSocket. (Total active: {len(self.patient_connections[user_id])})")
+            logger.info(f"Patient {user_id} connected via WebSocket. (Total active: {len(self.patient_connections[user_id])})")
 
     def disconnect(self, websocket: WebSocket, role: str, user_id: str):
         if role == "doctor" and user_id in self.doctor_connections:
             self.doctor_connections[user_id].discard(websocket)
             if not self.doctor_connections[user_id]:
                 del self.doctor_connections[user_id]
-            logger.info(f"👨‍⚕️ Doctor {user_id} disconnected.")
+            logger.info(f"Doctor {user_id} disconnected.")
         elif role == "patient" and user_id in self.patient_connections:
             self.patient_connections[user_id].discard(websocket)
             if not self.patient_connections[user_id]:
                 del self.patient_connections[user_id]
-            logger.info(f"👤 Patient {user_id} disconnected.")
+            logger.info(f"Patient {user_id} disconnected.")
 
     async def emit_to_patient(self, patient_id: str, event: str, payload: Any):
         """Sends instant real-time event to all active sessions of a patient."""

@@ -80,7 +80,7 @@ Analyze the doctor-patient consultation dialogue and produce an accurate, struct
       "dosage": "Dosage string",
       "time": "HH:MM 24-hr format (07:30, 08:30, 14:00, 20:30, 21:30)",
       "frequency": "daily",
-      "instructions": "Notification alarm text with emoji (e.g., 💊 Subah nashte ke baad: Augmentin 625mg lein)"
+      "instructions": "Clean clinical notification text without emojis (e.g., Subah nashte ke baad: Augmentin 625mg lein)"
     }
   ],
   "follow_up_days": 3
@@ -144,21 +144,21 @@ CARE_PLAN_FEW_SHOT_EXAMPLE_OUTPUT = {
             "dosage": "40mg",
             "time": "07:30",
             "frequency": "daily",
-            "instructions": "🥣 Khali pet: Pantocid 40mg nashte se aadha ghanta pehle lein."
+            "instructions": "Khali pet: Pantocid 40mg nashte se aadha ghanta pehle lein."
         },
         {
             "medicine_name": "Augmentin",
             "dosage": "625mg",
             "time": "08:30",
             "frequency": "daily",
-            "instructions": "💊 Subah: Augmentin 625mg nashte ke baad lein."
+            "instructions": "Subah: Augmentin 625mg nashte ke baad lein."
         },
         {
             "medicine_name": "Augmentin",
             "dosage": "625mg",
             "time": "20:30",
             "frequency": "daily",
-            "instructions": "💊 Raat: Augmentin 625mg dinner ke baad lein."
+            "instructions": "Raat: Augmentin 625mg dinner ke baad lein."
         }
     ],
     "follow_up_days": 3

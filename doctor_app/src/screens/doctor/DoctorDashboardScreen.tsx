@@ -287,7 +287,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
         setScheduleData({ ...scheduleData, queue: updatedQueue });
       }
       Alert.alert(
-        nextTriage === 'Urgent' ? '🚨 Priority Escalated' : 'Routine Status Restored',
+        nextTriage === 'Urgent' ? 'Priority Escalated' : 'Routine Status Restored',
         `${item.patient_name} (${item.token}) is now marked as ${nextTriage}.${nextTriage === 'Urgent' ? ' Repositioned to front of waiting queue.' : ''}`
       );
       loadUpcomingScheduleSilently();
@@ -1019,9 +1019,9 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
             <Text style={styles.inputLabel}>Slot Action</Text>
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
               {[
-                { key: 'add', label: '+ Open Slot', color: '#059669' },
-                { key: 'block', label: '🚫 Block Slot', color: '#DC2626' },
-                { key: 'unblock', label: '🔓 Unblock', color: '#0284C7' },
+                { key: 'add', label: 'Open Slot', color: '#059669' },
+                { key: 'block', label: 'Block Slot', color: '#DC2626' },
+                { key: 'unblock', label: 'Unblock', color: '#0284C7' },
               ].map((act) => {
                 const isActive = customSlotAction === act.key;
                 return (

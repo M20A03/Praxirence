@@ -67,7 +67,7 @@ def send_medication_reminder_task(
             logger.error(f"Reminder error: Patient {patient_id} not found.")
             return
 
-        title = f"💊 Medication Reminder: {medicine_name}"
+        title = f"Medication Reminder: {medicine_name}"
         body = f"Time for your dose: {dosage}. {instructions or 'Take with water.'}"
 
         # 1. Send push notification to mobile app if token registered

@@ -57,7 +57,7 @@ def send_medication_reminder_celery(self, patient_id: str, medicine_name: str, d
         if not patient:
             return {"success": False, "error": "Patient not found"}
 
-        title = f"💊 Time for your {medicine_name}"
+        title = f"Medication Reminder: {medicine_name}"
         body = f"Prescribed dose: {dosage}. {instructions or 'Take with water.'}"
 
         if patient.fcm_token:

@@ -424,7 +424,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
           </Text>
           <View style={styles.liveDbBadge}>
             <View style={styles.liveDbDot} />
-            <Text style={styles.liveDbText}>Live Cloud Registry</Text>
+            <Text style={styles.liveDbText}>Verified Practice</Text>
           </View>
         </View>
 
@@ -836,9 +836,9 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
               <Ionicons name="checkmark-circle" size={44} color="#059669" />
             </View>
 
-            <Text style={styles.successTitle}>Encounter Reserved!</Text>
+            <Text style={styles.successTitle}>Appointment Confirmed</Text>
             <Text style={styles.successSubtitle}>
-              Your appointment has been confirmed in the cloud clinical schedule.
+              Your consultation has been confirmed in the clinic schedule.
             </Text>
 
             {/* Live OPD Queue Token & Position Banner */}

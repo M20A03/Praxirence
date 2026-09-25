@@ -12,7 +12,9 @@ import {
   MessageSquare,
   AlertCircle,
   Printer,
-  Shield
+  Shield,
+  Mic,
+  Bell
 } from 'lucide-react';
 import { Visit, MedicineItem, ReminderItem, Patient } from '../types';
 import { api } from '../services/api';
@@ -266,8 +268,9 @@ export const CarePlanEditor: React.FC<CarePlanEditorProps> = ({
           padding: '12px 16px',
           border: '1px solid var(--border-color)'
         }}>
-          <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', color: 'var(--cyan-500)' }}>
-            🎙️ View Raw Whisper Consultation Transcription
+          <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', color: 'var(--cyan-500)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <Mic size={14} />
+            <span>View Raw Whisper Consultation Transcription</span>
           </summary>
           <p style={{
             marginTop: '10px',
@@ -555,8 +558,9 @@ export const CarePlanEditor: React.FC<CarePlanEditorProps> = ({
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="badge badge-cyan" style={{ fontSize: '0.85rem', fontFamily: 'var(--font-mono)' }}>
-                  🔔 {rem.time}
+                <span className="badge badge-cyan" style={{ fontSize: '0.85rem', fontFamily: 'var(--font-mono)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <Bell size={12} />
+                  <span>{rem.time}</span>
                 </span>
                 {!isApprovedOrSent && (
                   <button

@@ -337,7 +337,7 @@ class EmailService:
         logger.warning(
             f"\n"
             f"===============================================================\n"
-            f"📧 PRAXIRENCE CLINICAL EMAIL NOTICE (noreply@praxirence.com)\n"
+            f"PRAXIRENCE CLINICAL EMAIL NOTICE (noreply@praxirence.com)\n"
             f"To: {recipient_email} ({name_display})\n"
             f"Subject: {subject}\n"
             f"STATUS: Live delivery unavailable ({info})\n"
@@ -422,7 +422,7 @@ class EmailService:
         logger.warning(
             f"\n"
             f"===============================================================\n"
-            f"📧 PRAXIRENCE CARE PATIENT EMAIL NOTICE (noreply@praxirence.com)\n"
+            f"PRAXIRENCE CARE PATIENT EMAIL NOTICE (noreply@praxirence.com)\n"
             f"To: {recipient_email} ({name_display})\n"
             f"Subject: {subject}\n"
             f"STATUS: Live delivery unavailable ({info})\n"

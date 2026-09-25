@@ -354,7 +354,7 @@ export const PrescriptionModal: React.FC<PrescriptionModalProps> = ({
               marginBottom: '24px'
             }}>
               <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: '8px' }}>
-                ⏰ Automated In-App Medication Alarms:
+                Automated In-App Medication Alarms:
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                 {visit.reminders.map((rem, idx) => (
@@ -452,7 +452,7 @@ export const PrescriptionModal: React.FC<PrescriptionModalProps> = ({
                 cursor: 'pointer'
               }}
             >
-              ✕ Close (बंद करें)
+              Close (बंद करें)
             </button>
             <button
               type="button"

@@ -51,10 +51,10 @@ class FollowUpService:
                 doc_title = doctor_name if doctor_name.startswith("Dr.") else f"Dr. {doctor_name}"
                 patient_first_name = (patient.name.split()[0]) if patient and patient.name else "there"
 
-                title = f"🩺 Health Check-in: {doc_title}"
+                title = f"Clinical Follow-up: {doc_title}"
                 body = (
-                    f"Hello {patient_first_name}, are you feeling good now after 3 days of your consultation with {doc_title}? "
-                    f"Tap to let us know how your health is."
+                    f"Hello {patient_first_name}, this is a check-in regarding your recovery after your consultation with {doc_title}. "
+                    f"Tap to share your current health status."
                 )
 
                 if patient and patient.fcm_token:
@@ -104,10 +104,10 @@ class FollowUpService:
                 doc_title = doctor_name if doctor_name.startswith("Dr.") else f"Dr. {doctor_name}"
                 patient_first_name = (patient.name.split()[0]) if patient and patient.name else "there"
 
-                title = f"🌱 7-Day Health Update: {doc_title}"
+                title = f"1-Week Health Evaluation: {doc_title}"
                 body = (
-                    f"Hello {patient_first_name}, it has been 7 days since your consultation with {doc_title}. "
-                    f"Is your health good now, or do you have any problems or wish to schedule another meeting with the doctor? Tap to share an update."
+                    f"Hello {patient_first_name}, one week has passed since your visit with {doc_title}. "
+                    f"Please let us know if your symptoms have resolved or if you would like to schedule a follow-up appointment."
                 )
 
                 if patient and patient.fcm_token:
@@ -196,8 +196,8 @@ class FollowUpService:
                         "specialty": doctor.specialty if doctor else "Physician",
                         "consultation_date": v.approved_at.isoformat(),
                         "days_ago": round(days_elapsed, 1),
-                        "title": f"3-Day Health Check-in: {doc_title}",
-                        "prompt": f"Are you feeling good now after 3 days of your consultation with {doc_title}? Please share how your health is."
+                        "title": f"3-Day Clinical Follow-up: {doc_title}",
+                        "prompt": f"How is your recovery progressing following your consultation with {doc_title}? Please share your current health status."
                     })
 
             # Check Day 7 prompt (at or after day 7, if not yet responded)
@@ -211,8 +211,8 @@ class FollowUpService:
                         "specialty": doctor.specialty if doctor else "Physician",
                         "consultation_date": v.approved_at.isoformat(),
                         "days_ago": round(days_elapsed, 1),
-                        "title": f"7-Day Health Update: {doc_title}",
-                        "prompt": f"It has been 7 days since your consultation with {doc_title}. Is your health good now, or do you have any problems or wish to schedule another meeting with the doctor?"
+                        "title": f"1-Week Health Evaluation: {doc_title}",
+                        "prompt": f"One week has elapsed since your visit with {doc_title}. Have your symptoms resolved, or would you like to schedule a follow-up consultation?"
                     })
 
         return pending_checkins

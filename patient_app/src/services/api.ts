@@ -1164,8 +1164,8 @@ export const mobileApi = {
       }
 
       const reply = isHindi
-        ? `🩺 आपके डॉक्टर के परामर्श का सारांश:\n\n• निदान (Diagnosis): ${diag}\n• डॉक्टर का निष्कर्ष: ${summary}\n• मुख्य सलाह: ${advice}\n\nकृपया अपनी दवाएं समय पर लें और किसी भी प्रकार की परेशानी होने पर क्लिनिक से तुरंत संपर्क करें।`
-        : `🩺 Doctor Consultation Summary:\n\n• Confirmed Diagnosis: ${diag}\n• Attending Physician Evaluation: ${summary}\n• Doctor's Lifestyle Advice: ${advice}\n\nPlease take your prescribed medications on schedule and visit the clinic if symptoms persist.`;
+        ? `आपके डॉक्टर के परामर्श का सारांश:\n\n• निदान (Diagnosis): ${diag}\n• डॉक्टर का निष्कर्ष: ${summary}\n• मुख्य सलाह: ${advice}\n\nकृपया अपनी दवाएं समय पर लें और किसी भी प्रकार की परेशानी होने पर क्लिनिक से तुरंत संपर्क करें।`
+        : `Doctor Consultation Summary:\n\n• Confirmed Diagnosis: ${diag}\n• Attending Physician Evaluation: ${summary}\n• Doctor's Lifestyle Advice: ${advice}\n\nPlease take your prescribed medications on schedule and visit the clinic if symptoms persist.`;
 
       return {
         reply,

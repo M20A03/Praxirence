@@ -151,34 +151,93 @@ export const NotificationService = {
               slots.push({ slot: 'Night', hour: 20, minute: 30 });
             }
 
-            for (const s of slots) {
+              for (const s of slots) {
+                await Notifications.scheduleNotificationAsync({
+                  content: {
+                    title: `${s.slot} Dose: ${med.name}`,
+                    body: `${med.dosage} (${med.instructions || 'Take with water'}) — Tap to mark as taken`,
+                    data: {
+                      type: 'medicine_reminder',
+                      medicine: med.name,
+                      dosage: med.dosage,
+                      slot: s.slot,
+                      visitId: visit.id,
+                    },
+                    sound: 'default',
+                  },
+                  trigger: {
+                    hour: s.hour,
+                    minute: s.minute,
+                    repeats: true,
+                    channelId: 'medicine-reminders',
+                  },
+                });
+                scheduledCount++;
+              }
+            }
+          }
+
+          // 3. Schedule Day 3 & Day 7 Clinical Follow-Up Health Check-ins
+          try {
+            const rawDoc = visit.doctor_name || 'your physician';
+            const docName = rawDoc.startsWith('Dr.') ? rawDoc : `Dr. ${rawDoc}`;
+            const visitBaseDate = new Date(visit.approved_at || visit.date || Date.now());
+
+            // Day 3 check-in trigger: 3 days after consultation at 10:00 AM
+            const day3Target = new Date(visitBaseDate.getTime() + 3 * 24 * 60 * 60 * 1000);
+            day3Target.setHours(10, 0, 0, 0);
+
+            if (day3Target.getTime() > Date.now()) {
               await Notifications.scheduleNotificationAsync({
                 content: {
-                  title: `${s.slot} Dose: ${med.name}`,
-                  body: `${med.dosage} (${med.instructions || 'Take with water'}) — Tap to mark as taken`,
+                  title: `🩺 Health Check-in: ${docName}`,
+                  body: `It's been 3 days since your consultation with ${docName}. How is your health today? Tap to share a quick recovery update.`,
                   data: {
-                    type: 'medicine_reminder',
-                    medicine: med.name,
-                    dosage: med.dosage,
-                    slot: s.slot,
+                    type: 'health_checkin',
+                    day: 3,
                     visitId: visit.id,
+                    doctorName: docName,
                   },
                   sound: 'default',
                 },
                 trigger: {
-                  hour: s.hour,
-                  minute: s.minute,
-                  repeats: true,
-                  channelId: 'medicine-reminders',
+                  date: day3Target,
+                  channelId: 'clinical-updates',
                 },
               });
               scheduledCount++;
             }
+
+            // Day 7 check-in trigger: 7 days after consultation at 10:00 AM
+            const day7Target = new Date(visitBaseDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+            day7Target.setHours(10, 0, 0, 0);
+
+            if (day7Target.getTime() > Date.now()) {
+              await Notifications.scheduleNotificationAsync({
+                content: {
+                  title: `🌱 1-Week Recovery Check-in: ${docName}`,
+                  body: `It's been 1 week since your consultation with ${docName}. Are your symptoms resolved and health back to normal? Tap to confirm your recovery or book a follow-up.`,
+                  data: {
+                    type: 'health_checkin',
+                    day: 7,
+                    visitId: visit.id,
+                    doctorName: docName,
+                  },
+                  sound: 'default',
+                },
+                trigger: {
+                  date: day7Target,
+                  channelId: 'clinical-updates',
+                },
+              });
+              scheduledCount++;
+            }
+          } catch (followupErr) {
+            console.warn('Notice scheduling follow-up check-in notifications:', followupErr);
           }
         }
-      }
 
-      await AsyncStorage.setItem('@praxirence_scheduled_reminders_count', scheduledCount.toString());
+        await AsyncStorage.setItem('@praxirence_scheduled_reminders_count', scheduledCount.toString());
       return scheduledCount;
     } catch (err) {
       console.warn('Failed to schedule care plan reminders:', err);

@@ -198,6 +198,22 @@ export interface Visit {
   estimated_wait_mins?: number;
   signature_hash?: string;
   approved_at?: string;
+  day3_followup_status?: 'scheduled' | 'sent' | 'responded' | 'skipped';
+  day3_followup_sent_at?: string;
+  day3_followup_response?: {
+    status?: string;
+    notes?: string;
+    responded_at?: string;
+    source?: string;
+  };
+  day7_followup_status?: 'scheduled' | 'sent' | 'responded' | 'skipped';
+  day7_followup_sent_at?: string;
+  day7_followup_response?: {
+    status?: string;
+    notes?: string;
+    responded_at?: string;
+    source?: string;
+  };
 }
 
 export interface ConsultationSummarizeResult {

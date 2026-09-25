@@ -8,7 +8,7 @@ logger = logging.getLogger("praxirence.fcm")
 
 class FCMService:
     def __init__(self):
-        self.credentials_path = settings.FIREBASE_CREDENTIALS_PATH
+        self.credentials_path = getattr(settings, "FIREBASE_CREDENTIALS_PATH", None) or os.getenv("FIREBASE_CREDENTIALS_PATH", "")
         self._app = None
         self._enabled = False
 

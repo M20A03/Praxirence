@@ -11,6 +11,7 @@ import {
   TextInput,
   Image,
   BackHandler,
+  ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -94,6 +95,13 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const [selectedRescheduleVisit, setSelectedRescheduleVisit] = useState<Visit | null>(null);
   const [rescheduleSlot, setRescheduleSlot] = useState<string>('10:00 AM');
   const [rescheduling, setRescheduling] = useState<boolean>(false);
+
+  // Automated Post-Consultation Follow-Up Check-ins (Day 3 & Day 7)
+  const [pendingCheckins, setPendingCheckins] = useState<any[]>([]);
+  const [checkinStatus, setCheckinStatus] = useState<'feeling_better' | 'recovering' | 'same' | 'worse'>('feeling_better');
+  const [checkinNotes, setCheckinNotes] = useState<string>('');
+  const [submittingCheckin, setSubmittingCheckin] = useState<boolean>(false);
+  const [checkinSubmittedSuccess, setCheckinSubmittedSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     AsyncStorage.getItem('@praxirence_patient_lang').then((saved) => {
@@ -238,15 +246,17 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
   const loadDashboardDataSilently = async () => {
     try {
-      const [data, reschedules] = await Promise.all([
+      const [data, reschedules, checkins] = await Promise.all([
         mobileApi.getVisits(user.id),
         mobileApi.getPendingReschedules(user.id).catch(() => []),
+        mobileApi.getPendingCheckins(user.id).catch(() => []),
       ]);
       if (data && data.length > 0) {
         setVisits(data);
         syncQueueStatusForVisits(data);
       }
       setPendingReschedules(reschedules || []);
+      setPendingCheckins(checkins || []);
     } catch (e) {}
   };
 
@@ -254,14 +264,16 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     const cacheKey = `praxirence_careplan_${user.id}`;
     try {
       setLoading(true);
-      const [data, family, reschedules] = await Promise.all([
+      const [data, family, reschedules, checkins] = await Promise.all([
         mobileApi.getVisits(user.id),
         mobileApi.getFamilyMembers(user.id).catch(() => []),
         mobileApi.getPendingReschedules(user.id).catch(() => []),
+        mobileApi.getPendingCheckins(user.id).catch(() => []),
       ]);
       setVisits(data || []);
       setFamilyMembers(family || []);
       setPendingReschedules(reschedules || []);
+      setPendingCheckins(checkins || []);
 
       if (data && data.length > 0) {
         await AsyncStorage.setItem(cacheKey, JSON.stringify(data));
@@ -378,6 +390,32 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     await mobileApi.saveVitals(user.id, updated);
     setShowVitalsModal(false);
     Alert.alert('Vitals Recorded', `Status: ${note}. Your health trends have been updated.`);
+  };
+
+  const handleAnswerCheckin = async (checkin: any, statusChoice?: 'feeling_better' | 'recovering' | 'same' | 'worse') => {
+    const finalStatus = statusChoice || checkinStatus;
+    try {
+      setSubmittingCheckin(true);
+      const res = await mobileApi.submitFollowupResponse(
+        checkin.visit_id,
+        checkin.day,
+        finalStatus,
+        checkinNotes
+      );
+      if (res.success) {
+        setPendingCheckins((prev) => prev.filter((c) => !(c.visit_id === checkin.visit_id && c.day === checkin.day)));
+        setCheckinSubmittedSuccess(`Thank you! Your Day ${checkin.day} recovery update has been recorded and shared with ${checkin.doctor_name}.`);
+        setCheckinNotes('');
+        setTimeout(() => setCheckinSubmittedSuccess(null), 6000);
+        loadDashboardDataSilently();
+      } else {
+        Alert.alert('Notice', res.message || 'Could not record update.');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Failed to submit health update.');
+    } finally {
+      setSubmittingCheckin(false);
+    }
   };
 
   const latestVisit = visits.length > 0 ? visits[0] : null;
@@ -523,6 +561,110 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           >
             <Text style={styles.rescheduleActionBtnText}>Choose Slot</Text>
             <Ionicons name="calendar" size={14} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Post-Consultation Follow-Up Success Toast */}
+      {checkinSubmittedSuccess && (
+        <View style={styles.checkinSuccessCard}>
+          <Ionicons name="checkmark-circle" size={20} color="#059669" />
+          <Text style={styles.checkinSuccessText}>{checkinSubmittedSuccess}</Text>
+        </View>
+      )}
+
+      {/* Automated Day 3 / Day 7 Clinical Follow-Up Health Check-in */}
+      {pendingCheckins.length > 0 && (
+        <View style={styles.followupCheckinCard}>
+          <View style={styles.followupHeaderRow}>
+            <View style={styles.followupBadge}>
+              <Ionicons name="pulse" size={13} color="#0D9488" />
+              <Text style={styles.followupBadgeText}>
+                {pendingCheckins[0].day === 3 ? 'Day 3 Health Check-in' : '1-Week Recovery Check-in'}
+              </Text>
+            </View>
+            <Text style={styles.followupDoctorTag}>{pendingCheckins[0].doctor_name}</Text>
+          </View>
+
+          <Text style={styles.followupPromptTitle}>
+            How is your recovery progressing?
+          </Text>
+          <Text style={styles.followupPromptDesc}>
+            {pendingCheckins[0].prompt}
+          </Text>
+
+          <Text style={styles.followupSectionSubtitle}>Select your health status:</Text>
+          <View style={styles.followupOptionsRow}>
+            <TouchableOpacity
+              style={[
+                styles.followupOptionChip,
+                checkinStatus === 'feeling_better' && styles.followupOptionChipActive,
+                { borderColor: '#10B981' }
+              ]}
+              onPress={() => setCheckinStatus('feeling_better')}
+              activeOpacity={0.7}
+            >
+              <Text style={{ fontSize: 16 }}>😊</Text>
+              <Text style={[styles.followupOptionText, checkinStatus === 'feeling_better' && styles.followupOptionTextActive]}>
+                Much Better
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.followupOptionChip,
+                checkinStatus === 'recovering' && styles.followupOptionChipActive,
+                { borderColor: '#F59E0B' }
+              ]}
+              onPress={() => setCheckinStatus('recovering')}
+              activeOpacity={0.7}
+            >
+              <Text style={{ fontSize: 16 }}>🙂</Text>
+              <Text style={[styles.followupOptionText, checkinStatus === 'recovering' && styles.followupOptionTextActive]}>
+                Recovering
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.followupOptionChip,
+                checkinStatus === 'worse' && styles.followupOptionChipActive,
+                { borderColor: '#EF4444' }
+              ]}
+              onPress={() => setCheckinStatus('worse')}
+              activeOpacity={0.7}
+            >
+              <Text style={{ fontSize: 16 }}>⚠️</Text>
+              <Text style={[styles.followupOptionText, checkinStatus === 'worse' && styles.followupOptionTextActive]}>
+                Need Doctor
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <TextInput
+            style={styles.followupNotesInput}
+            placeholder="Add note on symptoms or fever (optional)..."
+            placeholderTextColor="#94A3B8"
+            value={checkinNotes}
+            onChangeText={setCheckinNotes}
+            multiline
+            numberOfLines={2}
+          />
+
+          <TouchableOpacity
+            style={styles.followupSubmitBtn}
+            disabled={submittingCheckin}
+            onPress={() => handleAnswerCheckin(pendingCheckins[0])}
+            activeOpacity={0.8}
+          >
+            {submittingCheckin ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <Text style={styles.followupSubmitBtnText}>Submit Health Update</Text>
+                <Ionicons name="send" size={14} color="#FFFFFF" />
+              </>
+            )}
           </TouchableOpacity>
         </View>
       )}
@@ -2191,5 +2333,140 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: Colors.textMuted,
     marginTop: 2,
+  },
+  // Clinical Post-Consultation Follow-Up Check-in Styles
+  checkinSuccessCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#6EE7B7',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 14,
+  },
+  checkinSuccessText: {
+    flex: 1,
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    color: '#065F46',
+    lineHeight: 17,
+  },
+  followupCheckinCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: '#99F6E4',
+    shadowColor: '#0D9488',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  followupHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  followupBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#F0FDFA',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
+  },
+  followupBadgeText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 11,
+    color: '#0F766E',
+  },
+  followupDoctorTag: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 11,
+    color: Colors.textSecondary,
+  },
+  followupPromptTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: 15,
+    color: Colors.textPrimary,
+    marginBottom: 4,
+  },
+  followupPromptDesc: {
+    fontFamily: FontFamily.regular,
+    fontSize: 12,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  followupSectionSubtitle: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 11,
+    color: Colors.textMuted,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  followupOptionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  followupOptionChip: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    backgroundColor: '#F8FAFC',
+  },
+  followupOptionChipActive: {
+    backgroundColor: '#0D9488',
+    borderColor: '#0F766E',
+  },
+  followupOptionText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 11,
+    color: '#334155',
+  },
+  followupOptionTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  followupNotesInput: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 12,
+    color: Colors.textPrimary,
+    marginBottom: 12,
+  },
+  followupSubmitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#0D9488',
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  followupSubmitBtnText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 13,
+    color: '#FFFFFF',
   },
 });

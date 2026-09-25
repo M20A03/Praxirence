@@ -689,6 +689,41 @@ export const mobileApi = {
     }
   },
 
+  async getPendingCheckins(patientId: string): Promise<any[]> {
+    try {
+      const res = await resilientFetch(`${getEffectiveApiUrl()}/visits/pending-checkins/${patientId}`, {
+        headers: getHeaders(),
+      }, 1);
+      if (!res.ok) return [];
+      return await res.json();
+    } catch (err) {
+      console.log('Pending checkins notice:', err);
+      return [];
+    }
+  },
+
+  async submitFollowupResponse(visitId: string, day: number, healthStatus: string, notes?: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await resilientFetch(`${getEffectiveApiUrl()}/visits/${visitId}/followup-response`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
+          day,
+          health_status: healthStatus,
+          notes: notes || '',
+        }),
+      }, 0);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Failed to submit recovery response');
+      }
+      return await res.json();
+    } catch (err: any) {
+      console.warn('Error submitting follow-up response:', err);
+      return { success: false, message: err?.message || 'Network error' };
+    }
+  },
+
   async getConsent(patientId: string): Promise<ConsentDocument> {
     const cacheKey = `praxirence_cache_consent_${patientId}`;
     try {

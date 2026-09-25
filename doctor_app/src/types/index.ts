@@ -102,6 +102,12 @@ export interface Visit {
   skip_count?: number;
   signature_hash?: string;
   retention_until?: string;
+  day3_followup_status?: 'scheduled' | 'sent' | 'responded' | 'dismissed';
+  day3_followup_sent_at?: string;
+  day3_followup_response?: { health_status: string; notes?: string; responded_at: string };
+  day7_followup_status?: 'scheduled' | 'sent' | 'responded' | 'dismissed';
+  day7_followup_sent_at?: string;
+  day7_followup_response?: { health_status: string; notes?: string; responded_at: string };
 }
 
 export interface ConsultationSummarizeResult {

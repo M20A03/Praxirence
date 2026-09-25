@@ -84,6 +84,12 @@ def auto_migrate_schema():
                 "ALTER TABLE visits ADD COLUMN IF NOT EXISTS deferred_at TIMESTAMP;",
                 "ALTER TABLE visits ADD COLUMN IF NOT EXISTS signature_hash VARCHAR(64);",
                 "ALTER TABLE visits ADD COLUMN IF NOT EXISTS retention_until TIMESTAMP;",
+                "ALTER TABLE visits ADD COLUMN IF NOT EXISTS day3_followup_status VARCHAR(30) DEFAULT 'scheduled';",
+                "ALTER TABLE visits ADD COLUMN IF NOT EXISTS day3_followup_sent_at TIMESTAMP;",
+                "ALTER TABLE visits ADD COLUMN IF NOT EXISTS day3_followup_response JSONB;",
+                "ALTER TABLE visits ADD COLUMN IF NOT EXISTS day7_followup_status VARCHAR(30) DEFAULT 'scheduled';",
+                "ALTER TABLE visits ADD COLUMN IF NOT EXISTS day7_followup_sent_at TIMESTAMP;",
+                "ALTER TABLE visits ADD COLUMN IF NOT EXISTS day7_followup_response JSONB;",
             ]
             for ddl in ddls:
                 try:
@@ -141,6 +147,12 @@ def auto_migrate_schema():
                     "deferred_at": "ALTER TABLE visits ADD COLUMN deferred_at TIMESTAMP",
                     "signature_hash": "ALTER TABLE visits ADD COLUMN signature_hash VARCHAR(64)",
                     "retention_until": "ALTER TABLE visits ADD COLUMN retention_until TIMESTAMP",
+                    "day3_followup_status": "ALTER TABLE visits ADD COLUMN day3_followup_status VARCHAR(30) DEFAULT 'scheduled'",
+                    "day3_followup_sent_at": "ALTER TABLE visits ADD COLUMN day3_followup_sent_at TIMESTAMP",
+                    "day3_followup_response": "ALTER TABLE visits ADD COLUMN day3_followup_response JSON",
+                    "day7_followup_status": "ALTER TABLE visits ADD COLUMN day7_followup_status VARCHAR(30) DEFAULT 'scheduled'",
+                    "day7_followup_sent_at": "ALTER TABLE visits ADD COLUMN day7_followup_sent_at TIMESTAMP",
+                    "day7_followup_response": "ALTER TABLE visits ADD COLUMN day7_followup_response JSON",
                 }
                 for col, ddl in visit_ddls.items():
                     if col not in visit_cols:
@@ -358,8 +370,27 @@ def seed_initial_data():
         db.close()
 
 
+async def automated_followup_cron_worker():
+    """Background task running every 30 minutes to check and dispatch due Day 3 and Day 7 clinical follow-ups"""
+    import asyncio
+    logger.info("Automated clinical follow-up cron worker initialized.")
+    while True:
+        try:
+            await asyncio.sleep(1800)  # Check every 30 minutes
+            from app.services.followup_service import followup_service
+            with SessionLocal() as db:
+                followup_service.process_due_followups(db)
+        except asyncio.CancelledError:
+            logger.info("Automated clinical follow-up cron worker stopped.")
+            break
+        except Exception as e:
+            logger.warning(f"Error in automated follow-up cron worker: {e}")
+            await asyncio.sleep(60)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    import asyncio
     logger.info("Starting Praxirence Healthcare Platform...")
     # Initialize database tables & run schema auto-migrations
     try:
@@ -376,7 +407,15 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"AI ModelLoader initialization warning: {e}")
 
+    followup_task = asyncio.create_task(automated_followup_cron_worker())
+
     yield
+
+    followup_task.cancel()
+    try:
+        await followup_task
+    except asyncio.CancelledError:
+        pass
     logger.info("Shutting down Praxirence Platform...")
 
 

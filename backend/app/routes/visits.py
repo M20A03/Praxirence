@@ -1352,4 +1352,55 @@ def reschedule_free_slot(
     }
 
 
+class FollowUpResponseRequest(BaseModel):
+    day: int = 3  # 3 or 7
+    health_status: str  # "feeling_better", "recovering", "same", "worse"
+    notes: Optional[str] = None
+
+
+@router.post("/process-followups")
+def process_automated_followups(db: Session = Depends(get_db)):
+    """
+    Triggers automated check and dispatch for Day 3 and Day 7 post-consultation health check-ins.
+    Can be invoked by cloud cron, administrator, or periodic background worker.
+    """
+    from app.services.followup_service import followup_service
+    return followup_service.process_due_followups(db)
+
+
+@router.get("/pending-checkins/{patient_id}")
+def get_pending_patient_checkins(
+    patient_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieves active pending Day 3 / Day 7 check-in prompts for the patient app.
+    """
+    from app.services.followup_service import followup_service
+    return followup_service.get_pending_checkins_for_patient(db, patient_id)
+
+
+@router.post("/{visit_id}/followup-response")
+def submit_patient_followup_response(
+    visit_id: str,
+    payload: FollowUpResponseRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Records patient health check-in feedback for Day 3 or Day 7 after consultation.
+    """
+    from app.services.followup_service import followup_service
+    result = followup_service.record_patient_response(
+        db=db,
+        visit_id=visit_id,
+        day=payload.day,
+        health_status=payload.health_status,
+        notes=payload.notes
+    )
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Failed to record response"))
+    return result
+
+
+
 

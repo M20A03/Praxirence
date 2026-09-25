@@ -4,9 +4,9 @@
         xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
   
-  <!-- Homepage & Core Platform Landing -->
+  <!-- Primary Homepage & Core Platform Landing -->
   <url>
-    <loc>https://praxirence.com/</loc>
+    <loc>https://www.praxirence.com/</loc>
     <lastmod>2026-09-25T12:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
@@ -14,7 +14,7 @@
 
   <!-- Dual Mobile Apps Section -->
   <url>
-    <loc>https://praxirence.com/#apps</loc>
+    <loc>https://www.praxirence.com/#apps</loc>
     <lastmod>2026-09-25T12:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
@@ -22,7 +22,7 @@
 
   <!-- Interactive Clinical Simulator -->
   <url>
-    <loc>https://praxirence.com/#simulator</loc>
+    <loc>https://www.praxirence.com/#simulator</loc>
     <lastmod>2026-09-25T12:00:00+00:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -30,7 +30,7 @@
 
   <!-- Clinical Architecture & Zero-Audio-Retention Spec -->
   <url>
-    <loc>https://praxirence.com/#architecture</loc>
+    <loc>https://www.praxirence.com/#architecture</loc>
     <lastmod>2026-09-25T12:00:00+00:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -38,7 +38,7 @@
 
   <!-- Technology & ABDM / DPDP Compliance Stack -->
   <url>
-    <loc>https://praxirence.com/#technology</loc>
+    <loc>https://www.praxirence.com/#technology</loc>
     <lastmod>2026-09-25T12:00:00+00:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -46,7 +46,7 @@
 
   <!-- Clinical & Technical FAQs -->
   <url>
-    <loc>https://praxirence.com/#faq</loc>
+    <loc>https://www.praxirence.com/#faq</loc>
     <lastmod>2026-09-25T12:00:00+00:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -54,7 +54,7 @@
 
   <!-- Partner & Inquiries -->
   <url>
-    <loc>https://praxirence.com/#contact</loc>
+    <loc>https://www.praxirence.com/#contact</loc>
     <lastmod>2026-09-25T12:00:00+00:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

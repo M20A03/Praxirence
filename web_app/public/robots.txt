@@ -6,8 +6,8 @@ Disallow: /auth/
 Disallow: /admin/
 Disallow: /portal/private/
 
-# Sitemap location
-Sitemap: https://praxirence.com/sitemap.xml
+# Sitemap location for canonical www domain
+Sitemap: https://www.praxirence.com/sitemap.xml
 
-# Crawl-delay for gentle indexing
+# Crawl-delay for optimal indexing
 Crawl-delay: 1

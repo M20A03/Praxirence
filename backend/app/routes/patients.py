@@ -716,3 +716,57 @@ def add_patient_family_member(
         "message": f"{name} ({relation}) added successfully."
     }
 
+
+@router.get("/{patient_id}/pending-doctor-reviews")
+def get_pending_doctor_reviews(
+    patient_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Checks for recent completed/approved consultations where the patient has not yet reviewed the doctor.
+    This review is 100% optional (not compulsory) and intended solely to guide other patients.
+    """
+    from app.models.doctor_review import DoctorReview
+    from app.models.user import User
+
+    # Find visits for this patient
+    visits = db.query(Visit).filter(
+        Visit.patient_id == patient_id,
+        Visit.status.in_(["approved", "completed", "sent"]),
+        Visit.doctor_id.isnot(None)
+    ).order_by(Visit.date.desc()).all()
+
+    # Get doctors that the patient has already reviewed
+    existing_reviewed_doc_ids = {
+        r[0] for r in db.query(DoctorReview.doctor_id).filter(DoctorReview.patient_id == patient_id).all()
+    }
+
+    pending = []
+    seen_doc_ids = set()
+
+    for v in visits:
+        if v.doctor_id and v.doctor_id not in existing_reviewed_doc_ids and v.doctor_id not in seen_doc_ids:
+            doc = db.query(User).filter(User.id == v.doctor_id).first()
+            if doc:
+                seen_doc_ids.add(v.doctor_id)
+                # Count total visits with this doctor to determine if first visit
+                total_visits_with_doc = db.query(Visit).filter(
+                    Visit.patient_id == patient_id,
+                    Visit.doctor_id == v.doctor_id,
+                    Visit.status.in_(["approved", "completed", "sent"])
+                ).count()
+                doc_name = doc.name or "Doctor"
+                doc_title = doc_name if doc_name.startswith("Dr.") else f"Dr. {doc_name}"
+                pending.append({
+                    "visit_id": str(v.id),
+                    "doctor_id": str(doc.id),
+                    "doctor_name": doc_title,
+                    "specialty": getattr(doc, "specialty", "General Physician") or "General Physician",
+                    "clinic_name": getattr(doc, "clinic_name", "Praxirence Clinical Centre") or "Praxirence Clinical Centre",
+                    "consultation_date": str(v.date or v.appointment_date or ""),
+                    "is_first_visit": (total_visits_with_doc <= 1),
+                })
+
+    return {"pending_reviews": pending}
+
+

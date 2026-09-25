@@ -95,6 +95,25 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
   const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
   const [confirmedBookingData, setConfirmedBookingData] = useState<any>(null);
 
+  // Doctor Patient Reviews Modal State
+  const [showReviewsModal, setShowReviewsModal] = useState<boolean>(false);
+  const [reviewsDoc, setReviewsDoc] = useState<DoctorUser | null>(null);
+  const [doctorReviewsData, setDoctorReviewsData] = useState<{ average_rating: number; total_reviews: number; breakdown: any; reviews: any[] } | null>(null);
+  const [loadingReviews, setLoadingReviews] = useState<boolean>(false);
+
+  const openDoctorReviewsModal = async (doc: DoctorUser) => {
+    setReviewsDoc(doc);
+    setShowReviewsModal(true);
+    try {
+      setLoadingReviews(true);
+      const data = await mobileApi.getDoctorReviews(doc.id);
+      setDoctorReviewsData(data);
+    } catch (_) {
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
   // Dynamic device GPS coordinates
   const [deviceCoords, setDeviceCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locatingUser, setLocatingUser] = useState<boolean>(false);
@@ -105,6 +124,10 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
 
   useEffect(() => {
     const onBackPress = () => {
+      if (showReviewsModal) {
+        setShowReviewsModal(false);
+        return true;
+      }
       if (showSuccessModal) {
         setShowSuccessModal(false);
         return true;
@@ -117,7 +140,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
     };
     const backSub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => backSub.remove();
-  }, [showSuccessModal, showBookingModal]);
+  }, [showReviewsModal, showSuccessModal, showBookingModal]);
 
   const acquireDeviceLocation = async (): Promise<{ lat: number; lng: number }> => {
     try {
@@ -461,10 +484,21 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                       </Text>
                     </View>
 
-                    {/* Distance, Experience & Fee Row */}
+                    {/* Distance, Rating, Experience & Fee Row */}
                     <View style={styles.badgesRow}>
+                      <TouchableOpacity
+                        style={styles.ratingBadgeBtn}
+                        onPress={() => openDoctorReviewsModal(doc)}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="star" size={11} color="#D97706" />
+                        <Text style={styles.ratingBadgeText}>
+                          {doc.rating ? doc.rating.toFixed(1) : '4.9'} ({doc.review_count || 0} reviews)
+                        </Text>
+                      </TouchableOpacity>
+
                       <View style={styles.experienceBadge}>
-                        <Ionicons name="star" size={10} color="#D97706" />
+                        <Ionicons name="ribbon-outline" size={10} color="#0D9488" />
                         <Text style={styles.experienceBadgeText}>
                           {doc.experience_years ? (typeof doc.experience_years === 'number' ? `${doc.experience_years}+ Yrs` : doc.experience_years) : '12+ Yrs'}
                         </Text>
@@ -873,6 +907,130 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
               activeOpacity={0.8}
             >
               <Text style={styles.doneBtnText}>View in My Care Visits</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ==================== DOCTOR PATIENT REVIEWS MODAL ==================== */}
+      <Modal
+        visible={showReviewsModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowReviewsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.reviewsModalCard}>
+            <View style={styles.reviewsModalHeader}>
+              <View style={{ flex: 1 }}>
+                <View style={styles.reviewsModalBadge}>
+                  <Ionicons name="star" size={13} color="#D97706" />
+                  <Text style={styles.reviewsModalBadgeText}>Patient Experience & Ratings</Text>
+                </View>
+                <Text style={styles.reviewsDoctorName}>
+                  {reviewsDoc?.name ? (reviewsDoc.name.startsWith('Dr.') ? reviewsDoc.name : `Dr. ${reviewsDoc.name}`) : 'Doctor'}
+                </Text>
+                <Text style={styles.reviewsDoctorSub}>
+                  {reviewsDoc?.specialty || 'General Physician'} • {reviewsDoc?.clinic_name || 'Praxirence Centre'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.reviewsCloseBtn}
+                onPress={() => setShowReviewsModal(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close" size={22} color={Colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Score & Aggregate Summary Bar */}
+            <View style={styles.reviewsScoreRow}>
+              <View style={styles.reviewsScoreBlock}>
+                <Text style={styles.reviewsScoreNum}>
+                  {doctorReviewsData?.average_rating ? doctorReviewsData.average_rating.toFixed(1) : '4.9'}
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 2, marginVertical: 3 }}>
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Ionicons
+                      key={s}
+                      name="star"
+                      size={14}
+                      color={s <= Math.round(doctorReviewsData?.average_rating || 5) ? '#F59E0B' : '#E2E8F0'}
+                    />
+                  ))}
+                </View>
+                <Text style={styles.reviewsScoreCount}>
+                  {doctorReviewsData?.total_reviews || 0} verified {doctorReviewsData?.total_reviews === 1 ? 'review' : 'reviews'}
+                </Text>
+              </View>
+              <View style={styles.reviewsReferenceNote}>
+                <Ionicons name="information-circle-outline" size={16} color="#0D9488" />
+                <Text style={styles.reviewsReferenceText}>
+                  Reviews are shared voluntarily by patients after their consultation as a helpful reference for others.
+                </Text>
+              </View>
+            </View>
+
+            {/* Reviews List */}
+            {loadingReviews ? (
+              <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+                <ActivityIndicator size="small" color={Colors.primary} />
+                <Text style={{ marginTop: 8, fontSize: 12, color: Colors.textSecondary }}>
+                  Loading patient reviews...
+                </Text>
+              </View>
+            ) : !doctorReviewsData || doctorReviewsData.reviews.length === 0 ? (
+              <View style={styles.noReviewsBox}>
+                <Ionicons name="chatbubble-ellipses-outline" size={32} color="#94A3B8" />
+                <Text style={styles.noReviewsTitle}>No Reviews Yet</Text>
+                <Text style={styles.noReviewsSub}>
+                  Be the first patient to share your consultation experience after your visit.
+                </Text>
+              </View>
+            ) : (
+              <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
+                {doctorReviewsData.reviews.map((rev) => (
+                  <View key={rev.id} style={styles.reviewItemCard}>
+                    <View style={styles.reviewItemTop}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={styles.reviewUserAvatar}>
+                          <Text style={styles.reviewUserInitial}>
+                            {(rev.patient_name || 'P')[0].toUpperCase()}
+                          </Text>
+                        </View>
+                        <View>
+                          <Text style={styles.reviewUserName}>{rev.patient_name}</Text>
+                          {rev.is_first_visit && (
+                            <Text style={styles.firstVisitPill}>First Consultation</Text>
+                          )}
+                        </View>
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <View style={{ flexDirection: 'row', gap: 1 }}>
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Ionicons
+                              key={s}
+                              name="star"
+                              size={12}
+                              color={s <= rev.rating ? '#F59E0B' : '#E2E8F0'}
+                            />
+                          ))}
+                        </View>
+                        <Text style={styles.reviewDateText}>{rev.created_at}</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.reviewTextBody}>{rev.review_text}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+
+            <TouchableOpacity
+              style={styles.closeReviewsBtn}
+              onPress={() => setShowReviewsModal(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.closeReviewsBtnText}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1705,5 +1863,200 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.bold,
     fontSize: FontSize.sm,
     color: '#FFFFFF',
+  },
+
+  // Doctor Patient Reviews Modal Styles
+  ratingBadgeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFFBEB',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  ratingBadgeText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 11,
+    color: '#B45309',
+  },
+  reviewsModalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 20,
+    width: '100%',
+    maxWidth: 420,
+    maxHeight: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 18,
+    elevation: 8,
+  },
+  reviewsModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+  },
+  reviewsModalBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFFBEB',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+  },
+  reviewsModalBadgeText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 10,
+    color: '#B45309',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  reviewsDoctorName: {
+    fontFamily: FontFamily.bold,
+    fontSize: 18,
+    color: Colors.textPrimary,
+  },
+  reviewsDoctorSub: {
+    fontFamily: FontFamily.regular,
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  reviewsCloseBtn: {
+    padding: 4,
+  },
+  reviewsScoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  reviewsScoreBlock: {
+    alignItems: 'center',
+    borderRightWidth: 1,
+    borderRightColor: '#E2E8F0',
+    paddingRight: 14,
+  },
+  reviewsScoreNum: {
+    fontFamily: FontFamily.bold,
+    fontSize: 26,
+    color: '#D97706',
+    lineHeight: 28,
+  },
+  reviewsScoreCount: {
+    fontFamily: FontFamily.medium,
+    fontSize: 10,
+    color: Colors.textMuted,
+  },
+  reviewsReferenceNote: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 6,
+    alignItems: 'center',
+  },
+  reviewsReferenceText: {
+    flex: 1,
+    fontFamily: FontFamily.regular,
+    fontSize: 11,
+    color: '#0F766E',
+    lineHeight: 15,
+  },
+  noReviewsBox: {
+    paddingVertical: 28,
+    alignItems: 'center',
+  },
+  noReviewsTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: 14,
+    color: Colors.textPrimary,
+    marginTop: 8,
+  },
+  noReviewsSub: {
+    fontFamily: FontFamily.regular,
+    fontSize: 12,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 4,
+    paddingHorizontal: 20,
+  },
+  reviewItemCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  reviewItemTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 6,
+  },
+  reviewUserAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#0D9488',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reviewUserInitial: {
+    fontFamily: FontFamily.bold,
+    fontSize: 12,
+    color: '#FFFFFF',
+  },
+  reviewUserName: {
+    fontFamily: FontFamily.bold,
+    fontSize: 12,
+    color: Colors.textPrimary,
+  },
+  firstVisitPill: {
+    fontFamily: FontFamily.medium,
+    fontSize: 9,
+    color: '#0D9488',
+    backgroundColor: '#CCFBF1',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 6,
+    marginTop: 2,
+    alignSelf: 'flex-start',
+  },
+  reviewDateText: {
+    fontFamily: FontFamily.regular,
+    fontSize: 10,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  reviewTextBody: {
+    fontFamily: FontFamily.regular,
+    fontSize: 12,
+    color: '#334155',
+    lineHeight: 17,
+  },
+  closeReviewsBtn: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    paddingVertical: 11,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  closeReviewsBtnText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 13,
+    color: '#475569',
   },
 });

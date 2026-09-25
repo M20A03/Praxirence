@@ -103,10 +103,25 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const [submittingCheckin, setSubmittingCheckin] = useState<boolean>(false);
   const [checkinSubmittedSuccess, setCheckinSubmittedSuccess] = useState<string | null>(null);
 
+  // Optional Doctor Experience Review State (Minimum 10 words, completely optional for patient reference)
+  const [pendingReviews, setPendingReviews] = useState<any[]>([]);
+  const [reviewRating, setReviewRating] = useState<number>(5);
+  const [reviewText, setReviewText] = useState<string>('');
+  const [submittingReview, setSubmittingReview] = useState<boolean>(false);
+  const [reviewSubmittedSuccess, setReviewSubmittedSuccess] = useState<string | null>(null);
+  const [dismissedReviews, setDismissedReviews] = useState<Record<string, boolean>>({});
+
   useEffect(() => {
     AsyncStorage.getItem('@praxirence_patient_lang').then((saved) => {
       if (saved && ['en', 'hi', 'kn', 'bho', 'ur', 'ta', 'te', 'mr', 'bn', 'gu', 'pa', 'ml'].includes(saved)) {
         setCurrentLang(saved as SupportedLanguage);
+      }
+    });
+    AsyncStorage.getItem('@praxirence_dismissed_reviews').then((saved) => {
+      if (saved) {
+        try {
+          setDismissedReviews(JSON.parse(saved));
+        } catch (_) {}
       }
     });
   }, []);
@@ -246,10 +261,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
   const loadDashboardDataSilently = async () => {
     try {
-      const [data, reschedules, checkins] = await Promise.all([
+      const [data, reschedules, checkins, reviews] = await Promise.all([
         mobileApi.getVisits(user.id),
         mobileApi.getPendingReschedules(user.id).catch(() => []),
         mobileApi.getPendingCheckins(user.id).catch(() => []),
+        mobileApi.getPendingDoctorReviews(user.id).catch(() => []),
       ]);
       if (data && data.length > 0) {
         setVisits(data);
@@ -257,6 +273,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       }
       setPendingReschedules(reschedules || []);
       setPendingCheckins(checkins || []);
+      setPendingReviews(reviews || []);
     } catch (e) {}
   };
 
@@ -264,16 +281,18 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     const cacheKey = `praxirence_careplan_${user.id}`;
     try {
       setLoading(true);
-      const [data, family, reschedules, checkins] = await Promise.all([
+      const [data, family, reschedules, checkins, reviews] = await Promise.all([
         mobileApi.getVisits(user.id),
         mobileApi.getFamilyMembers(user.id).catch(() => []),
         mobileApi.getPendingReschedules(user.id).catch(() => []),
         mobileApi.getPendingCheckins(user.id).catch(() => []),
+        mobileApi.getPendingDoctorReviews(user.id).catch(() => []),
       ]);
       setVisits(data || []);
       setFamilyMembers(family || []);
       setPendingReschedules(reschedules || []);
       setPendingCheckins(checkins || []);
+      setPendingReviews(reviews || []);
 
       if (data && data.length > 0) {
         await AsyncStorage.setItem(cacheKey, JSON.stringify(data));
@@ -415,6 +434,50 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       Alert.alert('Error', err?.message || 'Failed to submit health update.');
     } finally {
       setSubmittingCheckin(false);
+    }
+  };
+
+  const handleDismissReview = async (doctorId: string) => {
+    try {
+      const updated = { ...dismissedReviews, [doctorId]: true };
+      setDismissedReviews(updated);
+      await AsyncStorage.setItem('@praxirence_dismissed_reviews', JSON.stringify(updated));
+    } catch (_) {}
+  };
+
+  const handleSubmitReview = async (pendingReview: any) => {
+    const words = reviewText.trim().split(/\s+/).filter(Boolean);
+    if (words.length < 10) {
+      Alert.alert(
+        'Minimum 10 Words Required',
+        `Please write at least 10 words to provide helpful reference for other patients. You currently have ${words.length} words.`
+      );
+      return;
+    }
+    try {
+      setSubmittingReview(true);
+      const res = await mobileApi.submitDoctorReview(pendingReview.doctor_id, {
+        patient_id: user.id,
+        patient_name: user.name,
+        visit_id: pendingReview.visit_id,
+        rating: reviewRating,
+        review_text: reviewText.trim(),
+      });
+      if (res.success) {
+        setReviewSubmittedSuccess(`Thank you! Your reference review for ${pendingReview.doctor_name} has been published.`);
+        setReviewText('');
+        setReviewRating(5);
+        handleDismissReview(pendingReview.doctor_id);
+        setPendingReviews((prev) => prev.filter((r) => r.doctor_id !== pendingReview.doctor_id));
+        setTimeout(() => setReviewSubmittedSuccess(null), 6000);
+        loadDashboardDataSilently();
+      } else {
+        Alert.alert('Notice', res.message || 'Could not submit review.');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Failed to submit review.');
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -573,77 +636,162 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </View>
       )}
 
+      {/* Post-Consultation Follow-Up Success Toast */}
+      {checkinSubmittedSuccess && (
+        <View style={styles.checkinSuccessCard}>
+          <Ionicons name="checkmark-circle" size={20} color="#059669" />
+          <Text style={styles.checkinSuccessText}>{checkinSubmittedSuccess}</Text>
+        </View>
+      )}
+
+      {/* Doctor Review Success Toast */}
+      {reviewSubmittedSuccess && (
+        <View style={styles.checkinSuccessCard}>
+          <Ionicons name="star" size={20} color="#D97706" />
+          <Text style={styles.checkinSuccessText}>{reviewSubmittedSuccess}</Text>
+        </View>
+      )}
+
       {/* Automated Day 3 / Day 7 Clinical Follow-Up Health Check-in */}
       {pendingCheckins.length > 0 && (
         <View style={styles.followupCheckinCard}>
           <View style={styles.followupHeaderRow}>
             <View style={styles.followupBadge}>
-              <Ionicons name="pulse" size={13} color="#0D9488" />
+              <Ionicons name={pendingCheckins[0].day === 3 ? "pulse" : "leaf"} size={13} color="#0D9488" />
               <Text style={styles.followupBadgeText}>
-                {pendingCheckins[0].day === 3 ? 'Day 3 Health Check-in' : '1-Week Recovery Check-in'}
+                {pendingCheckins[0].day === 3 ? '3-Day Health Check-in' : '7-Day Health Update'}
               </Text>
             </View>
             <Text style={styles.followupDoctorTag}>{pendingCheckins[0].doctor_name}</Text>
           </View>
 
           <Text style={styles.followupPromptTitle}>
-            How is your recovery progressing?
+            {pendingCheckins[0].day === 3
+              ? 'Are you feeling good now?'
+              : 'How is your health after 7 days?'}
           </Text>
           <Text style={styles.followupPromptDesc}>
             {pendingCheckins[0].prompt}
           </Text>
 
-          <Text style={styles.followupSectionSubtitle}>Select your health status:</Text>
+          <Text style={styles.followupSectionSubtitle}>Select your current health status:</Text>
           <View style={styles.followupOptionsRow}>
-            <TouchableOpacity
-              style={[
-                styles.followupOptionChip,
-                checkinStatus === 'feeling_better' && styles.followupOptionChipActive,
-                { borderColor: '#10B981' }
-              ]}
-              onPress={() => setCheckinStatus('feeling_better')}
-              activeOpacity={0.7}
-            >
-              <Text style={{ fontSize: 16 }}>😊</Text>
-              <Text style={[styles.followupOptionText, checkinStatus === 'feeling_better' && styles.followupOptionTextActive]}>
-                Much Better
-              </Text>
-            </TouchableOpacity>
+            {pendingCheckins[0].day === 3 ? (
+              <>
+                <TouchableOpacity
+                  style={[
+                    styles.followupOptionChip,
+                    checkinStatus === 'feeling_better' && styles.followupOptionChipActive,
+                    { borderColor: '#10B981' }
+                  ]}
+                  onPress={() => setCheckinStatus('feeling_better')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ fontSize: 16 }}>😊</Text>
+                  <Text style={[styles.followupOptionText, checkinStatus === 'feeling_better' && styles.followupOptionTextActive]}>
+                    Feeling Good
+                  </Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[
-                styles.followupOptionChip,
-                checkinStatus === 'recovering' && styles.followupOptionChipActive,
-                { borderColor: '#F59E0B' }
-              ]}
-              onPress={() => setCheckinStatus('recovering')}
-              activeOpacity={0.7}
-            >
-              <Text style={{ fontSize: 16 }}>🙂</Text>
-              <Text style={[styles.followupOptionText, checkinStatus === 'recovering' && styles.followupOptionTextActive]}>
-                Recovering
-              </Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.followupOptionChip,
+                    checkinStatus === 'recovering' && styles.followupOptionChipActive,
+                    { borderColor: '#F59E0B' }
+                  ]}
+                  onPress={() => setCheckinStatus('recovering')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ fontSize: 16 }}>⏳</Text>
+                  <Text style={[styles.followupOptionText, checkinStatus === 'recovering' && styles.followupOptionTextActive]}>
+                    Still Recovering
+                  </Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[
-                styles.followupOptionChip,
-                checkinStatus === 'worse' && styles.followupOptionChipActive,
-                { borderColor: '#EF4444' }
-              ]}
-              onPress={() => setCheckinStatus('worse')}
-              activeOpacity={0.7}
-            >
-              <Text style={{ fontSize: 16 }}>⚠️</Text>
-              <Text style={[styles.followupOptionText, checkinStatus === 'worse' && styles.followupOptionTextActive]}>
-                Need Doctor
-              </Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.followupOptionChip,
+                    checkinStatus === 'worse' && styles.followupOptionChipActive,
+                    { borderColor: '#EF4444' }
+                  ]}
+                  onPress={() => setCheckinStatus('worse')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ fontSize: 16 }}>⚠️</Text>
+                  <Text style={[styles.followupOptionText, checkinStatus === 'worse' && styles.followupOptionTextActive]}>
+                    Not Well
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={[
+                    styles.followupOptionChip,
+                    checkinStatus === 'feeling_better' && styles.followupOptionChipActive,
+                    { borderColor: '#10B981' }
+                  ]}
+                  onPress={() => setCheckinStatus('feeling_better')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ fontSize: 16 }}>😊</Text>
+                  <Text style={[styles.followupOptionText, checkinStatus === 'feeling_better' && styles.followupOptionTextActive]}>
+                    Health is Good
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.followupOptionChip,
+                    checkinStatus === 'recovering' && styles.followupOptionChipActive,
+                    { borderColor: '#F59E0B' }
+                  ]}
+                  onPress={() => setCheckinStatus('recovering')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ fontSize: 16 }}>⚠️</Text>
+                  <Text style={[styles.followupOptionText, checkinStatus === 'recovering' && styles.followupOptionTextActive]}>
+                    Having Problems
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.followupOptionChip,
+                    checkinStatus === 'worse' && styles.followupOptionChipActive,
+                    { borderColor: '#0284C7' }
+                  ]}
+                  onPress={() => setCheckinStatus('worse')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ fontSize: 16 }}>📅</Text>
+                  <Text style={[styles.followupOptionText, checkinStatus === 'worse' && styles.followupOptionTextActive]}>
+                    Schedule Meeting
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
+
+          {/* Quick Schedule Meeting Action on Day 7 if patient has problems or wants to follow-up */}
+          {pendingCheckins[0].day === 7 && (checkinStatus === 'recovering' || checkinStatus === 'worse') && (
+            <TouchableOpacity
+              style={styles.followupMeetingPromptBtn}
+              onPress={() => onNavigateToDoctors?.()}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="calendar" size={16} color="#0D9488" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.followupMeetingPromptTitle}>Schedule Follow-up Meeting</Text>
+                <Text style={styles.followupMeetingPromptSub}>Tap to book an appointment with {pendingCheckins[0].doctor_name}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color="#0D9488" />
+            </TouchableOpacity>
+          )}
 
           <TextInput
             style={styles.followupNotesInput}
-            placeholder="Add note on symptoms or fever (optional)..."
+            placeholder="Add note on symptoms or questions for doctor (optional)..."
             placeholderTextColor="#94A3B8"
             value={checkinNotes}
             onChangeText={setCheckinNotes}
@@ -668,6 +816,127 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Optional Doctor Experience Review Card (Non-compulsory, min 10 words for reference) */}
+      {(() => {
+        const activeReview = pendingReviews.find((r) => !dismissedReviews[r.doctor_id]);
+        if (!activeReview) return null;
+        const currentWords = reviewText.trim().split(/\s+/).filter(Boolean);
+        const wordCount = reviewText.trim() === '' ? 0 : currentWords.length;
+        const isReady = wordCount >= 10 && reviewRating >= 1;
+
+        return (
+          <View style={styles.reviewCardContainer}>
+            <View style={styles.reviewCardHeader}>
+              <View style={styles.reviewBadge}>
+                <Ionicons name="star" size={13} color="#D97706" />
+                <Text style={styles.reviewBadgeText}>
+                  {activeReview.is_first_visit ? 'First Consultation Experience' : 'Doctor Review'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.reviewDismissBtn}
+                onPress={() => handleDismissReview(activeReview.doctor_id)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={styles.reviewDismissText}>Maybe Later</Text>
+                <Ionicons name="close" size={14} color="#94A3B8" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.reviewPromptTitle}>
+              How was your experience with {activeReview.doctor_name}?
+            </Text>
+            <Text style={styles.reviewPromptSubtitle}>
+              Optional reference for other patients. Please write at least 10 words about your consultation, doctor's explanation, or clinic care.
+            </Text>
+
+            {/* Interactive 5-Star Rating Selector */}
+            <View style={styles.starRatingRow}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => setReviewRating(star)}
+                  style={styles.starTouchTarget}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name={star <= reviewRating ? "star" : "star-outline"}
+                    size={28}
+                    color={star <= reviewRating ? "#F59E0B" : "#CBD5E1"}
+                  />
+                </TouchableOpacity>
+              ))}
+              <Text style={styles.ratingScoreLabel}>
+                {reviewRating === 5 ? 'Excellent (5/5)' :
+                 reviewRating === 4 ? 'Good (4/5)' :
+                 reviewRating === 3 ? 'Average (3/5)' :
+                 reviewRating === 2 ? 'Below Average (2/5)' : 'Poor (1/5)'}
+              </Text>
+            </View>
+
+            {/* Review Text Input with Live Word Counter */}
+            <TextInput
+              style={styles.reviewTextInput}
+              placeholder="e.g. Dr. Mayank was extremely thorough and patient, explaining every medication clearly..."
+              placeholderTextColor="#94A3B8"
+              value={reviewText}
+              onChangeText={setReviewText}
+              multiline
+              numberOfLines={3}
+            />
+
+            {/* Word Count Indicator */}
+            <View style={styles.wordCountRow}>
+              {wordCount < 10 ? (
+                <View style={styles.wordCountBadgePending}>
+                  <Ionicons name="pencil" size={12} color="#D97706" />
+                  <Text style={styles.wordCountTextPending}>
+                    {wordCount} / 10 words minimum ({10 - wordCount} more needed)
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.wordCountBadgeReady}>
+                  <Ionicons name="checkmark-circle" size={13} color="#059669" />
+                  <Text style={styles.wordCountTextReady}>
+                    ✓ {wordCount} words (Ready to submit)
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Action Buttons */}
+            <View style={styles.reviewActionsRow}>
+              <TouchableOpacity
+                style={styles.reviewSkipBtn}
+                onPress={() => handleDismissReview(activeReview.doctor_id)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.reviewSkipBtnText}>Skip / Dismiss</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.reviewSubmitBtn,
+                  !isReady && styles.reviewSubmitBtnDisabled
+                ]}
+                disabled={!isReady || submittingReview}
+                onPress={() => handleSubmitReview(activeReview)}
+                activeOpacity={0.8}
+              >
+                {submittingReview ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Text style={styles.reviewSubmitBtnText}>Submit Review</Text>
+                    <Ionicons name="checkmark" size={15} color="#FFFFFF" />
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        );
+      })()}
 
       {/* Quick Action Navigation Grid with Bespoke Feature Emblems */}
       <View style={styles.quickActionsGrid}>
@@ -2465,6 +2734,191 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   followupSubmitBtnText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 13,
+    color: '#FFFFFF',
+  },
+  followupMeetingPromptBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 12,
+  },
+  followupMeetingPromptTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: 12,
+    color: '#0F766E',
+  },
+  followupMeetingPromptSub: {
+    fontFamily: FontFamily.regular,
+    fontSize: 11,
+    color: '#115E59',
+  },
+
+  // Optional Doctor Experience Review Card Styles
+  reviewCardContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: '#FDE68A',
+    shadowColor: '#D97706',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  reviewCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  reviewBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#FFFBEB',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  reviewBadgeText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 11,
+    color: '#B45309',
+  },
+  reviewDismissBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+  },
+  reviewDismissText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 11,
+    color: '#94A3B8',
+  },
+  reviewPromptTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: 15,
+    color: Colors.textPrimary,
+    marginBottom: 4,
+  },
+  reviewPromptSubtitle: {
+    fontFamily: FontFamily.regular,
+    fontSize: 12,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  starRatingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+  },
+  starTouchTarget: {
+    padding: 2,
+  },
+  ratingScoreLabel: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 12,
+    color: '#D97706',
+    marginLeft: 6,
+  },
+  reviewTextInput: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 12,
+    color: Colors.textPrimary,
+    marginBottom: 8,
+    textAlignVertical: 'top',
+    minHeight: 68,
+  },
+  wordCountRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  wordCountBadgePending: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#FFFBEB',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  wordCountTextPending: {
+    fontFamily: FontFamily.medium,
+    fontSize: 11,
+    color: '#B45309',
+  },
+  wordCountBadgeReady: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  wordCountTextReady: {
+    fontFamily: FontFamily.bold,
+    fontSize: 11,
+    color: '#047857',
+  },
+  reviewActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+  },
+  reviewSkipBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reviewSkipBtnText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    color: '#64748B',
+  },
+  reviewSubmitBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#0D9488',
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  reviewSubmitBtnDisabled: {
+    backgroundColor: '#94A3B8',
+    opacity: 0.6,
+  },
+  reviewSubmitBtnText: {
     fontFamily: FontFamily.bold,
     fontSize: 13,
     color: '#FFFFFF',

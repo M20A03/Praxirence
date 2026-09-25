@@ -28,6 +28,8 @@ export interface DoctorUser {
   unavailable_dates?: string[];
   consultation_fee?: number;
   is_available_today?: boolean;
+  rating?: number;
+  review_count?: number;
 }
 
 export interface DoctorSlot {

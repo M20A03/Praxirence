@@ -724,6 +724,57 @@ export const mobileApi = {
     }
   },
 
+  async getPendingDoctorReviews(patientId: string): Promise<any[]> {
+    try {
+      const res = await resilientFetch(`${getEffectiveApiUrl()}/patients/${patientId}/pending-doctor-reviews`, {
+        headers: getHeaders(),
+      }, 1);
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.pending_reviews || [];
+    } catch (err) {
+      console.log('Pending reviews notice:', err);
+      return [];
+    }
+  },
+
+  async submitDoctorReview(doctorId: string, payload: {
+    patient_id: string;
+    patient_name?: string;
+    visit_id?: string;
+    rating: number;
+    review_text: string;
+  }): Promise<{ success: boolean; message: string; doctor_stats?: any }> {
+    try {
+      const res = await resilientFetch(`${getEffectiveApiUrl()}/doctors/${doctorId}/reviews`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(payload),
+      }, 0);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Failed to submit review');
+      }
+      return await res.json();
+    } catch (err: any) {
+      console.warn('Error submitting doctor review:', err);
+      return { success: false, message: err?.message || 'Network error' };
+    }
+  },
+
+  async getDoctorReviews(doctorId: string): Promise<{ average_rating: number; total_reviews: number; breakdown: any; reviews: any[] }> {
+    try {
+      const res = await resilientFetch(`${getEffectiveApiUrl()}/doctors/${doctorId}/reviews`, {
+        headers: getHeaders(),
+      }, 1);
+      if (!res.ok) return { average_rating: 4.9, total_reviews: 0, breakdown: {}, reviews: [] };
+      return await res.json();
+    } catch (err) {
+      console.log('Error fetching doctor reviews:', err);
+      return { average_rating: 4.9, total_reviews: 0, breakdown: {}, reviews: [] };
+    }
+  },
+
   async getConsent(patientId: string): Promise<ConsentDocument> {
     const cacheKey = `praxirence_cache_consent_${patientId}`;
     try {

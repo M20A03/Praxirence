@@ -90,6 +90,22 @@ def auto_migrate_schema():
                 "ALTER TABLE visits ADD COLUMN IF NOT EXISTS day7_followup_status VARCHAR(30) DEFAULT 'scheduled';",
                 "ALTER TABLE visits ADD COLUMN IF NOT EXISTS day7_followup_sent_at TIMESTAMP;",
                 "ALTER TABLE visits ADD COLUMN IF NOT EXISTS day7_followup_response JSONB;",
+                """
+                CREATE TABLE IF NOT EXISTS doctor_reviews (
+                    id VARCHAR(36) PRIMARY KEY,
+                    doctor_id VARCHAR(36) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    patient_id VARCHAR(36) REFERENCES patients(id) ON DELETE SET NULL,
+                    visit_id VARCHAR(36) REFERENCES visits(id) ON DELETE SET NULL,
+                    patient_name VARCHAR(255) NOT NULL,
+                    rating INTEGER NOT NULL,
+                    review_text TEXT NOT NULL,
+                    word_count INTEGER NOT NULL DEFAULT 0,
+                    is_first_visit BOOLEAN NOT NULL DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                """,
+                "CREATE INDEX IF NOT EXISTS ix_doctor_reviews_doctor_id ON doctor_reviews (doctor_id);",
+                "CREATE INDEX IF NOT EXISTS ix_doctor_reviews_patient_id ON doctor_reviews (patient_id);",
             ]
             for ddl in ddls:
                 try:
@@ -157,6 +173,24 @@ def auto_migrate_schema():
                 for col, ddl in visit_ddls.items():
                     if col not in visit_cols:
                         conn.execute(text(ddl))
+
+                # check doctor_reviews table
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS doctor_reviews (
+                        id VARCHAR(36) PRIMARY KEY,
+                        doctor_id VARCHAR(36) NOT NULL,
+                        patient_id VARCHAR(36),
+                        visit_id VARCHAR(36),
+                        patient_name VARCHAR(255) NOT NULL,
+                        rating INTEGER NOT NULL,
+                        review_text TEXT NOT NULL,
+                        word_count INTEGER NOT NULL DEFAULT 0,
+                        is_first_visit BOOLEAN NOT NULL DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                """))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_doctor_reviews_doctor_id ON doctor_reviews (doctor_id);"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_doctor_reviews_patient_id ON doctor_reviews (patient_id);"))
                 conn.commit()
             logger.info("SQLite schema auto-migration completed successfully.")
     except Exception as e:

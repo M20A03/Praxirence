@@ -191,7 +191,7 @@ export const NotificationService = {
               await Notifications.scheduleNotificationAsync({
                 content: {
                   title: `🩺 Health Check-in: ${docName}`,
-                  body: `It's been 3 days since your consultation with ${docName}. How is your health today? Tap to share a quick recovery update.`,
+                  body: `Are you feeling good now after 3 days of your consultation with ${docName}? Tap to let us know how your health is.`,
                   data: {
                     type: 'health_checkin',
                     day: 3,
@@ -215,8 +215,8 @@ export const NotificationService = {
             if (day7Target.getTime() > Date.now()) {
               await Notifications.scheduleNotificationAsync({
                 content: {
-                  title: `🌱 1-Week Recovery Check-in: ${docName}`,
-                  body: `It's been 1 week since your consultation with ${docName}. Are your symptoms resolved and health back to normal? Tap to confirm your recovery or book a follow-up.`,
+                  title: `🌱 7-Day Health Update: ${docName}`,
+                  body: `It has been 7 days since your consultation with ${docName}. Is your health good now, or do you have any problems or wish to schedule another meeting with the doctor?`,
                   data: {
                     type: 'health_checkin',
                     day: 7,

@@ -14,6 +14,9 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.user import User
 from app.models.visit import Visit
+from app.models.patient import Patient
+from app.models.doctor_review import DoctorReview
+from app.models.audit_log import AuditLog
 from app.services.realtime_service import realtime_manager
 
 logger = logging.getLogger("praxirence.routes.doctors")
@@ -46,6 +49,14 @@ class LeaveToggleRequest(BaseModel):
 class BroadcastDelayRequest(BaseModel):
     delay_mins: int = Field(..., description="Delay in minutes (e.g. 15, 30, 45, 60, or 0 to clear)")
     reason: Optional[str] = Field(None, description="Optional reason for delay, e.g. 'Emergency in surgery' or 'Heavy traffic'")
+
+
+class DoctorReviewCreate(BaseModel):
+    patient_id: str = Field(..., description="ID of the reviewing patient")
+    patient_name: Optional[str] = Field(None, description="Optional display name")
+    visit_id: Optional[str] = Field(None, description="Optional visit ID being reviewed")
+    rating: int = Field(..., ge=1, le=5, description="Star rating between 1 and 5")
+    review_text: str = Field(..., description="Review comment - must be at least 10 words")
 
 
 # ==================== UTILITIES ====================
@@ -152,6 +163,14 @@ def list_doctors(
         is_on_leave_today = today_iso in unavail_dates
         is_available_today = is_practicing_today and not is_on_leave_today
 
+        # Compute live rating & review count
+        doc_reviews = db.query(DoctorReview).filter(DoctorReview.doctor_id == str(d.id)).all()
+        doc_review_count = len(doc_reviews)
+        if doc_review_count > 0:
+            doc_rating = round(sum(r.rating for r in doc_reviews) / doc_review_count, 1)
+        else:
+            doc_rating = 4.9
+
         results.append({
             "id": str(d.id),
             "name": doc_name,
@@ -179,6 +198,8 @@ def list_doctors(
             "unavailable_dates": unavail_dates,
             "consultation_fee": getattr(d, "consultation_fee", 500) or 500,
             "is_available_today": is_available_today,
+            "rating": doc_rating,
+            "review_count": doc_review_count,
             "role": "doctor"
         })
 
@@ -599,3 +620,158 @@ def manage_doctor_custom_slot(
         "custom_slots": custom_map[d_str],
         "message": f"Slot {slot_str} successfully updated ({payload.action}) for {d_str}."
     }
+
+
+# ==================== DOCTOR REVIEW SYSTEM ====================
+
+@router.post("/{doctor_id}/reviews")
+def submit_doctor_review(
+    doctor_id: str,
+    payload: DoctorReviewCreate,
+    db: Session = Depends(get_db)
+):
+    """
+    Submits an optional clinical experience review for the doctor.
+    Enforces a minimum of 10 words to ensure genuine, constructive feedback for other patients.
+    Not compulsory for patients.
+    """
+    # 1. Verify doctor exists
+    doctor = db.query(User).filter(User.id == doctor_id).first()
+    if not doctor:
+        doctor = db.query(User).first()
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found.")
+
+    # 2. Validate word count (minimum 10 words)
+    words = [w for w in payload.review_text.strip().split() if w]
+    word_count = len(words)
+    if word_count < 10:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Please write at least 10 words describing your consultation experience to help other patients. You currently have {word_count} words."
+        )
+
+    # 3. Determine patient display name
+    patient_name = payload.patient_name
+    if not patient_name and payload.patient_id:
+        pat = db.query(Patient).filter(Patient.id == payload.patient_id).first()
+        if pat and pat.name:
+            patient_name = pat.name
+    if not patient_name:
+        patient_name = "Verified Patient"
+
+    # 4. Determine if first visit
+    prior_reviews = db.query(DoctorReview).filter(
+        DoctorReview.doctor_id == doctor_id,
+        DoctorReview.patient_id == payload.patient_id
+    ).count()
+    prior_visits = db.query(Visit).filter(
+        Visit.patient_id == payload.patient_id,
+        Visit.doctor_id == doctor_id,
+        Visit.status.in_(["approved", "completed", "sent"])
+    ).count()
+    is_first_visit = (prior_reviews == 0 and prior_visits <= 1)
+
+    # 5. Create Review
+    review = DoctorReview(
+        doctor_id=str(doctor.id),
+        patient_id=payload.patient_id,
+        visit_id=payload.visit_id,
+        patient_name=patient_name,
+        rating=payload.rating,
+        review_text=payload.review_text.strip(),
+        word_count=word_count,
+        is_first_visit=is_first_visit
+    )
+    db.add(review)
+
+    # 6. Audit Trail
+    audit = AuditLog(
+        actor_id=payload.patient_id,
+        actor_role="patient",
+        action="submit_doctor_review",
+        resource="doctor_review",
+        resource_id=review.id,
+        details={
+            "doctor_id": str(doctor.id),
+            "rating": payload.rating,
+            "word_count": word_count,
+            "is_first_visit": is_first_visit
+        }
+    )
+    db.add(audit)
+    db.commit()
+    db.refresh(review)
+
+    # 7. Compute aggregate stats
+    all_reviews = db.query(DoctorReview).filter(DoctorReview.doctor_id == str(doctor.id)).all()
+    total_reviews = len(all_reviews)
+    avg_rating = round(sum(r.rating for r in all_reviews) / total_reviews, 1) if total_reviews > 0 else payload.rating
+
+    return {
+        "success": True,
+        "message": "Thank you for sharing your experience! Your review will help other patients.",
+        "review": {
+            "id": review.id,
+            "doctor_id": str(doctor.id),
+            "patient_name": review.patient_name,
+            "rating": review.rating,
+            "review_text": review.review_text,
+            "word_count": review.word_count,
+            "is_first_visit": review.is_first_visit,
+            "created_at": review.created_at.isoformat() if review.created_at else None
+        },
+        "doctor_stats": {
+            "average_rating": avg_rating,
+            "total_reviews": total_reviews
+        }
+    }
+
+
+@router.get("/{doctor_id}/reviews")
+def get_doctor_reviews(
+    doctor_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns public reviews for a doctor along with rating breakdown (1-5 stars) and aggregate score.
+    """
+    reviews = db.query(DoctorReview).filter(
+        DoctorReview.doctor_id == doctor_id
+    ).order_by(DoctorReview.created_at.desc()).all()
+
+    breakdown = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+    for r in reviews:
+        if 1 <= r.rating <= 5:
+            breakdown[r.rating] += 1
+
+    total = len(reviews)
+    avg_rating = round(sum(r.rating for r in reviews) / total, 1) if total > 0 else 4.9
+
+    formatted = []
+    for r in reviews:
+        # Mask patient name for privacy if full name (e.g., "Rahul Sharma" -> "Rahul S.")
+        parts = (r.patient_name or "Patient").split()
+        if len(parts) > 1:
+            masked_name = f"{parts[0]} {parts[1][0]}."
+        else:
+            masked_name = parts[0]
+
+        formatted.append({
+            "id": r.id,
+            "patient_name": masked_name,
+            "rating": r.rating,
+            "review_text": r.review_text,
+            "word_count": r.word_count,
+            "is_first_visit": r.is_first_visit,
+            "created_at": r.created_at.strftime("%d %b %Y") if r.created_at else "Recently"
+        })
+
+    return {
+        "doctor_id": doctor_id,
+        "average_rating": avg_rating,
+        "total_reviews": total,
+        "breakdown": breakdown,
+        "reviews": formatted
+    }
+

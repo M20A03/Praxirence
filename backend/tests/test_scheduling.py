@@ -1,23 +1,23 @@
 import pytest
 from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
+from sqlalchemy.orm import sessionmaker
 from app.main import app
 from app.models.user import User
 from app.models.patient import Patient
 from app.models.visit import Visit
-from app.core.database import Base, engine, SessionLocal, get_db
-
-client = TestClient(app)
+from tests.conftest import test_engine, TestingSessionLocal, client
+from app.core.database import Base
 
 
 def get_test_db():
-    if get_db in app.dependency_overrides:
-        return next(app.dependency_overrides[get_db]())
-    return SessionLocal()
+    return TestingSessionLocal()
 
 
 def setup_module():
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=test_engine)
     from app.main import auto_migrate_schema
     auto_migrate_schema()
     db = get_test_db()

@@ -15,6 +15,20 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
       return 'emulator_mock_token_123';
     }
 
+    if (Platform.OS === 'android') {
+      try {
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'Doctor Alerts & Encounters',
+          importance: Notifications.AndroidImportance.HIGH,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#0284C7',
+          sound: 'default',
+          enableLights: true,
+          enableVibrate: true,
+        }).catch(() => {});
+      } catch (_) {}
+    }
+
     // Request permissions safely
     let finalStatus = 'undetermined';
     try {

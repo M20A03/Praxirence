@@ -178,13 +178,13 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
   const handleSaveCredentials = async () => {
     setSavingCredentials(true);
     try {
-      const langs = editLanguages.split(',').map((s) => s.trim()).filter(Boolean);
+      const langs = (editLanguages || '').split(',').map((s) => s.trim()).filter(Boolean);
       const updated: DoctorUser = {
         ...profileDoctor,
-        degree: editDegree.trim() || 'MBBS, MD (General Medicine)',
-        qualifications: editQualifications.trim() || 'Fellowship in Internal Medicine & Diabetology',
-        designation: editDesignation.trim() || 'Chief Medical Officer & Senior Physician',
-        experience_years: editExp.trim() || '12+ Yrs Exp',
+        degree: (editDegree || '').trim() || 'MBBS, MD (General Medicine)',
+        qualifications: (editQualifications || '').trim() || 'Fellowship in Internal Medicine & Diabetology',
+        designation: (editDesignation || '').trim() || 'Chief Medical Officer & Senior Physician',
+        experience_years: (editExp || '').trim() || '12+ Yrs Exp',
         languages: langs.length > 0 ? langs : ['English', 'Hindi'],
       };
       setProfileDoctor(updated);
@@ -192,7 +192,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
       setShowEditCredentialsModal(false);
       Alert.alert('Credentials Updated', 'Your medical degrees, qualifications, and designation have been saved.');
     } catch (e: any) {
-      Alert.alert('Error', 'Failed to save credentials: ' + e.message);
+      Alert.alert('Error', 'Failed to save credentials: ' + (e?.message || 'Update failed'));
     } finally {
       setSavingCredentials(false);
     }
@@ -209,8 +209,9 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
     );
   };
 
-  const doctorDisplayName = profileDoctor.name.startsWith('Dr.') ? profileDoctor.name : `Dr. ${profileDoctor.name}`;
-  const doctorInitials = doctorDisplayName.replace('Dr. ', '').trim().split(' ').map((n) => n[0]).slice(0, 2).join('') || 'MD';
+  const rawDocName = profileDoctor?.name || 'Doctor';
+  const doctorDisplayName = rawDocName.startsWith('Dr.') ? rawDocName : `Dr. ${rawDocName}`;
+  const doctorInitials = (doctorDisplayName || 'Doctor').replace('Dr. ', '').trim().split(' ').map((n) => (n ? n[0] : '')).filter(Boolean).slice(0, 2).join('') || 'MD';
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>

@@ -1080,7 +1080,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 onPress={() => setNewMemberRelation(rel)}
               >
                 <Text style={[styles.relationChipText, newMemberRelation === rel && styles.relationChipTextActive]}>
-                  {rel.charAt(0).toUpperCase() + rel.slice(1)}
+                  {((rel || '').charAt(0).toUpperCase() + (rel || '').slice(1))}
                 </Text>
               </TouchableOpacity>
             ))}

@@ -398,7 +398,8 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
     }
   };
 
-  const doctorName = doctor?.name?.startsWith('Dr.') ? doctor.name : `Dr. ${doctor?.name || 'Mayank Raj Gupta'}`;
+  const docRawName = doctor?.name || 'Mayank Raj Gupta';
+  const doctorName = docRawName.startsWith('Dr.') ? docRawName : `Dr. ${docRawName}`;
   const doctorDegree = doctor?.degree || 'MBBS, MD (General Medicine)';
   const doctorSpecialty = doctor?.specialty || 'Internal Medicine & Pulmonology';
   const doctorClinic = doctor?.clinic_name || 'Praxirence Super-Speciality Clinic';
@@ -406,7 +407,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
   const doctorExp = doctor?.experience_years ? (typeof doctor.experience_years === 'number' ? `${doctor.experience_years}+ Yrs Exp` : doctor.experience_years) : '12+ Yrs Exp';
   const doctorDesignation = doctor?.designation || 'Chief Medical Officer & Senior Physician';
   const doctorLanguages = doctor?.languages && doctor.languages.length > 0 ? doctor.languages : ['English', 'Hindi', 'Hinglish'];
-  const doctorInitials = doctorName.replace('Dr. ', '').trim().split(' ').map(n => n[0]).slice(0, 2).join('') || 'MD';
+  const doctorInitials = (doctorName || 'MD').replace('Dr. ', '').trim().split(' ').map(n => (n ? n[0] : '')).filter(Boolean).slice(0, 2).join('') || 'MD';
 
   return (
     <ScrollView

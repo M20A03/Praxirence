@@ -277,8 +277,8 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
   });
 
   const fourteenDays = generate14Days();
-  const morningSlots = availability?.slots.filter((s) => s.time.includes('AM')) || [];
-  const afternoonSlots = availability?.slots.filter((s) => s.time.includes('PM')) || [];
+  const morningSlots = availability?.slots.filter((s) => (s?.time || '').includes('AM')) || [];
+  const afternoonSlots = availability?.slots.filter((s) => (s?.time || '').includes('PM')) || [];
 
   return (
     <View style={styles.container}>

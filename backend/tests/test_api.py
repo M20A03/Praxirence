@@ -11,40 +11,7 @@ from app.models.patient import Patient
 
 from sqlalchemy.pool import StaticPool
 
-# Use SQLite in-memory for testing with StaticPool so all connections share the DB
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-test_engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
-
-
-def override_get_db():
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-app.dependency_overrides[get_db] = override_get_db
-Base.metadata.create_all(bind=test_engine)
-
-# Seed doctor
-db = TestingSessionLocal()
-demo_doc = User(
-    email="testdoc@praxirence.com",
-    hashed_password=get_password_hash("DocPass123!"),
-    name="Dr. Test",
-    specialty="Cardiology"
-)
-db.add(demo_doc)
-db.commit()
-db.close()
-
-client = TestClient(app)
+from tests.conftest import test_engine, TestingSessionLocal, client
 
 
 def test_health_check():

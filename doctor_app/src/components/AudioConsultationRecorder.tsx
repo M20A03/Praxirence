@@ -185,11 +185,17 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
 
   const startRecording = async () => {
     try {
-      const permission = await Audio.requestPermissionsAsync();
-      if (permission.status !== 'granted') {
+      let permission: Audio.PermissionResponse | null = null;
+      try {
+        permission = await Audio.requestPermissionsAsync();
+      } catch (pErr) {
+        console.warn('Microphone permission request error:', pErr);
+      }
+
+      if (!permission || permission.status !== 'granted') {
         Alert.alert(
           'Microphone Permission Required',
-          'Please allow Praxirence Doctor microphone access to record patient consultations.'
+          'Please allow Praxirence Doctor microphone access in device settings to record patient consultations.'
         );
         return;
       }
@@ -244,7 +250,7 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
       }, 1000);
     } catch (err: any) {
       console.error('Failed to start recording', err);
-      Alert.alert('Recording Error', 'Could not access audio device: ' + err.message);
+      Alert.alert('Recording Error', 'Could not access audio device: ' + (err?.message || 'Permission or hardware unavailable'));
     }
   };
 

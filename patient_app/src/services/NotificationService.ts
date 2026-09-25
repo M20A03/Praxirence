@@ -100,7 +100,7 @@ export const NotificationService = {
             let hour = 8;
             let minute = 30;
             if (rem.time && rem.time.includes(':')) {
-              const parts = rem.time.split(':');
+              const parts = (rem.time || '').split(':');
               hour = parseInt(parts[0], 10) || 8;
               minute = parseInt(parts[1], 10) || 30;
             }

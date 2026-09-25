@@ -31,12 +31,18 @@ export const setCustomApiUrl = async (url: string | null) => {
   }
 };
 
+const PRODUCTION_RAILWAY_URL = 'https://praxirence-production.up.railway.app';
+
 export const getEffectiveApiUrl = (): string => {
-  if (customApiUrl && !customApiUrl.includes('railway')) return customApiUrl;
-  return (
-    process.env.EXPO_PUBLIC_API_URL ||
-    (Platform.OS === 'android' ? 'http://10.0.2.2:8000' : 'http://localhost:8000')
-  );
+  if (customApiUrl) return customApiUrl;
+  const envUrl = process.env.EXPO_PUBLIC_API_URL;
+  if (envUrl && !envUrl.includes('localhost')) {
+    return envUrl;
+  }
+  if (Platform.OS === 'android') {
+    return process.env.EXPO_PUBLIC_LAN_API_URL || process.env.EXPO_PUBLIC_EMULATOR_API_URL || 'http://10.0.2.2:8000';
+  }
+  return envUrl || PRODUCTION_RAILWAY_URL;
 };
 
 const REQUEST_TIMEOUT_MS = 25000;
@@ -450,11 +456,25 @@ export const mobileApi = {
     try {
       try {
         const savedCustomUrl = await AsyncStorage.getItem('@praxirence_custom_api_url');
-        if (savedCustomUrl && !savedCustomUrl.includes('railway')) {
-          customApiUrl = savedCustomUrl;
-        } else if (savedCustomUrl && savedCustomUrl.includes('railway')) {
-          await AsyncStorage.removeItem('@praxirence_custom_api_url');
-          customApiUrl = null;
+        if (savedCustomUrl) {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 2500);
+          try {
+            const probe = await fetch(`${savedCustomUrl}/health`, { signal: controller.signal });
+            clearTimeout(timer);
+            if (probe.ok) {
+              customApiUrl = savedCustomUrl;
+            } else {
+              console.warn(`[API] Stale API URL ${savedCustomUrl} returned status ${probe.status}. Evicting.`);
+              await AsyncStorage.removeItem('@praxirence_custom_api_url');
+              customApiUrl = null;
+            }
+          } catch {
+            clearTimeout(timer);
+            console.warn(`[API] Unreachable API URL ${savedCustomUrl}. Evicting stale cache.`);
+            await AsyncStorage.removeItem('@praxirence_custom_api_url');
+            customApiUrl = null;
+          }
         }
       } catch (_) {}
       const role = (await AsyncStorage.getItem('praxirence_role')) as UserRole | null;

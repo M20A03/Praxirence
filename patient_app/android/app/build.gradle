@@ -125,6 +125,7 @@ android {
             keyPassword 'praxirence2026'
             v1SigningEnabled true
             v2SigningEnabled true
+            enableV3Signing = true
         }
         release {
             storeFile file('praxirence-release.keystore')
@@ -133,6 +134,7 @@ android {
             keyPassword 'praxirence2026'
             v1SigningEnabled true
             v2SigningEnabled true
+            enableV3Signing = true
         }
     }
     buildTypes {
@@ -150,6 +152,13 @@ android {
     packagingOptions {
         jniLibs {
             useLegacyPackaging (findProperty('expo.useLegacyPackaging')?.toBoolean() ?: false)
+        }
+        resources {
+            excludes += [
+                "META-INF/*.version",
+                "META-INF/services/kotlin.reflect.jvm.internal.impl.*",
+                "META-INF/services/kotlinx.coroutines.*"
+            ]
         }
     }
 }

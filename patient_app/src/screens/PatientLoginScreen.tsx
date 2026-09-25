@@ -27,36 +27,7 @@ interface PatientLoginScreenProps {
 export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthenticated }) => {
   const [authMode, setAuthMode] = useState<'email' | 'register'>('email');
 
-  // Hidden 5-Tap Pilot Testing Bypass
-  const [logoTaps, setLogoTaps] = useState(0);
-  const [showPilotModal, setShowPilotModal] = useState(false);
-  const tapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const handleLogoTap = () => {
-    if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
-    const next = logoTaps + 1;
-    setLogoTaps(next);
-
-    if (next >= 5) {
-      setLogoTaps(0);
-      try {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      } catch (_) {}
-      const cur = mobileApi.getApiUrl();
-      setActiveServerUrl(cur);
-      setCustomServerInput(cur);
-      testServerHealth(cur);
-      setShowPilotModal(true);
-    } else {
-      tapTimeoutRef.current = setTimeout(() => {
-        setLogoTaps(0);
-      }, 2500);
-    }
-  };
-
-  // Dynamic Backend Server Switcher
-  const [activeServerUrl, setActiveServerUrl] = useState<string>(mobileApi.getApiUrl());
-  const [customServerInput, setCustomServerInput] = useState<string>(mobileApi.getApiUrl());
+  // Server connection check
   const [serverHealth, setServerHealth] = useState<'checking' | 'online' | 'offline' | null>(null);
   const [latencyMs, setLatencyMs] = useState<number>(-1);
 
@@ -75,33 +46,6 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
       setServerHealth('offline');
       setLatencyMs(-1);
     }
-  };
-
-  const handleSelectPreset = async (url: string) => {
-    try {
-      Haptics.selectionAsync();
-    } catch (_) {}
-    await mobileApi.setServerUrl(url);
-    const effective = mobileApi.getApiUrl();
-    setActiveServerUrl(effective);
-    setCustomServerInput(effective);
-    testServerHealth(effective);
-  };
-
-  const handleSaveCustomUrl = async () => {
-    if (!customServerInput.trim()) return;
-    let clean = customServerInput.trim();
-    if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
-      clean = 'http://' + clean;
-    }
-    try {
-      Haptics.selectionAsync();
-    } catch (_) {}
-    await mobileApi.setServerUrl(clean);
-    const effective = mobileApi.getApiUrl();
-    setActiveServerUrl(effective);
-    setCustomServerInput(effective);
-    testServerHealth(effective);
   };
 
   // First-Time Patient Demographics Modal
@@ -178,44 +122,6 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
     onAuthenticated(updated);
   };
 
-  // Pilot Testing Bypass (Hidden 5-Tap activation)
-  const handlePilotBypass = async (profile: Partial<PatientUser>) => {
-    setShowPilotModal(false);
-    setLoading(true);
-    try {
-      const targetPhone = profile.phone || '+919876543210';
-      const base: PatientUser = {
-        id: 'pat_' + Date.now(),
-        name: profile.name || 'Ramesh Kumar',
-        phone: targetPhone,
-        age: profile.age || '54',
-        gender: profile.gender || 'Male',
-        language: profile.language || 'Hindi',
-        emergency_contact: profile.emergency_contact || '+919876543211',
-        consent_status: true,
-        role: 'patient',
-      };
-      const finalPat: PatientUser = { ...base, ...profile };
-      await AsyncStorage.setItem('praxirence_patient_profile', JSON.stringify(finalPat));
-      onAuthenticated(finalPat);
-    } catch (e: any) {
-      const fallback: PatientUser = {
-        id: 'pat_pilot',
-        name: profile.name || 'Ramesh Kumar',
-        phone: profile.phone || '+919876543210',
-        age: profile.age || '54',
-        gender: profile.gender || 'Male',
-        language: profile.language || 'Hindi',
-        emergency_contact: profile.emergency_contact || '+919876543211',
-        consent_status: true,
-        role: 'patient',
-      };
-      await AsyncStorage.setItem('praxirence_patient_profile', JSON.stringify(fallback));
-      onAuthenticated(fallback);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Patient Registration States
   const [regName, setRegName] = useState('');
@@ -240,10 +146,6 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
       setResendCooldown(60);
       const notice = res?.message || `Verification code sent to ${email.trim()}. Please check your inbox and spam folder.`;
       setSuccessNotice(notice);
-      const codeMatch = notice.match(/\b(\d{6})\b/);
-      if (codeMatch && notice.toLowerCase().includes('testing')) {
-        setEmailOtpCode(codeMatch[1]);
-      }
     } catch (err: any) {
       const msg = err?.message || '';
       if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
@@ -315,12 +217,8 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Brand Header with Hidden 5-Tap Pilot Tester Trigger */}
-        <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={handleLogoTap}
-          style={styles.brandContainer}
-        >
+        {/* Brand Header */}
+        <View style={styles.brandContainer}>
           <BrandLogoMobile variant="hero" size="md" />
           <View style={styles.badgeContainer}>
             <View style={styles.patientBadge}>
@@ -332,7 +230,9 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
           <Text style={styles.subtitle}>
             Access your doctor's prescriptions, medication timing reminders, and care plans
           </Text>
-        </TouchableOpacity>        {/* Auth Mode Tabs */}
+        </View>
+
+        {/* Auth Mode Tabs */}
         <View style={styles.tabBar}>
           <TouchableOpacity
             style={[styles.tabBtn, authMode === 'email' && styles.tabBtnActive]}
@@ -376,7 +276,7 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                 <Ionicons name="person-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. Aarav Sharma"
+                  placeholder="Enter your full name"
                   placeholderTextColor={Colors.textSecondary}
                   value={patientName}
                   onChangeText={setPatientName}
@@ -479,7 +379,7 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                 <Ionicons name="person-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. Ramesh Kumar"
+                  placeholder="Enter your full name"
                   placeholderTextColor={Colors.textSecondary}
                   value={regName}
                   onChangeText={setRegName}
@@ -614,183 +514,6 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
           </Text>
         </View>
 
-        {/* Hidden Developer/Pilot Testing Modal (5-Tap Brand Logo Trigger) */}
-        <Modal visible={showPilotModal} animationType="fade" transparent onRequestClose={() => setShowPilotModal(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modalCard, { maxHeight: '88%' }]}>
-              <View style={styles.modalHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Ionicons name="build" size={20} color="#10b981" />
-                  <Text style={styles.modalTitle}>Pilot Tester Console</Text>
-                </View>
-                <TouchableOpacity onPress={() => setShowPilotModal(false)}>
-                  <Ionicons name="close" size={22} color={Colors.textSecondary} />
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView showsVerticalScrollIndicator={false} style={{ flexGrow: 0 }}>
-                {/* 1. Backend Server Environment Switcher */}
-                <View style={styles.serverSection}>
-                  <View style={styles.serverSectionHeader}>
-                    <Text style={styles.serverSectionTitle}>Backend Server</Text>
-                    <View style={[
-                      styles.healthBadge,
-                      serverHealth === 'online' ? styles.healthBadgeOnline : (serverHealth === 'checking' ? styles.healthBadgeChecking : styles.healthBadgeOffline)
-                    ]}>
-                      <View style={[
-                        styles.healthDot,
-                        { backgroundColor: serverHealth === 'online' ? '#16a34a' : (serverHealth === 'checking' ? '#eab308' : '#dc2626') }
-                      ]} />
-                      <Text style={styles.healthBadgeText}>
-                        {serverHealth === 'checking' ? 'Testing...' : (serverHealth === 'online' ? `Online (${latencyMs}ms)` : 'Offline (502)')}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <Text style={styles.serverActiveUrlText} numberOfLines={1}>
-                    Active: {activeServerUrl}
-                  </Text>
-
-                  {/* 1-Tap Preset Switchers */}
-                  <View style={styles.presetRow}>
-                    <TouchableOpacity
-                      style={[styles.presetBtn, (activeServerUrl.includes('localhost') || activeServerUrl.includes('127.0.0.1')) && styles.presetBtnActive]}
-                      onPress={() => handleSelectPreset('http://localhost:8000')}
-                    >
-                      <Ionicons name="desktop-outline" size={13} color={(activeServerUrl.includes('localhost') || activeServerUrl.includes('127.0.0.1')) ? '#FFFFFF' : Colors.textPrimary} />
-                      <Text style={[styles.presetBtnText, (activeServerUrl.includes('localhost') || activeServerUrl.includes('127.0.0.1')) && styles.presetBtnTextActive]}>
-                        Localhost (8000)
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[
-                        styles.presetBtn,
-                        (activeServerUrl.includes('10.51.') || activeServerUrl.includes('192.168.')) && !activeServerUrl.includes('10.0.2.2') && styles.presetBtnActive
-                      ]}
-                      onPress={() => handleSelectPreset('http://10.51.113.76:8000')}
-                    >
-                      <Ionicons name="wifi-outline" size={13} color={(activeServerUrl.includes('10.51.') || activeServerUrl.includes('192.168.')) && !activeServerUrl.includes('10.0.2.2') ? '#FFFFFF' : Colors.textPrimary} />
-                      <Text style={[
-                        styles.presetBtnText,
-                        (activeServerUrl.includes('10.51.') || activeServerUrl.includes('192.168.')) && !activeServerUrl.includes('10.0.2.2') && styles.presetBtnTextActive
-                      ]}>
-                        Local Wi-Fi
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[styles.presetBtn, activeServerUrl.includes('10.0.2.2') && styles.presetBtnActive]}
-                      onPress={() => handleSelectPreset('http://10.0.2.2:8000')}
-                    >
-                      <Ionicons name="phone-portrait-outline" size={13} color={activeServerUrl.includes('10.0.2.2') ? '#FFFFFF' : Colors.textPrimary} />
-                      <Text style={[styles.presetBtnText, activeServerUrl.includes('10.0.2.2') && styles.presetBtnTextActive]}>
-                        Emulator
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Custom IP & Port Input */}
-                  <View style={styles.customUrlRow}>
-                    <TextInput
-                      style={styles.customUrlInput}
-                      value={customServerInput}
-                      onChangeText={setCustomServerInput}
-                      placeholder="http://10.51.113.76:8000"
-                      placeholderTextColor="#94A3B8"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                    />
-                    <TouchableOpacity
-                      style={styles.customUrlSaveBtn}
-                      onPress={handleSaveCustomUrl}
-                    >
-                      <Text style={styles.customUrlSaveBtnText}>Apply</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.pingTestBtn}
-                      onPress={() => testServerHealth(activeServerUrl)}
-                    >
-                      <Ionicons name="refresh" size={15} color="#10B981" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* 2. Patient Evaluation Profiles */}
-                <Text style={styles.sectionDividerLabel}>Patient Evaluation Profiles</Text>
-
-                <TouchableOpacity
-                  style={styles.pilotOptionBtn}
-                  onPress={() => handlePilotBypass({
-                    name: 'Ramesh Kumar',
-                    phone: '+919876543210',
-                    age: '54',
-                    gender: 'Male',
-                    language: 'Hindi',
-                    emergency_contact: '+919876543211',
-                  })}
-                >
-                  <View style={[styles.pilotIconBox, { backgroundColor: '#F0FDF4' }]}>
-                    <Ionicons name="person" size={18} color="#16a34a" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.pilotOptionTitle}>Ramesh Kumar (Patient 1)</Text>
-                    <Text style={styles.pilotOptionSub}>+91 9876543210 • Active Care Plan (54/M)</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.pilotOptionBtn}
-                  onPress={() => handlePilotBypass({
-                    name: 'Sunita Devi',
-                    phone: '+919123456789',
-                    age: '48',
-                    gender: 'Female',
-                    language: 'Hindi',
-                    emergency_contact: '+919123456780',
-                  })}
-                >
-                  <View style={[styles.pilotIconBox, { backgroundColor: '#EFF6FF' }]}>
-                    <Ionicons name="person" size={18} color="#0284c7" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.pilotOptionTitle}>Sunita Devi (Patient 2)</Text>
-                    <Text style={styles.pilotOptionSub}>+91 9123456789 • OPD Patient (48/F)</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.pilotOptionBtn, { backgroundColor: '#F8FAFC' }]}
-                  onPress={() => {
-                    setEmail('patient.test@praxirence.com');
-                    setPatientName('Ramesh Kumar');
-                    setAuthMode('email');
-                    setShowPilotModal(false);
-                  }}
-                >
-                  <View style={[styles.pilotIconBox, { backgroundColor: '#FEF3C7' }]}>
-                    <Ionicons name="flash" size={18} color="#D97706" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.pilotOptionTitle}>Auto-Fill Test Credentials</Text>
-                    <Text style={styles.pilotOptionSub}>Fill patient.test@praxirence.com into Email input</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
-                </TouchableOpacity>
-              </ScrollView>
-
-              <TouchableOpacity
-                style={styles.modalCloseBtn}
-                onPress={() => setShowPilotModal(false)}
-              >
-                <Text style={styles.modalCloseBtnText}>Close Console</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-
         {/* First-Time Patient Demographics Onboarding Modal */}
         <Modal visible={showOnboardingModal} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
@@ -811,7 +534,7 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                 <Ionicons name="person-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. Ramesh Kumar"
+                  placeholder="Enter your full name"
                   placeholderTextColor={Colors.textSecondary}
                   value={onboardName}
                   onChangeText={setOnboardName}
@@ -824,7 +547,7 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                   <View style={styles.inputContainer}>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. 54"
+                      placeholder="e.g. 35"
                       placeholderTextColor={Colors.textSecondary}
                       value={onboardAge}
                       onChangeText={setOnboardAge}

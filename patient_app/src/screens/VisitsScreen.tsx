@@ -324,9 +324,9 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
           {/* Clinician & Appointment Details */}
           <View style={styles.queueDoctorRow}>
             <View style={{ flex: 1, marginRight: 8 }}>
-              <Text style={styles.queueDoctorName}>Dr. {activeScheduledVisit.doctor_name || queueStatus?.doctor_name || 'Mayank Raj'}</Text>
+              <Text style={styles.queueDoctorName}>{activeScheduledVisit.doctor_name || queueStatus?.doctor_name ? (String(activeScheduledVisit.doctor_name || queueStatus?.doctor_name).startsWith('Dr.') ? (activeScheduledVisit.doctor_name || queueStatus?.doctor_name) : `Dr. ${activeScheduledVisit.doctor_name || queueStatus?.doctor_name}`) : 'Attending Physician'}</Text>
               <Text style={styles.queueClinicText} numberOfLines={1}>
-                {queueStatus?.clinic_name || 'Praxirence Clinical Centre'} • {queueStatus?.clinic_address || 'Indiranagar, Bangalore'}
+                {queueStatus?.clinic_name || 'Praxirence Clinical Centre'}{queueStatus?.clinic_address ? ` • ${queueStatus.clinic_address}` : ''}
               </Text>
             </View>
             <View style={styles.queueSlotBadge}>

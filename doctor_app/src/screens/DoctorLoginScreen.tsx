@@ -27,36 +27,7 @@ interface DoctorLoginScreenProps {
 export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenticated }) => {
   const [authMode, setAuthMode] = useState<'email' | 'register'>('email');
 
-  // Hidden 5-Tap Pilot Testing Bypass
-  const [logoTaps, setLogoTaps] = useState(0);
-  const [showPilotModal, setShowPilotModal] = useState(false);
-  const tapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const handleLogoTap = () => {
-    if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
-    const next = logoTaps + 1;
-    setLogoTaps(next);
-
-    if (next >= 5) {
-      setLogoTaps(0);
-      try {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      } catch (_) {}
-      const cur = mobileApi.getApiUrl();
-      setActiveServerUrl(cur);
-      setCustomServerInput(cur);
-      testServerHealth(cur);
-      setShowPilotModal(true);
-    } else {
-      tapTimeoutRef.current = setTimeout(() => {
-        setLogoTaps(0);
-      }, 2500);
-    }
-  };
-
-  // Dynamic Backend Server Switcher
-  const [activeServerUrl, setActiveServerUrl] = useState<string>(mobileApi.getApiUrl());
-  const [customServerInput, setCustomServerInput] = useState<string>(mobileApi.getApiUrl());
+  // Server connection check
   const [serverHealth, setServerHealth] = useState<'checking' | 'online' | 'offline' | null>(null);
   const [latencyMs, setLatencyMs] = useState<number>(-1);
 
@@ -77,33 +48,6 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
     }
   };
 
-  const handleSelectPreset = async (url: string) => {
-    try {
-      Haptics.selectionAsync();
-    } catch (_) {}
-    await mobileApi.setServerUrl(url);
-    const effective = mobileApi.getApiUrl();
-    setActiveServerUrl(effective);
-    setCustomServerInput(effective);
-    testServerHealth(effective);
-  };
-
-  const handleSaveCustomUrl = async () => {
-    if (!customServerInput.trim()) return;
-    let clean = customServerInput.trim();
-    if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
-      clean = 'http://' + clean;
-    }
-    try {
-      Haptics.selectionAsync();
-    } catch (_) {}
-    await mobileApi.setServerUrl(clean);
-    const effective = mobileApi.getApiUrl();
-    setActiveServerUrl(effective);
-    setCustomServerInput(effective);
-    testServerHealth(effective);
-  };
-
   // First-Time Doctor Setup Modal
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [pendingDoctor, setPendingDoctor] = useState<DoctorUser | null>(null);
@@ -117,8 +61,6 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
   const [doctorName, setDoctorName] = useState('');
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [emailOtpCode, setEmailOtpCode] = useState('');
-
-
 
   const [phoneDigits, setPhoneDigits] = useState('');
 
@@ -146,9 +88,9 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
     // Check if doctor profile has realistic credentials
     if (!user.reg_number || !user.clinic_name || user.clinic_name.includes('Clinical Centre')) {
       setPendingDoctor(user);
-      setOnboardSpecialty(user.specialty || 'General Medicine / Pulmonology');
-      setOnboardClinic(user.clinic_name || 'Sharma Health Clinic');
-      setOnboardRegNo(user.reg_number || 'NMC-2024-8849');
+      setOnboardSpecialty(user.specialty || '');
+      setOnboardClinic(user.clinic_name && !user.clinic_name.includes('Clinical Centre') ? user.clinic_name : '');
+      setOnboardRegNo(user.reg_number || '');
       setShowOnboardingModal(true);
     } else {
       await AsyncStorage.setItem('praxirence_doctor_profile', JSON.stringify(user));
@@ -166,67 +108,12 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
       ...pendingDoctor,
       name: pendingDoctor.name.startsWith('Dr.') ? pendingDoctor.name : `Dr. ${pendingDoctor.name}`,
       specialty: onboardSpecialty.trim() || 'Internal Medicine',
-      clinic_name: onboardClinic.trim() || 'Praxirence Clinical Practice',
+      clinic_name: onboardClinic.trim() || 'Private Clinical Practice',
       reg_number: onboardRegNo.trim(),
     };
     await AsyncStorage.setItem('praxirence_doctor_profile', JSON.stringify(updated));
     setShowOnboardingModal(false);
     onAuthenticated(updated);
-  };
-
-  // Pilot Testing Bypass (Hidden 5-Tap activation)
-  const handlePilotBypass = async (profile: Partial<DoctorUser>) => {
-    setShowPilotModal(false);
-    setLoading(true);
-    try {
-      const loginRes = await mobileApi.loginDoctor('doctor@praxirence.com', 'Doctor123!');
-      const base = loginRes.user || {
-        id: 'doc_' + Date.now(),
-        name: profile.name || 'Dr. Mayank Raj Gupta',
-        email: profile.email || 'doctor@praxirence.com',
-        phone: profile.phone || '+919876543210',
-        specialty: profile.specialty || 'Internal Medicine & Pulmonology',
-        degree: profile.degree || 'MBBS, MD (General Medicine)',
-        qualifications: profile.qualifications || 'Fellowship in Diabetology & Critical Care',
-        designation: profile.designation || 'Chief Medical Officer & Senior Physician',
-        experience_years: profile.experience_years || '12+ Yrs Exp',
-        languages: profile.languages || ['English', 'Hindi', 'Hinglish'],
-        clinic_name: profile.clinic_name || 'Praxirence Super-Speciality Clinic',
-        reg_number: profile.reg_number || 'NMC-2024-8849',
-        role: 'doctor' as const,
-      };
-      const finalDoc: DoctorUser = {
-        degree: 'MBBS, MD (General Medicine)',
-        qualifications: 'Fellowship in Diabetology & Critical Care',
-        designation: 'Chief Medical Officer & Senior Physician',
-        experience_years: '12+ Yrs Exp',
-        languages: ['English', 'Hindi', 'Hinglish'],
-        ...base,
-        ...profile,
-      };
-      await AsyncStorage.setItem('praxirence_doctor_profile', JSON.stringify(finalDoc));
-      onAuthenticated(finalDoc);
-    } catch (e: any) {
-      const fallback: DoctorUser = {
-        id: 'doc_pilot',
-        name: profile.name || 'Dr. Mayank Raj Gupta',
-        email: profile.email || 'doctor@praxirence.com',
-        phone: profile.phone || '+919876543210',
-        specialty: profile.specialty || 'Internal Medicine & Pulmonology',
-        degree: profile.degree || 'MBBS, MD (General Medicine)',
-        qualifications: profile.qualifications || 'Fellowship in Diabetology & Critical Care',
-        designation: profile.designation || 'Chief Medical Officer & Senior Physician',
-        experience_years: profile.experience_years || '12+ Yrs Exp',
-        languages: profile.languages || ['English', 'Hindi', 'Hinglish'],
-        clinic_name: profile.clinic_name || 'Praxirence Super-Speciality Clinic',
-        reg_number: profile.reg_number || 'NMC-2024-8849',
-        role: 'doctor',
-      };
-      await AsyncStorage.setItem('praxirence_doctor_profile', JSON.stringify(fallback));
-      onAuthenticated(fallback);
-    } finally {
-      setLoading(false);
-    }
   };
 
   // Email OTP Request
@@ -244,10 +131,6 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
       setResendCooldown(60);
       const notice = res?.message || `Verification code sent to ${email.trim()}. Please check your inbox and spam folder.`;
       setSuccessNotice(notice);
-      const codeMatch = notice.match(/\b(\d{6})\b/);
-      if (codeMatch && notice.toLowerCase().includes('testing')) {
-        setEmailOtpCode(codeMatch[1]);
-      }
     } catch (err: any) {
       const msg = err?.message || '';
       if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
@@ -319,12 +202,8 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Brand Header (5-Tap Hidden Pilot Tester Trigger) */}
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={handleLogoTap}
-          style={styles.brandContainer}
-        >
+        {/* Brand Header */}
+        <View style={styles.brandContainer}>
           <BrandLogoMobile variant="hero" size="md" />
           <View style={styles.badgeContainer}>
             <View style={styles.doctorBadge}>
@@ -336,7 +215,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
           <Text style={styles.subtitle}>
             Secure clinical suite for verified medical practitioners
           </Text>
-        </TouchableOpacity>
+        </View>
 
         {/* Auth Mode Tabs */}
         <View style={styles.tabBar}>
@@ -380,7 +259,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                 <Ionicons name="person" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Dr. Mayank Raj"
+                  placeholder="Dr. Full Name"
                   placeholderTextColor={Colors.textSecondary}
                   value={doctorName}
                   onChangeText={setDoctorName}
@@ -473,7 +352,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                 <Ionicons name="person" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Dr. Sunita Sharma"
+                  placeholder="Dr. Full Name"
                   placeholderTextColor={Colors.textSecondary}
                   value={doctorName}
                   onChangeText={setDoctorName}
@@ -539,7 +418,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                 <Ionicons name="business" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. Sharma Health Clinic, New Delhi"
+                  placeholder="e.g. Metro Care Clinic & Hospital"
                   placeholderTextColor={Colors.textSecondary}
                   value={regClinic}
                   onChangeText={setRegClinic}
@@ -572,172 +451,6 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
           </Text>
         </View>
 
-        {/* Hidden Developer/Pilot Testing Modal (5-Tap Brand Logo Trigger) */}
-        <Modal visible={showPilotModal} animationType="fade" transparent onRequestClose={() => setShowPilotModal(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modalCard, { maxHeight: '88%' }]}>
-              <View style={styles.modalHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Ionicons name="build" size={20} color={Colors.primary} />
-                  <Text style={styles.modalTitle}>Pilot Tester Console</Text>
-                </View>
-                <TouchableOpacity onPress={() => setShowPilotModal(false)}>
-                  <Ionicons name="close" size={22} color={Colors.textSecondary} />
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView showsVerticalScrollIndicator={false} style={{ flexGrow: 0 }}>
-                {/* 1. Backend Server Environment Switcher */}
-                <View style={styles.serverSection}>
-                  <View style={styles.serverSectionHeader}>
-                    <Text style={styles.serverSectionTitle}>Backend Server</Text>
-                    <View style={[
-                      styles.healthBadge,
-                      serverHealth === 'online' ? styles.healthBadgeOnline : (serverHealth === 'checking' ? styles.healthBadgeChecking : styles.healthBadgeOffline)
-                    ]}>
-                      <View style={[
-                        styles.healthDot,
-                        { backgroundColor: serverHealth === 'online' ? '#16a34a' : (serverHealth === 'checking' ? '#eab308' : '#dc2626') }
-                      ]} />
-                      <Text style={styles.healthBadgeText}>
-                        {serverHealth === 'checking' ? 'Testing...' : (serverHealth === 'online' ? `Online (${latencyMs}ms)` : 'Offline (502)')}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <Text style={styles.serverActiveUrlText} numberOfLines={1}>
-                    Active: {activeServerUrl}
-                  </Text>
-
-                  {/* 1-Tap Preset Switchers */}
-                  <View style={styles.presetRow}>
-                    <TouchableOpacity
-                      style={[styles.presetBtn, (activeServerUrl.includes('localhost') || activeServerUrl.includes('127.0.0.1')) && styles.presetBtnActive]}
-                      onPress={() => handleSelectPreset('http://localhost:8000')}
-                    >
-                      <Ionicons name="desktop-outline" size={13} color={(activeServerUrl.includes('localhost') || activeServerUrl.includes('127.0.0.1')) ? '#FFFFFF' : Colors.textPrimary} />
-                      <Text style={[styles.presetBtnText, (activeServerUrl.includes('localhost') || activeServerUrl.includes('127.0.0.1')) && styles.presetBtnTextActive]}>
-                        Localhost (8000)
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[
-                        styles.presetBtn,
-                        (activeServerUrl.includes('10.51.') || activeServerUrl.includes('192.168.')) && !activeServerUrl.includes('10.0.2.2') && styles.presetBtnActive
-                      ]}
-                      onPress={() => handleSelectPreset('http://10.51.113.76:8000')}
-                    >
-                      <Ionicons name="wifi-outline" size={13} color={(activeServerUrl.includes('10.51.') || activeServerUrl.includes('192.168.')) && !activeServerUrl.includes('10.0.2.2') ? '#FFFFFF' : Colors.textPrimary} />
-                      <Text style={[
-                        styles.presetBtnText,
-                        (activeServerUrl.includes('10.51.') || activeServerUrl.includes('192.168.')) && !activeServerUrl.includes('10.0.2.2') && styles.presetBtnTextActive
-                      ]}>
-                        Local Wi-Fi
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[styles.presetBtn, activeServerUrl.includes('10.0.2.2') && styles.presetBtnActive]}
-                      onPress={() => handleSelectPreset('http://10.0.2.2:8000')}
-                    >
-                      <Ionicons name="phone-portrait-outline" size={13} color={activeServerUrl.includes('10.0.2.2') ? '#FFFFFF' : Colors.textPrimary} />
-                      <Text style={[styles.presetBtnText, activeServerUrl.includes('10.0.2.2') && styles.presetBtnTextActive]}>
-                        Emulator
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Custom IP & Port Input */}
-                  <View style={styles.customUrlRow}>
-                    <TextInput
-                      style={styles.customUrlInput}
-                      value={customServerInput}
-                      onChangeText={setCustomServerInput}
-                      placeholder="http://10.51.113.76:8000"
-                      placeholderTextColor="#94A3B8"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                    />
-                    <TouchableOpacity
-                      style={styles.customUrlSaveBtn}
-                      onPress={handleSaveCustomUrl}
-                    >
-                      <Text style={styles.customUrlSaveBtnText}>Apply</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.pingTestBtn}
-                      onPress={() => testServerHealth(activeServerUrl)}
-                    >
-                      <Ionicons name="refresh" size={15} color={Colors.primary} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* 2. Doctor Quick Access Section */}
-                <Text style={styles.sectionDividerLabel}>Doctor Evaluation Profiles</Text>
-
-                <TouchableOpacity
-                  style={styles.pilotOptionBtn}
-                  onPress={() => handlePilotBypass({
-                    name: 'Dr. Mayank Raj Gupta',
-                    degree: 'MBBS, MD (General Medicine)',
-                    qualifications: 'Fellowship in Diabetology & Critical Care',
-                    designation: 'Chief Medical Officer & Senior Physician',
-                    experience_years: '12+ Yrs Exp',
-                    languages: ['English', 'Hindi', 'Hinglish'],
-                    email: 'doctor@praxirence.com',
-                    specialty: 'Internal Medicine & Pulmonology',
-                    clinic_name: 'Praxirence Super-Speciality Clinic',
-                    reg_number: 'NMC-2024-8849',
-                  })}
-                >
-                  <View style={styles.pilotIconBox}>
-                    <Ionicons name="shield-checkmark" size={18} color="#0284c7" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.pilotOptionTitle}>Dr. Mayank Raj Gupta (MBBS, MD)</Text>
-                    <Text style={styles.pilotOptionSub}>CMO • 12+ Yrs Exp • NMC-2024-8849</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.pilotOptionBtn}
-                  onPress={() => handlePilotBypass({
-                    name: 'Dr. Sunita Sharma',
-                    degree: 'MBBS, DNB (Internal Medicine)',
-                    qualifications: 'Fellowship in Diabetology & Endocrinology',
-                    designation: 'Senior Consultant Physician',
-                    experience_years: '9+ Yrs Exp',
-                    languages: ['English', 'Hindi'],
-                    email: 'sunita.sharma@delhiclinic.org',
-                    specialty: 'Consultant Physician & Diabetologist',
-                    clinic_name: 'Sharma Health Care & Diagnostics',
-                    reg_number: 'DMC-2021-4921',
-                  })}
-                >
-                  <View style={styles.pilotIconBox}>
-                    <Ionicons name="fitness" size={18} color="#16a34a" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.pilotOptionTitle}>Dr. Sunita Sharma (MBBS, DNB)</Text>
-                    <Text style={styles.pilotOptionSub}>Consultant • 9+ Yrs Exp • DMC-2021-4921</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
-                </TouchableOpacity>
-              </ScrollView>
-
-              <TouchableOpacity
-                style={styles.modalCloseBtn}
-                onPress={() => setShowPilotModal(false)}
-              >
-                <Text style={styles.modalCloseBtnText}>Close Console</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-
         {/* Doctor First-Time Clinic Setup Modal */}
         <Modal visible={showOnboardingModal} animationType="slide" transparent onRequestClose={() => setShowOnboardingModal(false)}>
           <View style={styles.modalOverlay}>
@@ -758,7 +471,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                 <Ionicons name="id-card" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. NMC-2024-8849"
+                  placeholder="e.g. NMC/12345/2023"
                   placeholderTextColor={Colors.textSecondary}
                   value={onboardRegNo}
                   onChangeText={setOnboardRegNo}
@@ -770,7 +483,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                 <Ionicons name="business" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. Sharma Health Clinic"
+                  placeholder="e.g. City Health Clinic & Hospital"
                   placeholderTextColor={Colors.textSecondary}
                   value={onboardClinic}
                   onChangeText={setOnboardClinic}

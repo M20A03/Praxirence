@@ -685,67 +685,7 @@ export const mobileApi = {
       const planCached = await AsyncStorage.getItem(`praxirence_careplan_${patientId}`);
       if (planCached) return JSON.parse(planCached);
 
-      // Return default institutional care plan for seamless offline demonstration
-      return [
-        {
-          id: 'visit_pilot_default',
-          patient_id: patientId,
-          doctor_id: 'doc_mayank',
-          doctor_name: 'Dr. Mayank Raj',
-          specialty: 'Internal Medicine & Pulmonology',
-          date: new Date().toISOString(),
-          diagnosis: 'Upper Respiratory Tract Infection & Acid Reflux',
-          patient_summary: 'Evaluation showed mild pharyngeal erythema and gastroesophageal reflux symptoms. Continue prescribed medications and avoid oily/spicy foods.',
-          doctor_advice: 'Drink warm water throughout the day, sleep with head slightly elevated, and avoid heavy meals within 2 hours of bedtime.',
-          medicines: [
-            {
-              name: 'Pantocid 40mg',
-              dosage: '1 Tablet',
-              frequency: '1-0-0',
-              instructions: 'Take 30 minutes before breakfast with water',
-              duration_days: 14,
-            },
-            {
-              name: 'Augmentin 625mg',
-              dosage: '1 Tablet',
-              frequency: '1-0-1',
-              instructions: 'Take after meals (morning and night)',
-              duration_days: 5,
-            },
-            {
-              name: 'Allegra 120mg',
-              dosage: '1 Tablet',
-              frequency: '0-0-1',
-              instructions: 'Take at bedtime for allergy relief',
-              duration_days: 5,
-            },
-          ],
-          reminders: [
-            {
-              medicine_name: 'Pantocid 40mg',
-              dosage: '1 Tablet',
-              time: '08:00',
-              frequency: 'daily',
-              instructions: 'Before breakfast',
-            },
-            {
-              medicine_name: 'Augmentin 625mg',
-              dosage: '1 Tablet',
-              time: '08:30',
-              frequency: 'daily',
-              instructions: 'After breakfast',
-            },
-            {
-              medicine_name: 'Allegra 120mg',
-              dosage: '1 Tablet',
-              time: '21:00',
-              frequency: 'daily',
-              instructions: 'At bedtime',
-            },
-          ],
-          status: 'approved',
-        },
-      ];
+      return [];
     }
   },
 
@@ -953,30 +893,7 @@ export const mobileApi = {
 
     const cached = await AsyncStorage.getItem(cacheKey);
     if (cached) return JSON.parse(cached);
-    return [
-      {
-        id: '15a1fef3-d264-4d37-b981-f7a10a683fb8',
-        name: 'Dr. Mayank Raj',
-        email: 'doctor@praxirence.com',
-        phone: '+919876543210',
-        specialty: 'Chief Medical Officer & Physician',
-        clinic_name: 'Praxirence Clinical Centre',
-        reg_number: 'NMC-2024-84920',
-        city: 'Bangalore',
-        state: 'Karnataka',
-        clinic_address: '12th Main, Indiranagar, Bangalore',
-        latitude: 12.9716,
-        longitude: 77.5946,
-        distance_km: 1.8,
-        available_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-        working_hours_start: '09:00',
-        working_hours_end: '18:00',
-        slot_duration_mins: 30,
-        consultation_fee: 500,
-        is_available_today: true,
-        role: 'doctor',
-      },
-    ];
+    return [];
   },
 
   async getDoctorAvailability(doctorId: string, date?: string): Promise<DoctorAvailabilityResponse> {
@@ -1013,7 +930,7 @@ export const mobileApi = {
 
     return {
       doctor_id: doctorId,
-      doctor_name: 'Dr. Mayank Raj',
+      doctor_name: 'Attending Physician',
       date: targetDate,
       day_of_week: dayName,
       is_available: !isSunday,
@@ -1051,73 +968,21 @@ export const mobileApi = {
       if (e.message && e.message.includes('on leave')) {
         throw e;
       }
-      console.warn('Network error during book-slot, using resilient appointment fallback:', e);
+      console.warn('Network error during book-slot:', e);
+      throw new Error(e.message || 'Unable to confirm appointment slot. Please verify your connection.');
     }
-
-    // Resilient offline-first appointment confirmation
-    const mockVisitId = 'visit-sched-' + Date.now().toString().slice(-6);
-    return {
-      success: true,
-      visit_id: mockVisitId,
-      message: `Encounter successfully reserved for ${payload.appointment_date} at ${payload.time_slot}. Confirmed in Praxirence Care Vault. Token: PX-01`,
-      status: 'scheduled',
-      token_number: 1,
-      token_display: 'PX-01',
-      patients_ahead: 0,
-      estimated_wait_mins: 0,
-      appointment: {
-        id: mockVisitId,
-        doctor_id: payload.doctor_id,
-        doctor_name: 'Dr. Mayank Raj',
-        doctor_specialty: 'Chief Medical Officer & Physician',
-        clinic_name: 'Praxirence Clinical Centre',
-        clinic_address: '12th Main, Indiranagar, Bangalore',
-        patient_id: payload.patient_id,
-        patient_name: 'Mayank',
-        appointment_date: payload.appointment_date,
-        time_slot: payload.time_slot,
-        booking_type: payload.booking_type || 'in_person',
-        chief_complaint: payload.chief_complaint || 'Routine Consultation',
-        token_number: 1,
-        token_display: 'PX-01',
-        patients_ahead: 0,
-        estimated_wait_mins: 0,
-        status: 'scheduled',
-      },
-    };
   },
 
   async getVisitQueueStatus(visitId: string): Promise<QueueStatusResponse> {
     const url = `${getEffectiveApiUrl()}/visits/${visitId}/queue-status`;
-    try {
-      const res = await resilientFetch(url, {
-        method: 'GET',
-        headers: getHeaders(),
-      });
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (e) {
-      console.warn('Network error fetching queue status, using resilient fallback:', e);
+    const res = await resilientFetch(url, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    if (res.ok) {
+      return await res.json();
     }
-    return {
-      visit_id: visitId,
-      doctor_id: 'doc-01',
-      doctor_name: 'Dr. Mayank Raj',
-      patient_id: 'pat-01',
-      patient_name: 'Patient',
-      appointment_date: new Date().toISOString().slice(0, 10),
-      time_slot: '10:00 AM',
-      token_number: 1,
-      token_display: 'PX-01',
-      current_serving_token: 'PX-01',
-      current_serving_token_number: 1,
-      patients_ahead: 0,
-      estimated_wait_mins: 0,
-      status: 'scheduled',
-      clinic_name: 'Praxirence Clinical Centre',
-      clinic_address: '12th Main, Indiranagar, Bangalore',
-    };
+    throw new Error('Unable to retrieve queue status.');
   },
 
   async updateFcmToken(patientId: string, token: string): Promise<{ success: boolean; message: string }> {
@@ -1247,8 +1112,8 @@ export const mobileApi = {
       const docs = await this.getDoctors();
       return {
         reply: isHindi
-          ? `हमारे नेटवर्क में उपलब्ध मुख्य डॉक्टर: Dr. Mayank Raj (Chief Medical Officer & Physician) एवं Dr. Aarav Mehta (Pediatrics)। 'Doctors' टैब में जाकर आप अपॉइंटमेंट ले सकते हैं।`
-          : `Verified specialists available: Dr. Mayank Raj (Chief Medical Officer & Physician) and Dr. Aarav Mehta (Pediatrics). You can view full profiles and book visits in the 'Doctors' tab.`,
+          ? `हमारे नेटवर्क में उपलब्ध डॉक्टर देखने के लिए कृपया 'Doctors' टैब में जाएं। वहां आप सत्यापित डॉक्टरों की सूची देख सकते हैं और सीधे अपॉइंटमेंट बुक कर सकते हैं।`
+          : `You can view our verified medical practitioners and book appointments directly from the 'Doctors' tab.`,
         language: lang,
         detected_intent: 'doctor_recommendation',
         medicines_referenced: [],
@@ -1260,8 +1125,8 @@ export const mobileApi = {
           reg_number: d.reg_number,
         })),
         quick_suggestions: isHindi
-          ? ['Dr. Mayank Raj से बात करें', 'पीडियाट्रिशियन खोजें', 'क्लिनिक का पता']
-          : ['Book with Dr. Mayank Raj', 'Find Pediatrician', 'Clinic Address'],
+          ? ['डॉक्टर खोजें', 'अपॉइंटमेंट बुक करें', 'क्लिनिक का पता']
+          : ['Find Doctors', 'Book Appointment', 'Clinic Details'],
       };
     }
 

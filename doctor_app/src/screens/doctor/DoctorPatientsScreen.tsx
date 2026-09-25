@@ -384,7 +384,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
             <Text style={styles.inputLabel}>Full Name</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="e.g. Mayank Raj"
+              placeholder="Patient's Full Name"
               placeholderTextColor={Colors.textSecondary}
               value={newName}
               onChangeText={setNewName}

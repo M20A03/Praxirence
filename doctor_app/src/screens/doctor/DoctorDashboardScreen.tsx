@@ -398,15 +398,15 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
     }
   };
 
-  const docRawName = doctor?.name || 'Mayank Raj Gupta';
+  const docRawName = doctor?.name || 'Physician';
   const doctorName = docRawName.startsWith('Dr.') ? docRawName : `Dr. ${docRawName}`;
-  const doctorDegree = doctor?.degree || 'MBBS, MD (General Medicine)';
-  const doctorSpecialty = doctor?.specialty || 'Internal Medicine & Pulmonology';
-  const doctorClinic = doctor?.clinic_name || 'Praxirence Super-Speciality Clinic';
-  const doctorReg = doctor?.reg_number || 'NMC-2024-84920';
-  const doctorExp = doctor?.experience_years ? (typeof doctor.experience_years === 'number' ? `${doctor.experience_years}+ Yrs Exp` : doctor.experience_years) : '12+ Yrs Exp';
-  const doctorDesignation = doctor?.designation || 'Chief Medical Officer & Senior Physician';
-  const doctorLanguages = doctor?.languages && doctor.languages.length > 0 ? doctor.languages : ['English', 'Hindi', 'Hinglish'];
+  const doctorDegree = doctor?.degree || 'MBBS';
+  const doctorSpecialty = doctor?.specialty || 'General Medicine';
+  const doctorClinic = doctor?.clinic_name || 'Clinical Practice';
+  const doctorReg = doctor?.reg_number || '';
+  const doctorExp = doctor?.experience_years ? (typeof doctor.experience_years === 'number' ? `${doctor.experience_years}+ Yrs Exp` : doctor.experience_years) : '';
+  const doctorDesignation = doctor?.designation || 'Consultant Physician';
+  const doctorLanguages = doctor?.languages && doctor.languages.length > 0 ? doctor.languages : ['English', 'Hindi'];
   const doctorInitials = (doctorName || 'MD').replace('Dr. ', '').trim().split(' ').map(n => (n ? n[0] : '')).filter(Boolean).slice(0, 2).join('') || 'MD';
 
   return (
@@ -823,7 +823,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
             <Text style={styles.inputLabel}>Patient Full Name</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g. Ramesh Chandra"
+              placeholder="Patient's Full Name"
               placeholderTextColor={Colors.textSecondary}
               value={walkInName}
               onChangeText={setWalkInName}

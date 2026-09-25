@@ -367,10 +367,10 @@ export const mobileApi = {
         id: 'doc_' + Date.now(),
         name: params.name,
         email: params.email,
-        phone: params.phone || '+919876543210',
-        specialty: params.specialty || 'General Physician',
-        clinic_name: params.clinic_name || 'Praxirence Clinical Centre',
-        reg_number: params.reg_number || 'NMC-2024-84920',
+        phone: params.phone || '',
+        specialty: params.specialty || 'General Practice',
+        clinic_name: params.clinic_name || 'Clinical Practice',
+        reg_number: params.reg_number || '',
         role: 'doctor',
       };
       data = {
@@ -492,7 +492,7 @@ export const mobileApi = {
     }
     return {
       date: new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
-      doctor_name: 'Dr. Mayank Raj',
+      doctor_name: 'Doctor',
       total_scheduled: 0,
       in_waiting: 0,
       queue: [],
@@ -1107,18 +1107,7 @@ export const mobileApi = {
     }
     const cached = await AsyncStorage.getItem(cacheKey);
     if (cached) return JSON.parse(cached);
-    return [
-      {
-        id: '15a1fef3-d264-4d37-b981-f7a10a683fb8',
-        name: 'Dr. Mayank Raj',
-        email: 'doctor@praxirence.com',
-        phone: '+919876543210',
-        specialty: 'Chief Medical Officer & Physician',
-        clinic_name: 'Praxirence Clinical Centre',
-        reg_number: 'NMC-2024-84920',
-        role: 'doctor',
-      },
-    ];
+    return [];
   },
 
   // ==================== MULTILINGUAL AI PATIENT ASSISTANT ====================
@@ -1230,10 +1219,11 @@ export const mobileApi = {
 
     if (qLower.includes('doctor') || qLower.includes('specialist') || qLower.includes('डॉक्टर')) {
       const docs = await this.getDoctors();
+      const docNames = docs.length > 0 ? docs.map((d) => d.name).join(', ') : '';
       return {
         reply: isHindi
-          ? `हमारे नेटवर्क में उपलब्ध मुख्य डॉक्टर: Dr. Mayank Raj (Chief Medical Officer & Physician) एवं Dr. Aarav Mehta (Pediatrics)। 'Doctors' टैब में जाकर आप अपॉइंटमेंट ले सकते हैं।`
-          : `Verified specialists available: Dr. Mayank Raj (Chief Medical Officer & Physician) and Dr. Aarav Mehta (Pediatrics). You can view full profiles and book visits in the 'Doctors' tab.`,
+          ? (docNames ? `हमारे नेटवर्क में उपलब्ध डॉक्टर: ${docNames}। 'Doctors' टैब में जाकर आप अपॉइंटमेंट ले सकते हैं।` : `आप 'Doctors' टैब में जाकर उपलब्ध डॉक्टर देख सकते हैं और अपॉइंटमेंट ले सकते हैं।`)
+          : (docNames ? `Verified specialists available: ${docNames}. You can view full profiles and book visits in the 'Doctors' tab.` : `You can view all verified doctors and schedule appointments in the 'Doctors' tab.`),
         language: lang,
         detected_intent: 'doctor_recommendation',
         medicines_referenced: [],
@@ -1245,8 +1235,8 @@ export const mobileApi = {
           reg_number: d.reg_number,
         })),
         quick_suggestions: isHindi
-          ? ['Dr. Mayank Raj से बात करें', 'पीडियाट्रिशियन खोजें', 'क्लिनिक का पता']
-          : ['Book with Dr. Mayank Raj', 'Find Pediatrician', 'Clinic Address'],
+          ? ['डॉक्टर खोजें', 'अपॉइंटमेंट लें', 'क्लिनिक का समय']
+          : ['Find Doctor', 'Book Appointment', 'Clinic Timings'],
       };
     }
 

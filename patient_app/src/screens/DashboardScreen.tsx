@@ -215,7 +215,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         setQueueStatus({
           visit_id: activeAppt.id,
           doctor_id: activeAppt.doctor_id || '',
-          doctor_name: activeAppt.doctor_name || 'Dr. Mayank Raj',
+          doctor_name: activeAppt.doctor_name || 'Attending Physician',
           patient_id: user.id,
           patient_name: user.name,
           appointment_date: todayIso,
@@ -594,7 +594,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <View style={styles.liveQueueDoctorInfo}>
             <Ionicons name="medical" size={15} color={Colors.primary} />
             <Text style={styles.liveQueueDoctorText}>
-              {queueStatus.doctor_name ? (queueStatus.doctor_name.startsWith('Dr.') ? queueStatus.doctor_name : `Dr. ${queueStatus.doctor_name}`) : 'Dr. Mayank Raj Gupta'} • {queueStatus.time_slot}
+              {queueStatus.doctor_name ? (queueStatus.doctor_name.startsWith('Dr.') ? queueStatus.doctor_name : `Dr. ${queueStatus.doctor_name}`) : 'Attending Physician'} • {queueStatus.time_slot}
             </Text>
           </View>
 
@@ -855,13 +855,15 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 <Text style={styles.diagnosisText}>{latestVisit.diagnosis}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
                   <Text style={styles.doctorInfo}>
-                    {latestVisit.doctor_name ? (latestVisit.doctor_name.startsWith('Dr.') ? latestVisit.doctor_name : `Dr. ${latestVisit.doctor_name}`) : 'Dr. Mayank Raj Gupta'}
+                    {latestVisit.doctor_name ? (latestVisit.doctor_name.startsWith('Dr.') ? latestVisit.doctor_name : `Dr. ${latestVisit.doctor_name}`) : 'Attending Physician'}
                   </Text>
-                  <View style={{ backgroundColor: '#EEF2FF', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: '#C7D2FE' }}>
-                    <Text style={{ fontFamily: FontFamily.semiBold, fontSize: 10, color: '#1E40AF' }}>
-                      {(latestVisit as any).doctor_degree || 'MBBS, MD'}
-                    </Text>
-                  </View>
+                  {Boolean((latestVisit as any).doctor_degree) && (
+                    <View style={{ backgroundColor: '#EEF2FF', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: '#C7D2FE' }}>
+                      <Text style={{ fontFamily: FontFamily.semiBold, fontSize: 10, color: '#1E40AF' }}>
+                        {(latestVisit as any).doctor_degree}
+                      </Text>
+                    </View>
+                  )}
                 </View>
               </View>
               <View style={{ backgroundColor: 'rgba(5, 150, 105, 0.12)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
@@ -1065,7 +1067,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <Text style={styles.fieldLabel}>FULL NAME *</Text>
           <TextInput
             style={styles.textInput}
-            placeholder="e.g. Ramesh Sharma"
+            placeholder="e.g. Family member's full name"
             placeholderTextColor="#94A3B8"
             value={newMemberName}
             onChangeText={setNewMemberName}

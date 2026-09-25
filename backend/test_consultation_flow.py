@@ -10,6 +10,34 @@ if backend_dir not in sys.path:
 from fastapi.testclient import TestClient
 from app.main import app
 from app.core.security import create_access_token
+from app.core.database import Base, engine, SessionLocal
+from app.main import auto_migrate_schema, seed_initial_data
+from app.models.user import User
+from app.models.patient import Patient
+
+Base.metadata.create_all(bind=engine)
+auto_migrate_schema()
+seed_initial_data()
+
+# Ensure doc_test_123 and pat_test_123 exist in DB
+with SessionLocal() as db:
+    if not db.query(User).filter(User.id == "doc_test_123").first():
+        db.add(User(
+            id="doc_test_123",
+            email="doc_test_123@praxirence.com",
+            hashed_password="dummy_hash_for_test",
+            name="Dr. Test User",
+            specialty="General Medicine"
+        ))
+    if not db.query(Patient).filter(Patient.id == "pat_test_123").first():
+        pat = Patient(
+            id="pat_test_123",
+            name="Sarah Test Patient",
+            consent_status=True
+        )
+        pat.phone = "9876543210"
+        db.add(pat)
+    db.commit()
 
 client = TestClient(app)
 

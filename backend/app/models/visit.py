@@ -41,6 +41,7 @@ class Visit(Base):
     approved_at = Column(DateTime, nullable=True)
     signature_hash = Column(String(64), nullable=True, index=True)  # SHA-256 tamper-evident digest
     retention_until = Column(DateTime, nullable=True)  # Statutory NMC 3-year retention lock
+    whatsapp_message_id = Column(String(255), nullable=True)  # External dispatch identifier
     # Automated Clinical Follow-up Check-ins (Day 3 & Day 7 post-consultation)
     day3_followup_status = Column(String(30), default="scheduled", nullable=False)  # scheduled, sent, responded, dismissed
     day3_followup_sent_at = Column(DateTime, nullable=True)

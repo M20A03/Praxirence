@@ -1,4 +1,10 @@
 {
+  "files.exclude": {
+    "**/.git": true,
+    "**/.venv": true,
+    "**/venv": true,
+    "**/.pytest_cache": true
+  },
   "files.watcherExclude": {
     "**/.git/objects/**": true,
     "**/.git/subtree-cache/**": true,
@@ -16,8 +22,11 @@
     "**/android/build": true,
     "**/android/.gradle": true,
     "**/dist": true,
-    "**/build": true
+    "**/build": true,
+    "**/.venv": true,
+    "**/venv": true
   },
+  "C_Cpp.errorSquiggles": "disabled",
   "gradle.autoDetect": "off",
   "gradle.nestedProjects": false,
   "gradle.server.enabled": false,

@@ -39,11 +39,33 @@ else:
         "pool_timeout": 30,
     })
 
-engine = create_engine(
-    db_url,
-    connect_args=connect_args,
-    **engine_kwargs
-)
+try:
+    if not db_url.startswith("sqlite"):
+        test_engine = create_engine(
+            db_url,
+            connect_args=connect_args,
+            **engine_kwargs
+        )
+        # Probe connection to verify PostgreSQL is active and accepting connections
+        with test_engine.connect() as conn:
+            pass
+        engine = test_engine
+    else:
+        engine = create_engine(
+            db_url,
+            connect_args=connect_args,
+            **engine_kwargs
+        )
+except Exception as e:
+    # Resilient local dev fallback to SQLite
+    print(f"[Database] Primary database ({db_url}) unreachable: {e}. Falling back to SQLite praxirence_dev.db")
+    db_url = "sqlite:///./praxirence_dev.db"
+    connect_args = {"check_same_thread": False}
+    engine = create_engine(
+        db_url,
+        connect_args=connect_args,
+        pool_pre_ping=True
+    )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

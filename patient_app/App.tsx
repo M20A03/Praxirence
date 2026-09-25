@@ -30,7 +30,9 @@ import { DoctorSearchScreen } from './src/screens/DoctorSearchScreen';
 
 import { mobileApi } from './src/services/api';
 import { NotificationService } from './src/services/NotificationService';
-import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { GlobalErrorBoundary } from './src/components/common/GlobalErrorBoundary';
+import { CrashResilience } from './src/services/CrashResilienceService';
+import { DeviceIntegrity } from './src/security/DeviceIntegrityService';
 
 export const navigationRef = createNavigationContainerRef<any>();
 
@@ -43,6 +45,10 @@ function PatientAppContent() {
   const [showConsentModal, setShowConsentModal] = useState<boolean>(false);
 
   useEffect(() => {
+    // Initialize Hospital-Grade Crash Resilience & Device Integrity
+    CrashResilience.initialize();
+    DeviceIntegrity.enforcePatientPolicy().catch(() => {});
+
     // Initialize notification channels for Android
     NotificationService.initChannels().catch(() => {});
 
@@ -252,9 +258,9 @@ function PatientAppContent() {
 
 export default function App() {
   return (
-    <ErrorBoundary>
+    <GlobalErrorBoundary>
       <PatientAppContent />
-    </ErrorBoundary>
+    </GlobalErrorBoundary>
   );
 }
 

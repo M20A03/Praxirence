@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { SecureStorage } from '../security/SecureStorage';
+import { NetworkSecurity } from '../security/NetworkSecurityInterceptor';
 import {
   PatientUser,
   DoctorUser,
@@ -70,22 +72,38 @@ const getHeaders = () => {
 };
 
 /**
- * SRE-Grade Resilient Fetch wrapper with timeout and retry logic
+ * SRE-Grade Resilient Fetch wrapper with anti-replay signature headers and timeout
  */
 async function resilientFetch(url: string, options: RequestInit = {}, retries = 2): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
+    // Generate anti-replay cryptographic signature headers
+    const method = options.method || 'GET';
+    const bodyStr = typeof options.body === 'string' ? options.body : undefined;
+    const secureHeaders = await NetworkSecurity.signRequest(method, url, bodyStr, authToken || undefined);
+
+    const mergedHeaders = {
+      ...(options.headers || {}),
+      ...secureHeaders,
+    };
+
     const res = await fetch(url, {
       ...options,
+      headers: mergedHeaders,
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
+
+    // Validate response freshness
+    const respTimestamp = res.headers.get('x-response-timestamp') || res.headers.get('date');
+    NetworkSecurity.validateResponseFreshness(respTimestamp);
+
     if (res.status === 401 && authToken && !url.includes('/auth/')) {
-      console.warn('Session expired (401). Clearing stale token.');
+      console.warn('Session expired (401). Evicting hardware-secured token.');
       setAuthToken(null);
-      AsyncStorage.removeItem('praxirence_token').catch(() => {});
+      SecureStorage.deleteItem('praxirence_token').catch(() => {});
     }
     return res;
   } catch (err: any) {
@@ -444,9 +462,9 @@ export const mobileApi = {
     setAuthToken(token);
     setActiveRoleState(role);
     try {
-      await AsyncStorage.setItem('praxirence_role', role);
-      await AsyncStorage.setItem('praxirence_token', token);
-      await AsyncStorage.setItem('praxirence_user', JSON.stringify(user));
+      await SecureStorage.setItem('praxirence_role', role);
+      await SecureStorage.setItem('praxirence_token', token);
+      await SecureStorage.setItem('praxirence_user', JSON.stringify(user));
     } catch (e) {
       console.warn('Session save notice:', e);
     }
@@ -477,9 +495,9 @@ export const mobileApi = {
           }
         }
       } catch (_) {}
-      const role = (await AsyncStorage.getItem('praxirence_role')) as UserRole | null;
-      const token = await AsyncStorage.getItem('praxirence_token');
-      const userStr = await AsyncStorage.getItem('praxirence_user');
+      const role = (await SecureStorage.getItem('praxirence_role')) as UserRole | null;
+      const token = await SecureStorage.getItem('praxirence_token');
+      const userStr = await SecureStorage.getItem('praxirence_user');
       if (!token || !userStr || !role) return null;
 
       setAuthToken(token);
@@ -496,7 +514,7 @@ export const mobileApi = {
 
         if (res.ok) {
           const verified = await res.json();
-          await AsyncStorage.setItem('praxirence_user', JSON.stringify(verified.user));
+          await SecureStorage.setItem('praxirence_user', JSON.stringify(verified.user));
           return { role: verified.role, user: verified.user };
         }
       } catch (netErr) {
@@ -512,9 +530,10 @@ export const mobileApi = {
 
   async clearSession(): Promise<void> {
     try {
-      await AsyncStorage.removeItem('praxirence_token');
-      await AsyncStorage.removeItem('praxirence_user');
-      await AsyncStorage.removeItem('praxirence_role');
+      await SecureStorage.deleteItem('praxirence_token');
+      await SecureStorage.deleteItem('praxirence_user');
+      await SecureStorage.deleteItem('praxirence_role');
+      await SecureStorage.wipeAllAuthCredentials();
     } catch (e) {
       console.warn('Clear session notice:', e);
     }

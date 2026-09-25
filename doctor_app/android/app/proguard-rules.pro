@@ -22,3 +22,9 @@
 # Async Storage & Vector Icons
 -keep class com.reactnativecommunity.asyncstorage.** { *; }
 -keep class com.oblador.vectoricons.** { *; }
+
+# SecureStore, Android Keystore & Crypto
+-keep class androidx.security.crypto.** { *; }
+-dontwarn androidx.security.crypto.**
+-keep class expo.modules.securestore.** { *; }
+-keep class expo.modules.crypto.** { *; }

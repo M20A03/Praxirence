@@ -27,7 +27,9 @@ import { DoctorNewConsultationScreen } from './src/screens/doctor/DoctorNewConsu
 import { DoctorProfileScreen } from './src/screens/doctor/DoctorProfileScreen';
 
 import { mobileApi } from './src/services/api';
-import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { GlobalErrorBoundary } from './src/components/common/GlobalErrorBoundary';
+import { CrashResilience } from './src/services/CrashResilienceService';
+import { DeviceIntegrity } from './src/security/DeviceIntegrityService';
 
 export const navigationRef = createNavigationContainerRef<any>();
 
@@ -44,6 +46,10 @@ function DoctorAppContent() {
   const [selectedComplaint, setSelectedComplaint] = useState<string | undefined>();
 
   useEffect(() => {
+    // Initialize Hospital-Grade Crash Resilience & Doctor Integrity Check
+    CrashResilience.initialize();
+    DeviceIntegrity.enforceDoctorPolicy().catch(() => {});
+
     // Setup Android notification channel for doctor alerts
     if (Platform.OS === 'android') {
       try {
@@ -270,9 +276,9 @@ function DoctorAppContent() {
 
 export default function App() {
   return (
-    <ErrorBoundary>
+    <GlobalErrorBoundary>
       <DoctorAppContent />
-    </ErrorBoundary>
+    </GlobalErrorBoundary>
   );
 }
 

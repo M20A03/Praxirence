@@ -10,9 +10,10 @@ import json
 import re
 import logging
 from typing import Dict, Any, List, Optional
+torch: Any = None
 try:
-    import torch
-except ImportError:
+    import torch  # type: ignore
+except (ImportError, Exception):
     torch = None
 
 from ml.config import (
@@ -37,6 +38,7 @@ class ModelLoader:
         self.whisper_processor = None
         self.llm_model = None
         self.llm_tokenizer = None
+        self._faster_whisper_model: Any = None
         self._models_loaded = False
 
     def load_models(self):
@@ -50,8 +52,8 @@ class ModelLoader:
 
         # 1. Load Whisper ASR
         try:
-            from transformers import WhisperForConditionalGeneration, WhisperProcessor
-            from peft import PeftModel
+            from transformers import WhisperForConditionalGeneration, WhisperProcessor  # type: ignore
+            from peft import PeftModel  # type: ignore
 
             logger.info(f"Loading Whisper base model: {WHISPER_BASE_MODEL}...")
             self.whisper_processor = WhisperProcessor.from_pretrained(WHISPER_BASE_MODEL)
@@ -77,8 +79,8 @@ class ModelLoader:
 
         # 2. Load Care-Plan LLM (Mistral-7B / Llama)
         try:
-            from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-            from peft import PeftModel
+            from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig  # type: ignore
+            from peft import PeftModel  # type: ignore
 
             logger.info(f"Loading tokenizer: {LLM_BASE_MODEL}...")
             self.llm_tokenizer = AutoTokenizer.from_pretrained(LLM_BASE_MODEL, use_fast=True)
@@ -176,7 +178,7 @@ class ModelLoader:
 
         if self.whisper_model and self.whisper_processor:
             try:
-                import soundfile as sf
+                import soundfile as sf  # type: ignore
                 audio_data, sr = sf.read(target_path)
                 if len(audio_data.shape) > 1:
                     audio_data = audio_data.mean(axis=1)

@@ -18,11 +18,15 @@ LLM_ADAPTER_DIR = os.getenv("LLM_ADAPTER_DIR", os.path.join(MODELS_DIR, "carepla
 MAX_NEW_TOKENS = 512
 TEMPERATURE = 0.1
 
+from typing import Any
+
+torch: Any = None
 try:
-    import torch
-    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-    USE_4BIT_QUANTIZATION = torch.cuda.is_available()
-except ImportError:
+    import torch  # type: ignore
+    DEVICE = "cuda" if (torch and hasattr(torch, "cuda") and torch.cuda.is_available()) else "cpu"
+    USE_4BIT_QUANTIZATION = bool(torch and hasattr(torch, "cuda") and torch.cuda.is_available())
+except (ImportError, Exception):
     torch = None
     DEVICE = "cpu"
     USE_4BIT_QUANTIZATION = False
+

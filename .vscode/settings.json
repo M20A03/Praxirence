@@ -30,6 +30,15 @@
   "gradle.autoDetect": "off",
   "gradle.nestedProjects": false,
   "gradle.server.enabled": false,
-  "typescript.disableAutomaticTypeAcquisition": true
+  "typescript.disableAutomaticTypeAcquisition": true,
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/backend",
+    "${workspaceFolder}/backend/app",
+    "${workspaceFolder}/backend/ml"
+  ],
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportMissingImports": "none",
+    "reportMissingModuleSource": "none"
+  }
 }
 

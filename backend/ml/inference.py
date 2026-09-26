@@ -48,6 +48,23 @@ class ModelLoader:
         if self._models_loaded:
             return
 
+        # Check if local ML is explicitly disabled
+        if os.environ.get("USE_LOCAL_ML", "True").lower() not in ("true", "1"):
+            logger.info("USE_LOCAL_ML is disabled. Using lightweight clinical rule-based engine.")
+            self._models_loaded = True
+            return
+
+        # In cloud containers (e.g. Railway) without GPU, avoid downloading 15GB LLM weights to prevent OOM crashes
+        is_cloud_cpu = (
+            os.environ.get("RAILWAY_ENVIRONMENT") or 
+            os.environ.get("RAILWAY_PROJECT_ID") or
+            os.environ.get("DYNO")
+        ) and self.device == "cpu" and not os.environ.get("FORCE_LOCAL_ML_DOWNLOAD")
+        if is_cloud_cpu:
+            logger.info("Railway cloud environment without GPU detected. Using fast clinical rule-based engine to prevent OOM crashes.")
+            self._models_loaded = True
+            return
+
         logger.info(f"Initializing ModelLoader on device: {self.device.upper()}")
 
         # 1. Load Whisper ASR

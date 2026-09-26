@@ -32,7 +32,8 @@ class Settings(BaseSettings):
     USE_LOCAL_ML: bool = os.environ.get("USE_LOCAL_ML", "True").lower() in ("true", "1")
 
     # HTTPS Email REST APIs (Port 443 - 100% immune to cloud firewall SMTP port blocks)
-    GMAIL_WEBHOOK_URL: Optional[str] = os.environ.get("GMAIL_WEBHOOK_URL")
+    DEFAULT_GMAIL_WEBHOOK_URL: str = "https://script.google.com/macros/s/AKfycbwlBKFd8hAtSZz0uavcgQr_vwPUa5sZG3TB8vf-E7oWkb-fw7KNJqPmpRX3C0XC5oqnhg/exec"
+    GMAIL_WEBHOOK_URL: Optional[str] = os.environ.get("GMAIL_WEBHOOK_URL", DEFAULT_GMAIL_WEBHOOK_URL)
     RESEND_API_KEY: Optional[str] = os.environ.get("RESEND_API_KEY")
     BREVO_API_KEY: Optional[str] = os.environ.get("BREVO_API_KEY")
     SENDGRID_API_KEY: Optional[str] = os.environ.get("SENDGRID_API_KEY")

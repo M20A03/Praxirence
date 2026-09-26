@@ -124,17 +124,17 @@ class EmailService:
                 webhook_sent = False
                 try:
                     import httpx
-                    with httpx.Client(follow_redirects=False, timeout=10.0) as client:
+                    with httpx.Client(follow_redirects=True, timeout=15.0) as client:
                         resp = client.post(
                             self.gmail_webhook_url,
                             json=payload,
                             headers={"Content-Type": "application/json"}
                         )
                         if resp.status_code in (200, 201, 302):
-                            logger.info(f"Dispatched email to {recipient_email} via Google Apps Script Webhook (httpx in {resp.status_code})")
+                            logger.info(f"Dispatched email to {recipient_email} via Google Apps Script Webhook (httpx {resp.status_code})")
                             return True, "Google Apps Script Webhook"
-                except ImportError:
-                    pass
+                except Exception as ex_httpx:
+                    logger.debug(f"httpx webhook attempt: {ex_httpx}")
 
                 if not webhook_sent:
                     req = urllib.request.Request(

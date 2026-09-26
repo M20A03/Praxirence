@@ -76,7 +76,20 @@ def get_auth_directory(db: Session = Depends(get_db)):
     Returns registered doctor and patient directory for transparent review and quick-login.
     """
     try:
-        doctors = db.query(User).all()
+        dummy_emails = [
+            "dr.aarav.mehta@praxirence.com",
+            "dr.aarav@hospital.org",
+            "dr.priya.sharma@praxirence.com",
+            "dr.vikram.gowda@praxirence.com",
+            "dr.ananya.verma@praxirence.com",
+            "dr.rajesh.tripathi@praxirence.com",
+            "newdoc@praxirence.com",
+            "doctor2@praxirence.com"
+        ]
+        doctors = db.query(User).filter(
+            ~User.email.in_(dummy_emails),
+            ~User.email.like("doctor.%@praxirence.com")
+        ).all()
         patients = db.query(Patient).all()
 
         today_iso = datetime.now().strftime("%Y-%m-%d")
@@ -639,11 +652,11 @@ def request_doctor_email_otp(req: DoctorEmailOTPRequest, background_tasks: Backg
             "message": f"Verification code sent to {clean_email}. Please check your inbox and spam folder (valid for 10 minutes)."
         }
     else:
-        return {
-            "success": True,
-            "email": clean_email,
-            "message": f"Cloud provider notice: {info}. For testing, your verification code is {code}."
-        }
+        logger.error(f"Failed to deliver doctor verification email to {clean_email}: {info}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Failed to deliver verification email. Please check the email address or try again in a few moments."
+        )
 
 
 @router.post("/doctor/email-otp/verify", response_model=TokenResponse)
@@ -1091,11 +1104,11 @@ def request_patient_email_otp(req: PatientEmailOTPRequest, background_tasks: Bac
             "message": f"Verification code sent to {clean_email}. Please check your inbox and spam folder (valid for 10 minutes)."
         }
     else:
-        return {
-            "success": True,
-            "email": clean_email,
-            "message": f"Cloud provider notice: {info}. For testing, your verification code is {code}."
-        }
+        logger.error(f"Failed to deliver patient verification email to {clean_email}: {info}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Failed to deliver verification email. Please check the email address or try again in a few moments."
+        )
 
 
 @router.post("/patient/email-otp/verify", response_model=TokenResponse)

@@ -96,6 +96,7 @@ class EmailService:
         self.gmail_webhook_url = getattr(settings, "GMAIL_WEBHOOK_URL", None)
         self.resend_api_key = getattr(settings, "RESEND_API_KEY", None)
         self.brevo_api_key = getattr(settings, "BREVO_API_KEY", None)
+        self.sendgrid_api_key = getattr(settings, "SENDGRID_API_KEY", None)
 
     def _send_mime_email(self, subject: str, plain_text: str, html_content: str, recipient_email: str) -> Tuple[bool, str]:
         """
@@ -219,7 +220,36 @@ class EmailService:
                 logger.warning(f"Brevo HTTPS dispatch notice: {e}")
                 last_error = f"Brevo API error: {e}"
 
-        # 4. SMTP fallback (Dual-port 587 STARTTLS -> 465 SSL)
+        # 4. SendGrid HTTPS REST API (Port 443)
+        if self.sendgrid_api_key:
+            try:
+                sg_payload = {
+                    "personalizations": [{"to": [{"email": recipient_email}]}],
+                    "from": {"email": self.from_email, "name": self.from_name},
+                    "subject": subject,
+                    "content": [
+                        {"type": "text/plain", "value": plain_text},
+                        {"type": "text/html", "value": html_content}
+                    ]
+                }
+                req = urllib.request.Request(
+                    "https://api.sendgrid.com/v3/mail/send",
+                    data=json.dumps(sg_payload).encode("utf-8"),
+                    headers={
+                        "Authorization": f"Bearer {self.sendgrid_api_key}",
+                        "Content-Type": "application/json",
+                        "User-Agent": "Mozilla/5.0 (compatible; PraxirenceCloud/2.0; +https://praxirence.com)"
+                    }
+                )
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    if resp.status in (200, 201, 202):
+                        logger.info(f"Dispatched email to {recipient_email} via SendGrid HTTPS API")
+                        return True, "SendGrid HTTPS API"
+            except Exception as sg_err:
+                logger.warning(f"SendGrid HTTPS dispatch notice: {sg_err}")
+                last_error = f"SendGrid API error: {sg_err}"
+
+        # 5. SMTP fallback (Dual-port 587 STARTTLS -> 465 SSL)
         if self.smtp_host and self.smtp_user and self.smtp_password:
             msg = MIMEMultipart("alternative")
             msg["Subject"] = subject

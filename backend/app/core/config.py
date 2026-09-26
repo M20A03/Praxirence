@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     GMAIL_WEBHOOK_URL: Optional[str] = os.environ.get("GMAIL_WEBHOOK_URL")
     RESEND_API_KEY: Optional[str] = os.environ.get("RESEND_API_KEY")
     BREVO_API_KEY: Optional[str] = os.environ.get("BREVO_API_KEY")
+    SENDGRID_API_KEY: Optional[str] = os.environ.get("SENDGRID_API_KEY")
 
     # SMTP / Noreply Email Configuration (Email OTP Verification)
     SMTP_HOST: Optional[str] = os.environ.get("SMTP_HOST", "smtp.gmail.com")

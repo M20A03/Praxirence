@@ -354,36 +354,7 @@ def get_upcoming_patient_schedule(
             "consent_status": p.consent_status if p else True
         })
 
-    # If no real visits exist yet, populate with registered patients for offline/demo robustness
-    if not schedule:
-        patients = db.query(Patient).order_by(Patient.created_at.desc()).limit(15).all()
-        default_complaints = [
-            {"complaint": "Persistent productive cough, fever 101°F & chest heaviness", "triage": "Priority", "time": "09:30 AM"},
-            {"complaint": "Routine Type-2 Diabetes quarterly review & HbA1c check", "triage": "Routine", "time": "10:15 AM"},
-            {"complaint": "Acute migraine episode with photophobia & nausea", "triage": "Urgent", "time": "11:00 AM"},
-            {"complaint": "Stage 1 Essential Hypertension blood pressure monitoring", "triage": "Routine", "time": "11:45 AM"},
-            {"complaint": "Seasonal allergic rhinitis & throat irritation", "triage": "Routine", "time": "12:30 PM"},
-        ]
-        for idx, p in enumerate(patients):
-            mock_c = default_complaints[idx % len(default_complaints)]
-            has_visits = db.query(Visit).filter(Visit.patient_id == p.id).count()
-            status_val = "Waiting in Clinic" if idx == 0 else ("In Waiting Room" if idx < 3 else "Scheduled Today")
-            if has_visits > 0 and idx > 3:
-                status_val = "Follow-Up Visit"
-
-            schedule.append({
-                "token": f"PX-0{idx + 1}" if idx < 9 else f"PX-{idx + 1}",
-                "token_number": idx + 1,
-                "patient_id": str(p.id),
-                "patient_name": p.name,
-                "patient_phone": p.phone or "+919835139865",
-                "time": mock_c["time"],
-                "chief_complaint": mock_c["complaint"],
-                "triage": mock_c["triage"],
-                "status": status_val,
-                "dob": str(p.dob) if p.dob else "1994-05-12",
-                "consent_status": p.consent_status
-            })
+    # Return real scheduled visits only; if none exist, return clean empty queue
 
     completed_count = db.query(Visit).filter(
         Visit.doctor_id == current_doctor.id,

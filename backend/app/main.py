@@ -259,126 +259,28 @@ def seed_initial_data():
                 doctor.consultation_fee = 500
             db.commit()
 
-        # Seed network doctors across Karnataka and Uttar Pradesh
-        extra_clinicians = [
-            {
-                "email": "dr.aarav.mehta@praxirence.com",
-                "name": "Dr. Aarav Mehta",
-                "phone": "+919820011223",
-                "specialty": "Pediatrics & Child Specialist",
-                "clinic_name": "Apollo Clinic Indira Nagar",
-                "reg_number": "UPMC-2021-49201",
-                "city": "Lucknow",
-                "state": "Uttar Pradesh",
-                "pincode": "226016",
-                "clinic_address": "Sector 14, Indira Nagar, Lucknow",
-                "latitude": 26.8833,
-                "longitude": 80.9984,
-                "available_days": ["Mon", "Tue", "Wed", "Thu", "Fri"],
-                "working_hours_start": "10:00",
-                "working_hours_end": "17:00",
-                "consultation_fee": 600
-            },
-            {
-                "email": "dr.priya.sharma@praxirence.com",
-                "name": "Dr. Priya Sharma",
-                "phone": "+919830022334",
-                "specialty": "Cardiology & Preventive Heart Care",
-                "clinic_name": "Swaroop Heart & Vitals Centre",
-                "reg_number": "UPMC-2019-33829",
-                "city": "Kanpur",
-                "state": "Uttar Pradesh",
-                "pincode": "208002",
-                "clinic_address": "Swaroop Nagar, Kanpur",
-                "latitude": 26.4755,
-                "longitude": 80.3150,
-                "available_days": ["Mon", "Wed", "Fri", "Sat"],
-                "working_hours_start": "09:30",
-                "working_hours_end": "16:30",
-                "consultation_fee": 800
-            },
-            {
-                "email": "dr.vikram.gowda@praxirence.com",
-                "name": "Dr. Vikram Gowda",
-                "phone": "+919840033445",
-                "specialty": "Orthopedics & Joint Care",
-                "clinic_name": "Mysore Bone & Joint Specialty",
-                "reg_number": "KMC-2020-58190",
-                "city": "Mysore",
-                "state": "Karnataka",
-                "pincode": "570012",
-                "clinic_address": "Jayalakshmipuram, Mysore",
-                "latitude": 12.3168,
-                "longitude": 76.6358,
-                "available_days": ["Mon", "Tue", "Thu", "Fri", "Sat"],
-                "working_hours_start": "09:00",
-                "working_hours_end": "18:00",
-                "consultation_fee": 550
-            },
-            {
-                "email": "dr.ananya.verma@praxirence.com",
-                "name": "Dr. Ananya Verma",
-                "phone": "+919850044556",
-                "specialty": "Pulmonology & Chest Medicine",
-                "clinic_name": "Noida Respiratory Health Institute",
-                "reg_number": "DMC-2022-77189",
-                "city": "Noida",
-                "state": "Uttar Pradesh",
-                "pincode": "201309",
-                "clinic_address": "Block B, Sector 62, Noida",
-                "latitude": 28.6256,
-                "longitude": 77.3732,
-                "available_days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-                "working_hours_start": "09:00",
-                "working_hours_end": "19:00",
-                "consultation_fee": 700
-            },
-            {
-                "email": "dr.rajesh.tripathi@praxirence.com",
-                "name": "Dr. Rajesh Tripathi",
-                "phone": "+919860055667",
-                "specialty": "General Physician & Diabetologist",
-                "clinic_name": "Kashi Clinical Wellness",
-                "reg_number": "UPMC-2018-29401",
-                "city": "Varanasi",
-                "state": "Uttar Pradesh",
-                "pincode": "221010",
-                "clinic_address": "Sigra, Varanasi",
-                "latitude": 25.3176,
-                "longitude": 82.9739,
-                "available_days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-                "working_hours_start": "08:30",
-                "working_hours_end": "17:30",
-                "consultation_fee": 450
-            }
+        # Purge dummy demo/seeded clinician accounts while strictly preserving real doctors
+        dummy_emails = [
+            "dr.aarav.mehta@praxirence.com",
+            "dr.aarav@hospital.org",
+            "dr.priya.sharma@praxirence.com",
+            "dr.vikram.gowda@praxirence.com",
+            "dr.ananya.verma@praxirence.com",
+            "dr.rajesh.tripathi@praxirence.com",
+            "newdoc@praxirence.com",
+            "doctor2@praxirence.com"
         ]
-
-        for item in extra_clinicians:
-            existing = db.query(User).filter(User.email == item["email"]).first()
-            if not existing:
-                new_doc = User(
-                    email=item["email"],
-                    hashed_password=get_password_hash("Doctor123!"),
-                    name=item["name"],
-                    phone=item["phone"],
-                    specialty=item["specialty"],
-                    clinic_name=item["clinic_name"],
-                    reg_number=item["reg_number"],
-                    city=item["city"],
-                    state=item["state"],
-                    pincode=item["pincode"],
-                    clinic_address=item["clinic_address"],
-                    latitude=item["latitude"],
-                    longitude=item["longitude"],
-                    available_days=item["available_days"],
-                    working_hours_start=item["working_hours_start"],
-                    working_hours_end=item["working_hours_end"],
-                    slot_duration_mins=30,
-                    unavailable_dates=[],
-                    consultation_fee=item["consultation_fee"]
-                )
-                db.add(new_doc)
-        db.commit()
+        dummy_docs = db.query(User).filter(
+            (User.email.in_(dummy_emails)) |
+            (User.email.like("doctor.%@praxirence.com"))
+        ).all()
+        if dummy_docs:
+            dummy_ids = [d.id for d in dummy_docs]
+            db.query(Visit).filter(Visit.doctor_id.in_(dummy_ids)).delete(synchronize_session=False)
+            for d in dummy_docs:
+                db.delete(d)
+            db.commit()
+            logger.info(f"Purged {len(dummy_docs)} mock clinician records from database.")
 
         sample_patient = db.query(Patient).first()
         if not sample_patient:

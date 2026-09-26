@@ -34,14 +34,22 @@ const PRODUCTION_RAILWAY_URL = 'https://praxirence-production.up.railway.app';
 
 export const getEffectiveApiUrl = (): string => {
   if (customApiUrl) return customApiUrl;
+  
   const envUrl = process.env.EXPO_PUBLIC_API_URL;
-  if (envUrl && !envUrl.includes('localhost')) {
+  if (envUrl && envUrl.startsWith('http') && !envUrl.includes('localhost') && !envUrl.includes('10.0.2.2') && !envUrl.includes('10.51.113.76')) {
     return envUrl;
   }
-  if (Platform.OS === 'android') {
-    return process.env.EXPO_PUBLIC_LAN_API_URL || process.env.EXPO_PUBLIC_EMULATOR_API_URL || 'http://10.0.2.2:8000';
+
+  // Explicit local development override only when running under local development
+  if (typeof __DEV__ !== 'undefined' && __DEV__ && process.env.EXPO_PUBLIC_USE_LOCAL_BACKEND === 'true') {
+    if (Platform.OS === 'android') {
+      return process.env.EXPO_PUBLIC_LAN_API_URL || process.env.EXPO_PUBLIC_EMULATOR_API_URL || 'http://10.0.2.2:8000';
+    }
+    return 'http://localhost:8000';
   }
-  return envUrl || PRODUCTION_RAILWAY_URL;
+
+  // Production cloud default for all standalone APKs, 5G, 4G, and Wi-Fi
+  return PRODUCTION_RAILWAY_URL;
 };
 
 const REQUEST_TIMEOUT_MS = 25000;

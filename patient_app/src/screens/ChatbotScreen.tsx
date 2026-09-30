@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
 } from 'react-native';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -147,6 +148,8 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
         medicinesReferenced: res.medicines_referenced,
         recommendedDoctors: res.recommended_doctors,
         quickSuggestions: res.quick_suggestions,
+        citations: res.citations,
+        emergencyAlert: res.emergency_alert,
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
@@ -262,6 +265,66 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
                 >
                   {msg.text}
                 </Text>
+
+                {/* ESI Tier-1 Hospital-Grade Emergency Alert Card */}
+                {msg.emergencyAlert && (
+                  <View style={styles.emergencyCard}>
+                    <View style={styles.emergencyHeaderRow}>
+                      <Ionicons name="warning" size={22} color="#DC2626" />
+                      <Text style={styles.emergencyTitleText}>
+                        {msg.emergencyAlert.title || 'CLINICAL EMERGENCY RED-FLAG'}
+                      </Text>
+                    </View>
+                    <Text style={styles.emergencyReasonBadge}>
+                      {msg.emergencyAlert.reason}
+                    </Text>
+
+                    {/* Direct Quick-Dial Calling Actions */}
+                    <View style={styles.emergencyActionsRow}>
+                      <TouchableOpacity
+                        style={styles.emergencyDialPrimary}
+                        onPress={() => Linking.openURL('tel:108')}
+                      >
+                        <Ionicons name="call" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                        <Text style={styles.emergencyDialPrimaryText}>Call 108 Ambulance</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.emergencyDialSecondary}
+                        onPress={() => Linking.openURL('tel:112')}
+                      >
+                        <Ionicons name="call" size={16} color="#DC2626" style={{ marginRight: 4 }} />
+                        <Text style={styles.emergencyDialSecondaryText}>Call 112</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Emergency Protocol Guidance */}
+                    {msg.emergencyAlert.guidance && msg.emergencyAlert.guidance.length > 0 && (
+                      <View style={styles.emergencyGuidanceList}>
+                        {msg.emergencyAlert.guidance.map((item, gIdx) => (
+                          <View key={gIdx} style={styles.emergencyGuidanceRow}>
+                            <Ionicons name="alert-circle" size={13} color="#DC2626" style={{ marginRight: 6, marginTop: 2 }} />
+                            <Text style={styles.emergencyGuidanceText}>{item}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                {/* Verified Grounded Clinical Citations */}
+                {msg.citations && msg.citations.length > 0 && (
+                  <View style={styles.citationsContainer}>
+                    {msg.citations.map((c, cIdx) => (
+                      <View key={cIdx} style={styles.citationBadge}>
+                        <Ionicons name="shield-checkmark" size={12} color={Colors.primary} style={{ marginRight: 4 }} />
+                        <Text style={styles.citationText}>
+                          Grounded in Dr. {c.doctor_name}'s Consultation ({c.visit_date})
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
 
                 {/* Render Doctor Recommendation Cards */}
                 {msg.recommendedDoctors && msg.recommendedDoctors.length > 0 && (
@@ -648,5 +711,113 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  // Emergency Triage Card Styles
+  emergencyCard: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1.5,
+    borderColor: '#EF4444',
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  emergencyHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  emergencyTitleText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 13,
+    color: '#DC2626',
+    letterSpacing: 0.5,
+  },
+  emergencyReasonBadge: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 12,
+    color: '#991B1B',
+    marginBottom: 10,
+  },
+  emergencyActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  emergencyDialPrimary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#DC2626',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    elevation: 2,
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+  },
+  emergencyDialPrimaryText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 13,
+    color: '#FFFFFF',
+  },
+  emergencyDialSecondary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#DC2626',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+  },
+  emergencyDialSecondaryText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 13,
+    color: '#DC2626',
+  },
+  emergencyGuidanceList: {
+    borderTopWidth: 1,
+    borderTopColor: '#FECACA',
+    paddingTop: 8,
+    gap: 4,
+  },
+  emergencyGuidanceRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  emergencyGuidanceText: {
+    flex: 1,
+    fontFamily: FontFamily.regular,
+    fontSize: 11,
+    color: '#7F1D1D',
+    lineHeight: 16,
+  },
+  // Grounded Citations Styles
+  citationsContainer: {
+    marginTop: 8,
+    gap: 4,
+  },
+  citationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(13, 148, 136, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(13, 148, 136, 0.25)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  citationText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 11,
+    color: Colors.primaryDark,
   },
 });

@@ -1128,6 +1128,8 @@ export const mobileApi = {
     medicines_referenced: any[];
     recommended_doctors: any[];
     quick_suggestions: string[];
+    citations?: any[];
+    emergency_alert?: any;
   }> {
     const lang = params.language || 'English';
     try {

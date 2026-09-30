@@ -15,7 +15,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../../theme';
-import { PatientSummary, MedicineItem, ReminderItem, DoctorUser, ConsultationSummarizeResult } from '../../types';
+import { PatientSummary, MedicineItem, ReminderItem, DoctorUser, ConsultationSummarizeResult, AmberAlertItem, SOAPStructure } from '../../types';
 import { mobileApi, extractClinicalCarePlanLocally } from '../../services/api';
 import { AudioConsultationRecorder } from '../../components/AudioConsultationRecorder';
 import { generateAndSharePrescriptionPdf } from '../../services/PrescriptionPdfService';
@@ -50,6 +50,9 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
   const [warningSigns, setWarningSigns] = useState<string[]>([]);
   const [medicines, setMedicines] = useState<MedicineItem[]>([]);
   const [reminders, setReminders] = useState<ReminderItem[]>([]);
+  const [amberAlerts, setAmberAlerts] = useState<AmberAlertItem[]>([]);
+  const [soapNote, setSoapNote] = useState<SOAPStructure | null>(null);
+  const [showDiarizedView, setShowDiarizedView] = useState<boolean>(true);
 
   // Form states for adding another medicine
   const [medName, setMedName] = useState('');
@@ -240,10 +243,19 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
       if (summaryResult.reminders && summaryResult.reminders.length > 0) {
         setReminders(summaryResult.reminders);
       }
+      if (summaryResult.soap) {
+        setSoapNote(summaryResult.soap);
+      }
+      if (summaryResult.amber_alerts && summaryResult.amber_alerts.length > 0) {
+        setAmberAlerts(summaryResult.amber_alerts);
+      }
+      if (summaryResult.diarized_transcript) {
+        setConversationText(summaryResult.diarized_transcript);
+      }
 
       Alert.alert(
-        'Care Plan Generated',
-        'Clinical diagnosis and medications structured into clear patient instructions.'
+        'Care Plan & SOAP Note Generated',
+        'Institutional SOAP note and standardized medication plan structured.'
       );
     } catch (e: any) {
       console.warn('Summarize network notice, utilizing local clinical parser:', e);
@@ -265,6 +277,18 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
     }
   };
 
+  const handleAcceptAmberAlert = (alertItem: AmberAlertItem, index: number) => {
+    if (conversationText.includes(alertItem.term)) {
+      setConversationText((prev) => prev.split(alertItem.term).join(alertItem.suggested));
+    }
+    setAmberAlerts((prev) => prev.filter((_, idx) => idx !== index));
+    Alert.alert('Clinical Term Standardized', `Verified and standardized "${alertItem.term}" to "${alertItem.suggested}".`);
+  };
+
+  const handleDismissAmberAlert = (index: number) => {
+    setAmberAlerts((prev) => prev.filter((_, idx) => idx !== index));
+  };
+
   const handleAudioProcessed = (result: ConsultationSummarizeResult) => {
     if (result.conversation) setConversationText(result.conversation);
     if (result.diagnosis) setDiagnosis(result.diagnosis);
@@ -273,6 +297,9 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
     if (result.medicines && result.medicines.length > 0) setMedicines(result.medicines);
     if (result.reminders && result.reminders.length > 0) setReminders(result.reminders);
     if (result.warning_signs && result.warning_signs.length > 0) setWarningSigns(result.warning_signs);
+    if (result.soap) setSoapNote(result.soap);
+    if (result.amber_alerts && result.amber_alerts.length > 0) setAmberAlerts(result.amber_alerts);
+    if (result.diarized_transcript) setConversationText(result.diarized_transcript);
   };
 
   const handleSharePdf = async () => {
@@ -526,6 +553,109 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
           multiline
         />
 
+        {/* Amber Clinical Term Verification Banner */}
+        {amberAlerts.length > 0 && (
+          <View style={styles.amberAlertCard}>
+            <View style={styles.amberHeaderRow}>
+              <Ionicons name="alert-circle" size={20} color="#D97706" />
+              <Text style={styles.amberHeaderTitle}>
+                Amber Ambiguity Review ({amberAlerts.length} terms flagged)
+              </Text>
+            </View>
+            <Text style={styles.amberSubtitle}>
+              Uncommon or phonetically transcribed drug candidates detected. Tap to standardize before signing.
+            </Text>
+
+            {amberAlerts.map((item, aIdx) => (
+              <View key={aIdx} style={styles.amberItemRow}>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={styles.amberTermText}>"{item.term}"</Text>
+                    <Ionicons name="arrow-forward" size={14} color="#D97706" />
+                    <Text style={styles.amberSuggestedText}>{item.suggested}</Text>
+                  </View>
+                  <Text style={styles.amberReasonText}>{item.reason}</Text>
+                  <Text style={styles.amberConfidenceText}>Confidence: {Math.round(item.confidence * 100)}%</Text>
+                </View>
+
+                <View style={styles.amberActionsRow}>
+                  <TouchableOpacity
+                    style={styles.amberAcceptBtn}
+                    onPress={() => handleAcceptAmberAlert(item, aIdx)}
+                  >
+                    <Ionicons name="checkmark" size={14} color="#FFFFFF" style={{ marginRight: 2 }} />
+                    <Text style={styles.amberAcceptText}>Accept</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.amberDismissBtn}
+                    onPress={() => handleDismissAmberAlert(aIdx)}
+                  >
+                    <Text style={styles.amberDismissText}>Dismiss</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Diarization Turn Preview */}
+        {conversationText.includes('[Doctor]:') && (
+          <View style={styles.diarizedTurnsContainer}>
+            <View style={styles.diarizationHeaderRow}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="git-branch-outline" size={16} color={Colors.primary} />
+                <Text style={styles.diarizationTitle}>Speaker Diarized Consultation Turns</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowDiarizedView(!showDiarizedView)}>
+                <Text style={styles.diarizationToggleText}>
+                  {showDiarizedView ? 'Hide' : 'Show'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {showDiarizedView && (
+              <View style={styles.turnsBubbleList}>
+                {conversationText
+                  .split('\n')
+                  .filter((line) => line.trim().length > 0)
+                  .map((turn, tIdx) => {
+                    const isDoctor = turn.startsWith('[Doctor]:') || turn.toLowerCase().startsWith('doctor:');
+                    const isPatient = turn.startsWith('[Patient]:') || turn.toLowerCase().startsWith('patient:');
+                    const cleanTurn = turn.replace(/^\[(Doctor|Patient)\]:\s*/i, '').replace(/^(Doctor|Patient):\s*/i, '');
+
+                    return (
+                      <View
+                        key={tIdx}
+                        style={[
+                          styles.turnBubble,
+                          isDoctor ? styles.doctorTurnBubble : isPatient ? styles.patientTurnBubble : styles.neutralTurnBubble,
+                        ]}
+                      >
+                        <View style={styles.turnSpeakerTag}>
+                          <Ionicons
+                            name={isDoctor ? 'medkit' : 'person'}
+                            size={12}
+                            color={isDoctor ? Colors.primaryDark : '#0F766E'}
+                          />
+                          <Text
+                            style={[
+                              styles.turnSpeakerText,
+                              { color: isDoctor ? Colors.primaryDark : '#0F766E' },
+                            ]}
+                          >
+                            {isDoctor ? 'Doctor' : isPatient ? 'Patient' : 'Note'}
+                          </Text>
+                        </View>
+                        <Text style={styles.turnContentText}>{cleanTurn}</Text>
+                      </View>
+                    );
+                  })}
+              </View>
+            )}
+          </View>
+        )}
+
         <TouchableOpacity
           style={styles.summarizeBtn}
           onPress={handleSummarizeConsultation}
@@ -541,6 +671,104 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
           )}
         </TouchableOpacity>
       </View>
+
+      {/* 2.5 Institutional Clinical SOAP Care Plan */}
+      {soapNote && (
+        <View style={styles.soapCard}>
+          <View style={styles.soapHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="newspaper-outline" size={20} color={Colors.primary} />
+              <Text style={styles.soapTitle}>Institutional SOAP Care Plan (ICD-10 & INF)</Text>
+            </View>
+            <View style={styles.soapBadge}>
+              <Text style={styles.soapBadgeText}>Tier-1 Hospital Standard</Text>
+            </View>
+          </View>
+
+          {/* Subjective */}
+          <View style={styles.soapSectionBlock}>
+            <Text style={styles.soapSectionTag}>Subjective (S)</Text>
+            <Text style={styles.soapItemText}>
+              • Chief Complaint: {soapNote.subjective?.chief_complaint || 'OPD Presentation'} ({soapNote.subjective?.duration || 'Recent onset'})
+            </Text>
+            {soapNote.subjective?.history_of_present_illness ? (
+              <Text style={styles.soapHpiText}>
+                HPI: {soapNote.subjective.history_of_present_illness}
+              </Text>
+            ) : null}
+          </View>
+
+          {/* Objective */}
+          <View style={styles.soapSectionBlock}>
+            <Text style={styles.soapSectionTag}>Objective (O) - Extracted Dialogue Vitals</Text>
+            <View style={styles.vitalsRow}>
+              {soapNote.objective?.recorded_vitals?.bp && (
+                <View style={styles.vitalPill}>
+                  <Text style={styles.vitalLabel}>BP</Text>
+                  <Text style={styles.vitalVal}>{soapNote.objective.recorded_vitals.bp}</Text>
+                </View>
+              )}
+              {soapNote.objective?.recorded_vitals?.pulse && (
+                <View style={styles.vitalPill}>
+                  <Text style={styles.vitalLabel}>Pulse</Text>
+                  <Text style={styles.vitalVal}>{soapNote.objective.recorded_vitals.pulse}</Text>
+                </View>
+              )}
+              {soapNote.objective?.recorded_vitals?.spo2 && (
+                <View style={styles.vitalPill}>
+                  <Text style={styles.vitalLabel}>SpO2</Text>
+                  <Text style={styles.vitalVal}>{soapNote.objective.recorded_vitals.spo2}</Text>
+                </View>
+              )}
+              {soapNote.objective?.recorded_vitals?.temperature && (
+                <View style={styles.vitalPill}>
+                  <Text style={styles.vitalLabel}>Temp</Text>
+                  <Text style={styles.vitalVal}>{soapNote.objective.recorded_vitals.temperature}</Text>
+                </View>
+              )}
+              {soapNote.objective?.recorded_vitals?.blood_sugar && (
+                <View style={styles.vitalPill}>
+                  <Text style={styles.vitalLabel}>Sugar</Text>
+                  <Text style={styles.vitalVal}>{soapNote.objective.recorded_vitals.blood_sugar}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Assessment */}
+          <View style={styles.soapSectionBlock}>
+            <Text style={styles.soapSectionTag}>Assessment (A) - ICD-10 Mapped</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+              <Text style={styles.soapDiagText}>{soapNote.assessment?.primary_diagnosis || diagnosis}</Text>
+              {soapNote.assessment?.icd_10_code && (
+                <View style={styles.icdChip}>
+                  <Text style={styles.icdChipText}>ICD-10: {soapNote.assessment.icd_10_code}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Plan */}
+          <View style={styles.soapSectionBlock}>
+            <Text style={styles.soapSectionTag}>Plan (P) - Standardized Formulations & Care Protocols</Text>
+            {soapNote.plan?.diagnostic_investigations && soapNote.plan.diagnostic_investigations.length > 0 && (
+              <Text style={styles.soapPlanItem}>
+                • Labs & Investigations: {soapNote.plan.diagnostic_investigations.join(', ')}
+              </Text>
+            )}
+            {soapNote.plan?.dietary_lifestyle && soapNote.plan.dietary_lifestyle.length > 0 && (
+              <Text style={styles.soapPlanItem}>
+                • Diet & Lifestyle: {soapNote.plan.dietary_lifestyle.join('; ')}
+              </Text>
+            )}
+            {soapNote.plan?.follow_up_timeline && (
+              <Text style={styles.soapPlanItem}>
+                • Follow-Up Timeline: {soapNote.plan.follow_up_timeline}
+              </Text>
+            )}
+          </View>
+        </View>
+      )}
 
       {/* 3. Patient-Friendly Summary Preview (What Patient Will See & Understand) */}
       <View style={styles.patientPreviewCard}>
@@ -1359,5 +1587,271 @@ const styles = StyleSheet.create({
   sosChipTextActive: {
     color: '#FFFFFF',
     fontFamily: FontFamily.semiBold,
+  },
+  // Amber Clinical Alert Styles
+  amberAlertCard: {
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1.5,
+    borderColor: '#F59E0B',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 10,
+    marginBottom: 8,
+  },
+  amberHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  amberHeaderTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: 13,
+    color: '#B45309',
+  },
+  amberSubtitle: {
+    fontFamily: FontFamily.regular,
+    fontSize: 11,
+    color: '#92400E',
+    marginBottom: 8,
+  },
+  amberItemRow: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  amberTermText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 12,
+    color: '#B45309',
+  },
+  amberSuggestedText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 12,
+    color: '#047857',
+  },
+  amberReasonText: {
+    fontFamily: FontFamily.regular,
+    fontSize: 11,
+    color: '#475569',
+    marginTop: 2,
+  },
+  amberConfidenceText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 10,
+    color: '#D97706',
+    marginTop: 2,
+  },
+  amberActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginLeft: 8,
+  },
+  amberAcceptBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#059669',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  amberAcceptText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 11,
+    color: '#FFFFFF',
+  },
+  amberDismissBtn: {
+    paddingHorizontal: 6,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  amberDismissText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 11,
+    color: '#64748B',
+  },
+  // Diarized Turns Styles
+  diarizedTurnsContainer: {
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  diarizationHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+    marginBottom: 6,
+  },
+  diarizationTitle: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 12,
+    color: Colors.text,
+  },
+  diarizationToggleText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 11,
+    color: Colors.primary,
+  },
+  turnsBubbleList: {
+    gap: 6,
+  },
+  turnBubble: {
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  doctorTurnBubble: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+    marginLeft: 16,
+  },
+  patientTurnBubble: {
+    backgroundColor: '#F0FDFA',
+    borderColor: '#99F6E4',
+    marginRight: 16,
+  },
+  neutralTurnBubble: {
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
+  },
+  turnSpeakerTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 2,
+  },
+  turnSpeakerText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 10,
+    textTransform: 'uppercase',
+  },
+  turnContentText: {
+    fontFamily: FontFamily.regular,
+    fontSize: 12,
+    color: '#1E293B',
+    lineHeight: 17,
+  },
+  // Institutional SOAP Card Styles
+  soapCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#0284C7',
+    borderRadius: 14,
+    padding: 14,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    elevation: 2,
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  soapHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0F2FE',
+    paddingBottom: 8,
+    marginBottom: 10,
+  },
+  soapTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: 13,
+    color: '#0369A1',
+  },
+  soapBadge: {
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  soapBadgeText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 10,
+    color: '#0284C7',
+  },
+  soapSectionBlock: {
+    marginBottom: 8,
+  },
+  soapSectionTag: {
+    fontFamily: FontFamily.bold,
+    fontSize: 11,
+    color: '#475569',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 3,
+  },
+  soapItemText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    color: '#1E293B',
+  },
+  soapHpiText: {
+    fontFamily: FontFamily.regular,
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  vitalsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 2,
+  },
+  vitalPill: {
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  vitalLabel: {
+    fontFamily: FontFamily.bold,
+    fontSize: 10,
+    color: '#64748B',
+  },
+  vitalVal: {
+    fontFamily: FontFamily.bold,
+    fontSize: 11,
+    color: '#0F172A',
+  },
+  soapDiagText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 13,
+    color: '#0F172A',
+  },
+  icdChip: {
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  icdChipText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 10,
+    color: '#065F46',
+  },
+  soapPlanItem: {
+    fontFamily: FontFamily.regular,
+    fontSize: 11,
+    color: '#334155',
+    lineHeight: 16,
+    marginTop: 2,
   },
 });

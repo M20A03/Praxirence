@@ -110,6 +110,44 @@ export interface Visit {
   day7_followup_response?: { health_status: string; notes?: string; responded_at: string };
 }
 
+export interface AmberAlertItem {
+  term: string;
+  suggested: string;
+  reason: string;
+  confidence: number;
+}
+
+export interface SOAPStructure {
+  subjective: {
+    chief_complaint?: string;
+    duration?: string;
+    history_of_present_illness?: string;
+  };
+  objective: {
+    recorded_vitals?: {
+      bp?: string;
+      pulse?: string;
+      spo2?: string;
+      temperature?: string;
+      blood_sugar?: string;
+      weight?: string;
+    };
+    physical_examination?: string;
+  };
+  assessment: {
+    primary_diagnosis?: string;
+    icd_10_code?: string;
+    differential_diagnoses?: string[];
+  };
+  plan: {
+    medications?: any[];
+    diagnostic_investigations?: string[];
+    dietary_lifestyle?: string[];
+    red_flag_warning_signs?: string[];
+    follow_up_timeline?: string;
+  };
+}
+
 export interface ConsultationSummarizeResult {
   patient_summary: string;
   doctor_advice: string;
@@ -119,6 +157,9 @@ export interface ConsultationSummarizeResult {
   reminders: ReminderItem[];
   follow_up_days?: number;
   conversation?: string;
+  soap?: SOAPStructure;
+  diarized_transcript?: string;
+  amber_alerts?: AmberAlertItem[];
 }
 
 export interface ConsentDocument {

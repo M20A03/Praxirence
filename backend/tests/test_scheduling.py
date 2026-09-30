@@ -21,7 +21,7 @@ def setup_module():
     from app.main import auto_migrate_schema
     auto_migrate_schema()
     db = get_test_db()
-    lko_doc = db.query(User).filter(User.city == "Lucknow").first()
+    lko_doc = db.query(User).filter((User.email == "dr.aarav.test@praxirence.com") | (User.phone == "+919820011223")).first()
     if not lko_doc:
         lko_doc = User(
             email="dr.aarav.test@praxirence.com",
@@ -43,8 +43,12 @@ def setup_module():
             consultation_fee=600
         )
         db.add(lko_doc)
+    else:
+        lko_doc.city = "Lucknow"
+        lko_doc.latitude = 26.8833
+        lko_doc.longitude = 80.9984
 
-    blr_doc = db.query(User).filter(User.city == "Bangalore").first()
+    blr_doc = db.query(User).filter((User.email == "dr.mayank.test@praxirence.com") | (User.phone == "+919876543210")).first()
     if not blr_doc:
         blr_doc = User(
             email="dr.mayank.test@praxirence.com",
@@ -66,6 +70,14 @@ def setup_module():
             consultation_fee=500
         )
         db.add(blr_doc)
+    else:
+        blr_doc.city = "Bangalore"
+        blr_doc.latitude = 12.9716
+        blr_doc.longitude = 77.5946
+        blr_doc.available_days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+        blr_doc.working_hours_start = "09:00"
+        blr_doc.working_hours_end = "18:00"
+        blr_doc.consultation_fee = 500
 
     pat = db.query(Patient).first()
     if not pat:
@@ -227,7 +239,8 @@ def test_consecutive_slot_booking_queue_system():
     if target_dt.strftime("%a") == "Sun":
         target_date = (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d")
 
-    # Clear any previous visits for this doctor & target_date
+    # Clear any previous visits for this doctor & target_date and clear leave dates
+    doctor.unavailable_dates = []
     db.query(Visit).filter(Visit.doctor_id == doctor.id, Visit.appointment_date == target_date).delete()
     db.commit()
     db.close()

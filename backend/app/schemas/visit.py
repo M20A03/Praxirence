@@ -36,6 +36,20 @@ class ConsultationSummarizeRequest(BaseModel):
     doctor_name: Optional[str] = Field("Doctor", description="Name of doctor")
 
 
+class SOAPStructure(BaseModel):
+    subjective: Dict[str, Any] = Field(default_factory=dict)
+    objective: Dict[str, Any] = Field(default_factory=dict)
+    assessment: Dict[str, Any] = Field(default_factory=dict)
+    plan: Dict[str, Any] = Field(default_factory=dict)
+
+
+class AmberAlertItem(BaseModel):
+    term: str
+    suggested: str
+    reason: str
+    confidence: float
+
+
 class ConsultationSummarizeResponse(BaseModel):
     patient_summary: str = Field(..., description="Plain-language explanation of diagnosis and treatment")
     doctor_advice: str = Field(..., description="Dietary, lifestyle, hydration, and resting advice")
@@ -44,6 +58,9 @@ class ConsultationSummarizeResponse(BaseModel):
     medicines: List[MedicineItem] = Field(default_factory=list)
     reminders: List[ReminderItem] = Field(default_factory=list)
     follow_up_days: Optional[int] = Field(5, description="Recommended follow-up days")
+    soap: Optional[SOAPStructure] = None
+    diarized_transcript: Optional[str] = None
+    amber_alerts: List[AmberAlertItem] = Field(default_factory=list)
 
 
 class VisitCreate(BaseModel):

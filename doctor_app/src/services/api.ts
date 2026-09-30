@@ -847,7 +847,10 @@ export const mobileApi = {
           reminders: data.reminders || [],
           warning_signs: data.warning_signs || [],
           follow_up_days: data.follow_up_days || 5,
-          conversation: params.conversation,
+          conversation: data.diarized_transcript || params.conversation,
+          soap: data.soap,
+          diarized_transcript: data.diarized_transcript,
+          amber_alerts: data.amber_alerts,
         };
       } else {
         const err = await res.json().catch(() => ({}));
@@ -933,7 +936,10 @@ export const mobileApi = {
           medicines: visit.medicines || [],
           reminders: visit.reminders || [],
           warning_signs: visit.warning_signs || [],
-          conversation: visit.raw_transcription || '',
+          conversation: visit.diarized_transcript || visit.raw_transcription || '',
+          soap: visit.soap,
+          diarized_transcript: visit.diarized_transcript,
+          amber_alerts: visit.amber_alerts,
         };
       } else {
         const errText = await res.text().catch(() => '');

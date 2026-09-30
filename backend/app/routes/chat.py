@@ -1,9 +1,10 @@
+import os
 import logging
 import json
 import re
 import httpx
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -13,6 +14,8 @@ from app.models.visit import Visit
 from app.models.patient import Patient
 from app.models.user import User
 from app.routes.visits import parse_transcription_and_summary
+from app.services.triage_service import triage_service
+from app.services.pharmacology_service import pharmacology_service
 
 logger = logging.getLogger("praxirence.chat")
 router = APIRouter(prefix="/chat", tags=["Patient Multilingual Assistant"])
@@ -42,6 +45,8 @@ class ChatResponse(BaseModel):
     medicines_referenced: List[Dict[str, Any]] = []
     recommended_doctors: List[RecommendedDoctor] = []
     quick_suggestions: List[str] = []
+    citations: List[Dict[str, Any]] = []
+    emergency_alert: Optional[Dict[str, Any]] = None
     safety_disclaimer: str = "Trained Clinical Assistant. For emergency care, call 108 / 112 immediately."
 
 
@@ -54,7 +59,6 @@ def strip_emojis(text: str) -> str:
         flags=re.UNICODE
     )
     cleaned = emoji_pattern.sub("", text)
-    # Also clean repetitive extra spaces
     cleaned = re.sub(r' {2,}', ' ', cleaned)
     return cleaned.strip()
 
@@ -64,11 +68,12 @@ def generate_grounded_fallback(
     language: str,
     visits: List[Visit],
     patient_name: Optional[str],
-    doctors: List[User]
+    doctors: List[User],
+    active_medications: Optional[List[Dict[str, Any]]] = None
 ) -> tuple[str, str, List[Dict[str, Any]], List[RecommendedDoctor], List[str]]:
     """
     Strictly grounded clinical response builder when LLM API is unavailable.
-    Zero fabricated diagnoses (no fake URTI), zero emojis, multilingual support.
+    Zero fabricated diagnoses, zero emojis, multilingual support, citation-backed.
     """
     q_lower = query.lower()
     intent = "general_health"
@@ -78,12 +83,11 @@ def generate_grounded_fallback(
     is_kannada = lang_lower in ["kannada", "ಕನ್ನಡ", "kn"]
     is_bhojpuri = lang_lower in ["bhojpuri", "भोजपुरी", "bho"]
     is_urdu = lang_lower in ["urdu", "اردو", "ur"]
-    is_tamil = lang_lower in ["tamil", "தமிழ்", "ta"]
-    is_telugu = lang_lower in ["telugu", "తెలుగు", "te"]
-    is_marathi = lang_lower in ["marathi", "मराठी", "mr"]
 
     # Gather all verified records
     all_meds: List[Dict[str, Any]] = []
+    if active_medications:
+        all_meds.extend(active_medications)
     consultation_records: List[Dict[str, Any]] = []
 
     for v in visits:
@@ -140,10 +144,11 @@ def generate_grounded_fallback(
         doc = latest["doctor"]
         adv = latest["advice"] or "Take your prescribed medicines on time, drink adequate water, and get sufficient rest."
         summ = latest["summary"] or f"Consultation conducted on {latest['date']}."
+        date_str = latest["date"]
 
         if is_hindi:
             reply = (
-                f"आपके हालिया परामर्श का विवरण ({doc}):\n\n"
+                f"डॉ. {doc} के साथ {date_str} को हुए परामर्श के अनुसार:\n\n"
                 f"• पुष्टि किया गया निदान: {diag}\n"
                 f"• डॉक्टर का निष्कर्ष: {summ}\n"
                 f"• जीवनशैली और सलाह: {adv}\n\n"
@@ -152,7 +157,7 @@ def generate_grounded_fallback(
             sugg = ["मेरी दवाएं समझाइए", "खतरे के लक्षण", "फॉलो-अप कब है?"]
         elif is_kannada:
             reply = (
-                f"ನಿಮ್ಮ ಇತ್ತೀಚಿನ ಸಮಾಲೋಚನೆ ವಿವರ ({doc}):\n\n"
+                f"ದಿನಾಂಕ {date_str} ರಂದು ಡಾ. {doc} ಅವರೊಂದಿಗೆ ನಡೆದ ಸಮಾಲೋಚನೆಯ ಪ್ರಕಾರ:\n\n"
                 f"• ರೋಗನಿರ್ಣಯ: {diag}\n"
                 f"• ವೈದ್ಯರ ವಿವರಣೆ: {summ}\n"
                 f"• ಜೀವನಶೈಲಿ ಸಲಹೆ: {adv}\n\n"
@@ -161,7 +166,7 @@ def generate_grounded_fallback(
             sugg = ["ಔಷಧಗಳ ವಿವರ", "ಎಚ್ಚರಿಕೆಯ ಚಿಹ್ನೆಗಳು"]
         elif is_bhojpuri:
             reply = (
-                f"रउआ के हाल के परामर्श के विवरण ({doc}):\n\n"
+                f"डॉक्टर साहेब {doc} से {date_str} के भइल सलाह के अनुसार:\n\n"
                 f"• बीमारी / निदान: {diag}\n"
                 f"• डॉक्टर साहेब के बात: {summ}\n"
                 f"• सलाह आ परहेज़: {adv}\n\n"
@@ -170,16 +175,16 @@ def generate_grounded_fallback(
             sugg = ["दवाई के विवरण", "सावधानी"]
         elif is_urdu:
             reply = (
-                f"آپ کے حالیہ مشورے کی تفصیلات ({doc}):\n\n"
+                f"ڈاکٹر {doc} کے ساتھ {date_str} کے مشورے کے مطابق:\n\n"
                 f"• تشخیص: {diag}\n"
                 f"• معالج کا خلاصہ: {summ}\n"
                 f"• لائف اسٹائل اور مشورہ: {adv}\n\n"
-                f"مکمل نسخہ دیکھنے کے لیے 'Visits' ٹیب ملاحظہ فرمائیں۔"
+                f"مکمل نسخہ دیکھنے کے लिए 'Visits' ٹیب ملاحظہ فرمائیں۔"
             )
             sugg = ["ادویات کی تفصیل", "احتیاطی تدابیر"]
         else:
             reply = (
-                f"Clinical Consultation Summary ({doc}):\n\n"
+                f"According to Dr. {doc} during your consultation on {date_str}:\n\n"
                 f"• Confirmed Diagnosis: {diag}\n"
                 f"• Clinician Evaluation: {summ}\n"
                 f"• Lifestyle & Home Care Advice: {adv}\n\n"
@@ -188,10 +193,86 @@ def generate_grounded_fallback(
             sugg = ["Explain my medications", "Warning signs", "Follow-up schedule"]
         return reply, intent, latest["medicines"], [], sugg
 
-    # Intent 2: Medications & Dosage
+    # Intent 2: Missed Dose Protocol
     if any(k in q_lower for k in [
-        "medicine", "tablet", "dosage", "frequency", "when to take", "food",
-        "दवा", "दवाई", "गोली", "खुराक", "ಔಷಧಿ", "ಮಾತ್ರೆ", "خوراک", "دوا"
+        "miss", "missed", "forgot", "bhool", "chhoot", "marathu", "bhul", "भूल"
+    ]):
+        intent = "missed_dose_protocol"
+        rule = pharmacology_service.get_missed_dose_guideline(language)
+        if is_hindi:
+            reply = (
+                f"खुराक भूल जाने पर क्लिनिकल नियम:\n\n{rule}\n\n"
+                f"यदि आप समय के बारे में अनिश्चित हैं, तो कभी भी अतिरिक्त खुराक न लें।"
+            )
+            sugg = ["मेरी दवाएं समझाइए", "डॉक्टर से बात करें", "फॉलो-अप कब है?"]
+        else:
+            reply = (
+                f"Clinical Missed-Dose Protocol:\n\n{rule}\n\n"
+                f"If you are ever uncertain about timing, do not double the dose. Contact your attending clinic for clarification."
+            )
+            sugg = ["Explain my medications", "Contact Doctor", "Warning signs"]
+        return reply, intent, all_meds, [], sugg
+
+    # Intent 3: Food & Medication Timing Rules
+    if any(k in q_lower for k in [
+        "empty stomach", "khana", "before food", "after food", "bhojan",
+        "khali pet", "doodh", "milk", "खाली पेट", "भोजन", "दूध"
+    ]):
+        intent = "food_drug_rules"
+        if all_meds:
+            food_lines = []
+            for m in all_meds:
+                m_name = m.get("name", "Medication")
+                f_rule = pharmacology_service.get_food_rule(m_name, language)
+                food_lines.append(f"• {m_name}: {f_rule}")
+            food_block = "\n".join(food_lines)
+            if is_hindi:
+                reply = (
+                    f"आपकी निर्धारित दवाओं के लिए भोजन संबंधी नियम:\n\n{food_block}\n\n"
+                    f"दवाओं का सही समय पर सेवन उनकी चिकित्सीय प्रभावशीलता सुनिश्चित करता है।"
+                )
+            else:
+                reply = (
+                    f"Medication Food & Timing Guidelines:\n\n{food_block}\n\n"
+                    f"Taking medications with proper food intervals ensures maximum absorption and prevents gastric irritation."
+                )
+            sugg = ["खुराक भूल जाने पर क्या करें?", "डॉक्टर से पूछें"] if is_hindi else ["Missed dose protocol", "Contact Doctor"]
+            return reply, intent, all_meds, [], sugg
+
+    # Intent 4: Check if inquiring about an unrecorded condition
+    medical_conditions = [
+        "cancer", "diabetes", "asthma", "covid", "tuberculosis", "tb", "thyroid",
+        "migraine", "ulcer", "kidney stone", "arthritis", "कैंसर", "शुगर", "टीबी"
+    ]
+    for cond in medical_conditions:
+        if cond in q_lower:
+            found = False
+            for v in visits:
+                diag_str = (v.diagnosis or "").lower()
+                raw_str = (v.raw_transcription or "").lower()
+                if cond in diag_str or cond in raw_str:
+                    found = True
+                    break
+            if not found:
+                intent = "unrecorded_condition_inquiry"
+                if is_hindi:
+                    reply = (
+                        f"यह आपके रिकॉर्ड किए गए परामर्श का हिस्सा नहीं था ({cond.capitalize()})। "
+                        f"कृपया किसी भी नई या असंबद्ध स्वास्थ्य समस्या के लिए अपने डॉक्टर से परामर्श लें।"
+                    )
+                    sugg = ["डॉक्टर खोजें", "परामर्श बुक करें"]
+                else:
+                    reply = (
+                        f"This was not part of your recorded consultation ({cond.capitalize()}). "
+                        f"Please consult your physician for medical advice."
+                    )
+                    sugg = ["Find a Doctor", "Book Consultation"]
+                return reply, intent, [], [], sugg
+
+    # Intent 5: Medications & Dosage Guidance
+    if any(k in q_lower for k in [
+        "medicine", "medication", "tablet", "dosage", "dose", "frequency", "schedule", "routine", "when to take", "food",
+        "दवा", "दवाई", "गोली", "खुराक", "समय", "तालिका", "रूटिन", "रूटीन", "औषधि", "ಮಾತ್ರೆ", "خوراک", "دوا"
     ]):
         intent = "medication_guidance"
         if not all_meds:
@@ -209,30 +290,36 @@ def generate_grounded_fallback(
             dosage = m.get("dosage", "")
             freq = m.get("frequency", "")
             instr = m.get("instructions", "As directed")
-            med_lines.append(f"{i}. {name} ({dosage}) - {freq} • {instr}")
+            food_rule = pharmacology_service.get_food_rule(name, language)
+            med_lines.append(f"{i}. {name} ({dosage}) - {freq}\n   - निर्देश: {instr} | {food_rule}" if is_hindi else f"{i}. {name} ({dosage}) - {freq}\n   - Instructions: {instr} | {food_rule}")
         med_block = "\n".join(med_lines)
 
+        latest_doc = consultation_records[0]["doctor"] if consultation_records else "Your Attending Clinician"
+        latest_date = consultation_records[0]["date"] if consultation_records else "Recent"
+
         if is_hindi:
+            head = f"डॉ. {latest_doc} के परामर्श ({latest_date}) के अनुसार आपकी दवाएं:" if consultation_records else "आपकी सक्रिय निर्धारित दवाओं की अनुसूची:"
             reply = (
-                f"आपकी निर्धारित दवाइयां:\n\n{med_block}\n\n"
+                f"{head}\n\n{med_block}\n\n"
                 f"कृपया समय पर दवाएं लें और बिना डॉक्टर की सलाह के खुराक न बदलें।"
             )
             sugg = ["क्या कोई साइड इफ़ेक्ट हैं?", "खुराक भूल जाने पर क्या करें?", "डॉक्टर से पूछें"]
         elif is_kannada:
             reply = (
-                f"ನಿಮಗೆ ಸೂಚಿಸಲಾದ ಔಷಧಗಳ ಪಟ್ಟಿ:\n\n{med_block}\n\n"
+                f"ಡಾ. {latest_doc} ಅವರ ಸೂಚನೆಯಂತೆ ಔಷಧಗಳ ಪಟ್ಟಿ:\n\n{med_block}\n\n"
                 f"ವೈದ್ಯರ ಸಲಹೆಯಂತೆ ನಿಗದಿತ ವೇಳಾಪಟ್ಟಿಯನ್ನು ಕಟ್ಟುನಿಟ್ಟಾಗಿ ಪಾಲಿಸಿ."
             )
             sugg = ["ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ", "ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್ ಡೌನ್‌ಲೋಡ್"]
         else:
+            head = f"According to Dr. {latest_doc} during your consultation on {latest_date}, here is your prescribed regimen:" if consultation_records else "Here is your active medication schedule and instructions:"
             reply = (
-                f"Your Prescribed Medications:\n\n{med_block}\n\n"
+                f"{head}\n\n{med_block}\n\n"
                 f"Always take your medications as directed by your clinician. Do not discontinue or adjust dosages without medical supervision."
             )
             sugg = ["What if I miss a dose?", "Are there food restrictions?", "Contact Doctor"]
         return reply, intent, all_meds, [], sugg
 
-    # Intent 3: Doctor directory / referral
+    # Intent 6: Doctor directory / referral
     if any(k in q_lower for k in ["doctor", "specialist", "physician", "clinic", "डॉक्टर", "ವೈದ್ಯ", "ڈاکٹر"]):
         intent = "doctor_recommendation"
         rec_docs = []
@@ -310,8 +397,22 @@ async def patient_chat_assistant(
     Retrieves real consultation history, prescriptions, and verified doctors from PostgreSQL.
     Invokes Google Gemini API with clinical grounding, or executes dynamic zero-hallucination inference.
     Strictly forbids emojis, fake diagnoses (no URTI mock), or repetitive canned responses.
+    Features instant ESI red-flag triage detection and pharmacological intelligence.
     """
     logger.info(f"Incoming patient chat query: '{req.message[:60]}...' (Language: {req.language}, Patient: {req.patient_id})")
+
+    # 0. Instant ESI Emergency Red-Flag Triage Check
+    emergency = triage_service.evaluate_emergency(req.message, req.language)
+    if emergency:
+        logger.warning(f"CRITICAL RED-FLAG DETECTED: {emergency.get('reason')} - Triggering instant 108/112 alert card.")
+        return ChatResponse(
+            reply=emergency["message"],
+            language=req.language,
+            detected_intent="emergency_triage",
+            emergency_alert=emergency,
+            safety_disclaimer="EMERGENCY RED-FLAG: Immediate 108 / 112 Dispatch Required.",
+            quick_suggestions=["Call 108 Ambulance", "Call 112 Emergency", "Nearest Hospital ER"]
+        )
 
     # 1. Fetch real patient consultation history from PostgreSQL
     patient_name = None
@@ -328,16 +429,27 @@ async def patient_chat_assistant(
         ).order_by(Visit.created_at.desc()).limit(5).all()
 
     # Query doctors in directory
-    doctors = db.query(User).filter(User.role == "doctor").all()
+    doctors = db.query(User).all()
 
-    # 2. Build Grounding Context
+    # 2. Build Grounding Context & Citations
     context_lines = []
+    citations: List[Dict[str, Any]] = []
+
     if visits:
         for idx, v in enumerate(visits, 1):
             doc_name = v.doctor.name if v.doctor else "Attending Doctor"
             doc_spec = getattr(v.doctor, "specialty", "Physician") if v.doctor else "Physician"
             clinic = getattr(v.doctor, "clinic_name", "Clinic") if v.doctor else "Clinic"
             raw_t, pat_sum, doc_adv = parse_transcription_and_summary(v.raw_transcription)
+            visit_date = v.created_at.strftime("%d %b %Y") if v.created_at else "Recent"
+
+            citations.append({
+                "doctor_name": doc_name,
+                "doctor_specialty": doc_spec,
+                "visit_date": visit_date,
+                "diagnosis": v.diagnosis or "Clinical Consultation",
+                "clinic_name": clinic
+            })
 
             meds_list = []
             if v.medicines:
@@ -350,7 +462,7 @@ async def patient_chat_assistant(
                         meds_list = []
 
             context_lines.append(
-                f"[Visit {idx} - Date: {v.created_at.strftime('%Y-%m-%d') if v.created_at else 'Recent'}]\n"
+                f"[Visit {idx} - Date: {visit_date}]\n"
                 f"Attending Doctor: {doc_name} ({doc_spec} at {clinic})\n"
                 f"Confirmed Diagnosis: {v.diagnosis or 'Clinical Consultation'}\n"
                 f"Doctor's Advice: {doc_adv or 'Follow standard prescription care.'}\n"
@@ -369,12 +481,15 @@ async def patient_chat_assistant(
     if gemini_key and len(gemini_key) > 10:
         system_prompt = (
             "You are Praxirence Clinical AI Assistant. You must answer the patient's questions strictly "
-            "based on their real medical consultation history provided below. "
-            "If the patient has no active consultations or prescriptions, state that plainly and advise them to consult a doctor. "
-            "Do NOT fabricate symptoms, diagnoses, or medications. Do NOT make up Upper Respiratory Tract Infection, acid reflux, or any fake condition. "
-            "Do NOT use emojis under any circumstances. "
-            "Maintain a professional, empathetic, and evidence-based clinical tone. "
-            f"Provide answers strictly in the patient's requested language: {req.language}."
+            "based on their real medical consultation history provided below.\n"
+            "RULES:\n"
+            "1. Every response answering consultation or medication queries MUST cite the specific visit date and prescribing clinician (e.g., 'According to Dr. [Name] during your consultation on [Date]...').\n"
+            "2. If asked about conditions not in the patient's record, clearly state: 'This was not part of your recorded consultation. Please consult your physician for medical advice.'\n"
+            "3. If the patient asks about missed doses, explain: take immediately unless close to next scheduled dose; never double up.\n"
+            "4. If the patient asks about food timings, provide standard pharmacological guidance (e.g. PPIs on empty stomach, NSAIDs after food, thyroid 30 min before breakfast).\n"
+            "5. Do NOT fabricate symptoms, diagnoses, or medications.\n"
+            "6. Do NOT use emojis under any circumstances.\n"
+            f"7. Support natural code-switching (Hinglish, Kanglish, Tanglish) and provide answers in: {req.language}."
         )
 
         user_content = (
@@ -424,7 +539,6 @@ async def patient_chat_assistant(
 
     # 4. If LLM succeeded, return structured response
     if llm_reply:
-        # Determine referenced medicines
         meds_ref = []
         if visits and visits[0].medicines:
             m = visits[0].medicines
@@ -449,7 +563,8 @@ async def patient_chat_assistant(
                 "Explain my medication schedule",
                 "What did my doctor advise?",
                 "Book next follow-up"
-            ]
+            ],
+            citations=citations
         )
 
     # 5. High-fidelity Grounded Fallback
@@ -458,7 +573,8 @@ async def patient_chat_assistant(
         language=req.language,
         visits=visits,
         patient_name=patient_name,
-        doctors=doctors
+        doctors=doctors,
+        active_medications=req.active_medications
     )
 
     clean_reply = strip_emojis(reply_text)
@@ -469,5 +585,6 @@ async def patient_chat_assistant(
         detected_intent=detected_intent,
         medicines_referenced=meds_ref,
         recommended_doctors=rec_docs,
-        quick_suggestions=suggestions
+        quick_suggestions=suggestions,
+        citations=citations
     )

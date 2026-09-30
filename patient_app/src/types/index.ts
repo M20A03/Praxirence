@@ -248,6 +248,28 @@ export interface VitalsRecord {
   statusNote?: string;
 }
 
+export interface ChatCitation {
+  doctor_name: string;
+  doctor_specialty?: string;
+  visit_date: string;
+  diagnosis?: string;
+  clinic_name?: string;
+}
+
+export interface ChatEmergencyAlert {
+  is_emergency: boolean;
+  triage_category: string;
+  reason: string;
+  title: string;
+  message: string;
+  actions: {
+    label: string;
+    action: string;
+    is_primary?: boolean;
+  }[];
+  guidance: string[];
+}
+
 export interface ChatMessage {
   id: string;
   sender: 'user' | 'assistant';
@@ -264,5 +286,7 @@ export interface ChatMessage {
     phone?: string;
   }[];
   quickSuggestions?: string[];
+  citations?: ChatCitation[];
+  emergencyAlert?: ChatEmergencyAlert;
 }
 

@@ -131,7 +131,10 @@ def summarize_consultation(
         diagnosis=result.get("diagnosis", "Clinical Consultation"),
         medicines=clean_meds,
         reminders=clean_rems,
-        follow_up_days=result.get("follow_up_days", 5)
+        follow_up_days=result.get("follow_up_days", 5),
+        soap=result.get("soap"),
+        diarized_transcript=result.get("diarized_transcript"),
+        amber_alerts=result.get("amber_alerts", [])
     )
 
 

@@ -28,8 +28,9 @@ class Settings(BaseSettings):
     # Redis & Background Tasks
     REDIS_URL: str = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 
-    # In-House Local ML Engine (Zero API Dependency, 100% On-Premise)
+    # In-House Local ML Engine & Cloud LLM Orchestration
     USE_LOCAL_ML: bool = os.environ.get("USE_LOCAL_ML", "True").lower() in ("true", "1")
+    GEMINI_API_KEY: Optional[str] = os.environ.get("GEMINI_API_KEY")
 
     # HTTPS Email REST APIs (Port 443 - 100% immune to cloud firewall SMTP port blocks)
     DEFAULT_GMAIL_WEBHOOK_URL: str = "https://script.google.com/macros/s/AKfycbwlBKFd8hAtSZz0uavcgQr_vwPUa5sZG3TB8vf-E7oWkb-fw7KNJqPmpRX3C0XC5oqnhg/exec"

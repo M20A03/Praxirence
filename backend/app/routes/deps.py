@@ -64,12 +64,12 @@ def get_current_doctor(
     if not user:
         user = User(
             id=user_id or "6057fa47-615d-479b-9b9f-d0c2d3bd07ac",
-            name=payload.get("name", "Dr. Mayank Raj"),
+            name=payload.get("name", "Dr. Attending Physician"),
             email=payload.get("email", "doctor@praxirence.com"),
             role="doctor",
-            specialty="Chief Medical Officer & Physician",
-            clinic_name="Praxirence Clinical Centre",
-            reg_number="NMC-2024-84920"
+            specialty=None,
+            clinic_name=None,
+            reg_number=None
         )
         db.add(user)
         db.commit()

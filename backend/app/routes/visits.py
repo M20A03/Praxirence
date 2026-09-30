@@ -702,9 +702,9 @@ def book_appointment_slot(
             "id": scheduled_visit.id,
             "doctor_id": str(doctor.id),
             "doctor_name": doctor.name,
-            "doctor_specialty": getattr(doctor, "specialty", "General Physician"),
-            "clinic_name": getattr(doctor, "clinic_name", "Praxirence Clinical Centre"),
-            "clinic_address": getattr(doctor, "clinic_address", "12th Main, Indiranagar, Bangalore"),
+            "doctor_specialty": getattr(doctor, "specialty", None),
+            "clinic_name": getattr(doctor, "clinic_name", None),
+            "clinic_address": getattr(doctor, "clinic_address", None),
             "patient_id": str(patient.id),
             "patient_name": patient.name,
             "appointment_date": payload.appointment_date,
@@ -903,8 +903,8 @@ def get_visit_queue_status(
         recommended_departure_time=departure_advisory,
         triage=getattr(visit, "triage_level", "Routine") or "Routine",
         status=visit.status,
-        clinic_name=getattr(doctor, "clinic_name", "Praxirence Clinical Centre") if doctor else "Praxirence Clinical Centre",
-        clinic_address=getattr(doctor, "clinic_address", "12th Main, Indiranagar, Bangalore") if doctor else "12th Main, Indiranagar, Bangalore"
+        clinic_name=getattr(doctor, "clinic_name", None) if doctor else None,
+        clinic_address=getattr(doctor, "clinic_address", None) if doctor else None
     )
 
 

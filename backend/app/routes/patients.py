@@ -741,3 +741,41 @@ def get_pending_doctor_reviews(
     return {"pending_reviews": pending}
 
 
+@router.delete("/{patient_id}")
+def delete_patient(
+    patient_id: str,
+    db: Session = Depends(get_db),
+    current_doctor = Depends(get_current_doctor)
+):
+    """
+    Remove patient record from the doctor's active clinical directory.
+    Archives audits and removes the patient entry cleanly.
+    """
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    if not patient:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Patient not found"
+        )
+
+    patient_name = patient.name
+    # Audit log entry for DPDP compliance
+    audit = AuditLog(
+        actor_id=current_doctor.id,
+        actor_role="doctor",
+        action="remove_patient",
+        resource="patient",
+        resource_id=patient.id,
+        details={"patient_name": patient_name}
+    )
+    db.add(audit)
+    db.delete(patient)
+    db.commit()
+
+    return {
+        "success": True,
+        "message": f"Patient {patient_name} removed from your active clinical directory."
+    }
+
+
+

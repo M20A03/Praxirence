@@ -753,6 +753,53 @@ export const mobileApi = {
     return await res.json();
   },
 
+  async deletePatient(patientId: string): Promise<{ success: boolean; message: string }> {
+    const res = await resilientFetch(`${getEffectiveApiUrl()}/patients/${patientId}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    }, 0);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to remove patient record');
+    }
+    return await res.json();
+  },
+
+  async updateDoctorProfile(profileData: Partial<DoctorUser>, doctorId?: string): Promise<{ success: boolean; doctor: DoctorUser }> {
+    let targetId = doctorId;
+    if (!targetId) {
+      const stored = await AsyncStorage.getItem('praxirence_user');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (parsed && parsed.id) targetId = parsed.id;
+        } catch (_) {}
+      }
+    }
+    if (!targetId) {
+      throw new Error('Doctor ID is required to update credentials');
+    }
+    const res = await resilientFetch(`${getEffectiveApiUrl()}/doctors/${targetId}/profile`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(profileData),
+    }, 0);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to update clinician credentials');
+    }
+    const result = await res.json();
+    try {
+      const stored = await AsyncStorage.getItem('praxirence_user');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const updated = { ...parsed, ...(result.doctor || profileData) };
+        await AsyncStorage.setItem('praxirence_user', JSON.stringify(updated));
+      }
+    } catch (_) {}
+    return result;
+  },
+
   async summarizeConsultation(params: {
     conversation: string;
     patient_name?: string;

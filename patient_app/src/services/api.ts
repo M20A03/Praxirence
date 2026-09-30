@@ -1166,9 +1166,9 @@ export const mobileApi = {
       qLower.includes('डॉक्टर की सलाह') ||
       qLower.includes('what did doctor')
     ) {
-      let diag = 'Upper Respiratory Tract Infection & Acid Reflux';
-      let summary = 'Evaluation showed mild pharyngeal erythema and gastroesophageal reflux symptoms.';
-      let advice = 'Drink warm water throughout the day, sleep with head slightly elevated, and avoid heavy meals within 2 hours of bedtime.';
+      let diag: string | null = null;
+      let summary: string | null = null;
+      let advice: string | null = null;
       let meds: any[] = [];
 
       if (params.patient_id) {
@@ -1179,9 +1179,9 @@ export const mobileApi = {
             const parsed = JSON.parse(cached);
             if (Array.isArray(parsed) && parsed.length > 0) {
               const latest = parsed[0];
-              diag = latest.diagnosis || diag;
-              summary = latest.patient_summary || summary;
-              advice = latest.doctor_advice || advice;
+              diag = latest.diagnosis || null;
+              summary = latest.patient_summary || null;
+              advice = latest.doctor_advice || null;
               meds = latest.medicines || [];
             }
           }
@@ -1190,9 +1190,26 @@ export const mobileApi = {
         }
       }
 
+      if (!diag && !summary) {
+        const noRecordReply = isHindi
+          ? 'वर्तमान में आपके रिकॉर्ड में कोई सक्रिय क्लिनिकल परामर्श या प्रिस्क्रिप्शन दर्ज नहीं है। स्वास्थ्य संबंधी सलाह के लिए कृपया डॉक्टर से परामर्श लें।'
+          : 'You do not have any recorded consultations or diagnoses on file. Please schedule a consultation with an attending clinician under the Doctors tab.';
+
+        return {
+          reply: noRecordReply,
+          language: lang,
+          detected_intent: 'consultation_explanation',
+          medicines_referenced: [],
+          recommended_doctors: [],
+          quick_suggestions: isHindi
+            ? ['डॉक्टर खोजें', 'अपॉइंटमेंट बुक करें', 'वाइटल्स कैसे दर्ज करें?']
+            : ['Find a Doctor', 'Book Consultation', 'How to log vitals?'],
+        };
+      }
+
       const reply = isHindi
-        ? `आपके डॉक्टर के परामर्श का सारांश:\n\n• निदान (Diagnosis): ${diag}\n• डॉक्टर का निष्कर्ष: ${summary}\n• मुख्य सलाह: ${advice}\n\nकृपया अपनी दवाएं समय पर लें और किसी भी प्रकार की परेशानी होने पर क्लिनिक से तुरंत संपर्क करें।`
-        : `Doctor Consultation Summary:\n\n• Confirmed Diagnosis: ${diag}\n• Attending Physician Evaluation: ${summary}\n• Doctor's Lifestyle Advice: ${advice}\n\nPlease take your prescribed medications on schedule and visit the clinic if symptoms persist.`;
+        ? `आपके डॉक्टर के परामर्श का सारांश:\n\n• पुष्टि किया गया निदान: ${diag || 'सामान्य स्वास्थ्य जांच'}\n• डॉक्टर का निष्कर्ष: ${summary || 'जांच पूर्ण हुई।'}\n• मुख्य सलाह: ${advice || 'दवाएं समय पर लें और पर्याप्त आराम करें।'}\n\nकृपया अपनी दवाएं समय पर लें और किसी भी प्रकार की परेशानी होने पर क्लिनिक से तुरंत संपर्क करें।`
+        : `Doctor Consultation Summary:\n\n• Confirmed Diagnosis: ${diag || 'General Health Evaluation'}\n• Attending Physician Evaluation: ${summary || 'Evaluation completed.'}\n• Doctor's Lifestyle Advice: ${advice || 'Follow prescription instructions and take adequate rest.'}\n\nPlease take your prescribed medications on schedule and visit the clinic if symptoms persist.`;
 
       return {
         reply,

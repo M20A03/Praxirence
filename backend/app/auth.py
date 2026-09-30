@@ -104,16 +104,21 @@ def get_auth_directory(db: Session = Depends(get_db)):
 
             doctor_list.append({
                 "id": str(d.id),
-                "name": d.name or "Dr. Mayank Raj",
-                "email": d.email or "doctor@praxirence.com",
-                "phone": phone_display,
-                "specialty": getattr(d, "specialty", "General Physician") or "General Physician",
-                "clinic_name": getattr(d, "clinic_name", "Praxirence Clinical Centre") or "Praxirence Clinical Centre",
-                "reg_number": getattr(d, "reg_number", "NMC-2024-84920") or "NMC-2024-84920",
-                "city": getattr(d, "city", "Bangalore") or "Bangalore",
-                "state": getattr(d, "state", "Karnataka") or "Karnataka",
-                "pincode": getattr(d, "pincode", "560038") or "560038",
-                "clinic_address": getattr(d, "clinic_address", "12th Main, Indiranagar, Bangalore") or "12th Main, Indiranagar, Bangalore",
+                "name": d.name,
+                "email": d.email,
+                "phone": getattr(d, "phone", None),
+                "degree": getattr(d, "degree", None),
+                "qualifications": getattr(d, "qualifications", None),
+                "designation": getattr(d, "designation", None),
+                "experience_years": getattr(d, "experience_years", None),
+                "languages": getattr(d, "languages", None) or ["English", "Hindi"],
+                "specialty": getattr(d, "specialty", None),
+                "clinic_name": getattr(d, "clinic_name", None),
+                "reg_number": getattr(d, "reg_number", None),
+                "city": getattr(d, "city", None),
+                "state": getattr(d, "state", None),
+                "pincode": getattr(d, "pincode", None),
+                "clinic_address": getattr(d, "clinic_address", None),
                 "latitude": getattr(d, "latitude", 12.9716) or 12.9716,
                 "longitude": getattr(d, "longitude", 77.5946) or 77.5946,
                 "available_days": avail_days,
@@ -314,11 +319,11 @@ def login_doctor_password(req: DoctorLoginRequest, db: Session = Depends(get_db)
         )
 
     user_id = str(user.id) if user else "doc-default-01"
-    user_name = user.name if user else "Dr. Mayank Raj"
-    user_specialty = getattr(user, "specialty", "Chief Medical Officer & Physician") or "Chief Medical Officer & Physician" if user else "Chief Medical Officer & Physician"
-    user_clinic = getattr(user, "clinic_name", "Praxirence Clinical Centre") or "Praxirence Clinical Centre" if user else "Praxirence Clinical Centre"
-    user_reg = getattr(user, "reg_number", "NMC-2024-84920") or "NMC-2024-84920" if user else "NMC-2024-84920"
-    user_phone = getattr(user, "phone", "+919876543210") or "+919876543210" if user else "+919876543210"
+    user_name = user.name if user else "Dr. Physician"
+    user_specialty = getattr(user, "specialty", None) if user else None
+    user_clinic = getattr(user, "clinic_name", None) if user else None
+    user_reg = getattr(user, "reg_number", None) if user else None
+    user_phone = getattr(user, "phone", None) if user else None
 
     token = create_access_token(
         subject=user_id,
@@ -478,12 +483,12 @@ def verify_doctor_otp(req: DoctorOTPVerifyRequest, db: Session = Depends(get_db)
                 pass
 
     doc_id = str(doctor.id) if doctor else "doc-default-01"
-    doc_name = doctor.name if doctor else "Dr. Mayank Raj"
-    doc_email = doctor.email if doctor else "doctor@praxirence.com"
+    doc_name = doctor.name if doctor else "Dr. Physician"
+    doc_email = doctor.email if doctor else None
     doc_phone = getattr(doctor, "phone", clean_phone) or clean_phone if doctor else clean_phone
-    doc_specialty = getattr(doctor, "specialty", "Chief Medical Officer") or "Chief Medical Officer" if doctor else "Chief Medical Officer"
-    doc_clinic = getattr(doctor, "clinic_name", "Praxirence Clinical Centre") or "Praxirence Clinical Centre" if doctor else "Praxirence Clinical Centre"
-    doc_reg = getattr(doctor, "reg_number", "NMC-2024-84920") or "NMC-2024-84920" if doctor else "NMC-2024-84920"
+    doc_specialty = getattr(doctor, "specialty", None) if doctor else None
+    doc_clinic = getattr(doctor, "clinic_name", None) if doctor else None
+    doc_reg = getattr(doctor, "reg_number", None) if doctor else None
 
     token = create_access_token(
         subject=doc_id,
@@ -685,9 +690,13 @@ def verify_doctor_email_otp(req: DoctorEmailOTPVerifyRequest, db: Session = Depe
                 email=clean_email,
                 hashed_password=get_password_hash(f"EmailOTPVerified_{clean_email}"),
                 name=f"Dr. {username}",
-                specialty="General Physician",
-                clinic_name="Praxirence Clinical Centre",
-                reg_number="NMC-2024-84920"
+                specialty=None,
+                clinic_name=None,
+                reg_number=None,
+                degree=None,
+                qualifications=None,
+                designation=None,
+                experience_years=None
             )
             db.add(doctor)
             db.commit()
@@ -706,10 +715,10 @@ def verify_doctor_email_otp(req: DoctorEmailOTPVerifyRequest, db: Session = Depe
 
     doc_id = str(doctor.id)
     doc_name = doctor.name or "Dr. Physician"
-    doc_specialty = getattr(doctor, "specialty", "General Physician") or "General Physician"
-    doc_clinic = getattr(doctor, "clinic_name", "Praxirence Clinical Centre") or "Praxirence Clinical Centre"
-    doc_reg = getattr(doctor, "reg_number", "NMC-2024-84920") or "NMC-2024-84920"
-    doc_phone = getattr(doctor, "phone", "+919876543210") or "+919876543210"
+    doc_specialty = getattr(doctor, "specialty", None)
+    doc_clinic = getattr(doctor, "clinic_name", None)
+    doc_reg = getattr(doctor, "reg_number", None)
+    doc_phone = getattr(doctor, "phone", None)
 
     token = create_access_token(
         subject=doc_id,
@@ -744,9 +753,17 @@ def verify_doctor_email_otp(req: DoctorEmailOTPVerifyRequest, db: Session = Depe
             "email": clean_email,
             "name": doc_name,
             "phone": doc_phone,
+            "degree": getattr(doctor, "degree", None),
+            "qualifications": getattr(doctor, "qualifications", None),
+            "designation": getattr(doctor, "designation", None),
+            "experience_years": getattr(doctor, "experience_years", None),
+            "languages": getattr(doctor, "languages", None),
             "specialty": doc_specialty,
             "clinic_name": doc_clinic,
             "reg_number": doc_reg,
+            "clinic_address": getattr(doctor, "clinic_address", None),
+            "city": getattr(doctor, "city", None),
+            "state": getattr(doctor, "state", None),
         }
     )
 
@@ -795,9 +812,12 @@ def register_doctor(req: DoctorRegisterRequest, db: Session = Depends(get_db)):
                 phone=norm_phone,
                 hashed_password=get_password_hash(req.password),
                 name=req.name.strip(),
-                specialty=req.specialty or "General Physician",
-                clinic_name=req.clinic_name or "Praxirence Clinical Centre",
-                reg_number=req.reg_number or "NMC-2024-84920"
+                specialty=req.specialty.strip() if req.specialty else None,
+                clinic_name=req.clinic_name.strip() if req.clinic_name else None,
+                reg_number=req.reg_number.strip() if req.reg_number else None,
+                degree=getattr(req, "degree", None),
+                qualifications=getattr(req, "qualifications", None),
+                experience_years=getattr(req, "experience_years", None)
             )
             db.add(user)
             db.commit()
@@ -811,10 +831,10 @@ def register_doctor(req: DoctorRegisterRequest, db: Session = Depends(get_db)):
 
     user_id = str(user.id) if user else str(uuid.uuid4())
     user_name = user.name if user else req.name.strip()
-    user_clinic = getattr(user, "clinic_name", req.clinic_name or "Praxirence Clinical Centre") if user else (req.clinic_name or "Praxirence Clinical Centre")
-    user_reg = getattr(user, "reg_number", req.reg_number or "NMC-2024-84920") if user else (req.reg_number or "NMC-2024-84920")
-    user_specialty = getattr(user, "specialty", req.specialty or "General Physician") if user else (req.specialty or "General Physician")
-    user_phone = getattr(user, "phone", norm_phone or "+919876543210") if user else (norm_phone or "+919876543210")
+    user_clinic = getattr(user, "clinic_name", None) or (req.clinic_name.strip() if req.clinic_name else None)
+    user_reg = getattr(user, "reg_number", None) or (req.reg_number.strip() if req.reg_number else None)
+    user_specialty = getattr(user, "specialty", None) or (req.specialty.strip() if req.specialty else None)
+    user_phone = getattr(user, "phone", None) or norm_phone
 
     token = create_access_token(
         subject=user_id,
@@ -883,13 +903,13 @@ def get_me(
             except Exception:
                 pass
 
-        doc_id = str(doctor.id) if doctor else (sub_id or "doc-default-01")
-        doc_name = doctor.name if doctor else payload.get("name", "Dr. Mayank Raj")
-        doc_email = doctor.email if doctor else payload.get("email", "doctor@praxirence.com")
-        doc_phone = getattr(doctor, "phone", "+919876543210") or "+919876543210" if doctor else "+919876543210"
-        doc_specialty = getattr(doctor, "specialty", "Chief Medical Officer & Physician") or "Chief Medical Officer & Physician" if doctor else "Chief Medical Officer & Physician"
-        doc_clinic = getattr(doctor, "clinic_name", "Praxirence Clinical Centre") or "Praxirence Clinical Centre" if doctor else payload.get("clinic_name", "Praxirence Clinical Centre")
-        doc_reg = getattr(doctor, "reg_number", "NMC-2024-84920") or "NMC-2024-84920" if doctor else payload.get("reg_number", "NMC-2024-84920")
+        doc_id = str(doctor.id) if doctor else sub_id
+        doc_name = doctor.name if doctor else payload.get("name")
+        doc_email = doctor.email if doctor else payload.get("email")
+        doc_phone = getattr(doctor, "phone", None) if doctor else None
+        doc_specialty = getattr(doctor, "specialty", None) if doctor else payload.get("specialty")
+        doc_clinic = getattr(doctor, "clinic_name", None) if doctor else payload.get("clinic_name")
+        doc_reg = getattr(doctor, "reg_number", None) if doctor else payload.get("reg_number")
 
         return {
             "role": "doctor",
@@ -898,9 +918,17 @@ def get_me(
                 "email": doc_email,
                 "name": doc_name,
                 "phone": doc_phone,
+                "degree": getattr(doctor, "degree", None) if doctor else None,
+                "qualifications": getattr(doctor, "qualifications", None) if doctor else None,
+                "designation": getattr(doctor, "designation", None) if doctor else None,
+                "experience_years": getattr(doctor, "experience_years", None) if doctor else None,
+                "languages": getattr(doctor, "languages", None) if doctor else None,
                 "specialty": doc_specialty,
                 "clinic_name": doc_clinic,
                 "reg_number": doc_reg,
+                "clinic_address": getattr(doctor, "clinic_address", None) if doctor else None,
+                "city": getattr(doctor, "city", None) if doctor else None,
+                "state": getattr(doctor, "state", None) if doctor else None,
             }
         }
     elif role == "patient":
@@ -1290,13 +1318,21 @@ def get_me(
         return {
             "role": "doctor",
             "user": {
-                "id": doctor.id,
+                "id": str(doctor.id),
                 "email": doctor.email,
                 "name": doctor.name,
-                "phone": doctor.phone or "+919876543210",
+                "phone": doctor.phone,
+                "degree": getattr(doctor, "degree", None),
+                "qualifications": getattr(doctor, "qualifications", None),
+                "designation": getattr(doctor, "designation", None),
+                "experience_years": getattr(doctor, "experience_years", None),
+                "languages": getattr(doctor, "languages", None),
                 "specialty": doctor.specialty,
-                "clinic_name": getattr(doctor, "clinic_name", "Praxirence Clinical Centre"),
-                "reg_number": getattr(doctor, "reg_number", "NMC-2024-84920"),
+                "clinic_name": getattr(doctor, "clinic_name", None),
+                "reg_number": getattr(doctor, "reg_number", None),
+                "clinic_address": getattr(doctor, "clinic_address", None),
+                "city": getattr(doctor, "city", None),
+                "state": getattr(doctor, "state", None),
             }
         }
     elif role == "patient":

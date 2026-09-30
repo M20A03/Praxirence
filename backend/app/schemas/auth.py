@@ -22,9 +22,12 @@ class DoctorRegisterRequest(BaseModel):
     password: str
     name: str
     phone: Optional[str] = None
-    specialty: Optional[str] = "General Physician"
-    clinic_name: Optional[str] = "Praxirence Clinical Centre"
-    reg_number: Optional[str] = "NMC-2024-84920"
+    specialty: Optional[str] = None
+    clinic_name: Optional[str] = None
+    reg_number: Optional[str] = None
+    degree: Optional[str] = None
+    qualifications: Optional[str] = None
+    experience_years: Optional[str] = None
 
 
 class DoctorGoogleAuthRequest(BaseModel):

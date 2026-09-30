@@ -188,19 +188,19 @@ def list_doctors(
             "id": str(d.id),
             "name": doc_name,
             "email": d.email,
-            "phone": getattr(d, "phone", "+919876543210") or "+919876543210",
+            "phone": getattr(d, "phone", None),
             "specialty": doc_specialty,
-            "degree": getattr(d, "degree", "MBBS, MD (General Medicine)") or "MBBS, MD (General Medicine)",
-            "qualifications": getattr(d, "qualifications", "Fellowship in Internal Medicine & Diabetology") or "Fellowship in Internal Medicine & Diabetology",
-            "experience_years": getattr(d, "experience_years", "12+ Yrs Exp") or "12+ Yrs Exp",
-            "languages": getattr(d, "languages", ["English", "Hindi", "Hinglish"]) or ["English", "Hindi", "Hinglish"],
-            "designation": getattr(d, "designation", "Chief Medical Officer & Senior Physician") or "Chief Medical Officer & Senior Physician",
+            "degree": getattr(d, "degree", None),
+            "qualifications": getattr(d, "qualifications", None),
+            "experience_years": getattr(d, "experience_years", None),
+            "languages": getattr(d, "languages", None) or ["English", "Hindi"],
+            "designation": getattr(d, "designation", None),
             "clinic_name": doc_clinic,
-            "reg_number": getattr(d, "reg_number", "NMC-2024-84920") or "NMC-2024-84920",
+            "reg_number": getattr(d, "reg_number", None),
             "city": doc_city,
-            "state": getattr(d, "state", "Karnataka") or "Karnataka",
-            "pincode": getattr(d, "pincode", "560038") or "560038",
-            "clinic_address": getattr(d, "clinic_address", "12th Main, Indiranagar, Bangalore") or "12th Main, Indiranagar, Bangalore",
+            "state": getattr(d, "state", None),
+            "pincode": getattr(d, "pincode", None),
+            "clinic_address": getattr(d, "clinic_address", None),
             "latitude": doc_lat,
             "longitude": doc_lng,
             "distance_km": distance_km,
@@ -787,4 +787,86 @@ def get_doctor_reviews(
         "breakdown": breakdown,
         "reviews": formatted
     }
+
+
+class DoctorProfileUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    degree: Optional[str] = None
+    qualifications: Optional[str] = None
+    designation: Optional[str] = None
+    specialty: Optional[str] = None
+    clinic_name: Optional[str] = None
+    clinic_address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    reg_number: Optional[str] = None
+    experience_years: Optional[str] = None
+    languages: Optional[List[str]] = None
+
+
+@router.put("/{doctor_id}/profile")
+def update_doctor_credentials(
+    doctor_id: str,
+    payload: DoctorProfileUpdateRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Updates verified doctor credentials in PostgreSQL database.
+    Ensures zero fabricated defaults are saved.
+    """
+    doctor = db.query(User).filter(User.id == doctor_id).first()
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+
+    if payload.name is not None:
+        doctor.name = payload.name.strip()
+    if payload.degree is not None:
+        doctor.degree = payload.degree.strip()
+    if payload.qualifications is not None:
+        doctor.qualifications = payload.qualifications.strip()
+    if payload.designation is not None:
+        doctor.designation = payload.designation.strip()
+    if payload.specialty is not None:
+        doctor.specialty = payload.specialty.strip()
+    if payload.clinic_name is not None:
+        doctor.clinic_name = payload.clinic_name.strip()
+    if payload.clinic_address is not None:
+        doctor.clinic_address = payload.clinic_address.strip()
+    if payload.city is not None:
+        doctor.city = payload.city.strip()
+    if payload.state is not None:
+        doctor.state = payload.state.strip()
+    if payload.reg_number is not None:
+        doctor.reg_number = payload.reg_number.strip()
+    if payload.experience_years is not None:
+        doctor.experience_years = payload.experience_years.strip()
+    if payload.languages is not None:
+        doctor.languages = payload.languages
+
+    db.commit()
+    db.refresh(doctor)
+
+    return {
+        "success": True,
+        "message": "Doctor credentials updated successfully",
+        "doctor": {
+            "id": str(doctor.id),
+            "name": doctor.name,
+            "email": doctor.email,
+            "phone": doctor.phone,
+            "degree": doctor.degree,
+            "qualifications": doctor.qualifications,
+            "designation": doctor.designation,
+            "specialty": doctor.specialty,
+            "clinic_name": doctor.clinic_name,
+            "clinic_address": doctor.clinic_address,
+            "city": doctor.city,
+            "state": doctor.state,
+            "reg_number": doctor.reg_number,
+            "experience_years": doctor.experience_years,
+            "languages": doctor.languages,
+            "role": "doctor"
+        }
+    }
+
 

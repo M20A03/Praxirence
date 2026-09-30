@@ -104,6 +104,29 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
     }
   };
 
+  const handleDeletePatient = (patient: PatientSummary) => {
+    Alert.alert(
+      'Remove Patient Record',
+      `Are you sure you want to remove ${patient.name} from your active clinical directory? Their historical visits will remain archived in compliance with medical record regulations.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove Patient',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await mobileApi.deletePatient(patient.id);
+              setPatients((prev) => prev.filter((p) => p.id !== patient.id));
+              Alert.alert('Patient Removed', `${patient.name} has been removed from your active directory.`);
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Failed to remove patient.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
       {/* Header with Search & Add Patient */}
@@ -204,6 +227,14 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
                     </View>
                   </View>
                 </View>
+                <TouchableOpacity
+                  style={styles.deletePatientBtn}
+                  onPress={() => handleDeletePatient(pat)}
+                  accessibilityLabel={`Remove ${pat.name} from directory`}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="trash-outline" size={17} color="#ef4444" />
+                </TouchableOpacity>
               </View>
 
               {/* Action Buttons: View Care Plans & Start Consultation */}
@@ -906,5 +937,14 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: '#ffffff',
     fontWeight: '700',
+  },
+  deletePatientBtn: {
+    padding: 7,
+    borderRadius: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+    alignSelf: 'flex-start',
   },
 });

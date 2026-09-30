@@ -31,11 +31,11 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
 }) => {
   const [profileDoctor, setProfileDoctor] = useState<DoctorUser>(doctor);
   const [showEditCredentialsModal, setShowEditCredentialsModal] = useState<boolean>(false);
-  const [editDegree, setEditDegree] = useState<string>(doctor.degree || 'MBBS, MD (General Medicine)');
-  const [editQualifications, setEditQualifications] = useState<string>(doctor.qualifications || 'Fellowship in Internal Medicine & Diabetology');
-  const [editDesignation, setEditDesignation] = useState<string>(doctor.designation || 'Chief Medical Officer & Senior Physician');
-  const [editExp, setEditExp] = useState<string>(doctor.experience_years ? String(doctor.experience_years) : '12+ Yrs Exp');
-  const [editLanguages, setEditLanguages] = useState<string>((doctor.languages || ['English', 'Hindi', 'Hinglish']).join(', '));
+  const [editDegree, setEditDegree] = useState<string>(doctor.degree || '');
+  const [editQualifications, setEditQualifications] = useState<string>(doctor.qualifications || '');
+  const [editDesignation, setEditDesignation] = useState<string>(doctor.designation || '');
+  const [editExp, setEditExp] = useState<string>(doctor.experience_years ? String(doctor.experience_years) : '');
+  const [editLanguages, setEditLanguages] = useState<string>((doctor.languages || []).join(', '));
   const [savingCredentials, setSavingCredentials] = useState<boolean>(false);
 
   const [latencyMs, setLatencyMs] = useState<number>(55);
@@ -158,8 +158,18 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
         Alert.alert('Notice', 'Biometric setup: ' + err.message);
       }
     } else {
-      setBiometricEnabled(false);
-      await AsyncStorage.setItem('praxirence_biometric_enabled', 'false');
+      try {
+        const res = await LocalAuthentication.authenticateAsync({
+          promptMessage: 'Verify Biometric to Disable App Lock',
+        });
+        if (res.success) {
+          setBiometricEnabled(false);
+          await AsyncStorage.setItem('praxirence_biometric_enabled', 'false');
+          Alert.alert('Lock Disabled', 'Biometric protection has been turned off.');
+        }
+      } catch (err: any) {
+        Alert.alert('Notice', 'Authentication error: ' + err.message);
+      }
     }
   };
 
@@ -180,13 +190,18 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
     setSavingCredentials(true);
     try {
       const langs = (editLanguages || '').split(',').map((s) => s.trim()).filter(Boolean);
+      const payload: Partial<DoctorUser> = {
+        degree: (editDegree || '').trim() || undefined,
+        qualifications: (editQualifications || '').trim() || undefined,
+        designation: (editDesignation || '').trim() || undefined,
+        experience_years: (editExp || '').trim() || undefined,
+        languages: langs.length > 0 ? langs : undefined,
+      };
+      const res = await mobileApi.updateDoctorProfile(payload, doctor.id);
       const updated: DoctorUser = {
         ...profileDoctor,
-        degree: (editDegree || '').trim() || 'MBBS, MD (General Medicine)',
-        qualifications: (editQualifications || '').trim() || 'Fellowship in Internal Medicine & Diabetology',
-        designation: (editDesignation || '').trim() || 'Chief Medical Officer & Senior Physician',
-        experience_years: (editExp || '').trim() || '12+ Yrs Exp',
-        languages: langs.length > 0 ? langs : ['English', 'Hindi'],
+        ...payload,
+        ...(res.doctor || {}),
       };
       setProfileDoctor(updated);
       await AsyncStorage.setItem('praxirence_doctor_profile', JSON.stringify(updated));
@@ -234,21 +249,21 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
 
         {/* Medical Degrees - Clean Typography */}
         <Text style={styles.doctorDegreesText}>
-          {profileDoctor.degree || 'MBBS, MD (General Medicine)'}
+          {profileDoctor.degree || profileDoctor.specialty || 'Verified Clinician'}
         </Text>
 
         {/* Clinical Designation & Specialty */}
-        <Text style={styles.designationText}>
-          {profileDoctor.designation || 'Chief Medical Officer & Senior Physician'}
-        </Text>
+        {profileDoctor.designation ? (
+          <Text style={styles.designationText}>{profileDoctor.designation}</Text>
+        ) : null}
         <Text style={styles.specialtyText}>
-          {profileDoctor.specialty} • {profileDoctor.clinic_name}
+          {profileDoctor.specialty}{profileDoctor.clinic_name ? ` • ${profileDoctor.clinic_name}` : ''}
         </Text>
 
         {/* Clinical Registration & Experience Meta */}
         <View style={styles.doctorMetaRow}>
           <Text style={styles.doctorMetaText}>
-            NMC Reg: {profileDoctor.reg_number} • {profileDoctor.experience_years || '12+ Yrs Exp'}
+            NMC Reg: {profileDoctor.reg_number || 'Pending Verification'}{profileDoctor.experience_years ? ` • ${profileDoctor.experience_years}` : ''}
           </Text>
         </View>
 
@@ -277,7 +292,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.infoLabel}>Primary Medical Degrees</Text>
-            <Text style={styles.infoValue}>{profileDoctor.degree || 'MBBS, MD (General Medicine)'}</Text>
+            <Text style={styles.infoValue}>{profileDoctor.degree || 'Not provided'}</Text>
           </View>
         </View>
 
@@ -287,7 +302,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.infoLabel}>Post-Graduate Qualifications & Fellowships</Text>
-            <Text style={styles.infoValue}>{profileDoctor.qualifications || 'Fellowship in Internal Medicine & Diabetology'}</Text>
+            <Text style={styles.infoValue}>{profileDoctor.qualifications || 'None registered'}</Text>
           </View>
         </View>
 
@@ -297,7 +312,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.infoLabel}>Clinical Designation</Text>
-            <Text style={styles.infoValue}>{profileDoctor.designation || 'Chief Medical Officer & Senior Physician'}</Text>
+            <Text style={styles.infoValue}>{profileDoctor.designation || profileDoctor.specialty || 'Consultant'}</Text>
           </View>
         </View>
 
@@ -307,7 +322,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.infoLabel}>Medical Registration Number</Text>
-            <Text style={styles.infoValue}>{profileDoctor.reg_number}</Text>
+            <Text style={styles.infoValue}>{profileDoctor.reg_number || 'Pending Verification'}</Text>
           </View>
         </View>
 
@@ -317,7 +332,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.infoLabel}>Clinical Experience</Text>
-            <Text style={styles.infoValue}>{profileDoctor.experience_years || '12+ Yrs Exp'}</Text>
+            <Text style={styles.infoValue}>{profileDoctor.experience_years || 'Not specified'}</Text>
           </View>
         </View>
 
@@ -659,7 +674,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
                 style={styles.modalInput}
                 value={editDegree}
                 onChangeText={setEditDegree}
-                placeholder="MBBS, MD (General Medicine)"
+                placeholder="e.g. MBBS, MD"
                 placeholderTextColor="#94A3B8"
               />
 
@@ -668,7 +683,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
                 style={styles.modalInput}
                 value={editQualifications}
                 onChangeText={setEditQualifications}
-                placeholder="Fellowship in Internal Medicine & Diabetology"
+                placeholder="e.g. Fellowship in Diabetology"
                 placeholderTextColor="#94A3B8"
               />
 
@@ -677,7 +692,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
                 style={styles.modalInput}
                 value={editDesignation}
                 onChangeText={setEditDesignation}
-                placeholder="Chief Medical Officer & Senior Physician"
+                placeholder="e.g. Senior Consultant Physician"
                 placeholderTextColor="#94A3B8"
               />
 
@@ -686,7 +701,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
                 style={styles.modalInput}
                 value={editExp}
                 onChangeText={setEditExp}
-                placeholder="12+ Yrs Exp"
+                placeholder="e.g. 10 Years"
                 placeholderTextColor="#94A3B8"
               />
 
@@ -695,7 +710,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
                 style={styles.modalInput}
                 value={editLanguages}
                 onChangeText={setEditLanguages}
-                placeholder="English, Hindi, Hinglish"
+                placeholder="e.g. English, Hindi"
                 placeholderTextColor="#94A3B8"
               />
             </ScrollView>

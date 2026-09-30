@@ -33,6 +33,7 @@ import { NotificationService } from './src/services/NotificationService';
 import { GlobalErrorBoundary } from './src/components/common/GlobalErrorBoundary';
 import { CrashResilience } from './src/services/CrashResilienceService';
 import { DeviceIntegrity } from './src/security/DeviceIntegrityService';
+import { LanguageProvider, useLanguage } from './src/utils/LanguageContext';
 
 export const navigationRef = createNavigationContainerRef<any>();
 
@@ -148,93 +149,11 @@ function PatientAppContent() {
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <NavigationContainer ref={navigationRef}>
-        <Tab.Navigator
-          screenOptions={({ route }) => ({
-            headerShown: false,
-            tabBarActiveTintColor: '#059669',
-            tabBarInactiveTintColor: '#64748B',
-            tabBarStyle: styles.tabBar,
-            tabBarLabelStyle: styles.tabBarLabel,
-            tabBarIcon: ({ focused, color, size }) => {
-              let iconName: keyof typeof Ionicons.glyphMap = 'today';
-              if (route.name === 'Today') {
-                iconName = focused ? 'today' : 'today-outline';
-              } else if (route.name === 'Vault') {
-                iconName = focused ? 'document-text' : 'document-text-outline';
-              } else if (route.name === 'Specialists') {
-                iconName = focused ? 'medical' : 'medical-outline';
-              } else if (route.name === 'Assistant') {
-                iconName = focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline';
-              } else if (route.name === 'Profile') {
-                iconName = focused ? 'person-circle' : 'person-circle-outline';
-              }
-              return <Ionicons name={iconName} size={size || 22} color={color} />;
-            },
-          })}
-          screenListeners={{
-            tabPress: () => {
-              try {
-                Haptics.selectionAsync();
-              } catch (_) {}
-            },
-          }}
-        >
-          <Tab.Screen
-            name="Today"
-            options={{ tabBarLabel: 'Today' }}
-          >
-            {(props) => (
-              <DashboardScreen
-                user={currentPatient}
-                onNavigateToConsent={() => setShowConsentModal(true)}
-                onNavigateToChatbot={() => props.navigation.navigate('Assistant')}
-                onNavigateToDoctors={() => props.navigation.navigate('Specialists')}
-                onNavigateToVisits={() => props.navigation.navigate('Vault')}
-              />
-            )}
-          </Tab.Screen>
-
-          <Tab.Screen
-            name="Vault"
-            options={{ tabBarLabel: 'Vault' }}
-          >
-            {() => <VisitsScreen user={currentPatient} />}
-          </Tab.Screen>
-
-          <Tab.Screen
-            name="Specialists"
-            options={{ tabBarLabel: 'Doctors' }}
-          >
-            {() => <DoctorSearchScreen user={currentPatient} />}
-          </Tab.Screen>
-
-          <Tab.Screen
-            name="Assistant"
-            options={{ tabBarLabel: 'AI Chat' }}
-          >
-            {(props) => (
-              <ChatbotScreen
-                user={currentPatient}
-                onNavigateToDoctors={() => props.navigation.navigate('Specialists')}
-                onNavigateToVisits={() => props.navigation.navigate('Vault')}
-              />
-            )}
-          </Tab.Screen>
-
-          <Tab.Screen
-            name="Profile"
-            options={{ tabBarLabel: 'Profile' }}
-          >
-            {() => (
-              <ProfileScreen
-                user={currentPatient}
-                role="patient"
-                onLogout={handleLogout}
-                onNavigateToConsent={() => setShowConsentModal(true)}
-              />
-            )}
-          </Tab.Screen>
-        </Tab.Navigator>
+        <PatientTabsNavigator
+          currentPatient={currentPatient}
+          handleLogout={handleLogout}
+          setShowConsentModal={setShowConsentModal}
+        />
       </NavigationContainer>
 
       {/* Global ABDM & DPDP Consent Modal with Android Back Gesture Handling */}
@@ -256,10 +175,114 @@ function PatientAppContent() {
   );
 }
 
+function PatientTabsNavigator({
+  currentPatient,
+  handleLogout,
+  setShowConsentModal,
+}: {
+  currentPatient: PatientUser;
+  handleLogout: () => void;
+  setShowConsentModal: (v: boolean) => void;
+}) {
+  const { t } = useLanguage();
+
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: '#059669',
+        tabBarInactiveTintColor: '#64748B',
+        tabBarStyle: styles.tabBar,
+        tabBarLabelStyle: styles.tabBarLabel,
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: keyof typeof Ionicons.glyphMap = 'today';
+          if (route.name === 'Today') {
+            iconName = focused ? 'today' : 'today-outline';
+          } else if (route.name === 'Vault') {
+            iconName = focused ? 'document-text' : 'document-text-outline';
+          } else if (route.name === 'Specialists') {
+            iconName = focused ? 'medical' : 'medical-outline';
+          } else if (route.name === 'Assistant') {
+            iconName = focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline';
+          } else if (route.name === 'Profile') {
+            iconName = focused ? 'person-circle' : 'person-circle-outline';
+          }
+          return <Ionicons name={iconName} size={size || 22} color={color} />;
+        },
+      })}
+      screenListeners={{
+        tabPress: () => {
+          try {
+            Haptics.selectionAsync();
+          } catch (_) {}
+        },
+      }}
+    >
+      <Tab.Screen
+        name="Today"
+        options={{ tabBarLabel: t('navToday') }}
+      >
+        {(props) => (
+          <DashboardScreen
+            user={currentPatient}
+            onNavigateToConsent={() => setShowConsentModal(true)}
+            onNavigateToChatbot={() => props.navigation.navigate('Assistant')}
+            onNavigateToDoctors={() => props.navigation.navigate('Specialists')}
+            onNavigateToVisits={() => props.navigation.navigate('Vault')}
+          />
+        )}
+      </Tab.Screen>
+
+      <Tab.Screen
+        name="Vault"
+        options={{ tabBarLabel: t('navVault') }}
+      >
+        {() => <VisitsScreen user={currentPatient} />}
+      </Tab.Screen>
+
+      <Tab.Screen
+        name="Specialists"
+        options={{ tabBarLabel: t('navDoctors') }}
+      >
+        {() => <DoctorSearchScreen user={currentPatient} />}
+      </Tab.Screen>
+
+      <Tab.Screen
+        name="Assistant"
+        options={{ tabBarLabel: t('navChat') }}
+      >
+        {(props) => (
+          <ChatbotScreen
+            user={currentPatient}
+            onNavigateToDoctors={() => props.navigation.navigate('Specialists')}
+            onNavigateToVisits={() => props.navigation.navigate('Vault')}
+          />
+        )}
+      </Tab.Screen>
+
+      <Tab.Screen
+        name="Profile"
+        options={{ tabBarLabel: t('navProfile') }}
+      >
+        {() => (
+          <ProfileScreen
+            user={currentPatient}
+            role="patient"
+            onLogout={handleLogout}
+            onNavigateToConsent={() => setShowConsentModal(true)}
+          />
+        )}
+      </Tab.Screen>
+    </Tab.Navigator>
+  );
+}
+
 export default function App() {
   return (
     <GlobalErrorBoundary>
-      <PatientAppContent />
+      <LanguageProvider>
+        <PatientAppContent />
+      </LanguageProvider>
     </GlobalErrorBoundary>
   );
 }

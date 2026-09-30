@@ -37,6 +37,7 @@ import {
   SUPPORTED_LANGUAGES,
   translateText,
 } from '../utils/languageTranslations';
+import { useLanguage } from '../utils/LanguageContext';
 
 interface DashboardScreenProps {
   user: PatientUser;
@@ -73,8 +74,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const [inputHr, setInputHr] = useState<string>('72');
   const [inputSpo2, setInputSpo2] = useState<string>('98');
   const [inputSugar, setInputSugar] = useState<string>('96');
-  // Multilingual State
-  const [currentLang, setCurrentLang] = useState<SupportedLanguage>('en');
+  // Global Multilingual State
+  const { language: currentLang, setLanguage, t } = useLanguage();
   const [showLangModal, setShowLangModal] = useState<boolean>(false);
   const [queueStatus, setQueueStatus] = useState<QueueStatusResponse | null>(null);
 
@@ -110,11 +111,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const [dismissedReviews, setDismissedReviews] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    AsyncStorage.getItem('@praxirence_patient_lang').then((saved) => {
-      if (saved && ['en', 'hi', 'kn', 'bho', 'ur', 'ta', 'te', 'mr', 'bn', 'gu', 'pa', 'ml'].includes(saved)) {
-        setCurrentLang(saved as SupportedLanguage);
-      }
-    });
     AsyncStorage.getItem('@praxirence_dismissed_reviews').then((saved) => {
       if (saved) {
         try {
@@ -125,9 +121,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   }, []);
 
   const handleSelectLang = async (lang: SupportedLanguage) => {
-    setCurrentLang(lang);
+    setLanguage(lang);
     setShowLangModal(false);
-    await AsyncStorage.setItem('@praxirence_patient_lang', lang);
   };
 
   useEffect(() => {

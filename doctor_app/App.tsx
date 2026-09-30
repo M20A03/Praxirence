@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   SafeAreaView,
   View,
@@ -6,6 +6,10 @@ import {
   StyleSheet,
   StatusBar,
   Platform,
+  AppState,
+  AppStateStatus,
+  TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -13,6 +17,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
+import * as LocalAuthentication from 'expo-local-authentication';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { Colors } from './src/theme/colors';
 import { FontFamily, FontSize, LetterSpacing } from './src/theme/typography';
@@ -25,6 +31,7 @@ import { DoctorDashboardScreen } from './src/screens/doctor/DoctorDashboardScree
 import { DoctorPatientsScreen } from './src/screens/doctor/DoctorPatientsScreen';
 import { DoctorNewConsultationScreen } from './src/screens/doctor/DoctorNewConsultationScreen';
 import { DoctorProfileScreen } from './src/screens/doctor/DoctorProfileScreen';
+import { ClinicianOnboardingModal } from './src/components/ClinicianOnboardingModal';
 
 import { mobileApi } from './src/services/api';
 import { GlobalErrorBoundary } from './src/components/common/GlobalErrorBoundary';
@@ -40,10 +47,69 @@ function DoctorAppContent() {
   const [currentDoctor, setCurrentDoctor] = useState<DoctorUser | null>(null);
   const [loadingSession, setLoadingSession] = useState<boolean>(true);
 
+  // Biometric App Lock Gatekeeper
+  const [isBiometricLocked, setIsBiometricLocked] = useState<boolean>(false);
+  const [authenticatingBiometric, setAuthenticatingBiometric] = useState<boolean>(false);
+  const appState = useRef<AppStateStatus>(AppState.currentState);
+
   // Pre-selected consultation context
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>();
   const [selectedPatientName, setSelectedPatientName] = useState<string | undefined>();
   const [selectedComplaint, setSelectedComplaint] = useState<string | undefined>();
+
+  const checkAndPromptBiometric = async () => {
+    try {
+      const enabled = await AsyncStorage.getItem('praxirence_biometric_enabled');
+      if (enabled === 'true') {
+        setIsBiometricLocked(true);
+        performBiometricUnlock();
+      } else {
+        setIsBiometricLocked(false);
+      }
+    } catch (_) {
+      setIsBiometricLocked(false);
+    }
+  };
+
+  const performBiometricUnlock = async () => {
+    try {
+      setAuthenticatingBiometric(true);
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+      if (!hasHardware || !isEnrolled) {
+        setIsBiometricLocked(false);
+        return;
+      }
+      const res = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Unlock Praxirence Doctor Workspace',
+        fallbackLabel: 'Enter Passcode',
+      });
+      if (res.success) {
+        setIsBiometricLocked(false);
+      }
+    } catch (err) {
+      console.warn('Biometric unlock failed:', err);
+    } finally {
+      setAuthenticatingBiometric(false);
+    }
+  };
+
+  useEffect(() => {
+    // AppState listener for auto-locking upon return from background
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        checkAndPromptBiometric();
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     // Initialize Hospital-Grade Crash Resilience & Doctor Integrity Check
@@ -80,7 +146,6 @@ function DoctorAppContent() {
         } else if (notifType === 'CARE_PLAN' || notifType === 'PATIENT_HISTORY') {
           navigationRef.navigate('CarePlans');
         } else {
-          // Default for QUEUE_UPDATE, CALL_NEXT, WALK_IN, etc.
           navigationRef.navigate('Schedule');
         }
       } catch (err) {
@@ -100,31 +165,42 @@ function DoctorAppContent() {
         if (session && session.user && session.role === 'doctor') {
           const u = session.user as any;
           setCurrentDoctor({
-            ...u,
-            degree: u.degree || 'MBBS, MD (General Medicine)',
-            qualifications: u.qualifications || 'Fellowship in Internal Medicine & Diabetology',
-            experience_years: u.experience_years || '12+ Yrs Exp',
-            designation: u.designation || 'Chief Medical Officer & Senior Physician',
-            languages: u.languages || ['English', 'Hindi', 'Hinglish'],
+            id: u.id,
+            name: u.name || '',
+            email: u.email || '',
+            phone: u.phone || '',
+            specialty: u.specialty || '',
+            degree: u.degree || '',
+            qualifications: u.qualifications || '',
+            experience_years: u.experience_years || '',
+            designation: u.designation || '',
+            languages: u.languages || [],
+            clinic_name: u.clinic_name || '',
+            reg_number: u.reg_number || '',
+            clinic_address: u.clinic_address || '',
+            role: 'doctor',
           });
+          checkAndPromptBiometric();
         } else if (session && session.user) {
           const u = session.user as any;
           const doc: DoctorUser = {
             id: u.id,
-            name: u.name?.startsWith('Dr.') ? u.name : `Dr. ${u.name || 'Mayank Raj Gupta'}`,
-            email: u.email || 'doctor@praxirence.com',
-            phone: u.phone || '+919876543210',
-            specialty: u.specialty || 'Internal Medicine & Pulmonology',
-            degree: u.degree || 'MBBS, MD (General Medicine)',
-            qualifications: u.qualifications || 'Fellowship in Internal Medicine & Diabetology',
-            experience_years: u.experience_years || '12+ Yrs Exp',
-            designation: u.designation || 'Chief Medical Officer & Senior Physician',
-            languages: u.languages || ['English', 'Hindi', 'Hinglish'],
-            clinic_name: u.clinic_name || 'Praxirence Super-Speciality Clinic',
-            reg_number: u.reg_number || 'NMC-2024-84920',
+            name: u.name || '',
+            email: u.email || '',
+            phone: u.phone || '',
+            specialty: u.specialty || '',
+            degree: u.degree || '',
+            qualifications: u.qualifications || '',
+            experience_years: u.experience_years || '',
+            designation: u.designation || '',
+            languages: u.languages || [],
+            clinic_name: u.clinic_name || '',
+            reg_number: u.reg_number || '',
+            clinic_address: u.clinic_address || '',
             role: 'doctor',
           };
           setCurrentDoctor(doc);
+          checkAndPromptBiometric();
         }
       } catch (err) {
         console.warn('Failed to restore doctor session:', err);
@@ -137,11 +213,13 @@ function DoctorAppContent() {
 
   const handleAuthenticated = (doctor: DoctorUser) => {
     setCurrentDoctor(doctor);
+    checkAndPromptBiometric();
   };
 
   const handleLogout = async () => {
     await mobileApi.clearSession();
     setCurrentDoctor(null);
+    setIsBiometricLocked(false);
   };
 
   // Splash Screen
@@ -160,6 +238,56 @@ function DoctorAppContent() {
       </SafeAreaProvider>
     );
   }
+
+  // Biometric App Lock Screen
+  if (isBiometricLocked) {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.lockContainer}>
+          <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
+          <View style={styles.lockContent}>
+            <View style={styles.lockIconBox}>
+              <Ionicons name="finger-print" size={54} color="#38BDF8" />
+            </View>
+            <Text style={styles.lockTitle}>Workspace Locked</Text>
+            <Text style={styles.lockSubtitle}>
+              Biometric verification is active. Authenticate to access patient consultation records and OPD queues.
+            </Text>
+            <TouchableOpacity
+              style={styles.unlockBtn}
+              onPress={performBiometricUnlock}
+              disabled={authenticatingBiometric}
+              activeOpacity={0.85}
+            >
+              {authenticatingBiometric ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <Ionicons name="scan-outline" size={20} color="#FFFFFF" />
+                  <Text style={styles.unlockBtnText}>Unlock Workspace</Text>
+                </>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.lockSignOutBtn} onPress={handleLogout} activeOpacity={0.7}>
+              <Ionicons name="log-out-outline" size={16} color="#94A3B8" />
+              <Text style={styles.lockSignOutText}>Sign Out</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
+
+  // Mandatory Clinician Onboarding Gatekeeper:
+  // Requires registration number, primary degrees, specialty, and clinic name before allowing workspace access
+  const isProfileIncomplete = Boolean(
+    currentDoctor && (
+      !currentDoctor.reg_number?.trim() ||
+      !currentDoctor.degree?.trim() ||
+      !currentDoctor.specialty?.trim() ||
+      !currentDoctor.clinic_name?.trim()
+    )
+  );
 
   return (
     <SafeAreaProvider>
@@ -270,6 +398,16 @@ function DoctorAppContent() {
           </Tab.Screen>
         </Tab.Navigator>
       </NavigationContainer>
+
+      {/* Mandatory Clinician Onboarding Gate Modal */}
+      {isProfileIncomplete && (
+        <ClinicianOnboardingModal
+          visible={isProfileIncomplete}
+          doctor={currentDoctor}
+          onComplete={(updated) => setCurrentDoctor(updated)}
+          onLogout={handleLogout}
+        />
+      )}
     </SafeAreaProvider>
   );
 }
@@ -318,5 +456,75 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 6,
     elevation: 4,
+  },
+  lockContainer: {
+    flex: 1,
+    backgroundColor: '#0F172A',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  lockContent: {
+    width: '85%',
+    alignItems: 'center',
+    padding: 24,
+  },
+  lockIconBox: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(56, 189, 248, 0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  lockTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.xxl,
+    color: '#F8FAFC',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  lockSubtitle: {
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.sm,
+    color: '#94A3B8',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 32,
+  },
+  unlockBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    width: '100%',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  unlockBtnText: {
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.md,
+    color: '#FFFFFF',
+  },
+  lockSignOutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 20,
+    paddingVertical: 10,
+  },
+  lockSignOutText: {
+    fontFamily: FontFamily.medium,
+    fontSize: FontSize.sm,
+    color: '#94A3B8',
   },
 });

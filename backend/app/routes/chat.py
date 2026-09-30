@@ -384,7 +384,6 @@ async def patient_chat_assistant(
             f"{req.message}"
         )
 
-        gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
         payload = {
             "system_instruction": {
                 "parts": [{"text": system_prompt}]
@@ -400,22 +399,28 @@ async def patient_chat_assistant(
             }
         }
 
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                res = await client.post(gemini_url, json=payload)
-                if res.status_code == 200:
-                    data = res.json()
-                    candidates = data.get("candidates", [])
-                    if candidates:
-                        parts = candidates[0].get("content", {}).get("parts", [])
-                        if parts and "text" in parts[0]:
-                            raw_reply = parts[0]["text"]
-                            llm_reply = strip_emojis(raw_reply)
-                            logger.info("Successfully generated grounded response via Google Gemini API.")
-                else:
-                    logger.warning(f"Gemini API returned status {res.status_code}: {res.text[:120]}")
-        except Exception as e:
-            logger.warning(f"Gemini API call failed or timed out: {e}. Falling back to internal grounded engine.")
+        models_to_try = ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-flash-latest"]
+        for model_name in models_to_try:
+            if llm_reply:
+                break
+            gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    res = await client.post(gemini_url, json=payload)
+                    if res.status_code == 200:
+                        data = res.json()
+                        candidates = data.get("candidates", [])
+                        if candidates:
+                            parts = candidates[0].get("content", {}).get("parts", [])
+                            if parts and "text" in parts[0]:
+                                raw_reply = parts[0]["text"]
+                                llm_reply = strip_emojis(raw_reply)
+                                logger.info(f"Successfully generated grounded response via Google Gemini API ({model_name}).")
+                                break
+                    else:
+                        logger.warning(f"Gemini API ({model_name}) returned status {res.status_code}: {res.text[:120]}")
+            except Exception as e:
+                logger.warning(f"Gemini API ({model_name}) call failed or timed out: {e}")
 
     # 4. If LLM succeeded, return structured response
     if llm_reply:

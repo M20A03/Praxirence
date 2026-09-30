@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
+import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../../theme';
 import { DoctorUser } from '../../types';
@@ -407,22 +408,80 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
         {/* Working Hours */}
         <Text style={[styles.subHeadingLabel, { marginTop: 14 }]}>Clinic Consultation Hours</Text>
         <View style={styles.hoursRow}>
-          <View style={styles.hourBox}>
-            <Ionicons name="time-outline" size={16} color={Colors.primary} />
-            <Text style={styles.hourBoxLabel}>Start: {startTime}</Text>
+          <TouchableOpacity
+            style={styles.hourBox}
+            activeOpacity={0.7}
+            onPress={() => {
+              try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (_) {}
+              Alert.alert(
+                'Select Start Time',
+                'Choose clinic opening consultation time:',
+                [
+                  { text: '08:00 AM', onPress: () => setStartTime('08:00 AM') },
+                  { text: '09:00 AM', onPress: () => setStartTime('09:00 AM') },
+                  { text: '10:00 AM', onPress: () => setStartTime('10:00 AM') },
+                  { text: '11:00 AM', onPress: () => setStartTime('11:00 AM') },
+                  { text: 'Cancel', style: 'cancel' },
+                ]
+              );
+            }}
+          >
+            <Ionicons name="time" size={17} color={Colors.primary} />
+            <View>
+              <Text style={styles.hourBoxSub}>START TIME</Text>
+              <Text style={styles.hourBoxValue}>{startTime.includes('M') ? startTime : `${startTime} AM`}</Text>
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.hoursArrowCircle}>
+            <Ionicons name="arrow-forward" size={14} color="#64748B" />
           </View>
-          <Text style={{ color: Colors.textSecondary, fontWeight: '700' }}>→</Text>
-          <View style={styles.hourBox}>
-            <Ionicons name="time-outline" size={16} color={Colors.primary} />
-            <Text style={styles.hourBoxLabel}>End: {endTime}</Text>
-          </View>
+
+          <TouchableOpacity
+            style={styles.hourBox}
+            activeOpacity={0.7}
+            onPress={() => {
+              try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (_) {}
+              Alert.alert(
+                'Select Closing Time',
+                'Choose clinic closing consultation time:',
+                [
+                  { text: '04:00 PM', onPress: () => setEndTime('04:00 PM') },
+                  { text: '05:00 PM', onPress: () => setEndTime('05:00 PM') },
+                  { text: '06:00 PM', onPress: () => setEndTime('06:00 PM') },
+                  { text: '07:00 PM', onPress: () => setEndTime('07:00 PM') },
+                  { text: '08:00 PM', onPress: () => setEndTime('08:00 PM') },
+                  { text: 'Cancel', style: 'cancel' },
+                ]
+              );
+            }}
+          >
+            <Ionicons name="time" size={17} color={Colors.primary} />
+            <View>
+              <Text style={styles.hourBoxSub}>END TIME</Text>
+              <Text style={styles.hourBoxValue}>{endTime.includes('M') ? endTime : `${endTime} PM`}</Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Leave / Out of Office Section */}
         <View style={styles.leaveSectionBox}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-            <Ionicons name="calendar-outline" size={16} color="#d97706" />
-            <Text style={styles.leaveSectionTitle}>Mark Out-of-Office / On Leave</Text>
+          <View style={styles.leaveHeaderRow}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="calendar-outline" size={16} color="#0D9488" />
+              <Text style={styles.leaveSectionTitle}>Clinician Availability</Text>
+            </View>
+            {unavailableDates.length === 0 ? (
+              <View style={styles.statusBadgePill}>
+                <Ionicons name="checkmark-circle" size={13} color="#059669" />
+                <Text style={styles.statusBadgeText}>Practicing as normal</Text>
+              </View>
+            ) : (
+              <View style={[styles.statusBadgePill, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
+                <Ionicons name="alert-circle" size={13} color="#DC2626" />
+                <Text style={[styles.statusBadgeText, { color: '#B91C1C' }]}>{unavailableDates.length} Leave Active</Text>
+              </View>
+            )}
           </View>
           <Text style={styles.leaveSectionDesc}>
             Quickly mark dates as unavailable. When marked on leave, patients attempting to book will see you are unavailable.
@@ -430,17 +489,17 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
 
           <View style={styles.leaveQuickActionsRow}>
             <TouchableOpacity style={styles.quickLeaveBtn} onPress={handleMarkLeaveToday} activeOpacity={0.7}>
-              <Ionicons name="airplane-outline" size={13} color="#b45309" />
-              <Text style={styles.quickLeaveBtnText}>Mark Today On Leave</Text>
+              <Ionicons name="airplane-outline" size={14} color="#0D9488" />
+              <Text style={styles.quickLeaveBtnText}>Mark Today Leave</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.quickLeaveBtn} onPress={handleMarkLeaveTomorrow} activeOpacity={0.7}>
-              <Ionicons name="calendar-clear-outline" size={13} color="#b45309" />
-              <Text style={styles.quickLeaveBtnText}>Mark Tomorrow</Text>
+              <Ionicons name="calendar-clear-outline" size={14} color="#0D9488" />
+              <Text style={styles.quickLeaveBtnText}>Mark Tomorrow Leave</Text>
             </TouchableOpacity>
           </View>
 
-          {unavailableDates.length > 0 ? (
+          {unavailableDates.length > 0 && (
             <View style={{ marginTop: 10 }}>
               <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.textSecondary, marginBottom: 6 }}>
                 Active Leave Dates ({unavailableDates.length}):
@@ -457,11 +516,6 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
                 </View>
               ))}
             </View>
-          ) : (
-            <View style={styles.noLeaveBox}>
-              <Ionicons name="checkmark-circle-outline" size={14} color="#10b981" />
-              <Text style={styles.noLeaveText}>No active leaves scheduled • Practicing as normal</Text>
-            </View>
           )}
         </View>
 
@@ -470,14 +524,14 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           style={[styles.saveScheduleBtn, savingSchedule && { opacity: 0.7 }]}
           onPress={handleSaveSchedule}
           disabled={savingSchedule}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
           {savingSchedule ? (
             <ActivityIndicator size="small" color="#ffffff" />
           ) : (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Ionicons name="save-outline" size={16} color="#ffffff" />
-              <Text style={styles.saveScheduleBtnText}>Save Practice Schedule</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="checkmark-circle" size={19} color="#ffffff" />
+              <Text style={styles.saveScheduleBtnText}>Save Changes</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -986,17 +1040,21 @@ const styles = StyleSheet.create({
   },
   daysRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 4,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 4,
+    marginBottom: 6,
   },
   dayPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 10,
-    backgroundColor: '#F1F5F9',
+    flex: 1,
+    paddingVertical: 9,
+    paddingHorizontal: 0,
+    borderRadius: 8,
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dayPillActive: {
     backgroundColor: Colors.primary,
@@ -1004,28 +1062,54 @@ const styles = StyleSheet.create({
   },
   dayPillText: {
     fontFamily: FontFamily.semiBold,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
+    fontSize: 11,
+    color: '#64748B',
   },
   dayPillTextActive: {
     color: '#FFFFFF',
+    fontFamily: FontFamily.bold,
   },
   hoursRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   hourBox: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#F8FAFC',
+    gap: 10,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
     paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 10,
+    paddingVertical: 10,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  hoursArrowCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hourBoxSub: {
+    fontFamily: FontFamily.bold,
+    fontSize: 9,
+    color: '#64748B',
+    letterSpacing: 0.5,
+  },
+  hourBoxValue: {
+    fontFamily: FontFamily.bold,
+    fontSize: 13,
+    color: '#0F172A',
+    marginTop: 1,
   },
   hourBoxLabel: {
     fontFamily: FontFamily.medium,
@@ -1033,24 +1117,46 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   leaveSectionBox: {
-    backgroundColor: '#FFFBEB',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
-    borderColor: '#FDE68A',
-    borderRadius: 12,
-    padding: 12,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    padding: 14,
     marginTop: 14,
+  },
+  leaveHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
   },
   leaveSectionTitle: {
     fontFamily: FontFamily.bold,
-    fontSize: FontSize.xs,
-    color: '#92400E',
+    fontSize: 13,
+    color: '#0F172A',
+  },
+  statusBadgePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  statusBadgeText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 10,
+    color: '#059669',
   },
   leaveSectionDesc: {
     fontFamily: FontFamily.regular,
     fontSize: 11,
-    color: '#78350F',
-    lineHeight: 15,
-    marginBottom: 8,
+    color: '#64748B',
+    lineHeight: 16,
+    marginBottom: 10,
   },
   leaveQuickActionsRow: {
     flexDirection: 'row',
@@ -1061,17 +1167,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    backgroundColor: '#FEF3C7',
+    gap: 6,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#FCD34D',
-    paddingVertical: 7,
-    borderRadius: 8,
+    borderColor: '#CBD5E1',
+    paddingVertical: 10,
+    borderRadius: 10,
   },
   quickLeaveBtnText: {
     fontFamily: FontFamily.semiBold,
     fontSize: 11,
-    color: '#92400E',
+    color: '#0F766E',
   },
   leaveDateItem: {
     flexDirection: 'row',
@@ -1109,14 +1215,20 @@ const styles = StyleSheet.create({
   saveScheduleBtn: {
     backgroundColor: Colors.primary,
     borderRadius: 12,
-    paddingVertical: 12,
+    height: 52,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 14,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
   saveScheduleBtnText: {
     fontFamily: FontFamily.bold,
     fontSize: FontSize.sm,
     color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
 });

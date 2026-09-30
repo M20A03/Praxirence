@@ -5,7 +5,7 @@ import { Colors, FontFamily, FontSize } from '../../theme';
 import { VitalsRecord } from '../../types';
 
 interface VitalsTelemetryGridProps {
-  vitals: VitalsRecord;
+  vitals: VitalsRecord | null;
   onLogVitalsPress: () => void;
 }
 
@@ -13,11 +13,47 @@ export const VitalsTelemetryGrid: React.FC<VitalsTelemetryGridProps> = ({
   vitals,
   onLogVitalsPress,
 }) => {
+  if (!vitals) {
+    return (
+      <View style={styles.vitalsCard}>
+        <View style={styles.vitalsHeaderRow}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={styles.headerIconCircle}>
+              <Ionicons name="pulse" size={18} color="#0D9488" />
+            </View>
+            <Text style={styles.vitalsHeaderTitle}>Vitals Monitoring</Text>
+          </View>
+        </View>
+
+        {/* Production Empty State */}
+        <View style={styles.emptyContainer}>
+          <View style={styles.emptyIconBadge}>
+            <Ionicons name="fitness-outline" size={32} color="#0D9488" />
+          </View>
+          <Text style={styles.emptyTitle}>No vitals logged yet</Text>
+          <Text style={styles.emptySubtitle}>
+            Track blood pressure, heart rate, oxygen & glucose to share live telemetry with your doctor.
+          </Text>
+          <TouchableOpacity
+            style={styles.emptyCtaButton}
+            onPress={onLogVitalsPress}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="add-circle" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+            <Text style={styles.emptyCtaText}>Log Your First Vital Reading</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.vitalsCard}>
       <View style={styles.vitalsHeaderRow}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Ionicons name="pulse" size={20} color={Colors.primary} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={styles.headerIconCircle}>
+            <Ionicons name="pulse" size={18} color="#0D9488" />
+          </View>
           <Text style={styles.vitalsHeaderTitle}>Vitals Monitoring</Text>
         </View>
         <TouchableOpacity
@@ -25,23 +61,24 @@ export const VitalsTelemetryGrid: React.FC<VitalsTelemetryGridProps> = ({
           onPress={onLogVitalsPress}
           activeOpacity={0.8}
         >
-          <Text style={styles.logVitalsButtonText}>+ Log Vitals</Text>
+          <Ionicons name="add" size={14} color="#0F766E" />
+          <Text style={styles.logVitalsButtonText}>Log Vitals</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.vitalsGrid}>
         {/* Blood Pressure */}
         <View style={styles.vitalBox}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Ionicons name="pulse" size={13} color="#0284C7" />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+            <Ionicons name="pulse" size={14} color="#0284C7" />
             <Text style={styles.vitalLabel}>Blood Pressure</Text>
           </View>
           <Text style={styles.vitalValue}>{vitals.bloodPressureSystolic}/{vitals.bloodPressureDiastolic}</Text>
           <Text style={styles.vitalUnit}>mmHg</Text>
-          <View style={[styles.vitalStatusPill, { backgroundColor: vitals.bloodPressureSystolic < 130 ? '#F0FDF4' : '#FFFBEB', flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
+          <View style={[styles.vitalStatusPill, { backgroundColor: vitals.bloodPressureSystolic < 130 ? '#F0FDF4' : '#FFFBEB', flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
             <Ionicons
               name={vitals.bloodPressureSystolic < 130 ? "checkmark-circle" : "warning"}
-              size={11}
+              size={12}
               color={vitals.bloodPressureSystolic < 130 ? "#16A34A" : "#D97706"}
             />
             <Text style={[styles.vitalStatusText, { color: vitals.bloodPressureSystolic < 130 ? '#16A34A' : '#D97706' }]}>
@@ -52,30 +89,30 @@ export const VitalsTelemetryGrid: React.FC<VitalsTelemetryGridProps> = ({
 
         {/* Pulse / Heart Rate */}
         <View style={styles.vitalBox}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Ionicons name="heart" size={13} color="#E11D48" />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+            <Ionicons name="heart" size={14} color="#E11D48" />
             <Text style={styles.vitalLabel}>Heart Rate</Text>
           </View>
           <Text style={styles.vitalValue}>{vitals.heartRate}</Text>
           <Text style={styles.vitalUnit}>bpm</Text>
-          <View style={[styles.vitalStatusPill, { backgroundColor: '#F0FDF4', flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
-            <Ionicons name="heart" size={11} color="#16A34A" />
+          <View style={[styles.vitalStatusPill, { backgroundColor: '#F0FDF4', flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+            <Ionicons name="heart" size={12} color="#16A34A" />
             <Text style={[styles.vitalStatusText, { color: '#16A34A' }]}>Steady</Text>
           </View>
         </View>
 
         {/* Blood Oxygen / SpO2 */}
         <View style={styles.vitalBox}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Ionicons name="fitness" size={13} color="#0D9488" />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+            <Ionicons name="fitness" size={14} color="#0D9488" />
             <Text style={styles.vitalLabel}>Blood Oxygen</Text>
           </View>
           <Text style={styles.vitalValue}>{vitals.spo2}%</Text>
           <Text style={styles.vitalUnit}>SpO2</Text>
-          <View style={[styles.vitalStatusPill, { backgroundColor: vitals.spo2 >= 95 ? '#F0FDF4' : '#FEF2F2', flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
+          <View style={[styles.vitalStatusPill, { backgroundColor: vitals.spo2 >= 95 ? '#F0FDF4' : '#FEF2F2', flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
             <Ionicons
               name={vitals.spo2 >= 95 ? "checkmark-circle" : "warning"}
-              size={11}
+              size={12}
               color={vitals.spo2 >= 95 ? "#16A34A" : "#DC2626"}
             />
             <Text style={[styles.vitalStatusText, { color: vitals.spo2 >= 95 ? '#16A34A' : '#DC2626' }]}>
@@ -86,8 +123,8 @@ export const VitalsTelemetryGrid: React.FC<VitalsTelemetryGridProps> = ({
 
         {/* Blood Glucose */}
         <View style={styles.vitalBox}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Ionicons name="water" size={13} color="#D97706" />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+            <Ionicons name="water" size={14} color="#D97706" />
             <Text style={styles.vitalLabel}>Blood Glucose</Text>
           </View>
           <Text style={styles.vitalValue}>{vitals.bloodSugar || 96}</Text>
@@ -104,81 +141,142 @@ export const VitalsTelemetryGrid: React.FC<VitalsTelemetryGridProps> = ({
 const styles = StyleSheet.create({
   vitalsCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 18,
+    padding: 18,
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: Colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
-    shadowRadius: 6,
+    shadowRadius: 8,
     elevation: 2,
   },
   vitalsHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
+    marginBottom: 16,
+  },
+  headerIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#CCFBF1',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   vitalsHeaderTitle: {
     fontFamily: FontFamily.bold,
-    fontSize: FontSize.body,
-    color: Colors.text,
+    fontSize: 16,
+    color: '#0F172A',
   },
   logVitalsButton: {
-    backgroundColor: Colors.primarySurface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#CCFBF1',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: 9,
   },
   logVitalsButtonText: {
     fontFamily: FontFamily.semiBold,
-    fontSize: FontSize.caption,
-    color: Colors.primaryDark,
+    fontSize: 12,
+    color: '#0F766E',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 12,
+  },
+  emptyIconBadge: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: '#ECFDF5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  emptyTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: 15,
+    color: '#0F172A',
+    marginBottom: 6,
+  },
+  emptySubtitle: {
+    fontFamily: FontFamily.regular,
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 16,
+    maxWidth: 280,
+  },
+  emptyCtaButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0D9488',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    shadowColor: '#0D9488',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  emptyCtaText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 13,
+    color: '#FFFFFF',
   },
   vitalsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
   },
   vitalBox: {
     flex: 1,
-    minWidth: '46%',
+    minWidth: '45%',
     backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 14,
+    padding: 14,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#F1F5F9',
   },
   vitalLabel: {
     fontFamily: FontFamily.medium,
-    fontSize: 11,
-    color: Colors.textSecondary,
+    fontSize: 12,
+    color: '#64748B',
   },
   vitalValue: {
     fontFamily: FontFamily.bold,
-    fontSize: 20,
-    color: Colors.text,
+    fontSize: 22,
+    color: '#0F172A',
     marginTop: 6,
   },
   vitalUnit: {
     fontFamily: FontFamily.regular,
-    fontSize: 10,
-    color: Colors.textMuted,
+    fontSize: 11,
+    color: '#94A3B8',
     marginTop: 1,
+    marginBottom: 8,
   },
   vitalStatusPill: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(16, 185, 129, 0.12)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 6,
-    marginTop: 6,
   },
   vitalStatusText: {
-    fontFamily: FontFamily.bold,
+    fontFamily: FontFamily.semiBold,
     fontSize: 10,
-    color: '#059669',
   },
 });

@@ -1209,8 +1209,8 @@ export const mobileApi = {
     if (qLower.includes('medicine') || qLower.includes('dose') || qLower.includes('दवा')) {
       return {
         reply: isHindi
-          ? 'नमस्ते! आपके प्रिस्क्रिप्शन के अनुसार कृपया सभी दवाएं समय पर लें। Azithromycin सुबह भोजन के बाद, और Paracetamol आवश्यकतानुसार लें।'
-          : 'Based on your latest visit, please take Azithromycin in the morning after food. Take Paracetamol for fever/discomfort as needed.',
+          ? 'कृपया अपने डॉक्टर द्वारा निर्धारित दवाओं, खुराक और समय-सारणी को देखने के लिए "दवाएं" टैब देखें।'
+          : 'Please consult the Medication section in your app to view the active prescriptions, exact dosages, and reminder schedule given by your doctor.',
         language: lang,
         detected_intent: 'prescription_explanation',
         medicines_referenced: [],
@@ -1259,22 +1259,13 @@ export const mobileApi = {
 
   // ==================== VITALS MONITORING ====================
 
-  async getVitals(patientId: string): Promise<VitalsRecord> {
+  async getVitals(patientId: string): Promise<VitalsRecord | null> {
     const key = `praxirence_vitals_${patientId}`;
     try {
       const stored = await AsyncStorage.getItem(key);
       if (stored) return JSON.parse(stored);
     } catch {}
-    // Default standard clinical baseline
-    return {
-      bloodPressureSystolic: 120,
-      bloodPressureDiastolic: 80,
-      heartRate: 72,
-      spo2: 98,
-      bloodSugar: 96,
-      recordedAt: new Date().toISOString(),
-      statusNote: 'Optimal Range',
-    };
+    return null;
   },
 
   async saveVitals(patientId: string, vitals: VitalsRecord): Promise<void> {
@@ -1409,10 +1400,7 @@ export function extractClinicalCarePlanLocally(
     addMed('Montair LC', '1 Tablet', 'Once daily at bedtime (0-0-1)', 'Take at night before sleeping for allergy relief', 5, 'after_meal', false, ['21:30']);
   }
 
-  // If no specific medicines detected, provide safe default
-  if (medicines.length === 0) {
-    addMed('Paracetamol 650mg', '1 Tablet', 'Twice daily as needed (SOS)', 'Take after meals for fever or body ache', 3, 'after_meal', true, ['08:30', '20:30']);
-  }
+  // If no specific medicines detected, do not inject fake medications
 
   return {
     diagnosis,

@@ -65,16 +65,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const [lastSyncedTime, setLastSyncedTime] = useState<string>('Just now');
   const [newPlanAlert, setNewPlanAlert] = useState<string | null>(null);
 
-  // Real Vitals Tracking State
-  const [vitals, setVitals] = useState<VitalsRecord>({
-    bloodPressureSystolic: 120,
-    bloodPressureDiastolic: 80,
-    heartRate: 72,
-    spo2: 98,
-    bloodSugar: 96,
-    recordedAt: 'Today',
-    statusNote: 'Optimal / Steady',
-  });
+  // Real Vitals Tracking State (null until patient logs first reading)
+  const [vitals, setVitals] = useState<VitalsRecord | null>(null);
   const [showVitalsModal, setShowVitalsModal] = useState<boolean>(false);
   const [inputSys, setInputSys] = useState<string>('120');
   const [inputDia, setInputDia] = useState<string>('80');
@@ -378,12 +370,16 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const loadVitalsData = async () => {
     try {
       const v = await mobileApi.getVitals(user.id);
-      setVitals(v);
-      setInputSys(String(v.bloodPressureSystolic));
-      setInputDia(String(v.bloodPressureDiastolic));
-      setInputHr(String(v.heartRate));
-      setInputSpo2(String(v.spo2));
-      if (v.bloodSugar) setInputSugar(String(v.bloodSugar));
+      if (v) {
+        setVitals(v);
+        setInputSys(String(v.bloodPressureSystolic));
+        setInputDia(String(v.bloodPressureDiastolic));
+        setInputHr(String(v.heartRate));
+        setInputSpo2(String(v.spo2));
+        if (v.bloodSugar) setInputSugar(String(v.bloodSugar));
+      } else {
+        setVitals(null);
+      }
     } catch (e) {
       console.log('Error loading vitals:', e);
     }

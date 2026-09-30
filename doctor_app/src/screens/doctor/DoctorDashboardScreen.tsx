@@ -516,28 +516,32 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
       </View>
 
       {/* Live Clinical Queue Metrics */}
-      <View style={styles.statsRow}>
-        <View style={styles.statCard}>
+      <View style={styles.statsBanner}>
+        <View style={styles.statColumn}>
           <View style={[styles.statIconBadge, { backgroundColor: '#F0F9FF' }]}>
-            <Ionicons name="people" size={17} color="#0284c7" />
+            <Ionicons name="people" size={15} color="#0284c7" />
           </View>
-          <Text style={styles.statNumber}>{scheduleData?.total_scheduled || 0}</Text>
+          <Text style={[styles.statNumber, { color: '#0369A1' }]}>{scheduleData?.total_scheduled || 0}</Text>
           <Text style={styles.statLabel}>Today's Queue</Text>
         </View>
 
-        <View style={styles.statCard}>
+        <View style={styles.statDivider} />
+
+        <View style={styles.statColumn}>
           <View style={[styles.statIconBadge, { backgroundColor: '#F0FDF4' }]}>
-            <Ionicons name="checkmark-done" size={17} color="#16a34a" />
+            <Ionicons name="checkmark-done" size={15} color="#16a34a" />
           </View>
-          <Text style={styles.statNumber}>{scheduleData?.completed || 0}</Text>
+          <Text style={[styles.statNumber, { color: '#15803D' }]}>{scheduleData?.completed || 0}</Text>
           <Text style={styles.statLabel}>Consulted</Text>
         </View>
 
-        <View style={styles.statCard}>
+        <View style={styles.statDivider} />
+
+        <View style={styles.statColumn}>
           <View style={[styles.statIconBadge, { backgroundColor: '#FFFBEB' }]}>
-            <Ionicons name="time-outline" size={17} color="#d97706" />
+            <Ionicons name="time-outline" size={15} color="#d97706" />
           </View>
-          <Text style={styles.statNumber}>
+          <Text style={[styles.statNumber, { color: '#B45309' }]}>
             {(scheduleData?.total_scheduled || 0) - (scheduleData?.completed || 0)}
           </Text>
           <Text style={styles.statLabel}>In Waiting</Text>
@@ -578,34 +582,45 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
       <View style={styles.delayBroadcastCard}>
         <View style={styles.delayHeaderRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Ionicons name="speedometer-outline" size={16} color="#D97706" />
-            <Text style={styles.delayTitle}>OPD Delay Broadcast:</Text>
+            <Ionicons name="speedometer-outline" size={16} color="#0D9488" />
+            <Text style={styles.delayTitle}>OPD Delay Broadcast</Text>
           </View>
-          <Text style={[styles.delayCurrentBadge, delayMins > 0 ? styles.delayActiveText : styles.delayNormalText]}>
-            {delayMins > 0 ? `Running +${delayMins}m behind` : 'On Schedule'}
-          </Text>
+          <View style={[styles.delayCurrentBadge, delayMins > 0 ? styles.delayActiveBadge : styles.delayNormalBadge]}>
+            <View style={[styles.delayDot, { backgroundColor: delayMins > 0 ? '#DC2626' : '#16A34A' }]} />
+            <Text style={[styles.delayStatusText, { color: delayMins > 0 ? '#B91C1C' : '#15803D' }]}>
+              {delayMins > 0 ? `+${delayMins}m Delay` : 'On Schedule'}
+            </Text>
+          </View>
         </View>
         <View style={styles.delayChipsRow}>
-          {[0, 15, 30, 45, 60].map((mins) => (
-            <TouchableOpacity
-              key={mins}
-              style={[
-                styles.delayChip,
-                delayMins === mins && styles.delayChipActive,
-                mins === 0 && styles.delayChipClear,
-              ]}
-              onPress={() => handleBroadcastDelay(mins)}
-              disabled={broadcastingDelay}
-            >
-              <Text style={[
-                styles.delayChipText,
-                delayMins === mins && styles.delayChipTextActive,
-                mins === 0 && delayMins === 0 && styles.delayChipClearText,
-              ]}>
-                {mins === 0 ? 'Clear (On Time)' : `+${mins}m`}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {[
+            { mins: 0, label: 'On Time' },
+            { mins: 15, label: '+15m' },
+            { mins: 30, label: '+30m' },
+            { mins: 45, label: '+45m' },
+            { mins: 60, label: '+60m' },
+          ].map((item) => {
+            const isSelected = delayMins === item.mins;
+            return (
+              <TouchableOpacity
+                key={item.mins}
+                style={[
+                  styles.delayChip,
+                  isSelected && styles.delayChipActive,
+                ]}
+                onPress={() => handleBroadcastDelay(item.mins)}
+                disabled={broadcastingDelay}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.delayChipText,
+                  isSelected && styles.delayChipTextActive,
+                ]}>
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
@@ -790,7 +805,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
           icon="calendar-outline"
           title="No Patients in Queue"
           description="Your clinical triage queue is currently clear. Add a walk-in patient or initiate an ad-hoc consultation."
-          actionLabel="Add Walk-In Patient"
+          actionLabel="+ Admit Walk-In Patient"
           onAction={() => setShowWalkInModal(true)}
         />
       )}
@@ -1416,38 +1431,53 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
   },
-  statsRow: {
+  statsBanner: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 18,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 12,
     alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#E2E8F0',
+    marginBottom: 14,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  statColumn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: '#E2E8F0',
   },
   statIconBadge: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   statNumber: {
     fontFamily: FontFamily.display,
-    fontSize: FontSize.xl,
-    color: Colors.textPrimary,
+    fontSize: 22,
+    fontWeight: '800',
   },
   statLabel: {
-    fontFamily: FontFamily.sans,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
+    fontFamily: FontFamily.semiBold,
+    fontSize: 10,
+    color: '#64748B',
     textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
     marginTop: 2,
   },
   sectionHeaderRow: {
@@ -1972,70 +2002,83 @@ const styles = StyleSheet.create({
     lineHeight: 15,
   },
   delayBroadcastCard: {
-    backgroundColor: '#FFFBEB',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#FDE68A',
-    padding: 12,
-    marginBottom: 14,
+    borderColor: '#E2E8F0',
+    padding: 14,
+    marginBottom: 16,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
   delayHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   delayTitle: {
-    fontSize: 12,
-    fontFamily: FontFamily.semiBold,
-    color: '#92400E',
+    fontSize: 13,
+    fontFamily: FontFamily.bold,
+    color: '#0F172A',
   },
   delayCurrentBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  delayDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  delayActiveBadge: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  delayNormalBadge: {
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  delayStatusText: {
     fontSize: 11,
     fontFamily: FontFamily.semiBold,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  delayActiveText: {
-    backgroundColor: '#FEE2E2',
-    color: '#DC2626',
-  },
-  delayNormalText: {
-    backgroundColor: '#D1FAE5',
-    color: '#065F46',
   },
   delayChipsRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 6,
-    flexWrap: 'wrap',
   },
   delayChip: {
-    backgroundColor: '#FFFFFF',
+    flex: 1,
+    backgroundColor: '#F8FAFC',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#FCD34D',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
+    borderColor: '#E2E8F0',
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   delayChipActive: {
-    backgroundColor: '#D97706',
-    borderColor: '#D97706',
-  },
-  delayChipClear: {
-    borderColor: '#E2E8F0',
+    backgroundColor: '#0F766E',
+    borderColor: '#0F766E',
   },
   delayChipText: {
     fontSize: 11,
     fontFamily: FontFamily.medium,
-    color: '#B45309',
+    color: '#334155',
   },
   delayChipTextActive: {
     color: '#FFFFFF',
     fontFamily: FontFamily.bold,
-  },
-  delayChipClearText: {
-    color: '#64748B',
   },
 
   quickPill: {

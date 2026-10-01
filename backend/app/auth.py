@@ -70,59 +70,6 @@ def get_phone_last10(phone: str) -> str:
     return digits[-10:] if len(digits) >= 10 else digits
 
 
-@router.post("/admin/purge-production-database")
-def admin_purge_database(
-    x_admin_secret: str = Header(..., alias="x-admin-secret"),
-    db: Session = Depends(get_db)
-):
-    """
-    Secure administrative endpoint to purge all data (visits, patients, reviews, logs, users)
-    for a completely blank production launch state.
-    """
-    from app.core.config import settings
-    if x_admin_secret != settings.SECRET_KEY:
-        raise HTTPException(status_code=403, detail="Invalid administrative secret key")
-    
-    from sqlalchemy import inspect, text
-    purged_tables = []
-    try:
-        bind = db.get_bind()
-        inspector = inspect(bind)
-        existing = inspector.get_table_names()
-        is_postgres = getattr(bind.dialect, "name", "") == "postgresql"
-
-        targets = ["doctor_reviews", "consent_logs", "audit_logs", "visits", "patients", "users"]
-        to_wipe = [t for t in targets if t in existing]
-
-        if is_postgres and to_wipe:
-            tbl_str = ", ".join(f'"{t}"' for t in to_wipe)
-            db.execute(text(f"TRUNCATE TABLE {tbl_str} CASCADE;"))
-            for t in ["visits", "patients", "users"]:
-                try:
-                    db.execute(text(f"ALTER SEQUENCE IF EXISTS {t}_id_seq RESTART WITH 1;"))
-                except Exception:
-                    pass
-            db.commit()
-            purged_tables = to_wipe
-        else:
-            for t in to_wipe:
-                try:
-                    db.execute(text(f"DELETE FROM \"{t}\";"))
-                    db.commit()
-                    purged_tables.append(t)
-                except Exception as ex:
-                    logger.warning(f"Error purging table {t}: {ex}")
-                    db.rollback()
-        return {
-            "success": True,
-            "message": "Production database purged cleanly to launch state.",
-            "purged_tables": purged_tables
-        }
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @router.get("/directory", response_model=DirectoryResponse)
 def get_auth_directory(db: Session = Depends(get_db)):
     """

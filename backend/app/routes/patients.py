@@ -58,7 +58,9 @@ def search_patients(
         q = q.filter(
             or_(
                 Patient.name.ilike(f"%{clean_q}%"),
-                Patient.phone_hash == phone_hash
+                Patient.phone_hash == phone_hash,
+                Patient.id.ilike(f"%{clean_q}%"),
+                Patient.id == clean_q
             )
         )
     patients = q.order_by(Patient.created_at.desc()).limit(50).all()

@@ -197,7 +197,12 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.patientName}>{pat.name}</Text>
-                  <Text style={styles.patientPhone}>{pat.phone}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
+                    <Text style={styles.patientPhone}>{pat.phone}</Text>
+                    <View style={styles.patientIdBadge}>
+                      <Text style={styles.patientIdBadgeText}>ID: PX-{pat.id.slice(0, 8).toUpperCase()}</Text>
+                    </View>
+                  </View>
                   <View style={styles.consentTagRow}>
                     <View
                       style={[
@@ -556,6 +561,20 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginTop: 2,
+  },
+  patientIdBadge: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  patientIdBadgeText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 10,
+    color: '#475569',
+    letterSpacing: 0.5,
   },
   consentTagRow: {
     marginTop: 6,

@@ -7,7 +7,7 @@ import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Query, Header, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import (
@@ -1286,3 +1286,40 @@ def get_me(
         }
 
     raise HTTPException(status_code=401, detail="Unknown or invalid role")
+
+
+@router.post("/admin/purge-production-database")
+def admin_purge_database(
+    x_admin_secret: str = Header(..., alias="x-admin-secret"),
+    db: Session = Depends(get_db)
+):
+    """
+    Secure administrative endpoint to purge all data (visits, patients, reviews, logs, users)
+    for a completely blank production launch state.
+    """
+    from app.core.config import settings
+    if x_admin_secret != settings.SECRET_KEY:
+        raise HTTPException(status_code=403, detail="Invalid administrative secret key")
+    
+    try:
+        from app.models.review import DoctorReview
+        db.query(DoctorReview).delete()
+    except Exception:
+        pass
+
+    db.query(Visit).delete()
+    db.query(ConsentLog).delete()
+    db.query(AuditLog).delete()
+    db.query(Patient).delete()
+    db.query(User).delete()
+    db.commit()
+
+    return {
+        "success": True,
+        "message": "All clinical, patient, and doctor data purged cleanly. Database is at complete clean slate.",
+        "counts": {
+            "visits": db.query(Visit).count(),
+            "patients": db.query(Patient).count(),
+            "doctors": db.query(User).count()
+        }
+    }

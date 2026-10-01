@@ -287,21 +287,8 @@ def seed_initial_data():
             db.commit()
             logger.info(f"Purged {len(dummy_docs)} mock clinician records from database.")
 
-        sample_patient = db.query(Patient).first()
-        if not sample_patient:
-            p = Patient(
-                name="Mayank",
-                consent_status=True
-            )
-            p.phone = "+919835139865"
-            db.add(p)
-            db.commit()
-            logger.info("Initialized patient record: Mayank (+919835139865)")
-        else:
-            sample_patient.name = "Mayank"
-            sample_patient.phone = "+919835139865"
-            sample_patient.consent_status = True
-            db.commit()
+        # In production mode, we do NOT auto-seed dummy patient records.
+        # Patients register organically via mobile/web apps.
 
     except Exception as e:
         logger.warning(f"Seeding notice: {e}")

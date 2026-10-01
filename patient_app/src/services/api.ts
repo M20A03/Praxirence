@@ -391,7 +391,7 @@ export const mobileApi = {
     emergency_contact?: string;
   }): Promise<{ access_token: string; user: PatientUser }> {
     let data: { access_token: string; user: PatientUser } | null = null;
-    const effectivePhone = params.phone || params.email || '+919835139865';
+    const effectivePhone = params.phone || params.email || '';
     try {
       const res = await resilientFetch(`${getEffectiveApiUrl()}/auth/patient/register`, {
         method: 'POST',
@@ -542,6 +542,11 @@ export const mobileApi = {
       await SecureStorage.deleteItem('praxirence_user');
       await SecureStorage.deleteItem('praxirence_role');
       await SecureStorage.wipeAllAuthCredentials();
+      const allKeys = await AsyncStorage.getAllKeys();
+      const praxKeys = allKeys.filter((k) => k.includes('praxirence'));
+      if (praxKeys.length > 0) {
+        await AsyncStorage.multiRemove(praxKeys);
+      }
     } catch (e) {
       console.warn('Clear session notice:', e);
     }

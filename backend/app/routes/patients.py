@@ -333,7 +333,7 @@ def get_upcoming_patient_schedule(
         token_str = f"PX-{v.token_number:02d}" if v.token_number else f"PX-{idx + 1:02d}"
         p = v.patient
         p_name = p.name if p else "Patient"
-        p_phone = p.phone if p else "+919835139865"
+        p_phone = p.phone if p else ""
 
         status_val = "In Consultation" if v.status == "in_progress" else ("Standby" if v.status == "deferred" else ("Waiting in Clinic" if idx == 0 else "Scheduled Today"))
         triage_val = v.triage_level or ("Urgent" if "urgent" in (v.chief_complaint or "").lower() else "Routine")
@@ -350,8 +350,8 @@ def get_upcoming_patient_schedule(
             "chief_complaint": v.chief_complaint or "Scheduled Clinical Consultation",
             "triage": triage_val,
             "status": status_val,
-            "dob": str(p.dob) if (p and p.dob) else "1994-05-12",
-            "consent_status": p.consent_status if p else True
+            "dob": str(p.dob) if (p and p.dob) else "",
+            "consent_status": p.consent_status if p else False
         })
 
     # Return real scheduled visits only; if none exist, return clean empty queue

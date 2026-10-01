@@ -132,13 +132,10 @@ def get_auth_directory(db: Session = Depends(get_db)):
 
         patient_list = []
         for p in patients:
-            try:
-                phone_display = p.phone or "+919835139865"
-            except Exception:
-                phone_display = "+919835139865"
+            phone_display = getattr(p, "phone", "") or ""
             patient_list.append({
                 "id": str(p.id),
-                "name": p.name or "Mayank",
+                "name": p.name or "Patient",
                 "phone": phone_display,
                 "consent_status": bool(p.consent_status),
                 "role": "patient"
@@ -154,15 +151,6 @@ def get_auth_directory(db: Session = Depends(get_db)):
                 "clinic_name": "Praxirence Clinical Centre",
                 "reg_number": "NMC-2024-84920",
                 "role": "doctor"
-            })
-
-        if not patient_list:
-            patient_list.append({
-                "id": "pat-default-01",
-                "name": "Mayank",
-                "phone": "+919835139865",
-                "consent_status": True,
-                "role": "patient"
             })
 
         return DirectoryResponse(
@@ -182,13 +170,7 @@ def get_auth_directory(db: Session = Depends(get_db)):
                 "reg_number": "NMC-2024-84920",
                 "role": "doctor"
             }],
-            patients=[{
-                "id": "pat-default-01",
-                "name": "Mayank",
-                "phone": "+919835139865",
-                "consent_status": True,
-                "role": "patient"
-            }]
+            patients=[]
         )
 
 
@@ -256,13 +238,6 @@ def check_phone_number(phone: str = Query(..., description="Phone number to chec
         except Exception:
             pass
 
-    if not patient and last10 in ["9835139865"]:
-        return CheckPhoneResponse(
-            registered=True,
-            role="patient",
-            name="Mayank",
-            message="Registered Patient: Mayank"
-        )
 
     if patient:
         return CheckPhoneResponse(
@@ -393,7 +368,7 @@ async def request_doctor_otp(req: DoctorOTPRequest, db: Session = Depends(get_db
     try:
         if last10:
             doctor = db.query(User).filter(User.phone.like(f"%{last10}%")).first()
-        if not doctor and last10 in ["9876543210", "9835139865"]:
+        if not doctor and last10 in ["9876543210"]:
             doctor = db.query(User).filter(User.email == "doctor@praxirence.com").first()
     except Exception as e:
         logger.warning(f"DB lookup notice in request_doctor_otp: {e}")
@@ -443,7 +418,7 @@ def verify_doctor_otp(req: DoctorOTPVerifyRequest, db: Session = Depends(get_db)
     try:
         if last10:
             doctor = db.query(User).filter(User.phone.like(f"%{last10}%")).first()
-        if not doctor and last10 in ["9876543210", "9835139865"]:
+        if not doctor and last10 in ["9876543210"]:
             doctor = db.query(User).filter(User.email == "doctor@praxirence.com").first()
     except Exception as e:
         logger.warning(f"DB lookup notice in verify_doctor_otp: {e}")
@@ -955,10 +930,10 @@ def get_me(
                 except Exception:
                     pass
 
-        pat_id = str(patient.id) if patient else (sub_id or "pat-default-01")
-        pat_name = patient.name if patient else payload.get("name", "Mayank")
-        pat_phone = patient.phone if patient else payload.get("phone", "+919835139865")
-        pat_consent = patient.consent_status if patient else True
+        pat_id = str(patient.id) if patient else (sub_id or "")
+        pat_name = patient.name if patient else payload.get("name", "Patient")
+        pat_phone = patient.phone if patient else payload.get("phone", "")
+        pat_consent = patient.consent_status if patient else False
 
         return {
             "role": "patient",

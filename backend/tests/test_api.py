@@ -199,6 +199,7 @@ def test_check_phone_number_endpoint():
     assert data["role"] == "doctor"
 
     # Patient phone check
+    client.post("/auth/patient/register", json={"name": "Mayank", "phone": "+919835139865"})
     res_pat = client.post("/auth/check-phone", json={"phone": "+919835139865"})
     assert res_pat.status_code == 200
     pat_data = res_pat.json()

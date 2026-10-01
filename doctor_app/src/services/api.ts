@@ -496,6 +496,11 @@ export const mobileApi = {
       await SecureStorage.deleteItem('praxirence_user');
       await SecureStorage.deleteItem('praxirence_role');
       await SecureStorage.wipeAllAuthCredentials();
+      const allKeys = await AsyncStorage.getAllKeys();
+      const praxKeys = allKeys.filter((k) => k.includes('praxirence'));
+      if (praxKeys.length > 0) {
+        await AsyncStorage.multiRemove(praxKeys);
+      }
     } catch (e) {
       console.warn('Clear session notice:', e);
     }

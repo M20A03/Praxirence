@@ -25,8 +25,6 @@ interface PatientLoginScreenProps {
 }
 
 export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthenticated }) => {
-  const [authMode, setAuthMode] = useState<'email' | 'register'>('email');
-
   // Server connection check
   const [serverHealth, setServerHealth] = useState<'checking' | 'online' | 'offline' | null>(null);
   const [latencyMs, setLatencyMs] = useState<number>(-1);
@@ -123,14 +121,6 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
   };
 
 
-  // Patient Registration States
-  const [regName, setRegName] = useState('');
-  const [regEmail, setRegEmail] = useState('');
-  const [regPhone, setRegPhone] = useState('');
-  const [regAge, setRegAge] = useState('');
-  const [regGender, setRegGender] = useState<'Male' | 'Female' | 'Other'>('Male');
-  const [regLanguage, setRegLanguage] = useState('Hindi');
-
   // Request Email OTP
   const handleRequestEmailOtp = async () => {
     if (!email.trim() || !email.includes('@')) {
@@ -181,36 +171,6 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
     }
   };
 
-  // Patient Registration Handler
-  const handleRegisterPatient = async () => {
-    if (!regName.trim() || !regEmail.trim() || !regEmail.includes('@')) {
-      setError('Please enter your full name and a valid email address.');
-      return;
-    }
-    setError(null);
-    setLoading(true);
-    try {
-      const res = await mobileApi.registerPatient({
-        name: regName.trim(),
-        email: regEmail.trim(),
-        phone: regPhone.trim() ? (regPhone.startsWith('+') ? regPhone.trim() : `+91${regPhone.trim()}`) : undefined,
-        age: regAge.trim() || undefined,
-        gender: regGender,
-        language: regLanguage,
-      });
-      await handleAuthSuccess(res.user);
-    } catch (err: any) {
-      const msg = err?.message || '';
-      if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
-        setError('Connection timed out. Please check your internet connection and try again.');
-      } else {
-        setError(msg || 'Registration failed. Please try again.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -228,27 +188,8 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
           </View>
           <Text style={styles.title}>Your Health & Care Vault</Text>
           <Text style={styles.subtitle}>
-            Access your doctor's prescriptions, medication timing reminders, and care plans
+            Direct passwordless access to prescriptions, medication timing reminders, and care plans. Instant setup for new patients.
           </Text>
-        </View>
-
-        {/* Auth Mode Tabs */}
-        <View style={styles.tabBar}>
-          <TouchableOpacity
-            style={[styles.tabBtn, authMode === 'email' && styles.tabBtnActive]}
-            onPress={() => { setAuthMode('email'); setError(null); setSuccessNotice(null); }}
-          >
-            <Ionicons name="mail" size={16} color={authMode === 'email' ? '#10b981' : Colors.textSecondary} />
-            <Text style={[styles.tabText, authMode === 'email' && styles.tabTextActive]}>Email Login</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tabBtn, authMode === 'register' && styles.tabBtnActive]}
-            onPress={() => { setAuthMode('register'); setError(null); setSuccessNotice(null); }}
-          >
-            <Ionicons name="person-add" size={16} color={authMode === 'register' ? '#10b981' : Colors.textSecondary} />
-            <Text style={[styles.tabText, authMode === 'register' && styles.tabTextActive]}>Sign Up</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Notices */}
@@ -268,245 +209,120 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
 
         {/* Main Card */}
         <View style={styles.card}>
-          {authMode === 'email' ? (
-            /* EMAIL OTP FLOW */
-            <View>
-              <Text style={styles.label}>Your Full Name</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="person-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your full name"
-                  placeholderTextColor={Colors.textSecondary}
-                  value={patientName}
-                  onChangeText={setPatientName}
-                />
-              </View>
-
-              <Text style={styles.label}>Your Email Address</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="at-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="name@gmail.com"
-                  placeholderTextColor={Colors.textSecondary}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
-
-              {!emailOtpSent ? (
-                <TouchableOpacity
-                  style={[styles.primaryBtn, { backgroundColor: '#10b981' }]}
-                  onPress={handleRequestEmailOtp}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#ffffff" />
-                  ) : (
-                    <>
-                      <Ionicons name="mail-outline" size={18} color="#ffffff" />
-                      <Text style={styles.primaryBtnText}>Send Verification Code to Email</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              ) : (
-                <View style={{ marginTop: 12 }}>
-                  <View style={styles.emailInstructionBox}>
-                    <Ionicons name="information-circle" size={18} color="#047857" />
-                    <Text style={styles.emailInstructionText}>
-                      We sent a 6-digit OTP to <Text style={{ fontWeight: '700' }}>{email}</Text>. Copy the code from your inbox and paste it below.
-                    </Text>
-                  </View>
-
-                  <Text style={styles.label}>Enter 6-Digit Email Code</Text>
-                  <View style={styles.inputContainer}>
-                    <Ionicons name="key-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-                    <TextInput
-                      style={[styles.input, { letterSpacing: 6, fontWeight: '700' }]}
-                      placeholder="• • • • • •"
-                      placeholderTextColor={Colors.textSecondary}
-                      value={emailOtpCode}
-                      onChangeText={setEmailOtpCode}
-                      keyboardType="number-pad"
-                      maxLength={6}
-                    />
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, marginBottom: 12 }}>
-                    <Ionicons name="mail-outline" size={13} color={Colors.textSecondary} />
-                    <Text style={{ fontSize: 12, color: Colors.textSecondary, flex: 1 }}>
-                      Please check your Inbox and Spam/Junk folder. Code expires in 10 minutes.
-                    </Text>
-                  </View>
-
-                  <TouchableOpacity
-                    style={[styles.primaryBtn, { backgroundColor: '#10b981' }]}
-                    onPress={handleVerifyEmailOtp}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <ActivityIndicator color="#ffffff" />
-                    ) : (
-                      <>
-                        <Ionicons name="checkmark-done" size={18} color="#ffffff" />
-                        <Text style={styles.primaryBtnText}>Verify OTP & Access Health Vault</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-                    <TouchableOpacity
-                      onPress={handleRequestEmailOtp}
-                      disabled={loading || resendCooldown > 0}
-                      style={{ paddingVertical: 8 }}
-                    >
-                      <Text style={[styles.resendText, resendCooldown > 0 && { color: Colors.textSecondary }]}>
-                        {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend code'}
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity onPress={() => setEmailOtpSent(false)} style={{ paddingVertical: 8 }}>
-                      <Text style={styles.resendText}>Change email</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
+          <View>
+            <Text style={styles.label}>Your Full Name (Optional)</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="person-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your full name"
+                placeholderTextColor={Colors.textSecondary}
+                value={patientName}
+                onChangeText={setPatientName}
+                editable={!loading && !emailOtpSent}
+              />
             </View>
-          ) : (
-            /* PATIENT REGISTRATION FLOW */
-            <View>
-              <Text style={styles.label}>Full Name</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="person-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your full name"
-                  placeholderTextColor={Colors.textSecondary}
-                  value={regName}
-                  onChangeText={setRegName}
-                />
-              </View>
 
-              <Text style={styles.label}>Email Address (for Login & Care Plan Access)</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="at-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="name@gmail.com"
-                  placeholderTextColor={Colors.textSecondary}
-                  value={regEmail}
-                  onChangeText={setRegEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
+            <Text style={styles.label}>Your Email Address</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="at-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+              <TextInput
+                style={styles.input}
+                placeholder="name@gmail.com"
+                placeholderTextColor={Colors.textSecondary}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                editable={!loading && !emailOtpSent}
+              />
+            </View>
 
-              <Text style={styles.label}>Mobile Phone Number (Optional)</Text>
-              <View style={styles.phoneInputRow}>
-                <View style={styles.countryCodeBox}>
-                  <Text style={styles.countryCodeText}>+91</Text>
-                </View>
-                <TextInput
-                  style={[styles.input, { flex: 1 }]}
-                  placeholder="9876543210"
-                  placeholderTextColor={Colors.textSecondary}
-                  value={regPhone}
-                  onChangeText={setRegPhone}
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                />
-              </View>
-
-              <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.label}>Age</Text>
-                  <View style={styles.inputContainer}>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="e.g. 45"
-                      placeholderTextColor={Colors.textSecondary}
-                      value={regAge}
-                      onChangeText={setRegAge}
-                      keyboardType="number-pad"
-                      maxLength={3}
-                    />
-                  </View>
-                </View>
-
-                <View style={{ flex: 1.5 }}>
-                  <Text style={styles.label}>Gender</Text>
-                  <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
-                    {(['Male', 'Female', 'Other'] as const).map((g) => (
-                      <TouchableOpacity
-                        key={g}
-                        style={[
-                          styles.pillSelect,
-                          regGender === g && styles.pillSelectActive,
-                        ]}
-                        onPress={() => setRegGender(g)}
-                      >
-                        <Text
-                          style={[
-                            styles.pillSelectText,
-                            regGender === g && styles.pillSelectTextActive,
-                          ]}
-                        >
-                          {g}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-              </View>
-
-              <Text style={[styles.label, { marginTop: 8 }]}>Preferred Language</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4, marginBottom: 12 }}>
-                {['Kannada', 'Hindi', 'English', 'Bhojpuri', 'Urdu', 'Telugu', 'Tamil', 'Marathi', 'Malayalam', 'Punjabi', 'Bengali', 'Gujarati'].map((lang) => (
-                  <TouchableOpacity
-                    key={lang}
-                    style={[
-                      styles.pillSelect,
-                      regLanguage === lang && styles.pillSelectActive,
-                    ]}
-                    onPress={() => setRegLanguage(lang)}
-                  >
-                    <Text
-                      style={[
-                        styles.pillSelectText,
-                        regLanguage === lang && styles.pillSelectTextActive,
-                      ]}
-                    >
-                      {lang}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
+            {!emailOtpSent ? (
               <TouchableOpacity
-                style={[styles.primaryBtn, { backgroundColor: '#10b981' }]}
-                onPress={handleRegisterPatient}
+                style={[styles.primaryBtn, { backgroundColor: '#10b981' }, loading && { opacity: 0.8 }]}
+                activeOpacity={0.7}
+                onPress={handleRequestEmailOtp}
                 disabled={loading}
               >
                 {loading ? (
                   <ActivityIndicator color="#ffffff" />
                 ) : (
                   <>
-                    <Ionicons name="shield-checkmark-outline" size={18} color="#ffffff" />
-                    <Text style={styles.primaryBtnText}>Create Patient Health Vault</Text>
+                    <Ionicons name="mail-outline" size={18} color="#ffffff" />
+                    <Text style={styles.primaryBtnText}>Send Verification Code to Email</Text>
                   </>
                 )}
               </TouchableOpacity>
+            ) : (
+              <View style={{ marginTop: 12 }}>
+                <View style={styles.emailInstructionBox}>
+                  <Ionicons name="information-circle" size={18} color="#047857" />
+                  <Text style={styles.emailInstructionText}>
+                    We sent a 6-digit OTP to <Text style={{ fontWeight: '700' }}>{email}</Text>. Copy the code from your inbox and paste it below.
+                  </Text>
+                </View>
 
-              <TouchableOpacity
-                onPress={() => { setAuthMode('email'); setError(null); setSuccessNotice(null); }}
-                style={[styles.resendBtn, { marginTop: 12 }]}
-              >
-                <Text style={styles.resendText}>Already have an account? Sign in with Email</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+                <Text style={styles.label}>Enter 6-Digit Email Code</Text>
+                <View style={styles.inputContainer}>
+                  <Ionicons name="key-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                  <TextInput
+                    style={[styles.input, { letterSpacing: 6, fontWeight: '700' }]}
+                    placeholder="• • • • • •"
+                    placeholderTextColor={Colors.textSecondary}
+                    value={emailOtpCode}
+                    onChangeText={setEmailOtpCode}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    editable={!loading}
+                  />
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, marginBottom: 12 }}>
+                  <Ionicons name="mail-outline" size={13} color={Colors.textSecondary} />
+                  <Text style={{ fontSize: 12, color: Colors.textSecondary, flex: 1 }}>
+                    Please check your Inbox and Spam/Junk folder. Code expires in 10 minutes.
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.primaryBtn, { backgroundColor: '#10b981' }, loading && { opacity: 0.8 }]}
+                  activeOpacity={0.7}
+                  onPress={handleVerifyEmailOtp}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark-done" size={18} color="#ffffff" />
+                      <Text style={styles.primaryBtnText}>Verify OTP & Access Health Vault</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+                  <TouchableOpacity
+                    onPress={handleRequestEmailOtp}
+                    activeOpacity={0.7}
+                    disabled={loading || resendCooldown > 0}
+                    style={{ paddingVertical: 8 }}
+                  >
+                    <Text style={[styles.resendText, resendCooldown > 0 && { color: Colors.textSecondary }]}>
+                      {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend code'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => { setEmailOtpSent(false); setEmailOtpCode(''); setError(null); }}
+                    activeOpacity={0.7}
+                    style={{ paddingVertical: 8 }}
+                  >
+                    <Text style={styles.resendText}>Change email</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Security & DPDP Compliance Guarantee */}
@@ -613,7 +429,7 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                 <Ionicons name="call-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. +91 9876543211"
+                  placeholder="Enter 10-digit emergency contact"
                   placeholderTextColor={Colors.textSecondary}
                   value={onboardEmergency}
                   onChangeText={setOnboardEmergency}

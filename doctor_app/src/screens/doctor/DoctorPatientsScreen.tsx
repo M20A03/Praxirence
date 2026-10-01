@@ -429,7 +429,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
             <Text style={styles.inputLabel}>Mobile Phone (for Patient Portal)</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="+919876543210"
+              placeholder="Enter 10-digit mobile number"
               placeholderTextColor={Colors.textSecondary}
               value={newPhone}
               onChangeText={setNewPhone}

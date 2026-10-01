@@ -375,7 +375,7 @@ export const mobileApi = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...params,
-          phone: params.phone || '+919876543210',
+          phone: params.phone || '',
           password: 'Doctor' + Math.random().toString().slice(2, 8) + '!',
         }),
       }, 0);

@@ -847,7 +847,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
             <Text style={styles.inputLabel}>Mobile Phone Number</Text>
             <TextInput
               style={styles.input}
-              placeholder="+919876543210"
+              placeholder="Enter 10-digit mobile number"
               placeholderTextColor={Colors.textSecondary}
               value={walkInPhone}
               onChangeText={setWalkInPhone}

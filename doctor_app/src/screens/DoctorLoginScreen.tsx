@@ -25,8 +25,6 @@ interface DoctorLoginScreenProps {
 }
 
 export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenticated }) => {
-  const [authMode, setAuthMode] = useState<'email' | 'register'>('email');
-
   // Server connection check
   const [serverHealth, setServerHealth] = useState<'checking' | 'online' | 'offline' | null>(null);
   const [latencyMs, setLatencyMs] = useState<number>(-1);
@@ -61,14 +59,6 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
   const [doctorName, setDoctorName] = useState('');
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [emailOtpCode, setEmailOtpCode] = useState('');
-
-  const [phoneDigits, setPhoneDigits] = useState('');
-
-  // Registration States
-  const [regSpecialty, setRegSpecialty] = useState('');
-  const [regClinic, setRegClinic] = useState('');
-  const [regNumber, setRegNumber] = useState('');
-
   const [resendCooldown, setResendCooldown] = useState(0);
 
   useEffect(() => {
@@ -166,36 +156,6 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
     }
   };
 
-  // Doctor Registration
-  const handleRegisterDoctor = async () => {
-    if (!doctorName.trim() || !email.trim()) {
-      setError('Please provide your name and email address.');
-      return;
-    }
-    setError(null);
-    setLoading(true);
-    try {
-      const res = await mobileApi.registerDoctor({
-        name: doctorName.trim().startsWith('Dr.') ? doctorName.trim() : `Dr. ${doctorName.trim()}`,
-        email: email.trim(),
-        phone: phoneDigits ? `+91${phoneDigits}` : undefined,
-        specialty: regSpecialty.trim(),
-        clinic_name: regClinic.trim(),
-        reg_number: regNumber.trim(),
-      });
-      await handleAuthSuccess(res.user);
-    } catch (err: any) {
-      const msg = err?.message || '';
-      if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('timeout')) {
-        setError('Connection timed out. Please check your internet connection and try again.');
-      } else {
-        setError(msg || 'Doctor registration failed');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -213,27 +173,8 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
           </View>
           <Text style={styles.title}>Clinician Workstation</Text>
           <Text style={styles.subtitle}>
-            Secure clinical suite for verified medical practitioners
+            Direct passwordless access for clinicians. Instant setup for new medical practitioners.
           </Text>
-        </View>
-
-        {/* Auth Mode Tabs */}
-        <View style={styles.tabBar}>
-          <TouchableOpacity
-            style={[styles.tabBtn, authMode === 'email' && styles.tabBtnActive]}
-            onPress={() => { setAuthMode('email'); setError(null); }}
-          >
-            <Ionicons name="mail" size={16} color={authMode === 'email' ? '#0ea5e9' : Colors.textSecondary} />
-            <Text style={[styles.tabText, authMode === 'email' && styles.tabTextActive]}>Medical Email OTP</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tabBtn, authMode === 'register' && styles.tabBtnActive]}
-            onPress={() => { setAuthMode('register'); setError(null); }}
-          >
-            <Ionicons name="person-add" size={16} color={authMode === 'register' ? '#10b981' : Colors.textSecondary} />
-            <Text style={[styles.tabText, authMode === 'register' && styles.tabTextActive]}>Register</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Form Card */}
@@ -252,88 +193,94 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
             </View>
           )}
 
-          {authMode === 'email' && (
-            <View>
-              <Text style={styles.label}>Physician Name (Optional)</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="person" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Dr. Full Name"
-                  placeholderTextColor={Colors.textSecondary}
-                  value={doctorName}
-                  onChangeText={setDoctorName}
-                />
-              </View>
+          <View>
+            <Text style={styles.label}>Physician Name (Optional)</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="person" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+              <TextInput
+                style={styles.input}
+                placeholder="Dr. Full Name"
+                placeholderTextColor={Colors.textSecondary}
+                value={doctorName}
+                onChangeText={setDoctorName}
+                editable={!loading && !emailOtpSent}
+              />
+            </View>
 
-              <Text style={styles.label}>Institutional Medical Email</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="mail" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="doctor@hospital.org"
-                  placeholderTextColor={Colors.textSecondary}
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                />
-              </View>
+            <Text style={styles.label}>Institutional Medical Email</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="mail" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+              <TextInput
+                style={styles.input}
+                placeholder="doctor@hospital.org"
+                placeholderTextColor={Colors.textSecondary}
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                editable={!loading && !emailOtpSent}
+              />
+            </View>
 
-              {!emailOtpSent ? (
+            {!emailOtpSent ? (
+              <TouchableOpacity
+                style={[styles.primaryBtn, loading && { opacity: 0.8 }]}
+                activeOpacity={0.7}
+                onPress={handleRequestEmailOtp}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <>
+                    <Ionicons name="send" size={18} color="#ffffff" />
+                    <Text style={styles.primaryBtnText}>Send Verification Code</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <View style={{ marginTop: 12 }}>
+                <Text style={styles.label}>Email Verification Code</Text>
+                <View style={styles.inputContainer}>
+                  <Ionicons name="key" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                  <TextInput
+                    style={[styles.input, { letterSpacing: 6, fontWeight: '700' }]}
+                    placeholder="• • • • • •"
+                    placeholderTextColor={Colors.textSecondary}
+                    value={emailOtpCode}
+                    onChangeText={setEmailOtpCode}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    editable={!loading}
+                  />
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, marginBottom: 12 }}>
+                  <Ionicons name="mail-outline" size={13} color={Colors.textSecondary} />
+                  <Text style={{ fontSize: 12, color: Colors.textSecondary, flex: 1 }}>
+                    Please check your Inbox and Spam/Junk folder. Code expires in 10 minutes.
+                  </Text>
+                </View>
+
                 <TouchableOpacity
-                  style={styles.primaryBtn}
-                  onPress={handleRequestEmailOtp}
+                  style={[styles.primaryBtn, loading && { opacity: 0.8 }]}
+                  activeOpacity={0.7}
+                  onPress={handleVerifyEmailOtp}
                   disabled={loading}
                 >
                   {loading ? (
                     <ActivityIndicator color="#ffffff" />
                   ) : (
                     <>
-                      <Ionicons name="send" size={18} color="#ffffff" />
-                      <Text style={styles.primaryBtnText}>Send Verification Code</Text>
+                      <Ionicons name="checkmark-done" size={18} color="#ffffff" />
+                      <Text style={styles.primaryBtnText}>Verify Code & Sign In</Text>
                     </>
                   )}
                 </TouchableOpacity>
-              ) : (
-                <View style={{ marginTop: 12 }}>
-                  <Text style={styles.label}>Email Verification Code</Text>
-                  <View style={styles.inputContainer}>
-                    <Ionicons name="key" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-                    <TextInput
-                      style={[styles.input, { letterSpacing: 6, fontWeight: '700' }]}
-                      placeholder="• • • • • •"
-                      placeholderTextColor={Colors.textSecondary}
-                      value={emailOtpCode}
-                      onChangeText={setEmailOtpCode}
-                      keyboardType="number-pad"
-                      maxLength={6}
-                    />
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, marginBottom: 12 }}>
-                    <Ionicons name="mail-outline" size={13} color={Colors.textSecondary} />
-                    <Text style={{ fontSize: 12, color: Colors.textSecondary, flex: 1 }}>
-                      Please check your Inbox and Spam/Junk folder. Code expires in 10 minutes.
-                    </Text>
-                  </View>
 
-                  <TouchableOpacity
-                    style={styles.primaryBtn}
-                    onPress={handleVerifyEmailOtp}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <ActivityIndicator color="#ffffff" />
-                    ) : (
-                      <>
-                        <Ionicons name="checkmark-done" size={18} color="#ffffff" />
-                        <Text style={styles.primaryBtnText}>Verify Code & Sign In</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
                   <TouchableOpacity
                     style={styles.resendBtn}
+                    activeOpacity={0.7}
                     onPress={handleRequestEmailOtp}
                     disabled={loading || resendCooldown > 0}
                   >
@@ -341,109 +288,18 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                       {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Didn't receive code? Resend"}
                     </Text>
                   </TouchableOpacity>
+
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => { setEmailOtpSent(false); setEmailOtpCode(''); setError(null); }}
+                    style={{ paddingVertical: 8 }}
+                  >
+                    <Text style={styles.resendText}>Change email</Text>
+                  </TouchableOpacity>
                 </View>
-              )}
-            </View>
-          )}
-
-
-
-          {authMode === 'register' && (
-            <View>
-              <Text style={styles.label}>Full Name (with Dr. prefix)</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="person" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Dr. Full Name"
-                  placeholderTextColor={Colors.textSecondary}
-                  value={doctorName}
-                  onChangeText={setDoctorName}
-                />
               </View>
-
-              <Text style={styles.label}>Medical Email</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="mail" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="doctor@hospital.org"
-                  placeholderTextColor={Colors.textSecondary}
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                />
-              </View>
-
-              <Text style={styles.label}>Phone Number</Text>
-              <View style={styles.phoneInputRow}>
-                <View style={styles.countryCodeBox}>
-                  <Text style={styles.countryCodeText}>+91</Text>
-                </View>
-                <TextInput
-                  style={[styles.input, { flex: 1 }]}
-                  placeholder="9876543210"
-                  placeholderTextColor={Colors.textSecondary}
-                  value={phoneDigits}
-                  onChangeText={setPhoneDigits}
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                />
-              </View>
-
-              <Text style={styles.label}>Medical Specialty</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="fitness" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g. Pulmonology / Internal Medicine"
-                  placeholderTextColor={Colors.textSecondary}
-                  value={regSpecialty}
-                  onChangeText={setRegSpecialty}
-                />
-              </View>
-
-              <Text style={styles.label}>Medical Registration Number (NMC / State)</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="id-card" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g. NMC-2024-84920"
-                  placeholderTextColor={Colors.textSecondary}
-                  value={regNumber}
-                  onChangeText={setRegNumber}
-                />
-              </View>
-
-              <Text style={styles.label}>Clinic / Hospital Name</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="business" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g. Metro Care Clinic & Hospital"
-                  placeholderTextColor={Colors.textSecondary}
-                  value={regClinic}
-                  onChangeText={setRegClinic}
-                />
-              </View>
-
-              <TouchableOpacity
-                style={styles.primaryBtn}
-                onPress={handleRegisterDoctor}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <>
-                    <Ionicons name="create" size={18} color="#ffffff" />
-                    <Text style={styles.primaryBtnText}>Register Doctor Profile</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          )}
+            )}
+          </View>
         </View>
 
         {/* Legal & Security Compliance Footer */}

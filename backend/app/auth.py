@@ -76,20 +76,7 @@ def get_auth_directory(db: Session = Depends(get_db)):
     Returns registered doctor and patient directory for transparent review and quick-login.
     """
     try:
-        dummy_emails = [
-            "dr.aarav.mehta@praxirence.com",
-            "dr.aarav@hospital.org",
-            "dr.priya.sharma@praxirence.com",
-            "dr.vikram.gowda@praxirence.com",
-            "dr.ananya.verma@praxirence.com",
-            "dr.rajesh.tripathi@praxirence.com",
-            "newdoc@praxirence.com",
-            "doctor2@praxirence.com"
-        ]
-        doctors = db.query(User).filter(
-            ~User.email.in_(dummy_emails),
-            ~User.email.like("doctor.%@praxirence.com")
-        ).all()
+        doctors = db.query(User).all()
         patients = db.query(Patient).all()
 
         today_iso = datetime.now().strftime("%Y-%m-%d")

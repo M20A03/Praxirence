@@ -469,7 +469,12 @@ async def patient_chat_assistant(
                 f"Patient Summary: {pat_sum or 'Evaluation completed.'}\n"
                 f"Prescribed Medicines: {json.dumps(meds_list)}\n"
             )
-    else:
+    if req.active_medications:
+        context_lines.append(
+            f"[Active In-App Medications]: {json.dumps(req.active_medications)}\n"
+        )
+
+    if not visits and not req.active_medications:
         context_lines.append("NO_PREVIOUS_VISITS_RECORDED: This patient has no active consultations or prescriptions on file.")
 
     grounding_context = "\n".join(context_lines)

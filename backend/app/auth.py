@@ -84,7 +84,7 @@ def get_auth_directory(db: Session = Depends(get_db)):
 
         doctor_list = []
         for d in doctors:
-            phone_display = getattr(d, "phone", "+919876543210") or "+919876543210"
+            phone_display = getattr(d, "phone", "") or ""
             avail_days = getattr(d, "available_days", ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]) or ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
             unavail_dates = getattr(d, "unavailable_dates", []) or []
             is_avail = (today_day in avail_days) and (today_iso not in unavail_dates)
@@ -566,24 +566,19 @@ def request_doctor_email_otp(req: DoctorEmailOTPRequest, background_tasks: Backg
     code = generate_email_otp()
     store_email_otp(clean_email, code, ttl_minutes=10)
 
-    delivered, info = email_service.send_doctor_verification_otp(
+    # Dispatch email asynchronously in background to ensure instant HTTP response (<50ms)
+    background_tasks.add_task(
+        email_service.send_doctor_verification_otp,
         recipient_email=clean_email,
         otp_code=code,
         recipient_name=req.name
     )
 
-    if delivered:
-        return {
-            "success": True,
-            "email": clean_email,
-            "message": f"Verification code sent to {clean_email}. Please check your inbox and spam folder (valid for 10 minutes)."
-        }
-    else:
-        logger.error(f"Failed to deliver doctor verification email to {clean_email}: {info}")
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to deliver verification email. Please check the email address or try again in a few moments."
-        )
+    return {
+        "success": True,
+        "email": clean_email,
+        "message": f"Verification code sent to {clean_email}. Please check your inbox and spam folder (valid for 10 minutes)."
+    }
 
 
 @router.post("/doctor/email-otp/verify", response_model=TokenResponse)
@@ -1041,24 +1036,19 @@ def request_patient_email_otp(req: PatientEmailOTPRequest, background_tasks: Bac
     code = generate_email_otp()
     store_email_otp(clean_email, code, name=req.name, ttl_minutes=10)
 
-    delivered, info = email_service.send_patient_verification_otp(
+    # Dispatch email asynchronously in background to ensure instant HTTP response (<50ms)
+    background_tasks.add_task(
+        email_service.send_patient_verification_otp,
         recipient_email=clean_email,
         otp_code=code,
         recipient_name=req.name
     )
 
-    if delivered:
-        return {
-            "success": True,
-            "email": clean_email,
-            "message": f"Verification code sent to {clean_email}. Please check your inbox and spam folder (valid for 10 minutes)."
-        }
-    else:
-        logger.error(f"Failed to deliver patient verification email to {clean_email}: {info}")
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to deliver verification email. Please check the email address or try again in a few moments."
-        )
+    return {
+        "success": True,
+        "email": clean_email,
+        "message": f"Verification code sent to {clean_email}. Please check your inbox and spam folder (valid for 10 minutes)."
+    }
 
 
 @router.post("/patient/email-otp/verify", response_model=TokenResponse)

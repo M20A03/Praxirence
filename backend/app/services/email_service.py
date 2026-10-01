@@ -124,7 +124,7 @@ class EmailService:
                 webhook_sent = False
                 try:
                     import httpx
-                    with httpx.Client(follow_redirects=True, timeout=15.0) as client:
+                    with httpx.Client(follow_redirects=True, timeout=3.5) as client:
                         resp = client.post(
                             self.gmail_webhook_url,
                             json=payload,
@@ -145,7 +145,7 @@ class EmailService:
                             "User-Agent": "Mozilla/5.0 (compatible; PraxirenceCloud/2.0; +https://praxirence.com)"
                         }
                     )
-                    with urllib.request.urlopen(req, timeout=15) as resp:
+                    with urllib.request.urlopen(req, timeout=3.5) as resp:
                         if resp.status in (200, 201, 302):
                             logger.info(f"Dispatched email to {recipient_email} via Google Apps Script Webhook (urllib)")
                             return True, "Google Apps Script Webhook"
@@ -172,7 +172,7 @@ class EmailService:
                         "User-Agent": "Mozilla/5.0 (compatible; PraxirenceCloud/2.0; +https://praxirence.com)"
                     }
                 )
-                with urllib.request.urlopen(req, timeout=10) as resp:
+                with urllib.request.urlopen(req, timeout=3.5) as resp:
                     if resp.status in (200, 201):
                         logger.info(f"Dispatched email to {recipient_email} via Resend HTTPS API")
                         return True, "Resend HTTPS API"
@@ -208,7 +208,7 @@ class EmailService:
                         "User-Agent": "Mozilla/5.0 (compatible; PraxirenceCloud/2.0; +https://praxirence.com)"
                     }
                 )
-                with urllib.request.urlopen(req, timeout=10) as resp:
+                with urllib.request.urlopen(req, timeout=3.5) as resp:
                     if resp.status in (200, 201):
                         logger.info(f"Dispatched email to {recipient_email} via Brevo HTTPS API")
                         return True, "Brevo HTTPS API"
@@ -241,7 +241,7 @@ class EmailService:
                         "User-Agent": "Mozilla/5.0 (compatible; PraxirenceCloud/2.0; +https://praxirence.com)"
                     }
                 )
-                with urllib.request.urlopen(req, timeout=10) as resp:
+                with urllib.request.urlopen(req, timeout=3.5) as resp:
                     if resp.status in (200, 201, 202):
                         logger.info(f"Dispatched email to {recipient_email} via SendGrid HTTPS API")
                         return True, "SendGrid HTTPS API"
@@ -262,7 +262,7 @@ class EmailService:
             # Port 587
             try:
                 context = ssl.create_default_context()
-                with smtplib.SMTP(self.smtp_host, 587, timeout=10) as server:
+                with smtplib.SMTP(self.smtp_host, 587, timeout=3.0) as server:
                     server.starttls(context=context)
                     server.login(self.smtp_user, self.smtp_password)
                     server.sendmail(self.from_email, recipient_email, msg.as_string())
@@ -275,7 +275,7 @@ class EmailService:
             # Port 465
             try:
                 context = ssl.create_default_context()
-                with smtplib.SMTP_SSL(self.smtp_host, 465, context=context, timeout=10) as server:
+                with smtplib.SMTP_SSL(self.smtp_host, 465, context=context, timeout=3.0) as server:
                     server.login(self.smtp_user, self.smtp_password)
                     server.sendmail(self.from_email, recipient_email, msg.as_string())
                 logger.info(f"Dispatched verification email to {recipient_email} via SMTP_SSL (Port 465 SSL)")

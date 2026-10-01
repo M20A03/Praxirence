@@ -230,7 +230,7 @@ async def upload_consultation_audio(
     if not patient:
         patient = db.query(Patient).first()
     if not patient:
-        patient = Patient(name="Consultation Patient", phone="+919876543210", consent_status=True)
+        patient = Patient(name="Consultation Patient", phone="", consent_status=True)
         db.add(patient)
         db.commit()
         db.refresh(patient)

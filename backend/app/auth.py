@@ -1301,18 +1301,24 @@ def admin_purge_database(
     if x_admin_secret != settings.SECRET_KEY:
         raise HTTPException(status_code=403, detail="Invalid administrative secret key")
     
+    from sqlalchemy import text
     try:
-        from app.models.review import DoctorReview
-        db.query(DoctorReview).delete()
-    except Exception:
-        pass
-
-    db.query(Visit).delete()
-    db.query(ConsentLog).delete()
-    db.query(AuditLog).delete()
-    db.query(Patient).delete()
-    db.query(User).delete()
-    db.commit()
+        # PostgreSQL CASCADE Truncation
+        db.execute(text("TRUNCATE TABLE visits, patients, users, doctor_reviews, consent_logs, audit_logs CASCADE;"))
+        db.execute(text("ALTER SEQUENCE IF EXISTS visits_id_seq RESTART WITH 1;"))
+        db.execute(text("ALTER SEQUENCE IF EXISTS patients_id_seq RESTART WITH 1;"))
+        db.execute(text("ALTER SEQUENCE IF EXISTS users_id_seq RESTART WITH 1;"))
+        db.commit()
+    except Exception as e:
+        logger.warning(f"Truncate cascade note: {e}")
+        db.rollback()
+        # Fallback for SQLite or individual deletes
+        for tbl in ["doctor_reviews", "consent_logs", "audit_logs", "visits", "patients", "users"]:
+            try:
+                db.execute(text(f"DELETE FROM {tbl};"))
+            except Exception:
+                pass
+        db.commit()
 
     return {
         "success": True,

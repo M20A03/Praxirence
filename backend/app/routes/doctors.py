@@ -137,10 +137,10 @@ def list_doctors(
 
     results = []
     for d in doctors:
-        doc_city = getattr(d, "city", "Bangalore") or "Bangalore"
+        doc_city = getattr(d, "city", "") or ""
         doc_specialty = getattr(d, "specialty", "General Physician") or "General Physician"
-        doc_name = d.name or "Dr. Mayank Raj"
-        doc_clinic = getattr(d, "clinic_name", "Praxirence Clinical Centre") or "Praxirence Clinical Centre"
+        doc_name = d.name or "Doctor"
+        doc_clinic = getattr(d, "clinic_name", "") or ""
 
         # Apply filters
         if specialty and specialty.lower() != "all":

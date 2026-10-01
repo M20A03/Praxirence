@@ -66,63 +66,8 @@ def purge_and_bootstrap(force=False, wipe_all_doctors=False):
         num_audit = db.query(AuditLog).delete()
         num_patients = db.query(Patient).delete()
 
-        if wipe_all_doctors:
-            num_doctors = db.query(User).delete()
-            print(f"  - Purged all {num_doctors} doctor accounts.")
-        else:
-            # Purge mock/test doctors while strictly keeping or re-seeding the CMO
-            dummy_emails = [
-                "dr.aarav.mehta@praxirence.com",
-                "dr.aarav@hospital.org",
-                "dr.priya.sharma@praxirence.com",
-                "dr.vikram.gowda@praxirence.com",
-                "dr.ananya.verma@praxirence.com",
-                "dr.rajesh.tripathi@praxirence.com",
-                "dr.aarav.test@praxirence.com",
-                "dr.mayank.test@praxirence.com",
-                "newdoc@praxirence.com",
-                "doctor2@praxirence.com"
-            ]
-            purged_docs = db.query(User).filter(
-                (User.email.in_(dummy_emails)) |
-                (User.email.like("doctor.%@praxirence.com")) |
-                (User.email.like("%test%@%"))
-            ).delete(synchronize_session=False)
-
-            # Ensure Verified Founding Doctor / Chief Medical Officer exists
-            cmo = db.query(User).filter(User.email == "doctor@praxirence.com").first()
-            if not cmo:
-                cmo = User(
-                    email="doctor@praxirence.com",
-                    hashed_password=get_password_hash("Doctor123!"),
-                    name="Dr. Mayank Raj",
-                    phone="+919876543210",
-                    specialty="Chief Medical Officer & Physician",
-                    clinic_name="Praxirence Clinical Centre",
-                    reg_number="NMC-2024-84920",
-                    city="Bangalore",
-                    state="Karnataka",
-                    pincode="560038",
-                    clinic_address="12th Main, Indiranagar, Bangalore",
-                    latitude=12.9716,
-                    longitude=77.5946,
-                    available_days=["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-                    working_hours_start="09:00",
-                    working_hours_end="18:00",
-                    slot_duration_mins=30,
-                    unavailable_dates=[],
-                    consultation_fee=500
-                )
-                db.add(cmo)
-            else:
-                cmo.name = "Dr. Mayank Raj"
-                cmo.phone = "+919876543210"
-                cmo.specialty = "Chief Medical Officer & Physician"
-                cmo.clinic_name = "Praxirence Clinical Centre"
-                cmo.reg_number = "NMC-2024-84920"
-                cmo.unavailable_dates = []
-                cmo.hashed_password = get_password_hash("Doctor123!")
-
+        num_doctors = db.query(User).delete()
+        print(f"  - Purged all {num_doctors} doctor and clinician accounts (Zero accounts remaining).")
         db.commit()
 
         # If PostgreSQL, reset sequences if any

@@ -141,18 +141,6 @@ def get_auth_directory(db: Session = Depends(get_db)):
                 "role": "patient"
             })
 
-        if not doctor_list:
-            doctor_list.append({
-                "id": "doc-default-01",
-                "name": "Dr. Mayank Raj",
-                "email": "doctor@praxirence.com",
-                "phone": "+919876543210",
-                "specialty": "Chief Medical Officer",
-                "clinic_name": "Praxirence Clinical Centre",
-                "reg_number": "NMC-2024-84920",
-                "role": "doctor"
-            })
-
         return DirectoryResponse(
             doctors=doctor_list,
             patients=patient_list
@@ -160,16 +148,7 @@ def get_auth_directory(db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Error in /auth/directory: {e}", exc_info=True)
         return DirectoryResponse(
-            doctors=[{
-                "id": "doc-default-01",
-                "name": "Dr. Mayank Raj",
-                "email": "doctor@praxirence.com",
-                "phone": "+919876543210",
-                "specialty": "Chief Medical Officer",
-                "clinic_name": "Praxirence Clinical Centre",
-                "reg_number": "NMC-2024-84920",
-                "role": "doctor"
-            }],
+            doctors=[],
             patients=[]
         )
 
@@ -205,13 +184,6 @@ def check_phone_number(phone: str = Query(..., description="Phone number to chec
         except Exception:
             pass
 
-    if not doctor and (last10 in ["9876543210"] or clean.lower() == "doctor@praxirence.com"):
-        return CheckPhoneResponse(
-            registered=True,
-            role="doctor",
-            name="Dr. Mayank Raj",
-            message="Verified Clinician: Dr. Mayank Raj (Chief Medical Officer & Physician)"
-        )
 
     if doctor:
         specialty = getattr(doctor, "specialty", "General Physician") or "General Physician"
@@ -279,26 +251,18 @@ def login_doctor_password(req: DoctorLoginRequest, db: Session = Depends(get_db)
         except Exception:
             pass
 
-    is_valid_auth = False
-    if user and user.hashed_password:
-        is_valid_auth = verify_password(req.password, user.hashed_password)
-    
-    # Resilient fallback for primary clinical demo account
-    if not is_valid_auth and clean_email == "doctor@praxirence.com" and req.password == "Doctor123!":
-        is_valid_auth = True
-
-    if not is_valid_auth:
+    if not user or not user.hashed_password or not verify_password(req.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
         )
 
-    user_id = str(user.id) if user else "doc-default-01"
-    user_name = user.name if user else "Dr. Physician"
-    user_specialty = getattr(user, "specialty", None) if user else None
-    user_clinic = getattr(user, "clinic_name", None) if user else None
-    user_reg = getattr(user, "reg_number", None) if user else None
-    user_phone = getattr(user, "phone", None) if user else None
+    user_id = str(user.id)
+    user_name = user.name
+    user_specialty = getattr(user, "specialty", None)
+    user_clinic = getattr(user, "clinic_name", None)
+    user_reg = getattr(user, "reg_number", None)
+    user_phone = getattr(user, "phone", None)
 
     token = create_access_token(
         subject=user_id,
@@ -368,8 +332,6 @@ async def request_doctor_otp(req: DoctorOTPRequest, db: Session = Depends(get_db
     try:
         if last10:
             doctor = db.query(User).filter(User.phone.like(f"%{last10}%")).first()
-        if not doctor and last10 in ["9876543210"]:
-            doctor = db.query(User).filter(User.email == "doctor@praxirence.com").first()
     except Exception as e:
         logger.warning(f"DB lookup notice in request_doctor_otp: {e}")
         try:
@@ -418,8 +380,6 @@ def verify_doctor_otp(req: DoctorOTPVerifyRequest, db: Session = Depends(get_db)
     try:
         if last10:
             doctor = db.query(User).filter(User.phone.like(f"%{last10}%")).first()
-        if not doctor and last10 in ["9876543210"]:
-            doctor = db.query(User).filter(User.email == "doctor@praxirence.com").first()
     except Exception as e:
         logger.warning(f"DB lookup notice in verify_doctor_otp: {e}")
         try:

@@ -150,9 +150,9 @@ def get_my_patient_portal(
                 "doctor_advice": doc_advice,
             },
             "doctor": {
-                "name": v.doctor.name if v.doctor else "Dr. Mayank Raj",
+                "name": v.doctor.name if v.doctor else "Attending Doctor",
                 "specialty": v.doctor.specialty if v.doctor else "General Physician",
-                "clinic_name": getattr(v.doctor, "clinic_name", "Praxirence Clinical Centre") if v.doctor else "Praxirence Clinical Centre"
+                "clinic_name": getattr(v.doctor, "clinic_name", "") if v.doctor else ""
             }
         })
 

@@ -816,22 +816,9 @@ export const mobileApi = {
         const stored = await AsyncStorage.getItem('praxirence_token');
         if (stored && stored.length > 15) {
           authToken = stored;
-        } else {
-          const lRes = await fetch(`${getEffectiveApiUrl()}/auth/doctor/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: 'doctor@praxirence.com', password: 'Doctor123!' }),
-          });
-          if (lRes.ok) {
-            const data = await lRes.json();
-            if (data.access_token) {
-              authToken = data.access_token;
-              await AsyncStorage.setItem('praxirence_token', data.access_token);
-            }
-          }
         }
       } catch (e) {
-        console.warn('Summarize token refresh notice:', e);
+        console.warn('Summarize token fetch notice:', e);
       }
     }
 
@@ -882,22 +869,9 @@ export const mobileApi = {
         const stored = await AsyncStorage.getItem('praxirence_token');
         if (stored && stored.length > 15) {
           authToken = stored;
-        } else {
-          const lRes = await fetch(`${getEffectiveApiUrl()}/auth/doctor/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: 'doctor@praxirence.com', password: 'Doctor123!' }),
-          });
-          if (lRes.ok) {
-            const data = await lRes.json();
-            if (data.access_token) {
-              authToken = data.access_token;
-              await AsyncStorage.setItem('praxirence_token', data.access_token);
-            }
-          }
         }
       } catch (e) {
-        console.warn('Audio token refresh notice:', e);
+        console.warn('Audio token fetch notice:', e);
       }
     }
 

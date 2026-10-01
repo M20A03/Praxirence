@@ -352,7 +352,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.infoLabel}>Official Medical Email</Text>
-            <Text style={styles.infoValue}>{profileDoctor.email || 'doctor@praxirence.com'}</Text>
+            <Text style={styles.infoValue}>{profileDoctor.email || 'Not configured'}</Text>
           </View>
         </View>
 

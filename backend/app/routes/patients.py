@@ -55,10 +55,22 @@ def search_patients(
     if query:
         clean_q = query.strip()
         phone_hash = compute_phone_hash(clean_q)
+        digits = "".join(ch for ch in clean_q if ch.isdigit())
+        phone_hashes = [phone_hash]
+        if len(digits) == 10:
+            phone_hashes.append(compute_phone_hash(f"+91{digits}"))
+            phone_hashes.append(compute_phone_hash(digits))
+        elif len(digits) >= 11:
+            phone_hashes.append(compute_phone_hash(f"+{digits}"))
+            phone_hashes.append(compute_phone_hash(digits))
+            if digits.startswith("91") and len(digits) == 12:
+                phone_hashes.append(compute_phone_hash(f"+91{digits[2:]}"))
+                phone_hashes.append(compute_phone_hash(digits[2:]))
+
         q = q.filter(
             or_(
                 Patient.name.ilike(f"%{clean_q}%"),
-                Patient.phone_hash == phone_hash,
+                Patient.phone_hash.in_(phone_hashes),
                 Patient.id.ilike(f"%{clean_q}%"),
                 Patient.id == clean_q
             )

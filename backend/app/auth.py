@@ -1301,31 +1301,54 @@ def admin_purge_database(
     if x_admin_secret != settings.SECRET_KEY:
         raise HTTPException(status_code=403, detail="Invalid administrative secret key")
     
-    from sqlalchemy import text
+    from sqlalchemy import inspect, text
+    purged_tables = []
     try:
-        # PostgreSQL CASCADE Truncation
-        db.execute(text("TRUNCATE TABLE visits, patients, users, doctor_reviews, consent_logs, audit_logs CASCADE;"))
-        db.execute(text("ALTER SEQUENCE IF EXISTS visits_id_seq RESTART WITH 1;"))
-        db.execute(text("ALTER SEQUENCE IF EXISTS patients_id_seq RESTART WITH 1;"))
-        db.execute(text("ALTER SEQUENCE IF EXISTS users_id_seq RESTART WITH 1;"))
-        db.commit()
-    except Exception as e:
-        logger.warning(f"Truncate cascade note: {e}")
-        db.rollback()
-        # Fallback for SQLite or individual deletes
-        for tbl in ["doctor_reviews", "consent_logs", "audit_logs", "visits", "patients", "users"]:
-            try:
-                db.execute(text(f"DELETE FROM {tbl};"))
-            except Exception:
-                pass
-        db.commit()
+        bind = db.get_bind()
+        inspector = inspect(bind)
+        existing = inspector.get_table_names()
+        is_postgres = getattr(bind.dialect, "name", "") == "postgresql"
 
-    return {
-        "success": True,
-        "message": "All clinical, patient, and doctor data purged cleanly. Database is at complete clean slate.",
-        "counts": {
-            "visits": db.query(Visit).count(),
-            "patients": db.query(Patient).count(),
-            "doctors": db.query(User).count()
+        targets = ["doctor_reviews", "consent_logs", "audit_logs", "visits", "patients", "users"]
+        to_wipe = [t for t in targets if t in existing]
+
+        if is_postgres and to_wipe:
+            tbl_str = ", ".join(f'"{t}"' for t in to_wipe)
+            db.execute(text(f"TRUNCATE TABLE {tbl_str} CASCADE;"))
+            for t in ["visits", "patients", "users"]:
+                try:
+                    db.execute(text(f"ALTER SEQUENCE IF EXISTS {t}_id_seq RESTART WITH 1;"))
+                except Exception:
+                    pass
+            db.commit()
+            purged_tables = to_wipe
+        else:
+            # Foreign-key safe order deletion for SQLite / generic
+            for t in to_wipe:
+                try:
+                    db.execute(text(f"DELETE FROM \"{t}\";"))
+                    db.commit()
+                    purged_tables.append(t)
+                except Exception as del_err:
+                    db.rollback()
+                    logger.warning(f"Notice deleting table {t}: {del_err}")
+
+        return {
+            "success": True,
+            "message": "All clinical, patient, and doctor data purged cleanly. Database is at complete clean slate.",
+            "purged_tables": purged_tables,
+            "counts": {
+                "visits": db.query(Visit).count() if "visits" in existing else 0,
+                "patients": db.query(Patient).count() if "patients" in existing else 0,
+                "doctors": db.query(User).count() if "users" in existing else 0
+            }
         }
-    }
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error in admin_purge_database: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": str(e),
+            "purged_tables": purged_tables
+        }
+

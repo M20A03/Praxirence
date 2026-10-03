@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing } from 'reac
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../../theme';
 import { QueueStatusResponse } from '../../types';
+import { useLanguage } from '../../utils/LanguageContext';
 
 interface LiveQueueTrackerCardProps {
   queueStatus: QueueStatusResponse;
@@ -15,6 +16,7 @@ export const LiveQueueTrackerCard: React.FC<LiveQueueTrackerCardProps> = ({
   onCancelAppointment,
   onDismissTracker,
 }) => {
+  const { t } = useLanguage();
   const isInProgress = queueStatus.status === 'in_progress';
   const docDisplayName = queueStatus.doctor_name
     ? (queueStatus.doctor_name.startsWith('Dr.') ? queueStatus.doctor_name : `Dr. ${queueStatus.doctor_name}`)
@@ -48,7 +50,7 @@ export const LiveQueueTrackerCard: React.FC<LiveQueueTrackerCardProps> = ({
         <View style={styles.liveQueueIndicatorRow}>
           <Animated.View style={[styles.liveQueuePulseDot, isInProgress && styles.pulseDotActive, { opacity: pulseAnim }]} />
           <Text style={[styles.liveQueueHeaderTitle, isInProgress && styles.headerTitleActive]}>
-            {isInProgress ? 'ACTIVE CONSULTATION IN PROGRESS' : 'LIVE OPD QUEUE TRACKER'}
+            {isInProgress ? t('activeConsultation') : t('activeOPDQueue')}
           </Text>
         </View>
         <View style={[
@@ -59,7 +61,7 @@ export const LiveQueueTrackerCard: React.FC<LiveQueueTrackerCardProps> = ({
             styles.liveQueueStatusBadgeText,
             { color: isInProgress ? '#15803D' : '#1E40AF' }
           ]}>
-            {isInProgress ? 'In Chamber Now' : 'Waiting Lounge'}
+            {isInProgress ? t('inDoctorCabin') : t('aheadInQueue')}
           </Text>
         </View>
       </View>
@@ -92,36 +94,36 @@ export const LiveQueueTrackerCard: React.FC<LiveQueueTrackerCardProps> = ({
       {/* Metrics Grid */}
       <View style={styles.liveQueueMetricsGrid}>
         <View style={[styles.liveQueueMetricBox, styles.liveQueueTokenBox]}>
-          <Text style={styles.liveQueueMetricLabel}>YOUR TOKEN</Text>
+          <Text style={styles.liveQueueMetricLabel}>{t('tokenNumber')}</Text>
           <Text style={styles.liveQueueTokenText}>{queueStatus.token_display || `PX-0${queueStatus.token_number}`}</Text>
-          <Text style={styles.liveQueueSubLabel}>Assigned</Text>
+          <Text style={styles.liveQueueSubLabel}>{t('activeAndVerified')}</Text>
         </View>
 
         <View style={[styles.liveQueueMetricBox, styles.liveQueueServingBox]}>
-          <Text style={[styles.liveQueueMetricLabel, { color: '#0369A1' }]}>NOW SERVING</Text>
+          <Text style={[styles.liveQueueMetricLabel, { color: '#0369A1' }]}>{t('activeConsultation')}</Text>
           <Text style={[styles.liveQueueTokenText, { color: '#0284C7' }]}>
             {queueStatus.current_serving_token || 'PX-01'}
           </Text>
           <Text style={[styles.liveQueueSubLabel, { color: '#0284C7' }]}>
-            {isInProgress ? 'Your Turn!' : 'In Chamber'}
+            {isInProgress ? t('optimal') : t('inDoctorCabin')}
           </Text>
         </View>
 
         <View style={[styles.liveQueueMetricBox, styles.liveQueueWaitBox]}>
-          <Text style={[styles.liveQueueMetricLabel, { color: '#B45309' }]}>ESTIMATED WAIT</Text>
+          <Text style={[styles.liveQueueMetricLabel, { color: '#B45309' }]}>{t('estimatedWait')}</Text>
           <Text style={[styles.liveQueueWaitText, { color: '#D97706' }]}>
             {isInProgress
               ? 'Now'
               : (queueStatus.patients_ahead === 0
                 ? 'Next!'
-                : `~${queueStatus.estimated_wait_mins || (queueStatus.patients_ahead * 15)}m`)}
+                : `~${queueStatus.estimated_wait_mins || (queueStatus.patients_ahead * 15)} ${t('mins')}`)}
           </Text>
           <Text style={[styles.liveQueueSubLabel, { color: '#B45309' }]}>
             {isInProgress
-              ? 'Active'
+              ? t('optimal')
               : (queueStatus.patients_ahead === 0
-                ? 'Get Ready'
-                : `${queueStatus.patients_ahead} ahead`)}
+                ? t('normal')
+                : `${queueStatus.patients_ahead} ${t('patientsAhead')}`)}
           </Text>
         </View>
       </View>
@@ -142,7 +144,7 @@ export const LiveQueueTrackerCard: React.FC<LiveQueueTrackerCardProps> = ({
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Ionicons name="navigate-circle" size={18} color="#0D9488" />
-              <Text style={styles.commuteAdvisoryTitle}>COMMUTE GUIDANCE</Text>
+              <Text style={styles.commuteAdvisoryTitle}>{t('commuteAdvisory')}</Text>
             </View>
             <View style={styles.commuteBadge}>
               <Ionicons name="car-outline" size={13} color="#0F766E" />
@@ -165,7 +167,7 @@ export const LiveQueueTrackerCard: React.FC<LiveQueueTrackerCardProps> = ({
           >
             <Ionicons name="close-circle-outline" size={15} color="#DC2626" />
             <Text style={styles.cancelApptBtnText}>
-              {isInProgress ? 'End / Exit Consultation' : 'Cancel Appointment'}
+              {isInProgress ? 'End / Exit Consultation' : t('cancelAppointment')}
             </Text>
           </TouchableOpacity>
         )}

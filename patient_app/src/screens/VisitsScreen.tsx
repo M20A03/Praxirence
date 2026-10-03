@@ -25,6 +25,7 @@ import { NotificationService } from '../services/NotificationService';
 import { BrandLogoMobile } from '../components/BrandLogoMobile';
 import { EmptyState } from '../components/EmptyState';
 import { LiveQueueTrackerCard } from '../components/dashboard/LiveQueueTrackerCard';
+import { useLanguage } from '../utils/LanguageContext';
 
 const cleanDoctorName = (name?: string): string => {
   if (!name) return 'Care Provider';
@@ -37,6 +38,7 @@ interface VisitsScreenProps {
 }
 
 export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
+  const { t } = useLanguage();
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -328,15 +330,15 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
       }
     >
       <View style={{ marginBottom: 16 }}>
-        <BrandLogoMobile variant="header" size="sm" subtitleText="Clinical Consultation History" />
+        <BrandLogoMobile variant="header" size="sm" subtitleText={t('myHealthVault')} />
       </View>
 
       {/* Header with Bespoke Screen Feature Asset */}
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flex: 1, marginRight: 10 }}>
-            <Text style={styles.title}>Consultation Care Plans</Text>
-            <Text style={styles.subtitle}>Doctor explanations, home advice, and prescriptions</Text>
+            <Text style={styles.title}>{t('myHealthVault')}</Text>
+            <Text style={styles.subtitle}>{t('vaultSubtitle')}</Text>
           </View>
           <Image source={require('../../assets/features/visits.png')} style={{ width: 50, height: 50 }} resizeMode="contain" />
         </View>
@@ -404,8 +406,8 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
       {visits.length === 0 ? (
         <EmptyState
           icon="document-text-outline"
-          title="No Past Consultations"
-          description="Your medical vault is completely clean. When your doctor finishes a consultation and approves your care plan, all prescriptions, clinical summaries, and doctor voice advice will safely appear here."
+          title={t('noVisitsYet')}
+          description={t('noVisitsSub')}
         />
       ) : (
         visits.map((visit) => {

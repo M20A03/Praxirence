@@ -19,6 +19,9 @@ import { PatientUser, Visit, ChatMessage } from '../types';
 import { mobileApi } from '../services/api';
 import { BrandLogoMobile } from '../components/BrandLogoMobile';
 
+import { useLanguage } from '../utils/LanguageContext';
+import { SupportedLanguage } from '../utils/languageTranslations';
+
 interface ChatbotScreenProps {
   user: PatientUser;
   onNavigateToDoctors?: () => void;
@@ -41,6 +44,32 @@ const SUPPORTED_LANGUAGES = [
   { code: 'Hinglish', label: 'Hinglish' },
 ];
 
+const CODE_TO_CHAT_LANG: Record<string, string> = {
+  hi: 'Hindi',
+  kn: 'Kannada',
+  en: 'English',
+  bho: 'Bhojpuri',
+  ur: 'Urdu',
+  te: 'Telugu',
+  ta: 'Tamil',
+  mr: 'Marathi',
+  ml: 'Malayalam',
+  pa: 'Punjabi',
+};
+
+const CHAT_LANG_TO_CODE: Record<string, SupportedLanguage> = {
+  Hindi: 'hi',
+  Kannada: 'kn',
+  English: 'en',
+  Bhojpuri: 'bho',
+  Urdu: 'ur',
+  Telugu: 'te',
+  Tamil: 'ta',
+  Marathi: 'mr',
+  Malayalam: 'ml',
+  Punjabi: 'pa',
+};
+
 const cleanDoctorName = (name?: string): string => {
   if (!name) return 'Physician';
   const clean = name.replace(/^(Dr\.?\s*)+/i, '').trim();
@@ -52,7 +81,9 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
   onNavigateToDoctors,
   onNavigateToVisits,
 }) => {
-  const [selectedLanguage, setSelectedLanguage] = useState<string>('English');
+  const { language, setLanguage: setGlobalLanguage, t } = useLanguage();
+  const initialChatLang = CODE_TO_CHAT_LANG[language] || 'English';
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(initialChatLang);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -63,8 +94,13 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
 
   useEffect(() => {
     loadPatientContext();
-    initializeWelcomeMessage(selectedLanguage);
   }, [user.id]);
+
+  useEffect(() => {
+    const targetChatLang = CODE_TO_CHAT_LANG[language] || 'English';
+    setSelectedLanguage(targetChatLang);
+    initializeWelcomeMessage(targetChatLang);
+  }, [language, user.name]);
 
   const loadPatientContext = async () => {
     try {
@@ -114,6 +150,10 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
     setSelectedLanguage(lang);
     setShowLanguagePicker(false);
     initializeWelcomeMessage(lang);
+    const mapped = CHAT_LANG_TO_CODE[lang];
+    if (mapped) {
+      setGlobalLanguage(mapped);
+    }
   };
 
   const handleSendMessage = async (textToSend?: string) => {
@@ -185,7 +225,7 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
       <View style={styles.topHeader}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Image source={require('../../assets/features/chatbot.png')} style={{ width: 34, height: 34 }} resizeMode="contain" />
-          <BrandLogoMobile variant="header" size="sm" subtitleText="AI Health Assistant" />
+          <BrandLogoMobile variant="header" size="sm" subtitleText={t('aiAssistantTitle')} />
         </View>
 
         {/* Language Selection Pill */}
@@ -411,7 +451,7 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
       <View style={styles.inputBar}>
         <TextInput
           style={styles.textInput}
-          placeholder={`Ask about medicines, timings, doctors (${selectedLanguage})...`}
+          placeholder={`${t('typeHealthQuery')} (${selectedLanguage})`}
           placeholderTextColor={Colors.textSecondary}
           value={inputMessage}
           onChangeText={setInputMessage}

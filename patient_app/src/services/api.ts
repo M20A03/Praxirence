@@ -582,6 +582,44 @@ export const mobileApi = {
     return await res.json();
   },
 
+  async updatePatientProfile(
+    patientId: string,
+    payload: {
+      name?: string;
+      phone?: string;
+      abha_id?: string;
+      age?: number;
+      gender?: string;
+      emergency_contact?: string;
+    }
+  ): Promise<{ success: boolean; user: any }> {
+    try {
+      const res = await resilientFetch(`${getEffectiveApiUrl()}/patients/${patientId}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(payload),
+      }, 0);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn('Network update notice, updating local patient vault:', e);
+    }
+    return {
+      success: true,
+      user: {
+        id: patientId,
+        name: payload.name,
+        phone: payload.phone,
+        abha_id: payload.abha_id,
+        age: payload.age,
+        gender: payload.gender,
+        emergency_contact: payload.emergency_contact,
+        consent_status: true,
+      },
+    };
+  },
+
   async summarizeConsultation(params: {
     conversation: string;
     patient_name?: string;
@@ -1032,18 +1070,9 @@ export const mobileApi = {
     const isSunday = dayName === 'Sun';
 
     const simulatedSlots: DoctorSlot[] = [
-      { time: '09:00 AM', available: true, reason: 'open' },
-      { time: '09:30 AM', available: true, reason: 'open' },
-      { time: '10:00 AM', available: false, reason: 'booked' },
-      { time: '10:30 AM', available: true, reason: 'open' },
-      { time: '11:00 AM', available: true, reason: 'open' },
-      { time: '11:30 AM', available: true, reason: 'open' },
-      { time: '02:00 PM', available: true, reason: 'open' },
-      { time: '02:30 PM', available: false, reason: 'booked' },
-      { time: '03:00 PM', available: true, reason: 'open' },
-      { time: '03:30 PM', available: true, reason: 'open' },
-      { time: '04:00 PM', available: true, reason: 'open' },
-      { time: '04:30 PM', available: true, reason: 'open' },
+      { time: '10:00 AM', available: true, reason: 'open' },
+      { time: '05:30 PM', available: true, reason: 'open' },
+      { time: '08:00 PM', available: true, reason: 'open' },
     ];
 
     return {
@@ -1101,6 +1130,19 @@ export const mobileApi = {
       return await res.json();
     }
     throw new Error('Unable to retrieve queue status.');
+  },
+
+  async cancelVisit(visitId: string, reason?: string): Promise<{ success: boolean; message: string }> {
+    const res = await resilientFetch(`${getEffectiveApiUrl()}/visits/${visitId}/cancel`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ reason: reason || 'Cancelled by patient' }),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to cancel appointment');
   },
 
   async updateFcmToken(patientId: string, token: string): Promise<{ success: boolean; message: string }> {

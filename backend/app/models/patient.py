@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Boolean, Date, DateTime, Text
+from sqlalchemy import Column, String, Boolean, Date, DateTime, Text, Integer
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from app.core.security import decrypt_phone, encrypt_phone, compute_phone_hash
@@ -19,6 +19,10 @@ class Patient(Base):
     primary_account_phone = Column(String(32), nullable=True, index=True)
     family_relation = Column(String(30), default="Self", nullable=False)  # Self, Mother, Father, Child, Spouse, Other
     dob = Column(Date, nullable=True)
+    abha_id = Column(String(50), nullable=True)
+    age = Column(Integer, nullable=True)
+    gender = Column(String(20), nullable=True)
+    emergency_contact = Column(String(50), nullable=True)
     consent_status = Column(Boolean, default=False, nullable=False)
     consent_updated_at = Column(DateTime, nullable=True)
     fcm_token = Column(String(255), nullable=True)

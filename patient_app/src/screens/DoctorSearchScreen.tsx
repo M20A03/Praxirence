@@ -19,6 +19,9 @@ import { DoctorUser, PatientUser, DoctorSlot, DoctorAvailabilityResponse } from 
 import { mobileApi } from '../services/api';
 import { BrandLogoMobile } from '../components/BrandLogoMobile';
 import * as Location from 'expo-location';
+import { useLanguage } from '../utils/LanguageContext';
+import { INDIAN_STATES_AND_UTS, CITIES_BY_STATE, ALL_INDIAN_CITIES } from '../utils/indiaLocations';
+import { SearchablePickerModal } from '../components/SearchablePickerModal';
 
 interface DoctorSearchScreenProps {
   user: PatientUser;
@@ -35,17 +38,11 @@ const SPECIALTY_FILTERS = [
   'Orthopedics',
 ];
 
-const CITY_FILTERS = [
-  'All Cities',
-  'Bangalore',
-  'Lucknow',
-  'Kanpur',
-  'Mysore',
-  'Noida',
-  'Varanasi',
-  'Delhi',
-  'Mumbai',
-];
+const cleanDoctorName = (name?: string): string => {
+  if (!name) return 'Physician';
+  const clean = name.replace(/^(Dr\.?\s*)+/i, '').trim();
+  return `Dr. ${clean || 'Physician'}`;
+};
 
 const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
   Bangalore: { lat: 12.9716, lng: 77.5946 },
@@ -72,12 +69,16 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
   onSelectDoctorForVisit,
   onOpenChatWithDoctor,
 }) => {
+  const { t } = useLanguage();
   const [doctors, setDoctors] = useState<DoctorUser[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>('All');
+  const [selectedState, setSelectedState] = useState<string>('All States');
   const [selectedCity, setSelectedCity] = useState<string>('All Cities');
+  const [showStatePicker, setShowStatePicker] = useState<boolean>(false);
+  const [showCityPicker, setShowCityPicker] = useState<boolean>(false);
   const [isNearbyOnly, setIsNearbyOnly] = useState<boolean>(false);
 
   // Booking Modal State
@@ -120,7 +121,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
 
   useEffect(() => {
     fetchDoctors();
-  }, [selectedSpecialty, selectedCity, isNearbyOnly]);
+  }, [selectedSpecialty, selectedState, selectedCity, isNearbyOnly]);
 
   useEffect(() => {
     const onBackPress = () => {
@@ -181,6 +182,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
       setLoading(true);
       const params: any = {};
       if (selectedSpecialty !== 'All') params.specialty = selectedSpecialty;
+      if (selectedState !== 'All States') params.state = selectedState;
       if (selectedCity !== 'All Cities') params.city = selectedCity;
       if (isNearbyOnly) {
         const coords = deviceCoords || (await acquireDeviceLocation());
@@ -288,6 +290,18 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
   };
 
   const filteredDoctors = doctors.filter((doc) => {
+    if (selectedState !== 'All States') {
+      const st = selectedState.toLowerCase();
+      const docSt = (doc.state || '').toLowerCase();
+      const docAddr = (doc.clinic_address || '').toLowerCase();
+      if (!docSt.includes(st) && !docAddr.includes(st)) return false;
+    }
+    if (selectedCity !== 'All Cities') {
+      const ct = selectedCity.toLowerCase();
+      const docCt = (doc.city || '').toLowerCase();
+      const docAddr = (doc.clinic_address || '').toLowerCase();
+      if (!docCt.includes(ct) && !docAddr.includes(ct)) return false;
+    }
     const q = searchQuery.toLowerCase().trim();
     if (!q) return true;
     return (
@@ -295,6 +309,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
       (doc.specialty || '').toLowerCase().includes(q) ||
       (doc.clinic_name || '').toLowerCase().includes(q) ||
       (doc.city && doc.city.toLowerCase().includes(q)) ||
+      (doc.state && doc.state.toLowerCase().includes(q)) ||
       (doc.clinic_address && doc.clinic_address.toLowerCase().includes(q))
     );
   });
@@ -332,10 +347,10 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
         </View>
       </View>
 
-      {/* Geolocation & Nearby Proximity Filter Strip */}
+      {/* Geolocation & State/City Location Dropdown Strip */}
       <View style={styles.locationBarWrapper}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.locationScroll}>
-          {/* Nearby Toggle Button */}
+          {/* Nearby GPS Toggle Button */}
           <TouchableOpacity
             style={[styles.nearbyPill, isNearbyOnly && styles.nearbyPillActive]}
             onPress={handleToggleNearby}
@@ -351,29 +366,46 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
             </Text>
           </TouchableOpacity>
 
-          {/* City Selector Pills */}
-          {CITY_FILTERS.map((city) => (
+          {/* State Dropdown Selector */}
+          <TouchableOpacity
+            style={[styles.dropdownPill, selectedState !== 'All States' && styles.dropdownPillActive]}
+            onPress={() => setShowStatePicker(true)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="map-outline" size={13} color={selectedState !== 'All States' ? '#FFFFFF' : Colors.primary} style={{ marginRight: 4 }} />
+            <Text style={[styles.dropdownPillText, selectedState !== 'All States' && styles.dropdownPillTextActive]}>
+              {selectedState === 'All States' ? 'State: All India' : selectedState}
+            </Text>
+            <Ionicons name="chevron-down" size={12} color={selectedState !== 'All States' ? '#FFFFFF' : Colors.textSecondary} style={{ marginLeft: 4 }} />
+          </TouchableOpacity>
+
+          {/* City Dropdown Selector */}
+          <TouchableOpacity
+            style={[styles.dropdownPill, selectedCity !== 'All Cities' && styles.dropdownPillActive]}
+            onPress={() => setShowCityPicker(true)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="business-outline" size={13} color={selectedCity !== 'All Cities' ? '#FFFFFF' : Colors.primary} style={{ marginRight: 4 }} />
+            <Text style={[styles.dropdownPillText, selectedCity !== 'All Cities' && styles.dropdownPillTextActive]}>
+              {selectedCity === 'All Cities' ? 'City: All Cities' : selectedCity}
+            </Text>
+            <Ionicons name="chevron-down" size={12} color={selectedCity !== 'All Cities' ? '#FFFFFF' : Colors.textSecondary} style={{ marginLeft: 4 }} />
+          </TouchableOpacity>
+
+          {/* Clear Filter Button if state or city active */}
+          {(selectedState !== 'All States' || selectedCity !== 'All Cities') && (
             <TouchableOpacity
-              key={city}
-              style={[
-                styles.cityPill,
-                selectedCity === city && !isNearbyOnly && styles.cityPillActive,
-              ]}
+              style={styles.clearFilterPill}
               onPress={() => {
-                setIsNearbyOnly(false);
-                setSelectedCity(city);
+                setSelectedState('All States');
+                setSelectedCity('All Cities');
               }}
+              activeOpacity={0.7}
             >
-              <Text
-                style={[
-                  styles.cityPillText,
-                  selectedCity === city && !isNearbyOnly && styles.cityPillTextActive,
-                ]}
-              >
-                {city}
-              </Text>
+              <Ionicons name="close-circle" size={13} color="#EF4444" style={{ marginRight: 3 }} />
+              <Text style={styles.clearFilterText}>Reset</Text>
             </TouchableOpacity>
-          ))}
+          )}
         </ScrollView>
       </View>
 
@@ -456,7 +488,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                   <View style={{ flex: 1 }}>
                     <View style={styles.nameRow}>
                       <Text style={styles.doctorName}>
-                        {doc.name.startsWith('Dr.') ? doc.name : `Dr. ${doc.name}`}
+                        {cleanDoctorName(doc.name)}
                       </Text>
                       <Ionicons name="checkmark-circle" size={15} color="#0284C7" />
                     </View>
@@ -480,7 +512,9 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
                       <Ionicons name="location-outline" size={13} color={Colors.primary} />
                       <Text style={styles.doctorAddress} numberOfLines={1}>
-                        {doc.clinic_address || 'Clinic Centre'}, {doc.city || 'Bangalore'}
+                        {doc.clinic_address
+                          ? `${doc.clinic_address}${doc.city ? `, ${doc.city}` : ''}`
+                          : 'Clinic location not specified'}
                       </Text>
                     </View>
 
@@ -568,7 +602,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Text style={styles.sheetDoctorName}>
-                    {selectedDoctor?.name?.startsWith('Dr.') ? selectedDoctor.name : `Dr. ${selectedDoctor?.name}`}
+                    {cleanDoctorName(selectedDoctor?.name)}
                   </Text>
                   <Ionicons name="checkmark-circle" size={17} color="#0284C7" />
                 </View>
@@ -585,7 +619,9 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
                   <Ionicons name="location-outline" size={13} color={Colors.textSecondary} />
                   <Text style={styles.sheetAddressText}>
-                    {selectedDoctor?.clinic_address}, {selectedDoctor?.city}
+                    {selectedDoctor?.clinic_address
+                      ? `${selectedDoctor.clinic_address}${selectedDoctor.city ? `, ${selectedDoctor.city}` : ''}`
+                      : 'Clinic location not specified'}
                   </Text>
                 </View>
               </View>
@@ -1035,6 +1071,38 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
           </View>
         </View>
       </Modal>
+
+      {/* State Picker Modal */}
+      <SearchablePickerModal
+        visible={showStatePicker}
+        title="Select State / Union Territory"
+        items={['All States', ...INDIAN_STATES_AND_UTS]}
+        selectedItem={selectedState}
+        onSelect={(st) => {
+          setSelectedState(st);
+          if (st === 'All States') {
+            setSelectedCity('All Cities');
+          } else {
+            const citiesForState = CITIES_BY_STATE[st] || [];
+            if (citiesForState.length > 0 && selectedCity !== 'All Cities' && !citiesForState.includes(selectedCity)) {
+              setSelectedCity('All Cities');
+            }
+          }
+        }}
+        onClose={() => setShowStatePicker(false)}
+        placeholder="Search Indian State..."
+      />
+
+      {/* City Picker Modal */}
+      <SearchablePickerModal
+        visible={showCityPicker}
+        title={selectedState !== 'All States' ? `Select City (${selectedState})` : 'Select City (All India)'}
+        items={['All Cities', ...(selectedState !== 'All States' ? (CITIES_BY_STATE[selectedState] || []) : ALL_INDIAN_CITIES)]}
+        selectedItem={selectedCity}
+        onSelect={(ct) => setSelectedCity(ct)}
+        onClose={() => setShowCityPicker(false)}
+        placeholder="Search city or district..."
+      />
     </View>
   );
 };
@@ -1105,6 +1173,44 @@ const styles = StyleSheet.create({
   },
   nearbyPillTextActive: {
     color: '#FFFFFF',
+  },
+  dropdownPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 18,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  dropdownPillActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  dropdownPillText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    color: '#1E293B',
+  },
+  dropdownPillTextActive: {
+    color: '#FFFFFF',
+    fontFamily: FontFamily.semiBold,
+  },
+  clearFilterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 18,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  clearFilterText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 11,
+    color: '#EF4444',
   },
   cityPill: {
     paddingHorizontal: 12,

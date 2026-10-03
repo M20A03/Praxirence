@@ -13,6 +13,7 @@ import {
   BackHandler,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../../theme';
 import { DoctorUser, UpcomingScheduleItem, UpcomingScheduleResponse } from '../../types';
 import { mobileApi } from '../../services/api';
@@ -247,6 +248,34 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Could not recall patient');
     }
+  };
+
+  const handleEndVisitFromQueue = (item: UpcomingScheduleItem) => {
+    Alert.alert(
+      'Complete Consultation / End Visit',
+      `Are you sure you want to mark the consultation with ${item.patient_name || 'Patient'} as completed and release the queue slot?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Complete Visit',
+          style: 'default',
+          onPress: async () => {
+            try {
+              if (item.visit_id) {
+                await mobileApi.updateVisitStatus(item.visit_id, 'completed');
+              } else if ((item as any).id) {
+                await mobileApi.endConsultation((item as any).id);
+              }
+              try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
+              Alert.alert('Consultation Completed', `Consultation with ${item.patient_name || 'Patient'} has been finalized.`);
+              loadUpcomingScheduleSilently();
+            } catch (err: any) {
+              Alert.alert('Notice', err.message || 'Could not complete consultation');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleBroadcastDelay = async (minutes: number) => {
@@ -736,6 +765,15 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
                     <Text style={styles.startConsultBtnText}>Start Consultation</Text>
                   </TouchableOpacity>
 
+                  <TouchableOpacity
+                    style={styles.completeConsultBtn}
+                    onPress={() => handleEndVisitFromQueue(item)}
+                    activeOpacity={0.85}
+                  >
+                    <Ionicons name="checkmark-done" size={14} color="#059669" />
+                    <Text style={styles.completeConsultBtnText}>Complete Visit</Text>
+                  </TouchableOpacity>
+
                   {item.status === 'deferred' || item.status === 'skipped' ? (
                     <TouchableOpacity
                       style={styles.recallBtn}
@@ -976,7 +1014,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
 
             {/* Quick Slot Selectors */}
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
-              {['09:30 AM', '10:00 AM', '11:00 AM', '12:00 PM', '04:00 PM', '05:30 PM'].map((slot) => {
+              {['10:00 AM', '05:30 PM', '08:00 PM'].map((slot) => {
                 const isActive = rescheduleSlot === slot;
                 return (
                   <TouchableOpacity
@@ -1102,7 +1140,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
 
             {/* Quick Slot Suggestions */}
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
-              {['01:00 PM', '02:00 PM', '05:30 PM', '06:00 PM', '06:30 PM', '07:00 PM'].map((s) => {
+              {['10:00 AM', '05:30 PM', '08:00 PM'].map((s) => {
                 const isActive = customSlotTime === s;
                 return (
                   <TouchableOpacity
@@ -1703,6 +1741,24 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.semiBold,
     fontSize: FontSize.sm,
     color: '#ffffff',
+  },
+  completeConsultBtn: {
+    flex: 1.1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    backgroundColor: '#ECFDF5',
+    minHeight: 44,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  completeConsultBtnText: {
+    fontSize: 12,
+    fontFamily: FontFamily.bold,
+    color: '#059669',
   },
   standbyBtn: {
     flex: 1,

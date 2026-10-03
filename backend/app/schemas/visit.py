@@ -64,6 +64,7 @@ class ConsultationSummarizeResponse(BaseModel):
 
 
 class VisitCreate(BaseModel):
+    visit_id: Optional[str] = Field(None, description="Optional existing visit/appointment ID to complete and approve")
     patient_id: str
     diagnosis: str = "Clinical Assessment"
     medicines: List[MedicineItem] = Field(default_factory=list)

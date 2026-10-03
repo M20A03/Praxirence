@@ -24,6 +24,13 @@ import { mobileApi } from '../services/api';
 import { NotificationService } from '../services/NotificationService';
 import { BrandLogoMobile } from '../components/BrandLogoMobile';
 import { EmptyState } from '../components/EmptyState';
+import { LiveQueueTrackerCard } from '../components/dashboard/LiveQueueTrackerCard';
+
+const cleanDoctorName = (name?: string): string => {
+  if (!name) return 'Care Provider';
+  const clean = name.replace(/^(Dr\.?\s*)+/i, '').trim();
+  return `Dr. ${clean || 'Care Provider'}`;
+};
 
 interface VisitsScreenProps {
   user: PatientUser;
@@ -59,7 +66,10 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
   }, [rescheduleModalVisit]);
 
   const activeScheduledVisit = visits.find(
-    (v) => v.status === 'scheduled' || v.status === 'in_progress' || (v.appointment_date && v.time_slot)
+    (v) =>
+      ['scheduled', 'in_progress', 'draft', 'booked', 'waiting'].includes(v.status) &&
+      v.status !== 'cancelled' &&
+      v.status !== 'completed'
   );
 
   const fetchLiveQueueStatus = async () => {
@@ -93,6 +103,52 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
     } finally {
       setRescheduling(false);
     }
+  };
+
+  const handleCancelAppointment = (visitId: string) => {
+    const isActive = queueStatus?.status === 'in_progress';
+    const title = isActive
+      ? 'End This Consultation?'
+      : 'Cancel Appointment / Exit Queue?';
+    const message = isActive
+      ? 'This will mark your consultation as complete. Your care plan will remain safely in your medical vault.'
+      : 'Are you sure you want to cancel this consultation and release your reserved slot?';
+    const confirmText = isActive ? 'End Consultation' : 'Yes, Cancel';
+    const keepText = isActive ? 'Stay In Consultation' : 'Keep Appointment';
+
+    Alert.alert(
+      title,
+      message,
+      [
+        { text: keepText, style: 'cancel' },
+        {
+          text: confirmText,
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await mobileApi.cancelVisit(visitId, isActive ? 'Ended by patient' : 'Cancelled by patient');
+              setQueueStatus(null);
+              const updatedVisits = visits.map((v) => (v.id === visitId ? { ...v, status: 'cancelled' as const } : v));
+              setVisits(updatedVisits);
+              try {
+                await AsyncStorage.setItem(`praxirence_careplan_${user.id}`, JSON.stringify(updatedVisits));
+                await AsyncStorage.setItem(`praxirence_cache_visits_${user.id}`, JSON.stringify(updatedVisits));
+              } catch (_) {}
+              try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
+              Alert.alert(
+                isActive ? 'Consultation Ended' : 'Appointment Cancelled',
+                isActive
+                  ? 'Your consultation has ended. Your care plan and prescriptions are available in your Vault.'
+                  : 'Your consultation has been cancelled and removed.'
+              );
+              loadVisits();
+            } catch (err: any) {
+              Alert.alert('Notice', err.message || 'Failed to process request');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const toggleDose = async (key: string) => {
@@ -297,101 +353,29 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
       </View>
 
       {/* Live OPD Clinic Queue Tracker Card */}
-      {activeScheduledVisit && (
-        <View style={styles.liveQueueCard}>
-          <View style={styles.liveQueueCardHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <View style={styles.livePulseDot} />
-              <Text style={styles.liveQueueTag}>LIVE CLINIC QUEUE TRACKER</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.refreshQueueBtn}
-              onPress={fetchLiveQueueStatus}
-              activeOpacity={0.7}
-              disabled={refreshingQueue}
-            >
-              {refreshingQueue ? (
-                <ActivityIndicator size="small" color={Colors.primary} />
-              ) : (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Ionicons name="refresh-outline" size={13} color={Colors.primary} />
-                  <Text style={styles.refreshQueueBtnText}>Live Refresh</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {/* Clinician & Appointment Details */}
-          <View style={styles.queueDoctorRow}>
-            <View style={{ flex: 1, marginRight: 8 }}>
-              <Text style={styles.queueDoctorName}>{activeScheduledVisit.doctor_name || queueStatus?.doctor_name ? (String(activeScheduledVisit.doctor_name || queueStatus?.doctor_name).startsWith('Dr.') ? (activeScheduledVisit.doctor_name || queueStatus?.doctor_name) : `Dr. ${activeScheduledVisit.doctor_name || queueStatus?.doctor_name}`) : 'Attending Physician'}</Text>
-              <Text style={styles.queueClinicText} numberOfLines={1}>
-                {queueStatus?.clinic_name || 'Praxirence Clinical Centre'}{queueStatus?.clinic_address ? ` • ${queueStatus.clinic_address}` : ''}
-              </Text>
-            </View>
-            <View style={styles.queueSlotBadge}>
-              <Ionicons name="calendar-outline" size={12} color={Colors.primary} />
-              <Text style={styles.queueSlotText}>
-                {activeScheduledVisit.appointment_date || 'Today'} • {activeScheduledVisit.time_slot || '10:00 AM'}
-              </Text>
-            </View>
-          </View>
-
-          {/* Token Display Hero */}
-          <View style={styles.tokenHeroBox}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.tokenHeroLabel}>YOUR APPOINTMENT TOKEN</Text>
-              <Text style={styles.tokenHeroNumber}>
-                {queueStatus?.token_display || activeScheduledVisit.token_display || `PX-${(activeScheduledVisit.token_number || 1).toString().padStart(2, '0')}`}
-              </Text>
-            </View>
-            <View style={[
-              styles.queueStatusBadge,
-              (queueStatus?.current_serving_token === (queueStatus?.token_display || activeScheduledVisit.token_display)) && { backgroundColor: '#DCFCE7', borderColor: '#86EFAC' }
-            ]}>
-              <Ionicons
-                name={(queueStatus?.current_serving_token === (queueStatus?.token_display || activeScheduledVisit.token_display)) ? "megaphone" : "hourglass-outline"}
-                size={13}
-                color={(queueStatus?.current_serving_token === (queueStatus?.token_display || activeScheduledVisit.token_display)) ? "#15803D" : "#B45309"}
-              />
-              <Text style={[
-                styles.queueStatusBadgeText,
-                (queueStatus?.current_serving_token === (queueStatus?.token_display || activeScheduledVisit.token_display)) && { color: '#15803D' }
-              ]}>
-                {(queueStatus?.current_serving_token === (queueStatus?.token_display || activeScheduledVisit.token_display)) ? 'Now Serving' : 'In Queue'}
-              </Text>
-            </View>
-          </View>
-
-          {/* Metrics Trio: Current Serving, Ahead, Wait */}
-          <View style={styles.queueMetricsRow}>
-            <View style={styles.queueMetricCard}>
-              <Text style={styles.queueMetricLabel}>NOW SERVING</Text>
-              <Text style={styles.queueMetricValue}>{queueStatus?.current_serving_token || 'PX-01'}</Text>
-            </View>
-
-            <View style={styles.queueMetricCard}>
-              <Text style={styles.queueMetricLabel}>PATIENTS AHEAD</Text>
-              <Text style={[styles.queueMetricValue, { color: '#0284C7' }]}>
-                {queueStatus?.patients_ahead ?? activeScheduledVisit.patients_ahead ?? 0}
-              </Text>
-            </View>
-
-            <View style={styles.queueMetricCard}>
-              <Text style={styles.queueMetricLabel}>EST. WAIT TIME</Text>
-              <Text style={[styles.queueMetricValue, { color: '#D97706' }]}>
-                ~{queueStatus?.estimated_wait_mins ?? activeScheduledVisit.estimated_wait_mins ?? 0}m
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.queueNoticeStrip}>
-            <Ionicons name="information-circle-outline" size={14} color="#64748B" />
-            <Text style={styles.queueNoticeText}>
-              Please report to the OPD reception counter when your token is called.
-            </Text>
-          </View>
-        </View>
+      {(queueStatus || activeScheduledVisit) && (
+        <LiveQueueTrackerCard
+          queueStatus={
+            queueStatus || {
+              visit_id: activeScheduledVisit!.id,
+              patient_id: user.id,
+              patient_name: user.name,
+              doctor_id: (activeScheduledVisit as any)!.doctor_id || 'doc-default',
+              doctor_name: activeScheduledVisit!.doctor_name || 'Attending Physician',
+              clinic_name: 'Praxirence Clinical Centre',
+              appointment_date: activeScheduledVisit!.appointment_date || 'Today',
+              time_slot: activeScheduledVisit!.time_slot || '10:00 AM',
+              token_number: activeScheduledVisit!.token_number || 1,
+              token_display: activeScheduledVisit!.token_display || `PX-${(activeScheduledVisit!.token_number || 1).toString().padStart(2, '0')}`,
+              current_serving_token: 'PX-01',
+              patients_ahead: activeScheduledVisit!.patients_ahead ?? 0,
+              estimated_wait_mins: activeScheduledVisit!.estimated_wait_mins ?? 0,
+              status: activeScheduledVisit!.status || 'scheduled',
+            }
+          }
+          onCancelAppointment={handleCancelAppointment}
+          onDismissTracker={() => setQueueStatus(null)}
+        />
       )}
 
       {/* Real Compliance & Adherence Score Card */}
@@ -465,15 +449,31 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
               <View style={styles.visitHeader}>
                 <View style={{ flex: 1, marginRight: 8 }}>
                   <Text style={styles.visitDate}>{visitDate}</Text>
-                  <Text style={styles.doctorName}>Dr. {visit.doctor_name || 'Care Provider'}</Text>
+                  <Text style={styles.doctorName}>{cleanDoctorName(visit.doctor_name)}</Text>
                 </View>
                 <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                  <View style={styles.statusBadge}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Ionicons name="checkmark-circle" size={13} color="#059669" />
-                      <Text style={styles.statusText}>Care Plan Synced</Text>
+                  {visit.status === 'scheduled' ? (
+                    <View style={[styles.statusBadge, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Ionicons name="time" size={13} color="#2563EB" />
+                        <Text style={[styles.statusText, { color: '#1D4ED8' }]}>Slot Reserved</Text>
+                      </View>
                     </View>
-                  </View>
+                  ) : visit.status === 'cancelled' ? (
+                    <View style={[styles.statusBadge, { backgroundColor: '#FEF2F2', borderColor: '#FECDD3' }]}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Ionicons name="close-circle" size={13} color="#DC2626" />
+                        <Text style={[styles.statusText, { color: '#B91C1C' }]}>Cancelled</Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={styles.statusBadge}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Ionicons name="checkmark-circle" size={13} color="#059669" />
+                        <Text style={styles.statusText}>Care Plan Synced</Text>
+                      </View>
+                    </View>
+                  )}
                   {visit.signature_hash && (
                     <View style={styles.cryptoBadge}>
                       <Ionicons name="shield-checkmark" size={10} color="#059669" />
@@ -688,6 +688,61 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
                       )}
                     </View>
                   ))}
+                </View>
+              )}
+
+              {/* Scheduled Appointment Cancellation Action */}
+              {['scheduled', 'draft', 'booked', 'waiting'].includes(visit.status) && (
+                <View style={{ marginTop: 14, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#E2E8F0', flexDirection: 'row', justifyContent: 'flex-end' }}>
+                  <TouchableOpacity
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      backgroundColor: '#FEF2F2',
+                      borderWidth: 1,
+                      borderColor: '#FECDD3',
+                      paddingHorizontal: 14,
+                      paddingVertical: 8,
+                      borderRadius: 8,
+                    }}
+                    onPress={() => {
+                      Alert.alert(
+                        'Cancel Appointment',
+                        'Are you sure you want to cancel this booking and release your queue slot?',
+                        [
+                          { text: 'Keep Appointment', style: 'cancel' },
+                          {
+                            text: 'Yes, Cancel',
+                            style: 'destructive',
+                            onPress: async () => {
+                              try {
+                                await mobileApi.cancelVisit(visit.id, 'Cancelled by patient');
+                                const updatedVisits = visits.map((v) => (v.id === visit.id ? { ...v, status: 'cancelled' as const } : v));
+                                setVisits(updatedVisits);
+                                try {
+                                  await AsyncStorage.setItem(`praxirence_careplan_${user.id}`, JSON.stringify(updatedVisits));
+                                  await AsyncStorage.setItem(`praxirence_cache_visits_${user.id}`, JSON.stringify(updatedVisits));
+                                } catch (_) {}
+                                if (activeScheduledVisit?.id === visit.id) {
+                                  setQueueStatus(null);
+                                }
+                                try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
+                                Alert.alert('Appointment Cancelled', 'Your scheduled appointment has been cancelled.');
+                                loadVisits();
+                              } catch (err: any) {
+                                Alert.alert('Notice', err.message || 'Failed to cancel appointment');
+                              }
+                            },
+                          },
+                        ]
+                      );
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="close-circle-outline" size={16} color="#DC2626" />
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#DC2626' }}>Cancel Appointment</Text>
+                  </TouchableOpacity>
                 </View>
               )}
             </View>

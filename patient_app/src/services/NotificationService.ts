@@ -86,168 +86,172 @@ export const NotificationService = {
         return 0;
       }
 
-      // Selectively cancel only prior medication reminders to preserve Day 3 / Day 7 follow-ups
+      // Clear all existing scheduled notifications first to prevent duplicate alerts
       try {
-        const allScheduled = await Notifications.getAllScheduledNotificationsAsync();
-        for (const item of allScheduled) {
-          const notifType = item.content?.data?.type;
-          if (notifType === 'medicine_reminder' || !notifType) {
-            await Notifications.cancelScheduledNotificationAsync(item.identifier);
-          }
-        }
+        await Notifications.cancelAllScheduledNotificationsAsync();
       } catch (cancelErr) {
-        console.warn('Selective notification cancellation notice:', cancelErr);
+        console.warn('Notification cancel notice:', cancelErr);
       }
 
       let scheduledCount = 0;
-      // Use the latest active visit(s)
-      const activeVisits = visits.slice(0, 2);
+      const scheduledKeys = new Set<string>();
 
-      for (const visit of activeVisits) {
-        // 1. Process explicit reminder items if provided by doctor
-        if (visit.reminders && visit.reminders.length > 0) {
-          for (const rem of visit.reminders) {
-            let hour = 8;
-            let minute = 30;
-            if (rem.time && rem.time.includes(':')) {
-              const parts = (rem.time || '').split(':');
-              hour = parseInt(parts[0], 10) || 8;
-              minute = parseInt(parts[1], 10) || 30;
-            }
+      // Only schedule for the latest active prescription/visit
+      const latestVisit = visits && visits.length > 0 ? visits[0] : null;
+      if (!latestVisit) return 0;
+
+      // 1. Process explicit reminder items if provided by doctor
+      if (latestVisit.reminders && latestVisit.reminders.length > 0) {
+        for (const rem of latestVisit.reminders) {
+          let hour = 8;
+          let minute = 30;
+          if (rem.time && rem.time.includes(':')) {
+            const parts = (rem.time || '').split(':');
+            hour = parseInt(parts[0], 10) || 8;
+            minute = parseInt(parts[1], 10) || 30;
+          }
+
+          const remKey = `${(rem.medicine_name || '').toLowerCase().trim()}_${hour}_${minute}`;
+          if (scheduledKeys.has(remKey)) continue;
+          scheduledKeys.add(remKey);
+
+          await Notifications.scheduleNotificationAsync({
+            identifier: `medication_${latestVisit.id}_${remKey}`,
+            content: {
+              title: `Dose Reminder: ${rem.medicine_name}`,
+              body: `${rem.dosage} • ${rem.instructions || 'Take as advised by your doctor'}`,
+              data: {
+                type: 'medicine_reminder',
+                medicine: rem.medicine_name,
+                dosage: rem.dosage,
+                visitId: latestVisit.id,
+              },
+              sound: 'default',
+            },
+            trigger: {
+              hour,
+              minute,
+              repeats: true,
+              channelId: 'medicine-reminders',
+            },
+          });
+          scheduledCount++;
+        }
+      } else if (latestVisit.medicines && latestVisit.medicines.length > 0) {
+        // 2. Parse medicines and frequency patterns
+        for (const med of latestVisit.medicines) {
+          const freq = (med.frequency || '').toLowerCase();
+          const slots: { slot: string; hour: number; minute: number }[] = [];
+
+          if (freq.includes('1-1-1') || freq.includes('tds') || freq.includes('three')) {
+            slots.push({ slot: 'Morning', hour: 8, minute: 30 });
+            slots.push({ slot: 'Afternoon', hour: 13, minute: 30 });
+            slots.push({ slot: 'Night', hour: 20, minute: 30 });
+          } else if (freq.includes('1-0-1') || freq.includes('bd') || freq.includes('twice') || freq.includes('morning & night')) {
+            slots.push({ slot: 'Morning', hour: 8, minute: 30 });
+            slots.push({ slot: 'Night', hour: 20, minute: 30 });
+          } else if (freq.includes('1-0-0') || freq.includes('od') || freq.includes('morning') || freq.includes('once')) {
+            slots.push({ slot: 'Morning', hour: 8, minute: 30 });
+          } else if (freq.includes('0-0-1') || freq.includes('night') || freq.includes('bedtime') || freq.includes('hs')) {
+            slots.push({ slot: 'Night', hour: 20, minute: 30 });
+          } else if (freq.includes('0-1-0') || freq.includes('afternoon')) {
+            slots.push({ slot: 'Afternoon', hour: 13, minute: 30 });
+          } else {
+            slots.push({ slot: 'Morning', hour: 8, minute: 30 });
+            slots.push({ slot: 'Night', hour: 20, minute: 30 });
+          }
+
+          for (const s of slots) {
+            const medKey = `${(med.name || '').toLowerCase().trim()}_${s.slot.toLowerCase()}_${s.hour}_${s.minute}`;
+            if (scheduledKeys.has(medKey)) continue;
+            scheduledKeys.add(medKey);
 
             await Notifications.scheduleNotificationAsync({
+              identifier: `medication_${latestVisit.id}_${medKey}`,
               content: {
-                title: `Dose Reminder: ${rem.medicine_name}`,
-                body: `${rem.dosage} • ${rem.instructions || 'Take as advised by your doctor'}`,
+                title: `${s.slot} Dose: ${med.name}`,
+                body: `${med.dosage} (${med.instructions || 'Take with water'}) — Tap to mark as taken`,
                 data: {
                   type: 'medicine_reminder',
-                  medicine: rem.medicine_name,
-                  dosage: rem.dosage,
-                  visitId: visit.id,
+                  medicine: med.name,
+                  dosage: med.dosage,
+                  slot: s.slot,
+                  visitId: latestVisit.id,
                 },
                 sound: 'default',
               },
               trigger: {
-                hour,
-                minute,
+                hour: s.hour,
+                minute: s.minute,
                 repeats: true,
                 channelId: 'medicine-reminders',
               },
             });
             scheduledCount++;
           }
-        } else if (visit.medicines && visit.medicines.length > 0) {
-          // 2. Parse medicines and frequency patterns (e.g., 1-0-1, Morning & Night, TDS, etc.)
-          for (const med of visit.medicines) {
-            const freq = (med.frequency || '').toLowerCase();
-            const slots: { slot: string; hour: number; minute: number }[] = [];
+        }
+      }
 
-            if (freq.includes('1-1-1') || freq.includes('tds') || freq.includes('three')) {
-              slots.push({ slot: 'Morning', hour: 8, minute: 30 });
-              slots.push({ slot: 'Afternoon', hour: 13, minute: 30 });
-              slots.push({ slot: 'Night', hour: 20, minute: 30 });
-            } else if (freq.includes('1-0-1') || freq.includes('bd') || freq.includes('twice') || freq.includes('morning & night')) {
-              slots.push({ slot: 'Morning', hour: 8, minute: 30 });
-              slots.push({ slot: 'Night', hour: 20, minute: 30 });
-            } else if (freq.includes('1-0-0') || freq.includes('od') || freq.includes('morning') || freq.includes('once')) {
-              slots.push({ slot: 'Morning', hour: 8, minute: 30 });
-            } else if (freq.includes('0-0-1') || freq.includes('night') || freq.includes('bedtime') || freq.includes('hs')) {
-              slots.push({ slot: 'Night', hour: 20, minute: 30 });
-            } else if (freq.includes('0-1-0') || freq.includes('afternoon')) {
-              slots.push({ slot: 'Afternoon', hour: 13, minute: 30 });
-            } else {
-              // Default morning & night
-              slots.push({ slot: 'Morning', hour: 8, minute: 30 });
-              slots.push({ slot: 'Night', hour: 20, minute: 30 });
-            }
+      // 3. Schedule Day 3 & Day 7 Clinical Follow-Up Health Check-ins
+      try {
+        const rawDoc = latestVisit.doctor_name || 'your physician';
+        const docName = rawDoc.startsWith('Dr.') ? rawDoc : `Dr. ${rawDoc}`;
+        const visitBaseDate = new Date(latestVisit.approved_at || latestVisit.date || Date.now());
 
-              for (const s of slots) {
-                await Notifications.scheduleNotificationAsync({
-                  content: {
-                    title: `${s.slot} Dose: ${med.name}`,
-                    body: `${med.dosage} (${med.instructions || 'Take with water'}) — Tap to mark as taken`,
-                    data: {
-                      type: 'medicine_reminder',
-                      medicine: med.name,
-                      dosage: med.dosage,
-                      slot: s.slot,
-                      visitId: visit.id,
-                    },
-                    sound: 'default',
-                  },
-                  trigger: {
-                    hour: s.hour,
-                    minute: s.minute,
-                    repeats: true,
-                    channelId: 'medicine-reminders',
-                  },
-                });
-                scheduledCount++;
-              }
-            }
-          }
+        const day3Target = new Date(visitBaseDate.getTime() + 3 * 24 * 60 * 60 * 1000);
+        day3Target.setHours(10, 0, 0, 0);
 
-          // 3. Schedule Day 3 & Day 7 Clinical Follow-Up Health Check-ins
-          try {
-            const rawDoc = visit.doctor_name || 'your physician';
-            const docName = rawDoc.startsWith('Dr.') ? rawDoc : `Dr. ${rawDoc}`;
-            const visitBaseDate = new Date(visit.approved_at || visit.date || Date.now());
-
-            // Day 3 check-in trigger: 3 days after consultation at 10:00 AM
-            const day3Target = new Date(visitBaseDate.getTime() + 3 * 24 * 60 * 60 * 1000);
-            day3Target.setHours(10, 0, 0, 0);
-
-            if (day3Target.getTime() > Date.now()) {
-              await Notifications.scheduleNotificationAsync({
-                content: {
-                  title: `Clinical Follow-up: ${docName}`,
-                  body: `This is a check-in regarding your recovery after your consultation with ${docName}. Tap to share your current health status.`,
-                  data: {
-                    type: 'health_checkin',
-                    day: 3,
-                    visitId: visit.id,
-                    doctorName: docName,
-                  },
-                  sound: 'default',
-                },
-                trigger: {
-                  date: day3Target,
-                  channelId: 'clinical-updates',
-                },
-              });
-              scheduledCount++;
-            }
-
-            // Day 7 check-in trigger: 7 days after consultation at 10:00 AM
-            const day7Target = new Date(visitBaseDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-            day7Target.setHours(10, 0, 0, 0);
-
-            if (day7Target.getTime() > Date.now()) {
-              await Notifications.scheduleNotificationAsync({
-                content: {
-                  title: `1-Week Health Evaluation: ${docName}`,
-                  body: `One week has passed since your visit with ${docName}. Tap to report your recovery status or request a follow-up consultation.`,
-                  data: {
-                    type: 'health_checkin',
-                    day: 7,
-                    visitId: visit.id,
-                    doctorName: docName,
-                  },
-                  sound: 'default',
-                },
-                trigger: {
-                  date: day7Target,
-                  channelId: 'clinical-updates',
-                },
-              });
-              scheduledCount++;
-            }
-          } catch (followupErr) {
-            console.warn('Notice scheduling follow-up check-in notifications:', followupErr);
-          }
+        if (day3Target.getTime() > Date.now()) {
+          await Notifications.scheduleNotificationAsync({
+            identifier: `followup_day3_${latestVisit.id}`,
+            content: {
+              title: `Clinical Follow-up: ${docName}`,
+              body: `This is a check-in regarding your recovery after your consultation with ${docName}. Tap to share your current health status.`,
+              data: {
+                type: 'health_checkin',
+                day: 3,
+                visitId: latestVisit.id,
+                doctorName: docName,
+              },
+              sound: 'default',
+            },
+            trigger: {
+              date: day3Target,
+              channelId: 'clinical-updates',
+            },
+          });
+          scheduledCount++;
         }
 
-        await AsyncStorage.setItem('@praxirence_scheduled_reminders_count', scheduledCount.toString());
+        const day7Target = new Date(visitBaseDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+        day7Target.setHours(10, 0, 0, 0);
+
+        if (day7Target.getTime() > Date.now()) {
+          await Notifications.scheduleNotificationAsync({
+            identifier: `followup_day7_${latestVisit.id}`,
+            content: {
+              title: `1-Week Health Evaluation: ${docName}`,
+              body: `One week has passed since your visit with ${docName}. Tap to report your recovery status or request a follow-up consultation.`,
+              data: {
+                type: 'health_checkin',
+                day: 7,
+                visitId: latestVisit.id,
+                doctorName: docName,
+              },
+              sound: 'default',
+            },
+            trigger: {
+              date: day7Target,
+              channelId: 'clinical-updates',
+            },
+          });
+          scheduledCount++;
+        }
+      } catch (followupErr) {
+        console.warn('Notice scheduling follow-up check-in notifications:', followupErr);
+      }
+
+      await AsyncStorage.setItem('@praxirence_scheduled_reminders_count', scheduledCount.toString());
       return scheduledCount;
     } catch (err) {
       console.warn('Failed to schedule care plan reminders:', err);

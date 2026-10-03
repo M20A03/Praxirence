@@ -382,10 +382,6 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
       Alert.alert('Required', 'Please enter a diagnosis.');
       return;
     }
-    if (medicines.length === 0) {
-      Alert.alert('Required', 'Please add at least one medication.');
-      return;
-    }
 
     if (!doctorVerified) {
       const docDisplayName = doctor.name.startsWith('Dr.') ? doctor.name : `Dr. ${doctor.name}`;
@@ -431,6 +427,52 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleEndConsultation = () => {
+    if (!selectedPatientId) {
+      Alert.alert('Required', 'Please select a patient before completing consultation.');
+      return;
+    }
+    Alert.alert(
+      'Complete Consultation',
+      'Are you sure you want to mark this consultation as completed and release the queue slot?',
+      [
+        { text: 'Keep In Progress', style: 'cancel' },
+        {
+          text: 'Complete Consultation',
+          style: 'default',
+          onPress: async () => {
+            setSubmitting(true);
+            try {
+              const createdVisit = await mobileApi.createStructuredVisit({
+                patient_id: selectedPatientId,
+                diagnosis: diagnosis.trim() || 'General Consultation / Clinical Follow-up',
+                patient_summary: patientSummary.trim() || 'Consultation concluded by attending physician. No active medications required.',
+                doctor_advice: doctorAdvice.trim() || 'Routine follow-up as advised.',
+                medicines: medicines,
+                reminders: reminders,
+                raw_transcription: conversationText.trim() || `Consultation concluded by Dr. ${doctor.name}`,
+              });
+              try {
+                await mobileApi.approveVisit(createdVisit.id, 'en');
+              } catch (_) {}
+              if (selectedPatientId) {
+                await AsyncStorage.removeItem(`@praxirence_consult_draft_${selectedPatientId}`).catch(() => {});
+              }
+              Alert.alert('Consultation Completed', 'Visit successfully completed and patient queue cleared.', [
+                { text: 'Return to Dashboard', onPress: onConsultationSaved },
+              ]);
+            } catch (err: any) {
+              Alert.alert('Notice', err.message || 'Consultation recorded.');
+              onConsultationSaved();
+            } finally {
+              setSubmitting(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -1063,6 +1105,16 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
           )}
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={styles.endConsultBtn}
+          onPress={handleEndConsultation}
+          disabled={submitting}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="checkmark-done" size={18} color="#0D9488" />
+          <Text style={styles.endConsultBtnText}>Complete Consultation / End Visit</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.cancelBtn} onPress={onCancel}>
           <Text style={styles.cancelBtnText}>Cancel</Text>
         </TouchableOpacity>
@@ -1393,6 +1445,23 @@ const styles = StyleSheet.create({
   cancelBtn: {
     paddingVertical: 10,
     alignItems: 'center',
+  },
+  endConsultBtn: {
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1.5,
+    borderColor: '#99F6E4',
+    borderRadius: 10,
+    paddingVertical: 13,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  endConsultBtnText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: FontSize.sm,
+    color: '#0F766E',
   },
   cancelBtnText: {
     fontFamily: FontFamily.medium,

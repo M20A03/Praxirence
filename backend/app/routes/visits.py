@@ -152,22 +152,48 @@ def create_structured_visit(
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
 
+    today_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    visit = None
+    if req.visit_id:
+        visit = db.query(Visit).filter(Visit.id == req.visit_id).first()
+    if not visit:
+        # Check for active scheduled or in_progress appointment today to prevent duplicate ghost records
+        visit = (
+            db.query(Visit)
+            .filter(
+                Visit.patient_id == patient.id,
+                Visit.doctor_id == current_doctor.id,
+                Visit.status.in_(["scheduled", "in_progress", "draft"]),
+                Visit.appointment_date == today_iso
+            )
+            .order_by(Visit.created_at.desc())
+            .first()
+        )
+
     stored_transcription = serialize_transcription_and_summary(
         raw_transcription=req.raw_transcription or f"Consultation with Dr. {current_doctor.name}",
         patient_summary=req.patient_summary,
         doctor_advice=req.doctor_advice
     )
 
-    visit = Visit(
-        patient_id=patient.id,
-        doctor_id=current_doctor.id,
-        diagnosis=req.diagnosis,
-        medicines=[m.model_dump() for m in req.medicines],
-        reminders=[r.model_dump() for r in req.reminders],
-        raw_transcription=stored_transcription,
-        status="draft"
-    )
-    db.add(visit)
+    if visit:
+        visit.diagnosis = req.diagnosis
+        visit.medicines = [m.model_dump() for m in req.medicines]
+        visit.reminders = [r.model_dump() for r in req.reminders]
+        visit.raw_transcription = stored_transcription
+        visit.status = "draft"
+    else:
+        visit = Visit(
+            patient_id=patient.id,
+            doctor_id=current_doctor.id,
+            diagnosis=req.diagnosis,
+            medicines=[m.model_dump() for m in req.medicines],
+            reminders=[r.model_dump() for r in req.reminders],
+            raw_transcription=stored_transcription,
+            status="draft"
+        )
+        db.add(visit)
+
     db.commit()
     db.refresh(visit)
 
@@ -228,12 +254,7 @@ async def upload_consultation_audio(
     if not patient:
         patient = db.query(Patient).filter(Patient.name.ilike(f"%{patient_id}%")).first()
     if not patient:
-        patient = db.query(Patient).first()
-    if not patient:
-        patient = Patient(name="Consultation Patient", phone="", consent_status=True)
-        db.add(patient)
-        db.commit()
-        db.refresh(patient)
+        raise HTTPException(status_code=404, detail=f"Patient '{patient_id}' not found")
 
     saved_path, filename = await storage_service.save_upload_audio(audio_file)
 
@@ -529,6 +550,39 @@ def approve_and_send_care_plan(
 
     raw_text, pat_summary, doc_advice = parse_transcription_and_summary(visit.raw_transcription)
 
+    # Real-time WebSocket alerts to clear queue and notify patient app
+    try:
+        token_disp = f"PX-{visit.token_number:02d}" if visit.token_number else "PX-01"
+        realtime_manager.emit_to_doctor_sync(
+            str(visit.doctor_id),
+            "QUEUE_UPDATE",
+            {"action": "completed", "visit_id": visit.id, "status": "approved", "token": token_disp}
+        )
+        if visit.patient_id:
+            realtime_manager.emit_to_patient_sync(
+                str(visit.patient_id),
+                "CONSULTATION_COMPLETED",
+                {
+                    "visit_id": visit.id,
+                    "doctor_name": current_doctor.name,
+                    "status": "approved",
+                    "diagnosis": visit.diagnosis,
+                    "message": f"Dr. {current_doctor.name} has completed your consultation and dispatched your care plan."
+                }
+            )
+            realtime_manager.emit_to_patient_sync(
+                str(visit.patient_id),
+                "NEW_PRESCRIPTION",
+                {"visit_id": visit.id, "doctor_name": current_doctor.name}
+            )
+            realtime_manager.emit_to_patient_sync(
+                str(visit.patient_id),
+                "QUEUE_UPDATE",
+                {"action": "completed", "visit_id": visit.id, "status": "approved", "token": token_disp}
+            )
+    except Exception as e:
+        logger.warning(f"Realtime emit notice on approve: {e}")
+
     return VisitApproveResponse(
         visit_id=visit.id,
         status="approved",
@@ -537,6 +591,267 @@ def approve_and_send_care_plan(
         message="Care plan & consultation summary approved. Synced to patient Praxirence app with automated alarms.",
         patient_summary=pat_summary
     )
+
+
+@router.post("/{visit_id}/start-consultation")
+def start_consultation(
+    visit_id: str,
+    db: Session = Depends(get_db),
+    current_doctor = Depends(get_current_doctor)
+):
+    """
+    Explicitly starts an active consultation.
+    Marks visit as in_progress, records start timestamp, and emits real-time
+    CONSULTATION_STARTED event to both doctor and patient.
+    """
+    visit = db.query(Visit).filter(Visit.id == visit_id).first()
+    if not visit:
+        raise HTTPException(status_code=404, detail="Visit not found")
+
+    visit.status = "in_progress"
+    db.commit()
+    db.refresh(visit)
+
+    token_disp = f"PX-{visit.token_number:02d}" if visit.token_number else "PX-01"
+    patient = visit.patient
+    start_time_iso = datetime.now(timezone.utc).isoformat()
+
+    try:
+        if patient:
+            realtime_manager.emit_to_patient_sync(
+                str(patient.id),
+                "CONSULTATION_STARTED",
+                {
+                    "visit_id": visit.id,
+                    "doctor_name": current_doctor.name,
+                    "doctor_specialty": getattr(current_doctor, "specialty", "Physician"),
+                    "clinic_name": getattr(current_doctor, "clinic_name", "Praxirence Clinic"),
+                    "token": token_disp,
+                    "started_at": start_time_iso,
+                    "chamber": "Chamber 1",
+                    "message": f"Dr. {current_doctor.name} has started your consultation now. You are currently in chamber."
+                }
+            )
+            realtime_manager.emit_to_patient_sync(
+                str(patient.id),
+                "QUEUE_UPDATE",
+                {"action": "consultation_started", "visit_id": visit.id, "status": "in_progress", "token": token_disp}
+            )
+
+        realtime_manager.emit_to_doctor_sync(
+            str(current_doctor.id),
+            "QUEUE_UPDATE",
+            {"action": "consultation_started", "visit_id": visit.id, "status": "in_progress", "token": token_disp}
+        )
+    except Exception as e:
+        logger.warning(f"Realtime emit notice on start-consultation: {e}")
+
+    return {
+        "success": True,
+        "visit_id": visit.id,
+        "status": "in_progress",
+        "token": token_disp,
+        "started_at": start_time_iso,
+        "message": f"Consultation with {patient.name if patient else 'Patient'} started."
+    }
+
+
+@router.post("/{visit_id}/end-consultation")
+def end_consultation(
+    visit_id: str,
+    db: Session = Depends(get_db),
+    current_doctor = Depends(get_current_doctor)
+):
+    """
+    Explicitly ends an active consultation without requiring a prescription.
+    Marks visit as completed and clears the patient queue.
+    """
+    visit = db.query(Visit).filter(Visit.id == visit_id).first()
+    if not visit:
+        raise HTTPException(status_code=404, detail="Visit not found")
+
+    visit.status = "completed"
+    db.commit()
+
+    token_disp = f"PX-{visit.token_number:02d}" if visit.token_number else "PX-01"
+    try:
+        if visit.patient_id:
+            realtime_manager.emit_to_patient_sync(
+                str(visit.patient_id),
+                "CONSULTATION_COMPLETED",
+                {
+                    "visit_id": visit.id,
+                    "doctor_name": current_doctor.name,
+                    "status": "completed",
+                    "message": f"Consultation with Dr. {current_doctor.name} has concluded."
+                }
+            )
+            realtime_manager.emit_to_patient_sync(
+                str(visit.patient_id),
+                "QUEUE_UPDATE",
+                {"action": "completed", "visit_id": visit.id, "status": "completed", "token": token_disp}
+            )
+        realtime_manager.emit_to_doctor_sync(
+            str(current_doctor.id),
+            "QUEUE_UPDATE",
+            {"action": "completed", "visit_id": visit.id, "status": "completed", "token": token_disp}
+        )
+    except Exception as e:
+        logger.warning(f"Realtime emit notice on end-consultation: {e}")
+
+    return {
+        "success": True,
+        "visit_id": visit.id,
+        "status": "completed",
+        "message": "Consultation ended and patient queue cleared."
+    }
+
+
+class UpdateVisitStatusRequest(BaseModel):
+    status: str
+    reason: Optional[str] = None
+
+
+@router.put("/{visit_id}/status")
+@router.post("/{visit_id}/status")
+def update_visit_status(
+    visit_id: str,
+    payload: UpdateVisitStatusRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Updates the status of a visit (e.g. 'completed', 'cancelled', 'in_progress').
+    Emits real-time WebSocket notifications to patient and doctor.
+    """
+    visit = db.query(Visit).filter(Visit.id == visit_id).first()
+    if not visit:
+        raise HTTPException(status_code=404, detail="Visit not found")
+
+    new_status = payload.status.lower().strip()
+    visit.status = new_status
+    db.commit()
+
+    token_disp = f"PX-{visit.token_number:02d}" if visit.token_number else "PX-01"
+    reason = payload.reason or f"Status changed to {new_status}"
+
+    try:
+        if new_status == "completed":
+            if visit.patient_id:
+                realtime_manager.emit_to_patient_sync(
+                    str(visit.patient_id),
+                    "CONSULTATION_COMPLETED",
+                    {
+                        "visit_id": visit.id,
+                        "status": "completed",
+                        "doctor_name": visit.doctor_name or "Doctor",
+                        "message": "Your clinical consultation is complete and your care plan is ready."
+                    }
+                )
+                realtime_manager.emit_to_patient_sync(
+                    str(visit.patient_id),
+                    "QUEUE_UPDATE",
+                    {"action": "completed", "visit_id": visit.id, "status": "completed", "token": token_disp}
+                )
+            if visit.doctor_id:
+                realtime_manager.emit_to_doctor_sync(
+                    str(visit.doctor_id),
+                    "QUEUE_UPDATE",
+                    {"action": "completed", "visit_id": visit.id, "status": "completed", "token": token_disp}
+                )
+        elif new_status == "cancelled":
+            if visit.doctor_id:
+                realtime_manager.emit_to_doctor_sync(
+                    str(visit.doctor_id),
+                    "QUEUE_UPDATE",
+                    {"action": "cancelled", "visit_id": visit.id, "status": "cancelled", "token": token_disp, "reason": reason}
+                )
+            if visit.patient_id:
+                realtime_manager.emit_to_patient_sync(
+                    str(visit.patient_id),
+                    "APPOINTMENT_CANCELLED",
+                    {"visit_id": visit.id, "token": token_disp, "reason": reason}
+                )
+                realtime_manager.emit_to_patient_sync(
+                    str(visit.patient_id),
+                    "QUEUE_UPDATE",
+                    {"action": "cancelled", "visit_id": visit.id, "status": "cancelled", "token": token_disp}
+                )
+        else:
+            if visit.doctor_id:
+                realtime_manager.emit_to_doctor_sync(
+                    str(visit.doctor_id),
+                    "QUEUE_UPDATE",
+                    {"action": new_status, "visit_id": visit.id, "status": new_status, "token": token_disp}
+                )
+            if visit.patient_id:
+                realtime_manager.emit_to_patient_sync(
+                    str(visit.patient_id),
+                    "QUEUE_UPDATE",
+                    {"action": new_status, "visit_id": visit.id, "status": new_status, "token": token_disp}
+                )
+    except Exception as e:
+        logger.warning(f"Realtime emit notice on update_visit_status: {e}")
+
+    return {
+        "success": True,
+        "visit_id": visit.id,
+        "status": new_status,
+        "message": f"Visit status updated to {new_status}."
+    }
+
+
+class CancelVisitRequest(BaseModel):
+    reason: Optional[str] = "Cancelled by user"
+
+
+@router.put("/{visit_id}/cancel")
+@router.post("/{visit_id}/cancel")
+def cancel_visit_appointment(
+    visit_id: str,
+    payload: Optional[CancelVisitRequest] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Unified cancellation endpoint for Patient or Doctor.
+    Cancels the appointment / active queue slot and clears it in real-time.
+    """
+    visit = db.query(Visit).filter(Visit.id == visit_id).first()
+    if not visit:
+        raise HTTPException(status_code=404, detail="Visit not found")
+
+    visit.status = "cancelled"
+    db.commit()
+
+    token_disp = f"PX-{visit.token_number:02d}" if visit.token_number else "PX-01"
+    reason = (payload.reason if payload else None) or "Cancelled by user"
+
+    try:
+        if visit.doctor_id:
+            realtime_manager.emit_to_doctor_sync(
+                str(visit.doctor_id),
+                "QUEUE_UPDATE",
+                {"action": "cancelled", "visit_id": visit.id, "status": "cancelled", "token": token_disp, "reason": reason}
+            )
+        if visit.patient_id:
+            realtime_manager.emit_to_patient_sync(
+                str(visit.patient_id),
+                "APPOINTMENT_CANCELLED",
+                {"visit_id": visit.id, "token": token_disp, "reason": reason}
+            )
+            realtime_manager.emit_to_patient_sync(
+                str(visit.patient_id),
+                "QUEUE_UPDATE",
+                {"action": "cancelled", "visit_id": visit.id, "status": "cancelled", "token": token_disp}
+            )
+    except Exception as e:
+        logger.warning(f"Realtime emit notice on cancel: {e}")
+
+    return {
+        "success": True,
+        "visit_id": visit.id,
+        "status": "cancelled",
+        "message": "Appointment successfully cancelled and removed from active queue."
+    }
 
 
 @router.post("/book-slot", response_model=BookSlotResponse)
@@ -551,15 +866,11 @@ def book_appointment_slot(
     # 1. Fetch Doctor and Patient
     doctor = db.query(User).filter(User.id == payload.doctor_id).first()
     if not doctor:
-        doctor = db.query(User).first()
-        if not doctor:
-            raise HTTPException(status_code=404, detail="Doctor not found")
+        raise HTTPException(status_code=404, detail="Doctor not found")
 
     patient = db.query(Patient).filter(Patient.id == payload.patient_id).first()
     if not patient:
-        patient = db.query(Patient).first()
-        if not patient:
-            raise HTTPException(status_code=404, detail="Patient not found")
+        raise HTTPException(status_code=404, detail="Patient not found")
 
     # 2. Parse appointment date
     try:
@@ -745,11 +1056,12 @@ def create_walk_in_visit(
         raise HTTPException(status_code=404, detail="Patient not found")
 
     # 2. Fetch Doctor
-    doctor = None
     if payload.doctor_id:
         doctor = db.query(User).filter(User.id == payload.doctor_id).first()
-    if not doctor:
-        doctor = db.query(User).first()
+        if not doctor:
+            raise HTTPException(status_code=404, detail="Specified doctor not found")
+    else:
+        doctor = db.query(User).filter(User.role == "doctor").first() or db.query(User).first()
     if not doctor:
         raise HTTPException(status_code=404, detail="No active doctor found in clinic")
 

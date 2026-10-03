@@ -302,9 +302,19 @@ function DoctorAppContent() {
             tabBarLabelStyle: styles.tabBarLabel,
             tabBarIcon: ({ focused, color, size }) => {
               if (route.name === 'Schedule') {
-                return <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={size || 22} color={color} />;
+                return (
+                  <View style={styles.tabIconWrapper}>
+                    <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={size || 22} color={color} />
+                    {focused && <View style={styles.activeTabDot} />}
+                  </View>
+                );
               } else if (route.name === 'CarePlans') {
-                return <Ionicons name={focused ? 'people' : 'people-outline'} size={size || 22} color={color} />;
+                return (
+                  <View style={styles.tabIconWrapper}>
+                    <Ionicons name={focused ? 'people' : 'people-outline'} size={size || 22} color={color} />
+                    {focused && <View style={styles.activeTabDot} />}
+                  </View>
+                );
               } else if (route.name === 'NewConsult') {
                 return (
                   <View style={styles.consultNavBubble}>
@@ -312,7 +322,12 @@ function DoctorAppContent() {
                   </View>
                 );
               } else if (route.name === 'Profile') {
-                return <Ionicons name={focused ? 'person-circle' : 'person-circle-outline'} size={size || 22} color={color} />;
+                return (
+                  <View style={styles.tabIconWrapper}>
+                    <Ionicons name={focused ? 'person-circle' : 'person-circle-outline'} size={size || 22} color={color} />
+                    {focused && <View style={styles.activeTabDot} />}
+                  </View>
+                );
               }
               return null;
             },
@@ -442,6 +457,20 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.medium,
     fontSize: 11,
     marginTop: 2,
+  },
+  tabIconWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    height: 28,
+  },
+  activeTabDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#0284C7',
+    position: 'absolute',
+    bottom: -3,
   },
   consultNavBubble: {
     width: 38,

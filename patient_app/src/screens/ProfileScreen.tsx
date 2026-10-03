@@ -7,13 +7,17 @@ import {
   ScrollView,
   Alert,
   Modal,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
 import { ActiveUser, UserRole, DoctorUser } from '../types';
 import { BrandLogoMobile } from '../components/BrandLogoMobile';
 import { mobileApi } from '../services/api';
+import { SecureStorage } from '../security/SecureStorage';
 import { useLanguage } from '../utils/LanguageContext';
 import { SUPPORTED_LANGUAGES, SupportedLanguage } from '../utils/languageTranslations';
 
@@ -33,9 +37,64 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onNavigateToConsent,
 }) => {
   const { language, setLanguage, t } = useLanguage();
+  const [currentUser, setCurrentUser] = useState<ActiveUser>(user);
   const [clinicPhone, setClinicPhone] = useState<string | null>(null);
   const [attendingDoctorName, setAttendingDoctorName] = useState<string | null>(null);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
+
+  // Edit Profile & ABHA ID Modal States
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editName, setEditName] = useState(user?.name || '');
+  const [editPhone, setEditPhone] = useState(user?.phone && !user.phone.includes('@') ? user.phone : '');
+  const [editAbhaId, setEditAbhaId] = useState((user as any)?.abha_id || '');
+  const [editAge, setEditAge] = useState((user as any)?.age ? String((user as any).age) : '');
+  const [editGender, setEditGender] = useState<'Male' | 'Female' | 'Other'>((user as any)?.gender || 'Male');
+  const [editEmergency, setEditEmergency] = useState((user as any)?.emergency_contact || '');
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setCurrentUser(user);
+    }
+  }, [user]);
+
+  const handleSaveProfile = async () => {
+    if (!editName.trim()) {
+      Alert.alert('Required', 'Please enter your full name.');
+      return;
+    }
+    if (!editPhone.trim()) {
+      Alert.alert('Required', 'Please enter your mobile phone number.');
+      return;
+    }
+    setSavingProfile(true);
+    try {
+      const payload = {
+        name: editName.trim(),
+        phone: editPhone.trim(),
+        abha_id: editAbhaId.trim() || undefined,
+        age: editAge.trim() ? parseInt(editAge.trim(), 10) : undefined,
+        gender: editGender,
+        emergency_contact: editEmergency.trim() || undefined,
+      };
+      const res = await mobileApi.updatePatientProfile(currentUser.id, payload);
+      const mergedUser: any = {
+        ...currentUser,
+        ...payload,
+        ...(res.user || {}),
+      };
+      setCurrentUser(mergedUser);
+      await AsyncStorage.setItem('praxirence_patient_profile', JSON.stringify(mergedUser));
+      await SecureStorage.setItem('praxirence_user', JSON.stringify(mergedUser));
+      setShowEditModal(false);
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
+      Alert.alert('Profile Updated', 'Your personal details and ABHA ID have been safely updated.');
+    } catch (e: any) {
+      Alert.alert('Notice', e.message || 'Failed to update profile.');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   if (!user) {
     return null;
@@ -112,8 +171,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             color={Colors.primary}
           />
         </View>
-        <Text style={styles.name}>{user.name}</Text>
-        <Text style={styles.phone}>{user.phone}</Text>
+        <Text style={styles.name}>{currentUser.name}</Text>
+        <Text style={styles.phone}>
+          {currentUser.phone && !currentUser.phone.includes('@')
+            ? currentUser.phone
+            : ((currentUser as any).email || (currentUser.phone && currentUser.phone.includes('@') ? currentUser.phone : 'No contact provided'))}
+        </Text>
         <View style={styles.roleBadge}>
           <Ionicons
             name={isDoctor ? "shield-checkmark" : "heart"}
@@ -168,32 +231,87 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Medical Specialty</Text>
-              <Text style={styles.infoValue}>{(user as any).specialty || 'Specialty pending'}</Text>
+              <Text style={styles.infoValue}>{(currentUser as any).specialty || 'Specialty pending'}</Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Affiliated Hospital</Text>
-              <Text style={styles.infoValue}>{(user as any).clinic_name || 'Clinic pending'}</Text>
+              <Text style={styles.infoValue}>{(currentUser as any).clinic_name || 'Clinic pending'}</Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Medical Registration</Text>
               <Text style={[styles.infoValue, { color: Colors.primaryDark, fontFamily: FontFamily.bold }]}>
-                {(user as any).reg_number || 'Registration pending'}
+                {(currentUser as any).reg_number || 'Registration pending'}
               </Text>
             </View>
           </>
         ) : (
+          <>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>ABHA Health ID</Text>
+              {(currentUser as any).abha_id ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Ionicons name="shield-checkmark" size={14} color="#059669" />
+                  <Text style={[styles.infoValue, { color: Colors.primaryDark, fontFamily: FontFamily.bold }]}>
+                    {(currentUser as any).abha_id}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={[styles.infoValue, { color: Colors.textSecondary, fontStyle: 'italic' }]}>
+                  Not Linked
+                </Text>
+              )}
+            </View>
+
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Registered Mobile</Text>
+              <Text style={styles.infoValue}>
+                {currentUser.phone && !currentUser.phone.includes('@') ? currentUser.phone : 'Not Provided'}
+              </Text>
+            </View>
+
+            {Boolean((currentUser as any).age || (currentUser as any).gender) && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Demographics</Text>
+                <Text style={styles.infoValue}>
+                  {[(currentUser as any).age ? `${(currentUser as any).age} Yrs` : null, (currentUser as any).gender].filter(Boolean).join(' • ')}
+                </Text>
+              </View>
+            )}
+
+            {Boolean((currentUser as any).emergency_contact) && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Emergency Contact</Text>
+                <Text style={styles.infoValue}>{(currentUser as any).emergency_contact}</Text>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={styles.editProfileBtn}
+              onPress={() => {
+                setEditName(currentUser.name || '');
+                setEditPhone(currentUser.phone && !currentUser.phone.includes('@') ? currentUser.phone : '');
+                setEditAbhaId((currentUser as any).abha_id || '');
+                setEditAge((currentUser as any).age ? String((currentUser as any).age) : '');
+                setEditGender((currentUser as any).gender || 'Male');
+                setEditEmergency((currentUser as any).emergency_contact || '');
+                setShowEditModal(true);
+              }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="create-outline" size={15} color="#FFFFFF" />
+              <Text style={styles.editProfileBtnText}>Edit Details & Link ABHA ID</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        {((currentUser as any).email || (currentUser.phone && currentUser.phone.includes('@'))) && (
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>ABHA Health ID</Text>
-            <Text style={[styles.infoValue, { color: Colors.primaryDark, fontFamily: FontFamily.bold }]}>
-              {`${(user?.name || 'patient').toLowerCase().replace(/[^a-z0-9]/g, '') || 'patient'}@abdm`}
+            <Text style={styles.infoLabel}>Email Address</Text>
+            <Text style={styles.infoValue}>
+              {(currentUser as any).email || currentUser.phone}
             </Text>
           </View>
         )}
-
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Registered Mobile</Text>
-          <Text style={styles.infoValue}>{user.phone}</Text>
-        </View>
 
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Account Status</Text>
@@ -358,6 +476,122 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </View>
         </View>
       </Modal>
+
+      {/* Edit Profile & Link ABHA ID Modal */}
+      <Modal
+        visible={showEditModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { maxHeight: '90%' }]}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="person-circle-outline" size={22} color={Colors.primary} />
+                <Text style={styles.modalTitle}>Edit Profile & ABHA ID</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowEditModal(false)}>
+                <Ionicons name="close" size={22} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
+              <Text style={styles.inputFieldLabel}>Full Name *</Text>
+              <TextInput
+                style={styles.textInputField}
+                value={editName}
+                onChangeText={setEditName}
+                placeholder="Full Name"
+                placeholderTextColor="#94A3B8"
+              />
+
+              <Text style={styles.inputFieldLabel}>Mobile Number *</Text>
+              <TextInput
+                style={styles.textInputField}
+                value={editPhone}
+                onChangeText={setEditPhone}
+                placeholder="10-digit Mobile Number"
+                placeholderTextColor="#94A3B8"
+                keyboardType="phone-pad"
+              />
+
+              <Text style={styles.inputFieldLabel}>ABHA Health ID (14 digits or @abdm)</Text>
+              <TextInput
+                style={styles.textInputField}
+                value={editAbhaId}
+                onChangeText={setEditAbhaId}
+                placeholder="e.g. 14-digit ABHA or user@abdm"
+                placeholderTextColor="#94A3B8"
+                autoCapitalize="none"
+              />
+
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputFieldLabel}>Age (Years)</Text>
+                  <TextInput
+                    style={styles.textInputField}
+                    value={editAge}
+                    onChangeText={setEditAge}
+                    placeholder="e.g. 32"
+                    placeholderTextColor="#94A3B8"
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+
+              <Text style={styles.inputFieldLabel}>Gender</Text>
+              <View style={styles.genderSelectRow}>
+                {(['Male', 'Female', 'Other'] as const).map((g) => (
+                  <TouchableOpacity
+                    key={g}
+                    style={[
+                      styles.genderSelectBtn,
+                      editGender === g && styles.genderSelectBtnActive,
+                    ]}
+                    onPress={() => setEditGender(g)}
+                  >
+                    <Text
+                      style={[
+                        styles.genderSelectText,
+                        editGender === g && styles.genderSelectTextActive,
+                      ]}
+                    >
+                      {g}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.inputFieldLabel}>Emergency Contact Number</Text>
+              <TextInput
+                style={styles.textInputField}
+                value={editEmergency}
+                onChangeText={setEditEmergency}
+                placeholder="e.g. Spouse / Parent contact"
+                placeholderTextColor="#94A3B8"
+                keyboardType="phone-pad"
+              />
+
+              <TouchableOpacity
+                style={styles.saveProfileSubmitBtn}
+                onPress={handleSaveProfile}
+                disabled={savingProfile}
+                activeOpacity={0.8}
+              >
+                {savingProfile ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-done" size={18} color="#FFFFFF" />
+                    <Text style={styles.saveProfileSubmitText}>Save Changes</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -511,18 +745,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(13, 148, 136, 0.08)',
+    backgroundColor: '#F0FDFA',
     borderWidth: 1.5,
-    borderColor: 'rgba(13, 148, 136, 0.3)',
-    borderRadius: 12,
+    borderColor: '#99F6E4',
+    borderRadius: 14,
     paddingVertical: 14,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
+    shadowColor: '#0D9488',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   switchAccountButtonText: {
     fontFamily: FontFamily.bold,
     fontSize: FontSize.sm,
-    color: Colors.primaryDark,
-    letterSpacing: LetterSpacing.wide,
+    color: '#0F766E',
+    letterSpacing: 0.2,
     textAlign: 'center',
     flexShrink: 1,
   },
@@ -530,17 +769,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.25)',
-    borderRadius: 12,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1.5,
+    borderColor: '#FECDD3',
+    borderRadius: 14,
     paddingVertical: 14,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   logoutButtonText: {
     fontFamily: FontFamily.bold,
-    fontSize: FontSize.body,
-    color: '#EF4444',
+    fontSize: FontSize.sm,
+    color: '#DC2626',
+    letterSpacing: 0.2,
   },
   manageConsentBtn: {
     flexDirection: 'row',
@@ -619,5 +864,81 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.regular,
     fontSize: 13,
     color: Colors.textSecondary,
+  },
+  editProfileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: Colors.primary,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginTop: 14,
+  },
+  editProfileBtnText: {
+    color: '#FFFFFF',
+    fontFamily: FontFamily.bold,
+    fontSize: 13,
+  },
+  inputFieldLabel: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginBottom: 4,
+    marginTop: 10,
+  },
+  textInputField: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 13,
+    color: Colors.text,
+    fontFamily: FontFamily.regular,
+  },
+  genderSelectRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+    marginBottom: 6,
+  },
+  genderSelectBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#F8FAFC',
+  },
+  genderSelectBtnActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  genderSelectText: {
+    fontSize: 12,
+    fontFamily: FontFamily.medium,
+    color: Colors.textSecondary,
+  },
+  genderSelectTextActive: {
+    color: '#FFFFFF',
+    fontFamily: FontFamily.bold,
+  },
+  saveProfileSubmitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: Colors.primary,
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginTop: 18,
+  },
+  saveProfileSubmitText: {
+    color: '#FFFFFF',
+    fontFamily: FontFamily.bold,
+    fontSize: 14,
   },
 });

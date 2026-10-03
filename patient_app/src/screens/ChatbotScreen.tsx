@@ -41,6 +41,12 @@ const SUPPORTED_LANGUAGES = [
   { code: 'Hinglish', label: 'Hinglish' },
 ];
 
+const cleanDoctorName = (name?: string): string => {
+  if (!name) return 'Physician';
+  const clean = name.replace(/^(Dr\.?\s*)+/i, '').trim();
+  return `Dr. ${clean || 'Physician'}`;
+};
+
 export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
   user,
   onNavigateToDoctors,
@@ -262,6 +268,7 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
                     styles.messageText,
                     isUser ? styles.userMessageText : styles.assistantMessageText,
                   ]}
+                  selectable={!isUser}
                 >
                   {msg.text}
                 </Text>
@@ -312,19 +319,24 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
                   </View>
                 )}
 
-                {/* Verified Grounded Clinical Citations */}
-                {msg.citations && msg.citations.length > 0 && (
-                  <View style={styles.citationsContainer}>
-                    {msg.citations.map((c, cIdx) => (
-                      <View key={cIdx} style={styles.citationBadge}>
-                        <Ionicons name="shield-checkmark" size={12} color={Colors.primary} style={{ marginRight: 4 }} />
-                        <Text style={styles.citationText}>
-                          Grounded in Dr. {c.doctor_name}'s Consultation ({c.visit_date})
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
+                {/* Verified Grounded Clinical Citations (Deduplicated) */}
+                {msg.citations && msg.citations.length > 0 && (() => {
+                  const uniqueCitations = Array.from(
+                    new Map(msg.citations.map((c) => [`${cleanDoctorName(c.doctor_name)}_${c.visit_date}`, c])).values()
+                  );
+                  return (
+                    <View style={styles.citationsContainer}>
+                      {uniqueCitations.map((c, cIdx) => (
+                        <View key={cIdx} style={styles.citationBadge}>
+                          <Ionicons name="shield-checkmark" size={12} color={Colors.primary} style={{ marginRight: 4 }} />
+                          <Text style={styles.citationText}>
+                            Grounded in {cleanDoctorName(c.doctor_name)}'s Consultation ({c.visit_date})
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  );
+                })()}
 
                 {/* Render Doctor Recommendation Cards */}
                 {msg.recommendedDoctors && msg.recommendedDoctors.length > 0 && (
@@ -340,7 +352,7 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
                           <Ionicons name="medkit" size={20} color={Colors.primary} />
                         </View>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.doctorCardName}>{doc.name}</Text>
+                          <Text style={styles.doctorCardName}>{cleanDoctorName(doc.name)}</Text>
                           <Text style={styles.doctorCardSpecialty}>{doc.specialty}</Text>
                           <Text style={styles.doctorCardClinic}>{doc.clinic_name}</Text>
                           <Text style={styles.doctorCardNmc}>Reg: {doc.reg_number}</Text>
@@ -514,7 +526,7 @@ const styles = StyleSheet.create({
   },
   chatContent: {
     padding: 16,
-    paddingBottom: 24,
+    paddingBottom: 110,
   },
   messageWrapper: {
     flexDirection: 'row',
@@ -534,13 +546,14 @@ const styles = StyleSheet.create({
   messageBubble: {
     maxWidth: '82%',
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 18,
     elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 2,
+    flexShrink: 1,
   },
   userBubble: {
     backgroundColor: Colors.primary,
@@ -566,13 +579,16 @@ const styles = StyleSheet.create({
   messageText: {
     fontFamily: FontFamily.regular,
     fontSize: FontSize.body,
-    lineHeight: 22,
+    lineHeight: 24,
+    flexWrap: 'wrap',
+    flexShrink: 1,
   },
   userMessageText: {
     color: '#FFFFFF',
   },
   assistantMessageText: {
     color: Colors.text,
+    letterSpacing: 0.15,
   },
   timestampText: {
     fontFamily: FontFamily.regular,
@@ -644,7 +660,7 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   quickChipsWrapper: {
-    paddingVertical: 6,
+    paddingVertical: 10,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: Colors.border,
@@ -657,23 +673,25 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(13, 148, 136, 0.08)',
     borderWidth: 1,
     borderColor: 'rgba(13, 148, 136, 0.25)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 18,
   },
   chipText: {
     fontFamily: FontFamily.medium,
-    fontSize: 12,
+    fontSize: 12.5,
     color: Colors.primaryDark,
   },
   inputBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingTop: 8,
+    paddingBottom: Platform.OS === 'ios' ? 14 : 12,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: Colors.border,
+    minHeight: 64,
   },
   textInput: {
     flex: 1,
@@ -682,11 +700,12 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     borderRadius: 22,
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
     fontFamily: FontFamily.regular,
     fontSize: FontSize.body,
     color: Colors.text,
-    maxHeight: 90,
+    minHeight: 46,
+    maxHeight: 100,
   },
   sendButton: {
     width: 42,

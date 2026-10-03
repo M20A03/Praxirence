@@ -617,6 +617,75 @@ export const mobileApi = {
     }
   },
 
+  async startConsultation(visitId: string): Promise<any> {
+    try {
+      const res = await resilientFetch(`${getEffectiveApiUrl()}/visits/${visitId}/start-consultation`, {
+        method: 'POST',
+        headers: getHeaders(),
+      }, 0);
+      if (res.ok) {
+        return await res.json();
+      }
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to start consultation');
+    } catch (e: any) {
+      console.warn('startConsultation error:', e);
+      throw e;
+    }
+  },
+
+  async updateVisitStatus(visitId: string, status: string, reason?: string): Promise<any> {
+    try {
+      const res = await resilientFetch(`${getEffectiveApiUrl()}/visits/${visitId}/status`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ status, reason }),
+      }, 0);
+      if (res.ok) {
+        return await res.json();
+      }
+      return await this.endConsultation(visitId);
+    } catch (e: any) {
+      console.warn('updateVisitStatus error, trying endConsultation fallback:', e);
+      return await this.endConsultation(visitId);
+    }
+  },
+
+  async endConsultation(visitId: string): Promise<any> {
+    try {
+      const res = await resilientFetch(`${getEffectiveApiUrl()}/visits/${visitId}/end-consultation`, {
+        method: 'POST',
+        headers: getHeaders(),
+      }, 0);
+      if (res.ok) {
+        return await res.json();
+      }
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to end consultation');
+    } catch (e: any) {
+      console.warn('endConsultation error:', e);
+      throw e;
+    }
+  },
+
+  async cancelVisit(visitId: string, reason?: string): Promise<any> {
+    try {
+      const res = await resilientFetch(`${getEffectiveApiUrl()}/visits/${visitId}/cancel`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ reason: reason || 'Cancelled by clinician' }),
+      }, 0);
+      if (res.ok) {
+        return await res.json();
+      }
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to cancel appointment');
+    } catch (e: any) {
+      console.warn('cancelVisit error:', e);
+      throw e;
+    }
+  },
+
   async setPatientPriority(visitId: string, triageLevel: 'Urgent' | 'Priority' | 'Routine'): Promise<any> {
     try {
       const res = await resilientFetch(`${getEffectiveApiUrl()}/visits/${visitId}/priority`, {
@@ -935,66 +1004,8 @@ export const mobileApi = {
       diagnosis: 'Acute Upper Respiratory Tract Infection & Bronchial Congestion',
       patient_summary: 'Doctor conducted physical examination and chest auscultation. Airway inflammation noted with dry cough. Prescribed antibiotic course, bronchodilator syrup, and acid reducer.',
       doctor_advice: 'Drink warm water with honey, avoid cold beverages and fried food, take steam inhalation twice daily, and complete the full 5-day antibiotic course even if symptoms improve.',
-      medicines: [
-        {
-          name: 'Augmentin 625mg',
-          dosage: '1 Tablet',
-          frequency: '1-0-1',
-          instructions: 'Take after food (morning and night)',
-          duration_days: 5,
-        },
-        {
-          name: 'Ascoril LS Syrup',
-          dosage: '10 ml',
-          frequency: '1-1-1',
-          instructions: 'Take after meals three times daily',
-          duration_days: 5,
-        },
-        {
-          name: 'Pantocid 40mg',
-          dosage: '1 Tablet',
-          frequency: '1-0-0',
-          instructions: 'Take 30 minutes before breakfast',
-          duration_days: 10,
-        },
-        {
-          name: 'Paracetamol 650mg',
-          dosage: '1 Tablet',
-          frequency: 'SOS',
-          instructions: 'Take only if fever or headache exceeds 100°F',
-          duration_days: 3,
-        },
-      ],
-      reminders: [
-        {
-          medicine_name: 'Pantocid 40mg',
-          dosage: '1 Tablet',
-          time: '08:00',
-          frequency: 'daily',
-          instructions: 'Before breakfast',
-        },
-        {
-          medicine_name: 'Augmentin 625mg',
-          dosage: '1 Tablet',
-          time: '08:30',
-          frequency: 'daily',
-          instructions: 'After breakfast',
-        },
-        {
-          medicine_name: 'Ascoril LS Syrup',
-          dosage: '10 ml',
-          time: '13:30',
-          frequency: 'daily',
-          instructions: 'After lunch',
-        },
-        {
-          medicine_name: 'Augmentin 625mg',
-          dosage: '1 Tablet',
-          time: '20:30',
-          frequency: 'daily',
-          instructions: 'After dinner',
-        },
-      ],
+      medicines: [],
+      reminders: [],
       warning_signs: [
         'High fever (>102°F) persisting for more than 48 hours',
         'Shortness of breath, chest tightness, or wheezing',
@@ -1507,10 +1518,7 @@ export function extractClinicalCarePlanLocally(
     addMed('Montair LC', '1 Tablet', 'Once daily at bedtime (0-0-1)', 'Take at night before sleeping for allergy relief', 5, 'after_meal', false, ['21:30']);
   }
 
-  // If no specific medicines detected, provide safe default
-  if (medicines.length === 0) {
-    addMed('Paracetamol 650mg', '1 Tablet', 'Twice daily as needed (SOS)', 'Take after meals for fever or body ache', 3, 'after_meal', true, ['08:30', '20:30']);
-  }
+  // If no specific medicines detected, do not inject fake medications
 
   return {
     diagnosis,

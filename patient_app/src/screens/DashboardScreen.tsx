@@ -164,6 +164,47 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       loadDashboardDataSilently();
     });
 
+    const unsubConsultStarted = patientRealtime.on('CONSULTATION_STARTED', (data: any) => {
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
+      Alert.alert(
+        'Consultation In Progress',
+        data?.message || 'Your attending doctor has called you in and started your clinical consultation now.'
+      );
+      // Update queue tracker to show active consultation state
+      setQueueStatus((prev) => prev ? {
+        ...prev,
+        status: 'in_progress',
+        patients_ahead: 0,
+        estimated_wait_mins: 0,
+        doctor_name: data?.doctor_name || prev.doctor_name,
+      } : prev);
+      loadDashboardDataSilently();
+    });
+
+    const unsubConsultEnded = patientRealtime.on('CONSULTATION_COMPLETED', (data: any) => {
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
+      Alert.alert(
+        'Consultation Completed',
+        data?.message || 'Your clinical consultation is complete and your care plan is ready.'
+      );
+      setQueueStatus(null);
+      loadDashboardDataSilently();
+    });
+
+    const unsubTokenCalled = patientRealtime.on('TOKEN_CALLED', (data: any) => {
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); } catch (_) {}
+      Alert.alert(
+        'Your Token Called!',
+        data?.message || 'Your doctor is ready for you now in Chamber 1.'
+      );
+      loadDashboardDataSilently();
+    });
+
+    const unsubApptCancelled = patientRealtime.on('APPOINTMENT_CANCELLED', () => {
+      setQueueStatus(null);
+      loadDashboardDataSilently();
+    });
+
     const unsubPrescription = patientRealtime.on('NEW_PRESCRIPTION', () => {
       loadDashboardDataSilently();
     });
@@ -193,6 +234,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
     return () => {
       unsubQueue();
+      unsubConsultStarted();
+      unsubConsultEnded();
+      unsubTokenCalled();
+      unsubApptCancelled();
       unsubPrescription();
       unsubLeave();
       unsubDelay();
@@ -220,7 +265,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     const todayIso = new Date().toISOString().slice(0, 10);
     const activeAppt = visitList.find((v) => {
       const vDate = v.appointment_date || v.date?.slice(0, 10);
-      return vDate === todayIso && ['scheduled', 'in_progress', 'draft'].includes(v.status);
+      return (vDate === todayIso || !v.appointment_date) && ['scheduled', 'in_progress', 'draft', 'booked', 'waiting'].includes(v.status) && v.status !== 'cancelled' && v.status !== 'completed';
     });
 
     if (activeAppt) {
@@ -252,6 +297,51 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     }
   };
 
+  const handleCancelAppointment = (visitId: string) => {
+    const isActive = queueStatus?.status === 'in_progress';
+    const title = isActive
+      ? 'End This Consultation?'
+      : 'Cancel Appointment / Exit Queue?';
+    const message = isActive
+      ? 'This will mark your consultation as complete. Your care plan will be available in the Visits tab once the doctor finalises it.'
+      : 'Are you sure you want to cancel this consultation and release your reserved slot?';
+    const confirmText = isActive ? 'End Consultation' : 'Yes, Cancel';
+    const keepText = isActive ? 'Stay In Consultation' : 'Keep Appointment';
+
+    Alert.alert(
+      title,
+      message,
+      [
+        { text: keepText, style: 'cancel' },
+        {
+          text: confirmText,
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await mobileApi.cancelVisit(visitId, isActive ? 'Ended by patient' : 'Cancelled by patient');
+              const updated = visits.map((v) => (v.id === visitId ? { ...v, status: 'cancelled' as const } : v));
+              setVisits(updated);
+              try {
+                await AsyncStorage.setItem(`praxirence_careplan_${user.id}`, JSON.stringify(updated));
+                await AsyncStorage.setItem(`praxirence_cache_visits_${user.id}`, JSON.stringify(updated));
+              } catch (_) {}
+              setQueueStatus(null);
+              Alert.alert(
+                isActive ? 'Consultation Ended' : 'Appointment Cancelled',
+                isActive
+                  ? 'Your consultation has ended. Check the Visits tab for your care plan once the doctor finalises it.'
+                  : 'Your consultation has been cancelled and removed.'
+              );
+              loadDashboardDataSilently();
+            } catch (err: any) {
+              Alert.alert('Notice', err.message || 'Failed to process request');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const loadDashboardDataSilently = async () => {
     try {
       const [data, reschedules, checkins, reviews] = await Promise.all([
@@ -260,10 +350,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         mobileApi.getPendingCheckins(user.id).catch(() => []),
         mobileApi.getPendingDoctorReviews(user.id).catch(() => []),
       ]);
-      if (data && data.length > 0) {
-        setVisits(data);
-        syncQueueStatusForVisits(data);
-      }
+      setVisits(data || []);
+      syncQueueStatusForVisits(data || []);
       setPendingReschedules(reschedules || []);
       setPendingCheckins(checkins || []);
       setPendingReviews(reviews || []);
@@ -717,7 +805,13 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       </View>
 
       {/* ==================== LIVE OPD QUEUE POSITION TRACKER ==================== */}
-      {queueStatus && <LiveQueueTrackerCard queueStatus={queueStatus} />}
+      {queueStatus && (
+        <LiveQueueTrackerCard
+          queueStatus={queueStatus}
+          onCancelAppointment={handleCancelAppointment}
+          onDismissTracker={() => setQueueStatus(null)}
+        />
+      )}
 
       {/* Real Interactive Vitals Tracker Card */}
       <VitalsTelemetryGrid

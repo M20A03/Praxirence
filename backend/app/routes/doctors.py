@@ -108,6 +108,7 @@ def generate_time_slots(start_str: str, end_str: str, slot_mins: int = 30) -> Li
 def list_doctors(
     specialty: Optional[str] = None,
     city: Optional[str] = None,
+    state: Optional[str] = None,
     query: Optional[str] = None,
     lat: Optional[float] = None,
     lng: Optional[float] = None,
@@ -116,7 +117,7 @@ def list_doctors(
 ):
     """
     Returns registered doctors with optional geolocation proximity,
-    city filtering, specialty filtering, and live leave status for today.
+    city filtering, state filtering, specialty filtering, and live leave status for today.
     """
     doctors = db.query(User).all()
     today_iso = datetime.now().strftime("%Y-%m-%d")
@@ -125,6 +126,7 @@ def list_doctors(
     results = []
     for d in doctors:
         doc_city = getattr(d, "city", "") or ""
+        doc_state = getattr(d, "state", "") or ""
         doc_specialty = getattr(d, "specialty", "General Physician") or "General Physician"
         doc_name = d.name or "Doctor"
         doc_clinic = getattr(d, "clinic_name", "") or ""
@@ -134,7 +136,11 @@ def list_doctors(
             if specialty.lower() not in doc_specialty.lower():
                 continue
 
-        if city and city.lower() != "all":
+        if state and state.lower() not in ["all", "all states"]:
+            if state.lower() not in doc_state.lower():
+                continue
+
+        if city and city.lower() not in ["all", "all cities"]:
             if city.lower() not in doc_city.lower():
                 continue
 
@@ -224,10 +230,7 @@ def get_doctor_availability(
     """
     doctor = db.query(User).filter(User.id == doctor_id).first()
     if not doctor:
-        # Fallback search by email or name prefix for mock/default doctor IDs
-        doctor = db.query(User).first()
-        if not doctor:
-            raise HTTPException(status_code=404, detail="Doctor not found")
+        raise HTTPException(status_code=404, detail="Doctor not found")
 
     target_date_str = date or datetime.now().strftime("%Y-%m-%d")
     try:

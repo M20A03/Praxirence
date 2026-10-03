@@ -226,20 +226,32 @@ class AIService:
                 {"name": "Pan 40", "frequency": "Once daily in morning (1-0-0)", "instructions": "Take on empty stomach 30 mins before breakfast", "duration_days": 15}
             ]
             follow_up = 14
-        else:
+        elif any(k in c_lower for k in ["cough", "throat", "bronchitis", "wheez", "chest", "bukhar", "fever", "thandi"]):
             raw_diag = "Acute Upper Respiratory Flare-up & Cough"
             pat_summary = (
                 f"Hello {patient_name}, during your consultation today, Dr. {doctor_name} assessed your symptoms. "
-                "You have an acute respiratory airway irritation causing cough and discomfort. Your prescribed medications will soothe the airways and relieve inflammation."
+                "You have an acute respiratory airway irritation causing cough and discomfort. Please follow all prescribed instructions and clinical advice."
             )
             advice = "Drink warm fluids, perform steam inhalation twice daily, avoid cold beverages, and get adequate rest."
             warnings = ["Severe shortness of breath", "High fever above 102°F not relieved by medication", "Coughing up blood"]
-            raw_meds = [
-                {"name": "Augmentin 625", "frequency": "Twice daily after meals (1-0-1)", "instructions": "Take after breakfast and dinner for 5 days", "duration_days": 5},
-                {"name": "Dolo 650", "frequency": "Twice daily as needed (1-0-1)", "instructions": "Take after food for fever or pain", "duration_days": 3},
-                {"name": "Montair LC", "frequency": "Once daily at night (0-0-1)", "instructions": "Take at bedtime for 5 days", "duration_days": 5}
-            ]
+            raw_meds = []
+            if any(m in c_lower for m in ["augmentin", "amoxicillin", "amoxyclav"]):
+                raw_meds.append({"name": "Augmentin 625", "frequency": "Twice daily after meals (1-0-1)", "instructions": "Take after breakfast and dinner for 5 days", "duration_days": 5})
+            if any(m in c_lower for m in ["dolo", "paracetamol", "calpol"]):
+                raw_meds.append({"name": "Dolo 650", "frequency": "Twice daily as needed (1-0-1)", "instructions": "Take after food for fever or pain", "duration_days": 3})
+            if any(m in c_lower for m in ["montair", "allegra", "cetirizine", "montelukast"]):
+                raw_meds.append({"name": "Montair LC", "frequency": "Once daily at night (0-0-1)", "instructions": "Take at bedtime for 5 days", "duration_days": 5})
             follow_up = 5
+        else:
+            raw_diag = "Clinical Health Consultation & Assessment"
+            pat_summary = (
+                f"Hello {patient_name}, during your consultation today, Dr. {doctor_name} conducted a clinical evaluation. "
+                "No specific oral prescription was required at this time. Please follow the advised diet, hydration, and lifestyle guidance."
+            )
+            advice = "Drink plenty of clean water, maintain balanced nutrition, get adequate rest, and stay physically active."
+            warnings = ["Persistent high fever or sudden chills", "Severe shortness of breath or chest pain", "Severe headache or unusual dizziness"]
+            raw_meds = []
+            follow_up = 7
 
         # Normalize medications via Pharmacology Service
         normalized_meds = []

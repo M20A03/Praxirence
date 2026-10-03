@@ -227,15 +227,8 @@ class ModelLoader:
             except Exception:
                 pass
 
-        # High-fidelity clinical fallback transcript for fast response (<1s)
-        return (
-            "Doctor: Good morning Sarah. Tell me about your cough. "
-            "Patient: It started three days ago doctor. It hurts in my chest and I have a mild fever. "
-            "Doctor: Your lungs show bilateral bronchial wheezing. You have acute bronchitis. "
-            "I am prescribing Azithromycin 500mg once daily after breakfast for 3 days. "
-            "For the cough, take Levosalbutamol syrup 5ml twice daily after meals for 5 days. "
-            "For the fever, take Paracetamol 650mg twice daily after meals as needed. Drink warm water."
-        )
+        # Clean consultation fallback when audio transcription has no audible words
+        return "Doctor: Patient consultation completed. No specific prescription recorded."
 
     def extract_care_plan(self, transcript: str) -> Dict[str, Any]:
         """
@@ -317,8 +310,8 @@ class ModelLoader:
                                 "instructions": r
                             })
 
-                    final_meds = meds if ("medicines" in data) else (meds if meds else self._default_meds())
-                    final_rems = rems if ("reminders" in data) else (rems if rems else self._default_reminders())
+                    final_meds = meds if ("medicines" in data) else (meds if meds else [])
+                    final_rems = rems if ("reminders" in data) else (rems if rems else [])
 
                     return {
                         "diagnosis": data.get("diagnosis", "Clinical Assessment"),
@@ -787,26 +780,10 @@ class ModelLoader:
         }
 
     def _default_meds(self) -> List[Dict[str, Any]]:
-        return [
-            {
-                "name": "Paracetamol",
-                "dosage": "650mg",
-                "frequency": "Twice daily as needed (1-0-1)",
-                "instructions": "Take after food for fever or pain",
-                "duration_days": 3
-            }
-        ]
+        return []
 
     def _default_reminders(self) -> List[Dict[str, Any]]:
-        return [
-            {
-                "medicine_name": "Paracetamol",
-                "dosage": "650mg",
-                "time": "08:30",
-                "frequency": "daily",
-                "instructions": "Take after breakfast if required"
-            }
-        ]
+        return []
 
 
 # Singleton instance

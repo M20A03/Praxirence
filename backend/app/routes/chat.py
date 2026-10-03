@@ -114,6 +114,59 @@ def generate_grounded_fallback(
             "medicines": v_meds
         })
 
+    # Intent 0: Acute Symptoms Guidance (Fever, Headache, Cough, Cold, Pain, etc.)
+    if any(k in q_lower for k in [
+        "fever", "temperature", "cold", "cough", "headache", "body ache", "pain", "vomit",
+        "nausea", "chills", "weakness", "बुखार", "ताप", "ಜ್ವರ", "ಶೀತ", "ಕೆಮ್ಮು", "ಬುಖಾರ್",
+        "سر درد", "بخار", "درد", "سردी", "தலைவலி", "காய்ச்சல்", "జ్వరం"
+    ]):
+        intent = "symptom_guidance"
+        if is_hindi:
+            reply = (
+                "बुखार होने पर निम्नलिखित प्राथमिक देखभाल और सावधानियां अपनाएं:\n\n"
+                "1. पर्याप्त आराम और हाइड्रेशन: शरीर को पूरा आराम दें। दिनभर में पर्याप्त पानी, ओआरएस (ORS), नारियल पानी या सूप पिएं ताकि डिहाइड्रेशन न हो।\n"
+                "2. तापमान की नियमित जांच: थर्मामीटर से हर 4-6 घंटे में तापमान मापें और नोट करें।\n"
+                "3. स्पंज बाथ (गीली पट्टी): सामान्य (गुनगुने) पानी से माथे और शरीर पर गीली पट्टी रखें। ठंडा या बर्फ का पानी कभी इस्तेमाल न करें।\n"
+                "4. हल्का और सुपाच्य भोजन: खिचड़ी, दलिया, फल या उबली सब्जियां खाएं। भारी और तला हुआ खाना न लें।\n\n"
+                "तुरंत डॉक्टर से मिलने के खतरे के लक्षण (Red Flags):\n"
+                "• बुखार 102°F (39°C) से अधिक हो या 3 दिनों से अधिक रहे\n"
+                "• सांस लेने में तकलीफ या सीने में दर्द\n"
+                "• गर्दन में अकड़न, अत्यधिक सुस्ती या लगातार उल्टियां\n\n"
+                "कृपया प्रैक्सिरेंस ऐप में अपने डॉक्टर से परामर्श बुक करें ताकि सही जांच और दवा दी जा सके।"
+            )
+            sugg = ["डॉक्टर से परामर्श बुक करें", "खतरे के लक्षण क्या हैं?", "अपॉइंटमेंट का समय"]
+        elif is_kannada:
+            reply = (
+                "ಜ್ವರ ಬಂದಾಗ ಅನುಸರಿಸಬೇಕಾದ ಪ್ರಮುಖ ಆರೈಕೆ ಕ್ರಮಗಳು:\n\n"
+                "1. ವಿಶ್ರಾಂತಿ ಮತ್ತು ಜಲಸಂಚಯನ: ದೇಹಕ್ಕೆ ಸಂಪೂರ್ಣ ವಿಶ್ರಾಂತಿ ನೀಡಿ. ಸಾಕಷ್ಟು ನೀರು, ಎಳನೀರು, ಓಆರ್‌ಎಸ್ (ORS) ಸೇವಿಸಿ.\n"
+                "2. ದೇಹದ ತಾಪಮಾನ ಮೇಲ್ವಿಚಾರಣೆ: ಥರ್ಮಾಮೀಟರ್‌ನಿಂದ ತಾಪಮಾನವನ್ನು ನಿಯಮಿತವಾಗಿ ಪರಿಶೀಲಿಸಿ.\n"
+                "3. ತೇವವಾದ ಬಟ್ಟೆಯ ಸ್ಪಂಜು: ಸಾಮಾನ್ಯ ನೀರಿನಲ್ಲಿ ಅದ್ದಿದ ಬಟ್ಟೆಯಿಂದ ಹಣೆ ಮತ್ತು ಮೈ ಒರೆಸಿ. ಅತಿಯಾದ ತಣ್ಣೀರು ಬಳಸಬೇಡಿ.\n"
+                "4. ಲಘು ಆಹಾರ: ಜೀರ್ಣವಾಗಲು ಸುಲಭವಾದ ಆಹಾರ ಸೇವಿಸಿ.\n\n"
+                "ವೈದ್ಯರನ್ನು ತಕ್ಷಣ ಕಾಣಬೇಕಾದ ತುರ್ತು ಲಕ್ಷಣಗಳು:\n"
+                "• ಜ್ವರ 102°F ಗಿಂತ ಹೆಚ್ಚಿದ್ದರೆ ಅಥವಾ 3 ದಿನಗಳಿಗಿಂತ ಹೆಚ್ಚು ಮುಂದುವರಿದರೆ\n"
+                "• ಉಸಿರಾಟದ ತೊಂದರೆ ಅಥವಾ ಎದೆ ನೋವು\n"
+                "• ಕುತ್ತಿಗೆ ಬಿಗಿತ ಅಥವಾ ವಿಪರೀತ ದೌರ್ಬಲ್ಯ\n\n"
+                "ದಯವಿಟ್ಟು ನಿಖರ ತಪಾಸಣೆಗಾಗಿ ಪ್ರ್ಯಾಕ್ಸಿರೆನ್ಸ್ ಮೂಲಕ ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ."
+            )
+            sugg = ["ವೈದ್ಯರನ್ನು ಹುಡುಕಿ", "ಅಪಾಯಿಂಟ್ಮೆಂಟ್ ಬುಕ್ ಮಾಡಿ"]
+        else:
+            reply = (
+                "Here is clinical home-care guidance for managing a fever:\n\n"
+                "1. Rest and Hydration: Get plenty of bed rest. Drink plenty of fluids (water, oral rehydration salts/ORS, clear broths, coconut water) to prevent dehydration.\n"
+                "2. Monitor Temperature: Check your temperature every 4-6 hours with a clean digital thermometer and keep a log.\n"
+                "3. Tepid Sponge Bath: Apply a clean cloth dampened with lukewarm (never ice-cold) water to the forehead, neck, and armpits to help lower body heat.\n"
+                "4. Light Clothing and Environment: Wear loose, lightweight cotton clothing and keep the room well-ventilated.\n"
+                "5. Nutrition: Eat light, easily digestible meals (soups, porridge, toast, boiled vegetables).\n\n"
+                "Red-Flag Warning Signs (Seek Immediate Medical Care):\n"
+                "• Temperature exceeding 102°F (38.9°C) or lasting longer than 3 days\n"
+                "• Shortness of breath, chest pain, or wheezing\n"
+                "• Stiff neck, mental confusion, or extreme lethargy\n"
+                "• Persistent vomiting or inability to keep fluids down\n\n"
+                "Please schedule a consultation with an attending doctor in Praxirence for accurate clinical evaluation and appropriate treatment."
+            )
+            sugg = ["Find a Doctor", "Book Consultation", "Warning Signs"]
+        return reply, intent, [], [], sugg
+
     # Intent 1: Consultation / Diagnosis / Doctor's advice inquiry
     if any(k in q_lower for k in [
         "diagnos", "advice", "consult", "said", "summary", "problem", "condition",
@@ -436,20 +489,26 @@ async def patient_chat_assistant(
     citations: List[Dict[str, Any]] = []
 
     if visits:
+        seen_citations = set()
         for idx, v in enumerate(visits, 1):
-            doc_name = v.doctor.name if v.doctor else "Attending Doctor"
+            raw_doc_name = v.doctor.name if v.doctor else "Attending Doctor"
+            clean_name = re.sub(r'^(Dr\.?\s*)+', '', raw_doc_name, flags=re.IGNORECASE).strip()
+            doc_name = f"Dr. {clean_name}" if clean_name else "Dr. Attending Doctor"
             doc_spec = getattr(v.doctor, "specialty", "Physician") if v.doctor else "Physician"
             clinic = getattr(v.doctor, "clinic_name", "Clinic") if v.doctor else "Clinic"
             raw_t, pat_sum, doc_adv = parse_transcription_and_summary(v.raw_transcription)
             visit_date = v.created_at.strftime("%d %b %Y") if v.created_at else "Recent"
 
-            citations.append({
-                "doctor_name": doc_name,
-                "doctor_specialty": doc_spec,
-                "visit_date": visit_date,
-                "diagnosis": v.diagnosis or "Clinical Consultation",
-                "clinic_name": clinic
-            })
+            citation_key = f"{doc_name}_{visit_date}"
+            if citation_key not in seen_citations:
+                seen_citations.add(citation_key)
+                citations.append({
+                    "doctor_name": doc_name,
+                    "doctor_specialty": doc_spec,
+                    "visit_date": visit_date,
+                    "diagnosis": v.diagnosis or "Clinical Consultation",
+                    "clinic_name": clinic
+                })
 
             meds_list = []
             if v.medicines:
@@ -485,16 +544,27 @@ async def patient_chat_assistant(
 
     if gemini_key and len(gemini_key) > 10:
         system_prompt = (
-            "You are Praxirence Clinical AI Assistant. You must answer the patient's questions strictly "
-            "based on their real medical consultation history provided below.\n"
-            "RULES:\n"
-            "1. Every response answering consultation or medication queries MUST cite the specific visit date and prescribing clinician (e.g., 'According to Dr. [Name] during your consultation on [Date]...').\n"
-            "2. If asked about conditions not in the patient's record, clearly state: 'This was not part of your recorded consultation. Please consult your physician for medical advice.'\n"
-            "3. If the patient asks about missed doses, explain: take immediately unless close to next scheduled dose; never double up.\n"
-            "4. If the patient asks about food timings, provide standard pharmacological guidance (e.g. PPIs on empty stomach, NSAIDs after food, thyroid 30 min before breakfast).\n"
-            "5. Do NOT fabricate symptoms, diagnoses, or medications.\n"
-            "6. Do NOT use emojis under any circumstances.\n"
-            f"7. Support natural code-switching (Hinglish, Kanglish, Tanglish) and provide answers in: {req.language}."
+            "You are Praxirence Clinical AI Assistant, an empathetic, highly knowledgeable, and medically rigorous healthcare assistant.\n"
+            "GUIDELINES:\n"
+            "1. When answering queries about recorded consultations, diagnoses, or prescriptions, prioritize the real patient records provided below and cite the clinician and date.\n"
+            "2. When the patient asks about symptoms (such as fever, headache, cold, cough, nausea, stomach pain, body ache, dizziness, weakness, vomiting) or asks general clinical questions like 'what to do' or 'I am suffering from X':\n"
+            "   - ALWAYS provide clear, practical, actionable clinical advice.\n"
+            "   - Start by acknowledging their symptom and explaining common causes in simple language.\n"
+            "   - Provide detailed step-by-step supportive home care guidance:\n"
+            "     * Hydration (water, ORS, coconut water, clear broths)\n"
+            "     * Physical rest and sleep\n"
+            "     * Temperature monitoring with a thermometer every 4-6 hours\n"
+            "     * Tepid/lukewarm sponge bath for fever (never ice-cold)\n"
+            "     * Light, easily digestible meals (soups, porridge, khichdi, fruits)\n"
+            "     * Loose, breathable cotton clothing\n"
+            "   - Clearly list specific RED-FLAG danger signs that require IMMEDIATE medical attention (e.g., fever above 102F/39C, lasting over 3 days, difficulty breathing, stiff neck, extreme lethargy, persistent vomiting, rash).\n"
+            "   - End with a recommendation to book a consultation with an attending doctor in the Praxirence app for proper clinical evaluation.\n"
+            "3. NEVER refuse to give health guidance. NEVER say 'I cannot provide medical advice'. You MUST provide supportive home care guidance while recommending professional consultation for definitive diagnosis.\n"
+            "4. If the patient asks about missed doses, explain: take immediately unless close to next scheduled dose; never double up.\n"
+            "5. If the patient asks about food timings, provide standard pharmacological guidance (e.g. PPIs on empty stomach, NSAIDs after food, thyroid 30 min before breakfast).\n"
+            "6. Do NOT use emojis under any circumstances to maintain clinical dignity.\n"
+            "7. Structure your response with clear numbered points and bullet points for readability.\n"
+            f"8. Support natural code-switching and respond in the patient's language: {req.language}."
         )
 
         user_content = (
@@ -514,26 +584,27 @@ async def patient_chat_assistant(
                 }
             ],
             "generationConfig": {
-                "temperature": 0.2,
-                "maxOutputTokens": 600
+                "temperature": 0.3,
+                "maxOutputTokens": 1200
             }
         }
 
-        models_to_try = ["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-flash-latest"]
+        models_to_try = ["gemini-3.8-flash", "gemini-3.5-flash", "gemini-2.0-flash"]
         for model_name in models_to_try:
             if llm_reply:
                 break
             gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
             try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
+                async with httpx.AsyncClient(timeout=15.0) as client:
                     res = await client.post(gemini_url, json=payload)
                     if res.status_code == 200:
                         data = res.json()
                         candidates = data.get("candidates", [])
                         if candidates:
                             parts = candidates[0].get("content", {}).get("parts", [])
-                            if parts and "text" in parts[0]:
-                                raw_reply = parts[0]["text"]
+                            reply_texts = [p.get("text", "") for p in parts if p.get("text")]
+                            if reply_texts:
+                                raw_reply = "\n\n".join(reply_texts)
                                 llm_reply = strip_emojis(raw_reply)
                                 logger.info(f"Successfully generated grounded response via Google Gemini API ({model_name}).")
                                 break
@@ -549,26 +620,37 @@ async def patient_chat_assistant(
             m = visits[0].medicines
             meds_ref = m if isinstance(m, list) else (json.loads(m) if isinstance(m, str) else [])
 
+        lang_lower = req.language.lower()
+        if lang_lower in ["hindi", "हिन्दी", "hi", "hinglish"]:
+            llm_suggestions = ["मेरी दवाएं समझाइए", "डॉक्टर की सलाह क्या थी?", "फॉलो-अप कब है?"]
+        elif lang_lower in ["kannada", "ಕನ್ನಡ", "kn"]:
+            llm_suggestions = ["ಔಷಧ ವೇಳಾಪಟ್ಟಿ ವಿವರಿಸಿ", "ವೈದ್ಯರ ಸಲಹೆ ಏನು?", "ಮುಂದಿನ ಭೇಟಿ ಯಾವಾಗ?"]
+        elif lang_lower in ["bhojpuri", "भोजपुरी", "bho"]:
+            llm_suggestions = ["दवाई के बारे में बताईं", "डॉक्टर साहेब का सलाह", "अगला चेकअप कब बा?"]
+        elif lang_lower in ["urdu", "اردو", "ur"]:
+            llm_suggestions = ["ادویات کی تفصیل", "ڈاکٹر کا مشورہ کیا تھا؟", "اگلا فالو اپ کب ہے؟"]
+        else:
+            llm_suggestions = ["Explain my medication schedule", "What did my doctor advise?", "Book next follow-up"]
+
+        asks_for_doc = any(kw in req.message.lower() for kw in ["doctor", "specialist", "appointment", "consult", "book", "physician", "dr.", "dr "])
+        rec_docs = [
+            RecommendedDoctor(
+                id=str(d.id),
+                name=f"Dr. {re.sub(r'^(Dr\.?\s*)+', '', d.name, flags=re.IGNORECASE).strip()}",
+                specialty=getattr(d, "specialty", None),
+                clinic_name=getattr(d, "clinic_name", None),
+                reg_number=getattr(d, "reg_number", None),
+                phone=getattr(d, "phone", None)
+            ) for d in doctors[:3]
+        ] if asks_for_doc else []
+
         return ChatResponse(
             reply=llm_reply,
             language=req.language,
             detected_intent="clinical_intelligence",
             medicines_referenced=meds_ref,
-            recommended_doctors=[
-                RecommendedDoctor(
-                    id=str(d.id),
-                    name=d.name,
-                    specialty=getattr(d, "specialty", None),
-                    clinic_name=getattr(d, "clinic_name", None),
-                    reg_number=getattr(d, "reg_number", None),
-                    phone=getattr(d, "phone", None)
-                ) for d in doctors[:3]
-            ],
-            quick_suggestions=[
-                "Explain my medication schedule",
-                "What did my doctor advise?",
-                "Book next follow-up"
-            ],
+            recommended_doctors=rec_docs,
+            quick_suggestions=llm_suggestions,
             citations=citations
         )
 

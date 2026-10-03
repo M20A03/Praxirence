@@ -51,6 +51,10 @@ def auto_migrate_schema():
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS languages JSONB DEFAULT '[\"English\", \"Hindi\"]';",
                 "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_phone ON users (phone) WHERE phone IS NOT NULL;",
                 "ALTER TABLE patients ADD COLUMN IF NOT EXISTS dob DATE;",
+                "ALTER TABLE patients ADD COLUMN IF NOT EXISTS abha_id VARCHAR(50);",
+                "ALTER TABLE patients ADD COLUMN IF NOT EXISTS age INTEGER;",
+                "ALTER TABLE patients ADD COLUMN IF NOT EXISTS gender VARCHAR(20);",
+                "ALTER TABLE patients ADD COLUMN IF NOT EXISTS emergency_contact VARCHAR(50);",
                 "ALTER TABLE patients ADD COLUMN IF NOT EXISTS consent_status BOOLEAN DEFAULT FALSE;",
                 "ALTER TABLE patients ADD COLUMN IF NOT EXISTS consent_updated_at TIMESTAMP;",
                 "ALTER TABLE patients ADD COLUMN IF NOT EXISTS fcm_token VARCHAR(255);",
@@ -151,6 +155,10 @@ def auto_migrate_schema():
                 patient_ddls = {
                     "primary_account_phone": "ALTER TABLE patients ADD COLUMN primary_account_phone VARCHAR(32)",
                     "family_relation": "ALTER TABLE patients ADD COLUMN family_relation VARCHAR(30) DEFAULT 'Self'",
+                    "abha_id": "ALTER TABLE patients ADD COLUMN abha_id VARCHAR(50)",
+                    "age": "ALTER TABLE patients ADD COLUMN age INTEGER",
+                    "gender": "ALTER TABLE patients ADD COLUMN gender VARCHAR(20)",
+                    "emergency_contact": "ALTER TABLE patients ADD COLUMN emergency_contact VARCHAR(50)",
                 }
                 for col, ddl in patient_ddls.items():
                     if col not in patient_cols:
@@ -356,13 +364,17 @@ async def audit_logging_middleware(request: Request, call_next):
 
 # Register API Routers
 app.include_router(auth.router)
+app.include_router(auth.router, prefix="/api/v1")
 app.include_router(patients.router)
+app.include_router(patients.router, prefix="/api/v1")
 app.include_router(visits.router)
 app.include_router(visits.router, prefix="/api/v1")
 app.include_router(doctors.router)
 app.include_router(doctors.router, prefix="/api/v1")
 app.include_router(recordings.router)
+app.include_router(recordings.router, prefix="/api/v1")
 app.include_router(chat.router)
+app.include_router(chat.router, prefix="/api/v1")
 app.include_router(realtime.router)
 
 

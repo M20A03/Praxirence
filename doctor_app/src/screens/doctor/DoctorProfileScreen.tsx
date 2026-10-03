@@ -19,6 +19,8 @@ import { Colors, FontFamily, FontSize, LetterSpacing } from '../../theme';
 import { DoctorUser } from '../../types';
 import { BrandLogoMobile } from '../../components/BrandLogoMobile';
 import { mobileApi } from '../../services/api';
+import { INDIAN_STATES_AND_UTS, CITIES_BY_STATE } from '../../utils/indiaLocations';
+import { SearchablePickerModal } from '../../components/SearchablePickerModal';
 
 interface DoctorProfileScreenProps {
   doctor: DoctorUser;
@@ -37,6 +39,16 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
   const [editExp, setEditExp] = useState<string>(doctor.experience_years ? String(doctor.experience_years) : '');
   const [editLanguages, setEditLanguages] = useState<string>((doctor.languages || []).join(', '));
   const [savingCredentials, setSavingCredentials] = useState<boolean>(false);
+
+  // Location & Clinic Practice States
+  const [showEditLocationModal, setShowEditLocationModal] = useState<boolean>(false);
+  const [editState, setEditState] = useState<string>(doctor.state || 'Karnataka');
+  const [editCity, setEditCity] = useState<string>(doctor.city || 'Bangalore');
+  const [editClinicAddress, setEditClinicAddress] = useState<string>(doctor.clinic_address || '');
+  const [editClinicName, setEditClinicName] = useState<string>(doctor.clinic_name || '');
+  const [showStatePicker, setShowStatePicker] = useState<boolean>(false);
+  const [showCityPicker, setShowCityPicker] = useState<boolean>(false);
+  const [savingLocation, setSavingLocation] = useState<boolean>(false);
 
   const [latencyMs, setLatencyMs] = useState<number>(55);
   const [isLive, setIsLive] = useState<boolean>(true);
@@ -214,6 +226,32 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
     }
   };
 
+  const handleSaveLocation = async () => {
+    setSavingLocation(true);
+    try {
+      const payload: Partial<DoctorUser> = {
+        state: editState,
+        city: editCity,
+        clinic_address: editClinicAddress.trim() || undefined,
+        clinic_name: editClinicName.trim() || undefined,
+      };
+      const res = await mobileApi.updateDoctorProfile(payload, doctor.id);
+      const updated: DoctorUser = {
+        ...profileDoctor,
+        ...payload,
+        ...(res.doctor || {}),
+      };
+      setProfileDoctor(updated);
+      await AsyncStorage.setItem('praxirence_doctor_profile', JSON.stringify(updated));
+      setShowEditLocationModal(false);
+      Alert.alert('Location Updated', 'Your practice state, city, and clinic address have been updated.');
+    } catch (e: any) {
+      Alert.alert('Error', 'Failed to save location: ' + (e?.message || 'Update failed'));
+    } finally {
+      setSavingLocation(false);
+    }
+  };
+
   const handleLogoutPress = () => {
     Alert.alert(
       'Sign Out of Clinician Workspace',
@@ -383,9 +421,25 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           <View style={{ flex: 1 }}>
             <Text style={styles.infoLabel}>Clinic Location & Area</Text>
             <Text style={styles.infoValue}>
-              {profileDoctor.clinic_address || '12th Main, Indiranagar'}, {profileDoctor.city || 'Bangalore'} ({profileDoctor.state || 'Karnataka'})
+              {profileDoctor.clinic_address
+                ? `${profileDoctor.clinic_address}${profileDoctor.city ? `, ${profileDoctor.city}` : ''}${profileDoctor.state ? ` (${profileDoctor.state})` : ''}`
+                : `${profileDoctor.city || 'Bangalore'}, ${profileDoctor.state || 'Karnataka'}`}
             </Text>
           </View>
+          <TouchableOpacity
+            style={styles.editLocBadge}
+            onPress={() => {
+              setEditState(profileDoctor.state || 'Karnataka');
+              setEditCity(profileDoctor.city || 'Bangalore');
+              setEditClinicAddress(profileDoctor.clinic_address || '');
+              setEditClinicName(profileDoctor.clinic_name || '');
+              setShowEditLocationModal(true);
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="pencil" size={13} color={Colors.primary} />
+            <Text style={styles.editLocBadgeText}>Edit</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -732,6 +786,119 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           </View>
         </View>
       </Modal>
+
+      {/* Modal: Edit Practice Location & State / City Dropdowns */}
+      <Modal
+        visible={showEditLocationModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowEditLocationModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="location" size={20} color={Colors.primary} />
+                <Text style={styles.modalTitle}>Edit Practice Location</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowEditLocationModal(false)}>
+                <Ionicons name="close" size={22} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+              <Text style={styles.inputLabel}>Clinic / Hospital Name</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={editClinicName}
+                onChangeText={setEditClinicName}
+                placeholder="e.g. Apollo Clinic / City Hospital"
+                placeholderTextColor="#94A3B8"
+              />
+
+              {/* State Picker Button */}
+              <Text style={styles.inputLabel}>State / Union Territory *</Text>
+              <TouchableOpacity
+                style={styles.locDropdownBtn}
+                onPress={() => setShowStatePicker(true)}
+                activeOpacity={0.8}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="map-outline" size={17} color={Colors.primary} />
+                  <Text style={styles.locDropdownBtnText}>{editState}</Text>
+                </View>
+                <Ionicons name="chevron-down" size={16} color="#64748B" />
+              </TouchableOpacity>
+
+              {/* City Picker Button */}
+              <Text style={styles.inputLabel}>City / District *</Text>
+              <TouchableOpacity
+                style={styles.locDropdownBtn}
+                onPress={() => setShowCityPicker(true)}
+                activeOpacity={0.8}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="business-outline" size={17} color={Colors.primary} />
+                  <Text style={styles.locDropdownBtnText}>{editCity}</Text>
+                </View>
+                <Ionicons name="chevron-down" size={16} color="#64748B" />
+              </TouchableOpacity>
+
+              <Text style={styles.inputLabel}>Clinic Street Address & Landmark</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={editClinicAddress}
+                onChangeText={setEditClinicAddress}
+                placeholder="e.g. 42 MG Road, Indiranagar"
+                placeholderTextColor="#94A3B8"
+              />
+            </ScrollView>
+
+            <TouchableOpacity
+              style={styles.modalSaveBtn}
+              onPress={handleSaveLocation}
+              disabled={savingLocation}
+            >
+              {savingLocation ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <Ionicons name="save-outline" size={17} color="#FFFFFF" />
+                  <Text style={styles.modalSaveBtnText}>Save Practice Location</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* State Picker Modal */}
+      <SearchablePickerModal
+        visible={showStatePicker}
+        title="Select State / Union Territory"
+        items={INDIAN_STATES_AND_UTS}
+        selectedItem={editState}
+        onSelect={(st) => {
+          setEditState(st);
+          const cities = CITIES_BY_STATE[st] || [];
+          if (cities.length > 0 && !cities.includes(editCity)) {
+            setEditCity(cities[0]);
+          }
+        }}
+        onClose={() => setShowStatePicker(false)}
+        placeholder="Search Indian State..."
+      />
+
+      {/* City Picker Modal */}
+      <SearchablePickerModal
+        visible={showCityPicker}
+        title={`Select City (${editState})`}
+        items={CITIES_BY_STATE[editState] || [editCity]}
+        selectedItem={editCity}
+        onSelect={(ct) => setEditCity(ct)}
+        onClose={() => setShowCityPicker(false)}
+        placeholder="Search city or district..."
+      />
     </ScrollView>
   );
 };
@@ -1005,17 +1172,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    backgroundColor: '#FEF2F2',
     borderRadius: 14,
     paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
+    paddingHorizontal: 16,
+    borderWidth: 1.5,
+    borderColor: '#FECDD3',
     marginTop: 8,
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   logoutBtnText: {
-    fontFamily: FontFamily.semiBold,
+    fontFamily: FontFamily.bold,
     fontSize: FontSize.sm,
-    color: '#ef4444',
+    color: '#DC2626',
+    letterSpacing: 0.2,
   },
   versionText: {
     fontFamily: FontFamily.regular,
@@ -1245,5 +1419,38 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: '#FFFFFF',
     letterSpacing: 0.3,
+  },
+  editLocBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  editLocBadgeText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 12,
+    color: Colors.primaryDark,
+  },
+  locDropdownBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 8,
+  },
+  locDropdownBtnText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 14,
+    color: '#0F172A',
   },
 });

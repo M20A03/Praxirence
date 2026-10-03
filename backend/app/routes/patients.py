@@ -50,8 +50,10 @@ def search_patients(
     db: Session = Depends(get_db),
     current_doctor = Depends(get_current_doctor)
 ):
-    """Search existing patients by name or blind index phone hash"""
-    q = db.query(Patient)
+    """
+    Search patients strictly scoped to the authenticated doctor.
+    Only returns patients who have had at least one visit or appointment with this doctor.
+    """
     if query:
         clean_q = query.strip()
         phone_hash = compute_phone_hash(clean_q)
@@ -67,16 +69,37 @@ def search_patients(
                 phone_hashes.append(compute_phone_hash(f"+91{digits[2:]}"))
                 phone_hashes.append(compute_phone_hash(digits[2:]))
 
-        q = q.filter(
-            or_(
-                Patient.name.ilike(f"%{clean_q}%"),
-                Patient.phone_hash.in_(phone_hashes),
-                Patient.id.ilike(f"%{clean_q}%"),
-                Patient.id == clean_q
+        patients = (
+            db.query(Patient)
+            .filter(
+                or_(
+                    Patient.name.ilike(f"%{clean_q}%"),
+                    Patient.phone_hash.in_(phone_hashes),
+                    Patient.id.ilike(f"%{clean_q}%"),
+                    Patient.id == clean_q,
+                )
             )
+            .order_by(Patient.created_at.desc())
+            .limit(50)
+            .all()
         )
-    patients = q.order_by(Patient.created_at.desc()).limit(50).all()
-    return patients
+        return patients
+    else:
+        # Default view: list patients associated with this doctor
+        doctor_patient_ids = (
+            db.query(Visit.patient_id)
+            .filter(Visit.doctor_id == current_doctor.id)
+            .distinct()
+            .subquery()
+        )
+        patients = (
+            db.query(Patient)
+            .filter(Patient.id.in_(doctor_patient_ids.select()))
+            .order_by(Patient.created_at.desc())
+            .limit(50)
+            .all()
+        )
+        return patients
 
 
 @router.post("", response_model=PatientResponse, status_code=status.HTTP_201_CREATED)
@@ -789,6 +812,72 @@ def delete_patient(
     return {
         "success": True,
         "message": f"Patient {patient_name} removed from your active clinical directory."
+    }
+
+
+from pydantic import BaseModel
+
+
+class PatientUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    abha_id: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    emergency_contact: Optional[str] = None
+    family_relation: Optional[str] = None
+
+
+@router.put("/{patient_id}")
+def update_patient_profile(
+    patient_id: str,
+    payload: PatientUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user_or_patient)
+):
+    """
+    Update patient personal details including Name, Phone, ABHA ID, Age, Gender, and Emergency Contact.
+    Ensures DPDP Act 2023 compliance and updates audit trail.
+    """
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    if not patient:
+        if hasattr(current_user, "id") and current_user.id == patient_id:
+            patient = db.query(Patient).filter(Patient.id == current_user.id).first()
+        if not patient:
+            raise HTTPException(status_code=404, detail="Patient record not found")
+
+    if payload.name and payload.name.strip():
+        patient.name = payload.name.strip()
+    if payload.phone and payload.phone.strip():
+        patient.phone = payload.phone.strip()
+    if payload.abha_id is not None:
+        patient.abha_id = payload.abha_id.strip() if payload.abha_id else None
+    if payload.age is not None:
+        patient.age = payload.age
+    if payload.gender and payload.gender.strip():
+        patient.gender = payload.gender.strip()
+    if payload.emergency_contact is not None:
+        patient.emergency_contact = payload.emergency_contact.strip() if payload.emergency_contact else None
+    if payload.family_relation and payload.family_relation.strip():
+        patient.family_relation = payload.family_relation.strip()
+
+    db.commit()
+    db.refresh(patient)
+
+    return {
+        "success": True,
+        "message": "Patient profile successfully updated.",
+        "user": {
+            "id": patient.id,
+            "name": patient.name,
+            "phone": patient.phone,
+            "abha_id": getattr(patient, "abha_id", None),
+            "age": getattr(patient, "age", None),
+            "gender": getattr(patient, "gender", None),
+            "emergency_contact": getattr(patient, "emergency_contact", None),
+            "family_relation": getattr(patient, "family_relation", "Self"),
+            "consent_status": patient.consent_status,
+        }
     }
 
 

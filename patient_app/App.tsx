@@ -207,7 +207,12 @@ function PatientTabsNavigator({
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person-circle' : 'person-circle-outline';
           }
-          return <Ionicons name={iconName} size={size || 22} color={color} />;
+          return (
+            <View style={styles.tabIconWrapper}>
+              <Ionicons name={iconName} size={size || 22} color={color} />
+              {focused && <View style={styles.activeTabDot} />}
+            </View>
+          );
         },
       })}
       screenListeners={{
@@ -309,5 +314,19 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.medium,
     fontSize: 10,
     marginTop: 2,
+  },
+  tabIconWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    height: 28,
+  },
+  activeTabDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#059669',
+    position: 'absolute',
+    bottom: -3,
   },
 });

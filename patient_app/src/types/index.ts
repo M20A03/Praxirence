@@ -121,6 +121,7 @@ export interface PatientUser {
   name: string;
   phone: string;
   email?: string;
+  abha_id?: string;
   age?: number | string;
   gender?: string;
   language?: string;

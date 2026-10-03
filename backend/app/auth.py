@@ -1132,7 +1132,9 @@ def verify_patient_email_otp(req: PatientEmailOTPVerifyRequest, db: Session = De
         user={
             "id": pat_id,
             "name": pat_name,
-            "phone": patient.phone or clean_email,
+            "phone": patient.phone if (patient.phone and "@" not in patient.phone) else "",
+            "email": clean_email,
+            "abha_id": getattr(patient, "abha_id", None),
             "consent_status": patient.consent_status,
             "consent_updated_at": patient.consent_updated_at.isoformat() if patient.consent_updated_at else None
         }

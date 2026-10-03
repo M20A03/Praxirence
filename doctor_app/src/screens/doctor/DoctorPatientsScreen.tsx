@@ -132,13 +132,14 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
       {/* Header with Search & Add Patient */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.title}>Patient Directory & Care Plans</Text>
+          <View style={{ flex: 1, marginRight: 10 }}>
+            <Text style={styles.title} numberOfLines={1}>Patient Directory & Care Plans</Text>
             <Text style={styles.subtitle}>{patients.length} registered patient medical vaults</Text>
           </View>
           <TouchableOpacity
             style={styles.addBtn}
             onPress={() => setModalVisible(true)}
+            activeOpacity={0.8}
           >
             <Ionicons name="person-add" size={14} color="#ffffff" />
             <Text style={styles.addBtnText}>+ Add Patient</Text>
@@ -529,6 +530,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     marginBottom: 12,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
   patientInfoRow: {
     flexDirection: 'row',

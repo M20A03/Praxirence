@@ -9,9 +9,11 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
+  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as LocalAuthentication from 'expo-local-authentication';
 import * as Haptics from 'expo-haptics';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
 import { ActiveUser, UserRole, DoctorUser } from '../types';
@@ -51,12 +53,73 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [editGender, setEditGender] = useState<'Male' | 'Female' | 'Other'>((user as any)?.gender || 'Male');
   const [editEmergency, setEditEmergency] = useState((user as any)?.emergency_contact || '');
   const [savingProfile, setSavingProfile] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
 
   useEffect(() => {
     if (user) {
       setCurrentUser(user);
     }
   }, [user]);
+
+  useEffect(() => {
+    const loadBiometricStatus = async () => {
+      try {
+        const p1 = await AsyncStorage.getItem('@praxirence_patient_biometrics');
+        const p2 = await AsyncStorage.getItem('praxirence_biometric_enabled');
+        setBiometricEnabled(p1 === 'true' || p2 === 'true');
+      } catch (_) {}
+    };
+    loadBiometricStatus();
+  }, []);
+
+  const handleToggleBiometric = async (value: boolean) => {
+    if (value) {
+      try {
+        const hasHardware = await LocalAuthentication.hasHardwareAsync();
+        const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+        if (!hasHardware || !isEnrolled) {
+          Alert.alert(
+            'Biometrics Unavailable',
+            'Your device does not have fingerprint or face authentication enrolled in system settings.'
+          );
+          return;
+        }
+
+        const res = await LocalAuthentication.authenticateAsync({
+          promptMessage: 'Verify Biometric to Enable Health Vault Lock',
+          cancelLabel: 'Cancel',
+          fallbackLabel: 'Use Device Passcode',
+          disableDeviceFallback: false,
+        });
+
+        if (res.success) {
+          setBiometricEnabled(true);
+          await AsyncStorage.setItem('@praxirence_patient_biometrics', 'true');
+          await AsyncStorage.setItem('praxirence_biometric_enabled', 'true');
+          Alert.alert('Lock Activated', 'Biometric protection is now active for your health vault and appointments.');
+        }
+      } catch (err: any) {
+        Alert.alert('Notice', 'Biometric setup: ' + (err?.message || 'Failed'));
+      }
+    } else {
+      try {
+        const res = await LocalAuthentication.authenticateAsync({
+          promptMessage: 'Verify Biometric to Disable App Lock',
+          cancelLabel: 'Cancel',
+          fallbackLabel: 'Use Device Passcode',
+          disableDeviceFallback: false,
+        });
+        if (res.success) {
+          setBiometricEnabled(false);
+          await AsyncStorage.setItem('@praxirence_patient_biometrics', 'false');
+          await AsyncStorage.setItem('praxirence_biometric_enabled', 'false');
+          Alert.alert('Lock Disabled', 'Biometric protection has been turned off.');
+        }
+      } catch (err: any) {
+        Alert.alert('Notice', 'Authentication error: ' + (err?.message || 'Failed'));
+      }
+    }
+  };
 
   const handleSaveProfile = async () => {
     if (!editName.trim()) {
@@ -218,6 +281,30 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </View>
           <Ionicons name="chevron-forward" size={18} color={Colors.textSecondary} />
         </TouchableOpacity>
+      </View>
+
+      {/* Biometric Security & Health Vault Card */}
+      <View style={styles.card}>
+        <View style={styles.cardHeaderRow}>
+          <Ionicons name="shield-checkmark-outline" size={18} color={Colors.primary} />
+          <Text style={styles.cardTitle}>Biometric Security & Vault Protection</Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 }}>
+          <View style={{ flex: 1, paddingRight: 16 }}>
+            <Text style={{ fontFamily: FontFamily.semiBold, fontSize: 14, color: Colors.text }}>
+              Biometric App Lock
+            </Text>
+            <Text style={{ fontFamily: FontFamily.regular, fontSize: 12, color: Colors.textSecondary, marginTop: 2 }}>
+              Require Fingerprint or Face ID when opening Praxirence or accessing your medical records.
+            </Text>
+          </View>
+          <Switch
+            value={biometricEnabled}
+            onValueChange={handleToggleBiometric}
+            trackColor={{ false: '#CBD5E1', true: '#A7F3D0' }}
+            thumbColor={biometricEnabled ? '#059669' : '#FFFFFF'}
+          />
+        </View>
       </View>
 
       {/* Account Credentials Card */}

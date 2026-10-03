@@ -79,22 +79,26 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({
 
         const res = await LocalAuthentication.authenticateAsync({
           promptMessage: 'Authenticate to enable biometric protection for your medical vault',
+          cancelLabel: 'Cancel',
           fallbackLabel: 'Use Device Passcode',
+          disableDeviceFallback: false,
         });
 
         if (res.success) {
           setBiometricsEnabled(true);
           await AsyncStorage.setItem('@praxirence_patient_biometrics', 'true');
+          await AsyncStorage.setItem('praxirence_biometric_enabled', 'true');
           Alert.alert('Biometrics Activated', 'Your medical records, prescriptions, and vitals vault are now secured with Biometric Lock.');
         } else {
           Alert.alert('Verification Cancelled', 'Biometric credentials could not be verified.');
         }
       } catch (err: any) {
-        Alert.alert('Biometrics Error', err.message || 'Biometric hardware unavailable');
+        Alert.alert('Biometrics Error', err?.message || 'Biometric hardware unavailable');
       }
     } else {
       setBiometricsEnabled(false);
       await AsyncStorage.setItem('@praxirence_patient_biometrics', 'false');
+      await AsyncStorage.setItem('praxirence_biometric_enabled', 'false');
       Alert.alert('Biometrics Disabled', 'Biometric lock for your health vault has been turned off.');
     }
   };

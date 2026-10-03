@@ -159,6 +159,9 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
 
         const res = await LocalAuthentication.authenticateAsync({
           promptMessage: 'Verify Biometric to Enable Doctor App Lock',
+          cancelLabel: 'Cancel',
+          fallbackLabel: 'Use Device Passcode',
+          disableDeviceFallback: false,
         });
 
         if (res.success) {
@@ -173,6 +176,9 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
       try {
         const res = await LocalAuthentication.authenticateAsync({
           promptMessage: 'Verify Biometric to Disable App Lock',
+          cancelLabel: 'Cancel',
+          fallbackLabel: 'Use Device Passcode',
+          disableDeviceFallback: false,
         });
         if (res.success) {
           setBiometricEnabled(false);

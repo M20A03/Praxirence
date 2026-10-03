@@ -6,7 +6,12 @@ import {
   StyleSheet,
   StatusBar,
   Modal,
+  TouchableOpacity,
+  ActivityIndicator,
+  AppState,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -44,6 +49,70 @@ function PatientAppContent() {
   const [currentPatient, setCurrentPatient] = useState<PatientUser | null>(null);
   const [loadingSession, setLoadingSession] = useState<boolean>(true);
   const [showConsentModal, setShowConsentModal] = useState<boolean>(false);
+  const [isBiometricLocked, setIsBiometricLocked] = useState<boolean>(false);
+  const [authenticatingBiometric, setAuthenticatingBiometric] = useState<boolean>(false);
+  const appState = React.useRef(AppState.currentState);
+
+  const checkAndPromptBiometric = async () => {
+    try {
+      const p1 = await AsyncStorage.getItem('@praxirence_patient_biometrics');
+      const p2 = await AsyncStorage.getItem('praxirence_biometric_enabled');
+      if (p1 === 'true' || p2 === 'true') {
+        setIsBiometricLocked(true);
+      } else {
+        setIsBiometricLocked(false);
+      }
+    } catch (_) {
+      setIsBiometricLocked(false);
+    }
+  };
+
+  const performBiometricUnlock = async () => {
+    try {
+      setAuthenticatingBiometric(true);
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+      if (!hasHardware || !isEnrolled) {
+        setIsBiometricLocked(false);
+        return;
+      }
+      const res = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Unlock Praxirence Health Vault',
+        cancelLabel: 'Cancel',
+        fallbackLabel: 'Use Device Passcode',
+        disableDeviceFallback: false,
+      });
+      if (res.success) {
+        setIsBiometricLocked(false);
+      }
+    } catch (err) {
+      console.warn('Patient biometric unlock failed:', err);
+    } finally {
+      setAuthenticatingBiometric(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isBiometricLocked && !showSplash && !loadingSession && currentPatient) {
+      performBiometricUnlock();
+    }
+  }, [isBiometricLocked, showSplash, loadingSession]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        checkAndPromptBiometric();
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     // Initialize Hospital-Grade Crash Resilience & Device Integrity
@@ -91,6 +160,7 @@ function PatientAppContent() {
         const session = await mobileApi.restoreSession();
         if (session && session.user && session.role === 'patient') {
           setCurrentPatient(session.user as PatientUser);
+          checkAndPromptBiometric();
         } else if (session && session.user) {
           const pat: PatientUser = {
             id: session.user.id,
@@ -100,6 +170,7 @@ function PatientAppContent() {
             role: 'patient',
           };
           setCurrentPatient(pat);
+          checkAndPromptBiometric();
         }
       } catch (err) {
         console.warn('Failed to restore patient session:', err);
@@ -112,11 +183,13 @@ function PatientAppContent() {
 
   const handleAuthenticated = (patient: PatientUser) => {
     setCurrentPatient(patient);
+    checkAndPromptBiometric();
   };
 
   const handleLogout = async () => {
     await mobileApi.clearSession();
     setCurrentPatient(null);
+    setIsBiometricLocked(false);
   };
 
   const handleConsentUpdated = (newStatus: boolean) => {
@@ -140,6 +213,45 @@ function PatientAppContent() {
         <SafeAreaView style={styles.safeArea}>
           <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
           <PatientLoginScreen onAuthenticated={handleAuthenticated} />
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
+
+  // Biometric App Lock Screen
+  if (isBiometricLocked) {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.lockContainer}>
+          <StatusBar barStyle="light-content" backgroundColor="#064E3B" />
+          <View style={styles.lockContent}>
+            <View style={styles.lockIconBox}>
+              <Ionicons name="finger-print" size={54} color="#34D399" />
+            </View>
+            <Text style={styles.lockTitle}>Health Vault Locked</Text>
+            <Text style={styles.lockSubtitle}>
+              Biometric verification is active. Authenticate to access your health records, prescriptions, and appointments.
+            </Text>
+            <TouchableOpacity
+              style={styles.unlockBtn}
+              onPress={performBiometricUnlock}
+              disabled={authenticatingBiometric}
+              activeOpacity={0.85}
+            >
+              {authenticatingBiometric ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <Ionicons name="scan-outline" size={20} color="#FFFFFF" />
+                  <Text style={styles.unlockBtnText}>Unlock Health Vault</Text>
+                </>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.lockSignOutBtn} onPress={handleLogout} activeOpacity={0.7}>
+              <Ionicons name="log-out-outline" size={16} color="#94A3B8" />
+              <Text style={styles.lockSignOutText}>Sign Out</Text>
+            </TouchableOpacity>
+          </View>
         </SafeAreaView>
       </SafeAreaProvider>
     );
@@ -328,5 +440,75 @@ const styles = StyleSheet.create({
     backgroundColor: '#059669',
     position: 'absolute',
     bottom: -3,
+  },
+  lockContainer: {
+    flex: 1,
+    backgroundColor: '#064E3B',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  lockContent: {
+    width: '85%',
+    alignItems: 'center',
+    padding: 24,
+  },
+  lockIconBox: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(52, 211, 153, 0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  lockTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.xxl,
+    color: '#F8FAFC',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  lockSubtitle: {
+    fontFamily: FontFamily.regular,
+    fontSize: FontSize.sm,
+    color: '#A7F3D0',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 32,
+  },
+  unlockBtn: {
+    backgroundColor: '#059669',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    width: '100%',
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  unlockBtnText: {
+    fontFamily: FontFamily.bold,
+    fontSize: FontSize.md,
+    color: '#FFFFFF',
+  },
+  lockSignOutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 20,
+    paddingVertical: 10,
+  },
+  lockSignOutText: {
+    fontFamily: FontFamily.medium,
+    fontSize: FontSize.sm,
+    color: '#94A3B8',
   },
 });

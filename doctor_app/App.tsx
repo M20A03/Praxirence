@@ -82,7 +82,9 @@ function DoctorAppContent() {
       }
       const res = await LocalAuthentication.authenticateAsync({
         promptMessage: 'Unlock Praxirence Doctor Workspace',
-        fallbackLabel: 'Enter Passcode',
+        cancelLabel: 'Cancel',
+        fallbackLabel: 'Use Device Passcode',
+        disableDeviceFallback: false,
       });
       if (res.success) {
         setIsBiometricLocked(false);
@@ -93,6 +95,12 @@ function DoctorAppContent() {
       setAuthenticatingBiometric(false);
     }
   };
+
+  useEffect(() => {
+    if (isBiometricLocked && !showSplash && !loadingSession && currentDoctor) {
+      performBiometricUnlock();
+    }
+  }, [isBiometricLocked, showSplash, loadingSession]);
 
   useEffect(() => {
     // AppState listener for auto-locking upon return from background

@@ -22,6 +22,14 @@ import { mobileApi } from '../../services/api';
 import { INDIAN_STATES_AND_UTS, CITIES_BY_STATE } from '../../utils/indiaLocations';
 import { SearchablePickerModal } from '../../components/SearchablePickerModal';
 
+const AVAILABLE_HOURS = [
+  '06:00 AM', '06:30 AM', '07:00 AM', '07:30 AM', '08:00 AM', '08:30 AM', '09:00 AM', '09:30 AM',
+  '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM',
+  '02:00 PM', '02:30 PM', '03:00 PM', '03:30 PM', '04:00 PM', '04:30 PM', '05:00 PM', '05:30 PM',
+  '06:00 PM', '06:30 PM', '07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM', '09:00 PM', '09:30 PM',
+  '10:00 PM', '10:30 PM', '11:00 PM'
+];
+
 interface DoctorProfileScreenProps {
   doctor: DoctorUser;
   onLogout: () => void;
@@ -57,12 +65,17 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
   const [availableDays, setAvailableDays] = useState<string[]>(
     doctor.available_days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   );
-  const [startTime, setStartTime] = useState<string>(doctor.working_hours_start || '09:00');
-  const [endTime, setEndTime] = useState<string>(doctor.working_hours_end || '18:00');
+  const [startTime, setStartTime] = useState<string>(doctor.working_hours_start || '09:00 AM');
+  const [endTime, setEndTime] = useState<string>(doctor.working_hours_end || '05:00 PM');
   const [unavailableDates, setUnavailableDates] = useState<string[]>(
     doctor.unavailable_dates || []
   );
   const [savingSchedule, setSavingSchedule] = useState<boolean>(false);
+
+  // Flexible Hours & Interactive Leave Calendar States
+  const [timePickerTarget, setTimePickerTarget] = useState<'start' | 'end' | null>(null);
+  const [timeFilter, setTimeFilter] = useState<'all' | 'am' | 'pm'>('all');
+  const [calendarDate, setCalendarDate] = useState<Date>(new Date());
 
   useEffect(() => {
     checkHealth();
@@ -112,6 +125,53 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
     setUnavailableDates(updated);
     await mobileApi.toggleDoctorLeave(dateStr, 'remove', doctor.id);
     Alert.alert('Leave Cancelled', `Dr. ${doctor.name} is now available on ${dateStr}.`);
+  };
+
+  const handleClearAllLeave = () => {
+    if (unavailableDates.length === 0) return;
+    Alert.alert(
+      'Clear All Leaves?',
+      'Are you sure you want to clear all marked leave dates and make all days available for appointments?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear All',
+          style: 'destructive',
+          onPress: async () => {
+            const currentLeaves = [...unavailableDates];
+            setUnavailableDates([]);
+            for (const d of currentLeaves) {
+              await mobileApi.toggleDoctorLeave(d, 'remove', doctor.id).catch(() => {});
+            }
+            Alert.alert('Leaves Cleared', 'All leave dates have been cleared.');
+          },
+        },
+      ]
+    );
+  };
+
+  const handlePrevMonth = () => {
+    const d = new Date(calendarDate);
+    d.setMonth(d.getMonth() - 1);
+    setCalendarDate(d);
+  };
+
+  const handleNextMonth = () => {
+    const d = new Date(calendarDate);
+    d.setMonth(d.getMonth() + 1);
+    setCalendarDate(d);
+  };
+
+  const toggleCalendarDateLeave = async (dateStr: string) => {
+    try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch (_) {}
+    if (unavailableDates.includes(dateStr)) {
+      await handleCancelLeave(dateStr);
+    } else {
+      const updated = [...unavailableDates, dateStr];
+      setUnavailableDates(updated);
+      await mobileApi.toggleDoctorLeave(dateStr, 'add', doctor.id);
+      Alert.alert('Leave Marked', `Marked ${dateStr} as On Leave.`);
+    }
   };
 
   const handleSaveSchedule = async () => {
@@ -488,24 +548,15 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
             activeOpacity={0.7}
             onPress={() => {
               try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (_) {}
-              Alert.alert(
-                'Select Start Time',
-                'Choose clinic opening consultation time:',
-                [
-                  { text: '08:00 AM', onPress: () => setStartTime('08:00 AM') },
-                  { text: '09:00 AM', onPress: () => setStartTime('09:00 AM') },
-                  { text: '10:00 AM', onPress: () => setStartTime('10:00 AM') },
-                  { text: '11:00 AM', onPress: () => setStartTime('11:00 AM') },
-                  { text: 'Cancel', style: 'cancel' },
-                ]
-              );
+              setTimePickerTarget('start');
             }}
           >
             <Ionicons name="time" size={17} color={Colors.primary} />
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.hourBoxSub}>START TIME</Text>
               <Text style={styles.hourBoxValue}>{startTime.includes('M') ? startTime : `${startTime} AM`}</Text>
             </View>
+            <Ionicons name="chevron-down" size={14} color="#64748B" />
           </TouchableOpacity>
 
           <View style={styles.hoursArrowCircle}>
@@ -517,34 +568,24 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
             activeOpacity={0.7}
             onPress={() => {
               try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (_) {}
-              Alert.alert(
-                'Select Closing Time',
-                'Choose clinic closing consultation time:',
-                [
-                  { text: '04:00 PM', onPress: () => setEndTime('04:00 PM') },
-                  { text: '05:00 PM', onPress: () => setEndTime('05:00 PM') },
-                  { text: '06:00 PM', onPress: () => setEndTime('06:00 PM') },
-                  { text: '07:00 PM', onPress: () => setEndTime('07:00 PM') },
-                  { text: '08:00 PM', onPress: () => setEndTime('08:00 PM') },
-                  { text: 'Cancel', style: 'cancel' },
-                ]
-              );
+              setTimePickerTarget('end');
             }}
           >
             <Ionicons name="time" size={17} color={Colors.primary} />
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.hourBoxSub}>END TIME</Text>
               <Text style={styles.hourBoxValue}>{endTime.includes('M') ? endTime : `${endTime} PM`}</Text>
             </View>
+            <Ionicons name="chevron-down" size={14} color="#64748B" />
           </TouchableOpacity>
         </View>
 
-        {/* Leave / Out of Office Section */}
+        {/* Leave / Out of Office Section with Interactive Monthly Calendar */}
         <View style={styles.leaveSectionBox}>
           <View style={styles.leaveHeaderRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Ionicons name="calendar-outline" size={16} color="#0D9488" />
-              <Text style={styles.leaveSectionTitle}>Clinician Availability</Text>
+              <Text style={styles.leaveSectionTitle}>Clinician Availability & Leave</Text>
             </View>
             {unavailableDates.length === 0 ? (
               <View style={styles.statusBadgePill}>
@@ -559,37 +600,202 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
             )}
           </View>
           <Text style={styles.leaveSectionDesc}>
-            Quickly mark dates as unavailable. When marked on leave, patients attempting to book will see you are unavailable.
+            Tap any date on the calendar below to toggle your availability. Dates marked red indicate you are on leave — patients cannot book slots on those days.
           </Text>
 
+          {/* Quick Actions Row */}
           <View style={styles.leaveQuickActionsRow}>
-            <TouchableOpacity style={styles.quickLeaveBtn} onPress={handleMarkLeaveToday} activeOpacity={0.7}>
-              <Ionicons name="airplane-outline" size={14} color="#0D9488" />
-              <Text style={styles.quickLeaveBtnText}>Mark Today Leave</Text>
+            <TouchableOpacity
+              style={[
+                styles.quickLeaveBtn,
+                unavailableDates.includes(new Date().toISOString().split('T')[0]) && styles.quickLeaveBtnActive
+              ]}
+              onPress={handleMarkLeaveToday}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="airplane-outline"
+                size={14}
+                color={unavailableDates.includes(new Date().toISOString().split('T')[0]) ? '#DC2626' : '#0D9488'}
+              />
+              <Text
+                style={[
+                  styles.quickLeaveBtnText,
+                  unavailableDates.includes(new Date().toISOString().split('T')[0]) && { color: '#DC2626' }
+                ]}
+              >
+                {unavailableDates.includes(new Date().toISOString().split('T')[0]) ? 'Today: On Leave' : 'Mark Today Leave'}
+              </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.quickLeaveBtn} onPress={handleMarkLeaveTomorrow} activeOpacity={0.7}>
-              <Ionicons name="calendar-clear-outline" size={14} color="#0D9488" />
-              <Text style={styles.quickLeaveBtnText}>Mark Tomorrow Leave</Text>
+            <TouchableOpacity
+              style={[
+                styles.quickLeaveBtn,
+                (() => {
+                  const d = new Date();
+                  d.setDate(d.getDate() + 1);
+                  return unavailableDates.includes(d.toISOString().split('T')[0]);
+                })() && styles.quickLeaveBtnActive
+              ]}
+              onPress={handleMarkLeaveTomorrow}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="calendar-clear-outline"
+                size={14}
+                color={(() => {
+                  const d = new Date();
+                  d.setDate(d.getDate() + 1);
+                  return unavailableDates.includes(d.toISOString().split('T')[0]) ? '#DC2626' : '#0D9488';
+                })()}
+              />
+              <Text
+                style={[
+                  styles.quickLeaveBtnText,
+                  (() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + 1);
+                    return unavailableDates.includes(d.toISOString().split('T')[0]) ? { color: '#DC2626' } : null;
+                  })()
+                ]}
+              >
+                {(() => {
+                  const d = new Date();
+                  d.setDate(d.getDate() + 1);
+                  return unavailableDates.includes(d.toISOString().split('T')[0]) ? 'Tomorrow: On Leave' : 'Mark Tomorrow Leave';
+                })()}
+              </Text>
             </TouchableOpacity>
+
+            {unavailableDates.length > 0 && (
+              <TouchableOpacity
+                style={[styles.quickLeaveBtn, { flex: 0.7, borderColor: '#FECACA', backgroundColor: '#FFF5F5' }]}
+                onPress={handleClearAllLeave}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="trash-outline" size={13} color="#DC2626" />
+                <Text style={[styles.quickLeaveBtnText, { color: '#DC2626' }]}>Clear All</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
-          {unavailableDates.length > 0 && (
-            <View style={{ marginTop: 10 }}>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.textSecondary, marginBottom: 6 }}>
-                Active Leave Dates ({unavailableDates.length}):
+          {/* Interactive Month-View Leave Calendar */}
+          <View style={styles.calendarContainer}>
+            {/* Calendar Header with Navigation */}
+            <View style={styles.calendarHeaderRow}>
+              <TouchableOpacity
+                onPress={handlePrevMonth}
+                style={styles.calendarNavBtn}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="chevron-back" size={18} color="#0F172A" />
+              </TouchableOpacity>
+
+              <Text style={styles.calendarMonthTitle}>
+                {(() => {
+                  const monthNames = [
+                    'January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'
+                  ];
+                  return `${monthNames[calendarDate.getMonth()]} ${calendarDate.getFullYear()}`;
+                })()}
               </Text>
-              {unavailableDates.map((dt) => (
-                <View key={dt} style={styles.leaveDateItem}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Ionicons name="close-circle" size={14} color="#ef4444" />
-                    <Text style={styles.leaveDateText}>{dt} (Unavailable / On Leave)</Text>
-                  </View>
-                  <TouchableOpacity onPress={() => handleCancelLeave(dt)}>
-                    <Text style={styles.cancelLeaveText}>Cancel</Text>
-                  </TouchableOpacity>
-                </View>
+
+              <TouchableOpacity
+                onPress={handleNextMonth}
+                style={styles.calendarNavBtn}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="chevron-forward" size={18} color="#0F172A" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Weekday Labels Header */}
+            <View style={styles.calendarWeekdaysRow}>
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+                <Text key={d} style={styles.calendarWeekdayText}>{d}</Text>
               ))}
+            </View>
+
+            {/* Calendar Day Grid */}
+            <View style={styles.calendarGrid}>
+              {(() => {
+                const year = calendarDate.getFullYear();
+                const month = calendarDate.getMonth();
+                const firstDayIndex = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const now = new Date();
+                const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+                const cells = [];
+                for (let i = 0; i < firstDayIndex; i++) {
+                  cells.push(<View key={`empty-${i}`} style={styles.calendarCellBlank} />);
+                }
+                for (let day = 1; day <= daysInMonth; day++) {
+                  const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                  const isToday = dateStr === todayStr;
+                  const isPast = dateStr < todayStr;
+                  const isLeave = unavailableDates.includes(dateStr);
+
+                  cells.push(
+                    <TouchableOpacity
+                      key={dateStr}
+                      style={[
+                        styles.calendarCell,
+                        isToday && styles.calendarCellToday,
+                        isLeave && styles.calendarCellLeave,
+                        isPast && styles.calendarCellPast,
+                      ]}
+                      disabled={isPast}
+                      onPress={() => toggleCalendarDateLeave(dateStr)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.calendarCellText,
+                          isToday && styles.calendarCellTextToday,
+                          isLeave && styles.calendarCellTextLeave,
+                          isPast && styles.calendarCellTextPast,
+                        ]}
+                      >
+                        {day}
+                      </Text>
+                      {isLeave && (
+                        <View style={styles.calendarCellLeaveDot}>
+                          <Ionicons name="airplane" size={9} color="#FFFFFF" />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                }
+                return cells;
+              })()}
+            </View>
+          </View>
+
+          {/* Active Leave Dates Tag Cloud */}
+          {unavailableDates.length > 0 && (
+            <View style={{ marginTop: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.textSecondary }}>
+                  Marked Leave Dates ({unavailableDates.length}):
+                </Text>
+                <Text style={{ fontSize: 10, color: '#94A3B8' }}>Tap ✕ to remove</Text>
+              </View>
+              <View style={styles.leaveTagsRow}>
+                {unavailableDates.slice().sort().map((dt) => (
+                  <TouchableOpacity
+                    key={dt}
+                    style={styles.leaveDateTag}
+                    onPress={() => handleCancelLeave(dt)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="airplane" size={11} color="#DC2626" />
+                    <Text style={styles.leaveDateTagText}>{dt}</Text>
+                    <Ionicons name="close" size={13} color="#DC2626" />
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
           )}
         </View>
@@ -905,6 +1111,101 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
         onClose={() => setShowCityPicker(false)}
         placeholder="Search city or district..."
       />
+
+      {/* Time Picker Modal for Opening/Closing Consultation Hours */}
+      <Modal
+        visible={timePickerTarget !== null}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setTimePickerTarget(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { maxHeight: '82%' }]}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="time" size={20} color={Colors.primary} />
+                <Text style={styles.modalTitle}>
+                  {timePickerTarget === 'start' ? 'Select Start Consultation Time' : 'Select Closing Consultation Time'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setTimePickerTarget(null)}>
+                <Ionicons name="close" size={22} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 12, color: '#64748B', marginBottom: 12 }}>
+              Choose your practice consultation time from the options below:
+            </Text>
+
+            {/* Time Filter Tabs */}
+            <View style={styles.timeFilterRow}>
+              {(['all', 'am', 'pm'] as const).map((filter) => (
+                <TouchableOpacity
+                  key={filter}
+                  style={[
+                    styles.timeFilterChip,
+                    timeFilter === filter && styles.timeFilterChipActive
+                  ]}
+                  onPress={() => setTimeFilter(filter)}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.timeFilterChipText,
+                      timeFilter === filter && styles.timeFilterChipTextActive
+                    ]}
+                  >
+                    {filter === 'all' ? 'All Hours' : filter === 'am' ? 'Morning (AM)' : 'Afternoon / Evening (PM)'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Grid of Hours */}
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.timeSlotsGrid}>
+              {AVAILABLE_HOURS
+                .filter((hour) => {
+                  if (timeFilter === 'am') return hour.includes('AM');
+                  if (timeFilter === 'pm') return hour.includes('PM');
+                  return true;
+                })
+                .map((hour) => {
+                  const isSelected = (timePickerTarget === 'start' ? startTime : endTime) === hour;
+                  return (
+                    <TouchableOpacity
+                      key={hour}
+                      style={[styles.timeSlotCard, isSelected && styles.timeSlotCardSelected]}
+                      onPress={() => {
+                        try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (_) {}
+                        if (timePickerTarget === 'start') {
+                          setStartTime(hour);
+                        } else {
+                          setEndTime(hour);
+                        }
+                        setTimePickerTarget(null);
+                      }}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={[styles.timeSlotCardText, isSelected && styles.timeSlotCardTextSelected]}>
+                        {hour}
+                      </Text>
+                      {isSelected && (
+                        <Ionicons name="checkmark-circle" size={14} color="#FFFFFF" style={{ marginLeft: 4 }} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={[styles.modalSaveBtn, { marginTop: 12 }]}
+              onPress={() => setTimePickerTarget(null)}
+            >
+              <Text style={styles.modalSaveBtnText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -1458,5 +1759,175 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.medium,
     fontSize: 14,
     color: '#0F172A',
+  },
+  quickLeaveBtnActive: {
+    borderColor: '#FECACA',
+    backgroundColor: '#FEF2F2',
+  },
+  calendarContainer: {
+    marginTop: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 12,
+  },
+  calendarHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  calendarNavBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calendarMonthTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: 13,
+    color: '#0F172A',
+  },
+  calendarWeekdaysRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingBottom: 6,
+    marginBottom: 8,
+  },
+  calendarWeekdayText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 11,
+    color: '#94A3B8',
+    width: '14.28%',
+    textAlign: 'center',
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  calendarCellBlank: {
+    width: '14.28%',
+    height: 38,
+  },
+  calendarCell: {
+    width: '14.28%',
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    marginVertical: 2,
+  },
+  calendarCellToday: {
+    borderWidth: 1.5,
+    borderColor: '#0D9488',
+  },
+  calendarCellLeave: {
+    backgroundColor: '#EF4444',
+  },
+  calendarCellPast: {
+    opacity: 0.28,
+  },
+  calendarCellText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    color: '#1E293B',
+  },
+  calendarCellTextToday: {
+    fontFamily: FontFamily.bold,
+    color: '#0D9488',
+  },
+  calendarCellTextLeave: {
+    fontFamily: FontFamily.bold,
+    color: '#FFFFFF',
+  },
+  calendarCellTextPast: {
+    color: '#94A3B8',
+  },
+  calendarCellLeaveDot: {
+    position: 'absolute',
+    bottom: 2,
+  },
+  leaveTagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  leaveDateTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  leaveDateTagText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 11,
+    color: '#DC2626',
+  },
+  timeFilterRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 12,
+  },
+  timeFilterChip: {
+    flex: 1,
+    paddingVertical: 6,
+    alignItems: 'center',
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  timeFilterChipActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  timeFilterChipText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 11,
+    color: '#64748B',
+  },
+  timeFilterChipTextActive: {
+    fontFamily: FontFamily.bold,
+    color: '#FFFFFF',
+  },
+  timeSlotsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingBottom: 10,
+  },
+  timeSlotCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '31%',
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  timeSlotCardSelected: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  timeSlotCardText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 12,
+    color: '#334155',
+  },
+  timeSlotCardTextSelected: {
+    color: '#FFFFFF',
+    fontFamily: FontFamily.bold,
   },
 });

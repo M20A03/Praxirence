@@ -16,6 +16,7 @@ class Patient(Base):
     phone_encrypted = Column(Text, nullable=False)
     # Deterministic blind index for fast exact-match lookups
     phone_hash = Column(String(64), unique=True, index=True, nullable=False)
+    email = Column(String(255), nullable=True, index=True)
     primary_account_phone = Column(String(32), nullable=True, index=True)
     family_relation = Column(String(30), default="Self", nullable=False)  # Self, Mother, Father, Child, Spouse, Other
     dob = Column(Date, nullable=True)

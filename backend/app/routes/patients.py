@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, case
 from app.core.database import get_db
 from app.core.security import compute_phone_hash
+from app.auth import normalize_phone_digits
 from app.models.patient import Patient
 from app.models.visit import Visit
 from app.models.consent_log import ConsentLog
@@ -849,7 +850,7 @@ def update_patient_profile(
     if payload.name and payload.name.strip():
         patient.name = payload.name.strip()
     if payload.phone and payload.phone.strip():
-        patient.phone = payload.phone.strip()
+        patient.phone = normalize_phone_digits(payload.phone.strip())
     if payload.abha_id is not None:
         patient.abha_id = payload.abha_id.strip() if payload.abha_id else None
     if payload.age is not None:

@@ -18,6 +18,7 @@ from app.models.patient import Patient
 from app.models.doctor_review import DoctorReview
 from app.models.audit_log import AuditLog
 from app.services.realtime_service import realtime_manager
+from app.auth import normalize_phone_digits
 
 logger = logging.getLogger("praxirence.routes.doctors")
 
@@ -781,6 +782,7 @@ def get_doctor_reviews(
 
 class DoctorProfileUpdateRequest(BaseModel):
     name: Optional[str] = None
+    phone: Optional[str] = None
     degree: Optional[str] = None
     qualifications: Optional[str] = None
     designation: Optional[str] = None
@@ -810,6 +812,8 @@ def update_doctor_credentials(
 
     if payload.name is not None:
         doctor.name = payload.name.strip()
+    if payload.phone is not None and payload.phone.strip():
+        doctor.phone = normalize_phone_digits(payload.phone.strip())
     if payload.degree is not None:
         doctor.degree = payload.degree.strip()
     if payload.qualifications is not None:

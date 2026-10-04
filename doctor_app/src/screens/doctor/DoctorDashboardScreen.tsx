@@ -139,17 +139,19 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
       Alert.alert('Missing Name', 'Please enter patient full name.');
       return;
     }
-    if (walkInPhone.trim().length < 10) {
-      Alert.alert('Invalid Phone', 'Please enter a valid 10-digit mobile number with country code.');
+    const cleanDigits = walkInPhone.replace(/\D/g, '');
+    if (cleanDigits.length !== 10 || !/^[6-9]/.test(cleanDigits)) {
+      Alert.alert('Invalid Phone', 'Please enter a valid 10-digit Indian mobile number (+91) starting with 6, 7, 8, or 9.');
       return;
     }
+    const formattedWalkInPhone = `+91${cleanDigits}`;
 
     try {
       setCreatingWalkIn(true);
       // 1. Create or retrieve patient
       const created = await mobileApi.createPatient({
         name: walkInName.trim(),
-        phone: walkInPhone.trim(),
+        phone: formattedWalkInPhone,
       });
 
       // 2. Persist Walk-in Visit to PostgreSQL database
@@ -429,13 +431,13 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
 
   const docRawName = doctor?.name || 'Physician';
   const doctorName = docRawName.startsWith('Dr.') ? docRawName : `Dr. ${docRawName}`;
-  const doctorDegree = doctor?.degree || 'MBBS';
-  const doctorSpecialty = doctor?.specialty || 'General Medicine';
-  const doctorClinic = doctor?.clinic_name || 'Clinical Practice';
+  const doctorDegree = doctor?.degree || '';
+  const doctorSpecialty = doctor?.specialty || '';
+  const doctorClinic = doctor?.clinic_name || '';
   const doctorReg = doctor?.reg_number || '';
   const doctorExp = doctor?.experience_years ? (typeof doctor.experience_years === 'number' ? `${doctor.experience_years}+ Yrs Exp` : doctor.experience_years) : '';
-  const doctorDesignation = doctor?.designation || 'Consultant Physician';
-  const doctorLanguages = doctor?.languages && doctor.languages.length > 0 ? doctor.languages : ['English', 'Hindi'];
+  const doctorDesignation = doctor?.designation || doctor?.specialty || '';
+  const doctorLanguages = doctor?.languages && doctor.languages.length > 0 ? doctor.languages : [];
   const doctorInitials = (doctorName || 'MD').replace('Dr. ', '').trim().split(' ').map(n => (n ? n[0] : '')).filter(Boolean).slice(0, 2).join('') || 'MD';
 
   return (
@@ -480,17 +482,23 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
             </View>
 
             {/* Medical Degrees - Clean Typography */}
-            <Text style={styles.clinicianDegrees} numberOfLines={1}>
-              {doctorDegree}{doctor?.qualifications && doctor.qualifications !== doctorDegree ? ` • ${doctor.qualifications}` : ''}
-            </Text>
+            {(doctorDegree || doctor?.qualifications) ? (
+              <Text style={styles.clinicianDegrees} numberOfLines={1}>
+                {doctorDegree}{doctor?.qualifications && doctor.qualifications !== doctorDegree ? ` • ${doctor.qualifications}` : ''}
+              </Text>
+            ) : null}
 
             {/* Designation & Specialty */}
-            <Text style={styles.clinicianDesignationText} numberOfLines={1}>
-              {doctorDesignation}
-            </Text>
-            <Text style={styles.clinicianSpecialtyText} numberOfLines={1}>
-              {doctorSpecialty} • {doctorClinic}
-            </Text>
+            {doctorDesignation ? (
+              <Text style={styles.clinicianDesignationText} numberOfLines={1}>
+                {doctorDesignation}
+              </Text>
+            ) : null}
+            {(doctorSpecialty || doctorClinic) ? (
+              <Text style={styles.clinicianSpecialtyText} numberOfLines={1}>
+                {[doctorSpecialty, doctorClinic].filter(Boolean).join(' • ')}
+              </Text>
+            ) : null}
           </View>
         </View>
 
@@ -882,15 +890,22 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
               onChangeText={setWalkInName}
             />
 
-            <Text style={styles.inputLabel}>Mobile Phone Number</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter 10-digit mobile number"
-              placeholderTextColor={Colors.textSecondary}
-              value={walkInPhone}
-              onChangeText={setWalkInPhone}
-              keyboardType="phone-pad"
-            />
+            <Text style={styles.inputLabel}>Mobile Phone Number (+91)</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 8, borderWidth: 1, borderColor: Colors.border, marginBottom: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', paddingHorizontal: 10, paddingVertical: 12, borderTopLeftRadius: 7, borderBottomLeftRadius: 7, gap: 4, borderRightWidth: 1, borderRightColor: '#E2E8F0' }}>
+                <Text style={{ fontSize: 14 }}>🇮🇳</Text>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: Colors.text }}>+91</Text>
+              </View>
+              <TextInput
+                style={{ flex: 1, paddingHorizontal: 12, paddingVertical: 12, fontSize: 15, color: Colors.text }}
+                placeholder="10-digit mobile number"
+                placeholderTextColor={Colors.textSecondary}
+                value={walkInPhone.replace('+91', '').trim()}
+                onChangeText={(val) => setWalkInPhone(`+91${val.replace(/\D/g, '').slice(0, 10)}`)}
+                keyboardType="number-pad"
+                maxLength={10}
+              />
+            </View>
 
             <Text style={styles.inputLabel}>Chief Complaint / Symptoms</Text>
             <TextInput

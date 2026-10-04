@@ -46,12 +46,15 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
   const [editDesignation, setEditDesignation] = useState<string>(doctor.designation || '');
   const [editExp, setEditExp] = useState<string>(doctor.experience_years ? String(doctor.experience_years) : '');
   const [editLanguages, setEditLanguages] = useState<string>((doctor.languages || []).join(', '));
+  const [editPhone, setEditPhone] = useState<string>(
+    doctor.phone ? doctor.phone.replace('+91', '').trim() : ''
+  );
   const [savingCredentials, setSavingCredentials] = useState<boolean>(false);
 
   // Location & Clinic Practice States
   const [showEditLocationModal, setShowEditLocationModal] = useState<boolean>(false);
-  const [editState, setEditState] = useState<string>(doctor.state || 'Karnataka');
-  const [editCity, setEditCity] = useState<string>(doctor.city || 'Bangalore');
+  const [editState, setEditState] = useState<string>(doctor.state || '');
+  const [editCity, setEditCity] = useState<string>(doctor.city || '');
   const [editClinicAddress, setEditClinicAddress] = useState<string>(doctor.clinic_address || '');
   const [editClinicName, setEditClinicName] = useState<string>(doctor.clinic_name || '');
   const [showStatePicker, setShowStatePicker] = useState<boolean>(false);
@@ -301,6 +304,18 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
         experience_years: (editExp || '').trim() || undefined,
         languages: langs.length > 0 ? langs : undefined,
       };
+      if (editPhone.trim()) {
+        const phoneDigits = editPhone.replace(/\D/g, '');
+        if (phoneDigits.length !== 10 || !/^[6-9]/.test(phoneDigits)) {
+          Alert.alert(
+            'Phone Format Compulsory',
+            'Please enter a valid 10-digit Indian mobile number (+91) starting with 6, 7, 8, or 9.'
+          );
+          setSavingCredentials(false);
+          return;
+        }
+        payload.phone = `+91${phoneDigits}`;
+      }
       const res = await mobileApi.updateDoctorProfile(payload, doctor.id);
       const updated: DoctorUser = {
         ...profileDoctor,
@@ -442,7 +457,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.infoLabel}>Clinical Designation</Text>
-            <Text style={styles.infoValue}>{profileDoctor.designation || profileDoctor.specialty || 'Consultant'}</Text>
+            <Text style={styles.infoValue}>{profileDoctor.designation || profileDoctor.specialty || 'Not specified'}</Text>
           </View>
         </View>
 
@@ -472,7 +487,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.infoLabel}>Languages of Practice</Text>
-            <Text style={styles.infoValue}>{(profileDoctor.languages || ['English', 'Hindi']).join(', ')}</Text>
+            <Text style={styles.infoValue}>{(profileDoctor.languages && profileDoctor.languages.length > 0 ? profileDoctor.languages.join(', ') : 'Not specified')}</Text>
           </View>
         </View>
 
@@ -492,7 +507,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.infoLabel}>Mobile Number</Text>
-            <Text style={styles.infoValue}>{profileDoctor.phone}</Text>
+            <Text style={styles.infoValue}>{profileDoctor.phone || 'Not provided'}</Text>
           </View>
         </View>
 
@@ -502,7 +517,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.infoLabel}>Primary Clinic / Hospital</Text>
-            <Text style={styles.infoValue}>{profileDoctor.clinic_name}</Text>
+            <Text style={styles.infoValue}>{profileDoctor.clinic_name || 'Not specified'}</Text>
           </View>
         </View>
 
@@ -515,14 +530,16 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
             <Text style={styles.infoValue}>
               {profileDoctor.clinic_address
                 ? `${profileDoctor.clinic_address}${profileDoctor.city ? `, ${profileDoctor.city}` : ''}${profileDoctor.state ? ` (${profileDoctor.state})` : ''}`
-                : `${profileDoctor.city || 'Bangalore'}, ${profileDoctor.state || 'Karnataka'}`}
+                : profileDoctor.city && profileDoctor.state
+                ? `${profileDoctor.city}, ${profileDoctor.state}`
+                : profileDoctor.city || profileDoctor.state || 'Location not specified'}
             </Text>
           </View>
           <TouchableOpacity
             style={styles.editLocBadge}
             onPress={() => {
-              setEditState(profileDoctor.state || 'Karnataka');
-              setEditCity(profileDoctor.city || 'Bangalore');
+              setEditState(profileDoctor.state || '');
+              setEditCity(profileDoctor.city || '');
               setEditClinicAddress(profileDoctor.clinic_address || '');
               setEditClinicName(profileDoctor.clinic_name || '');
               setShowEditLocationModal(true);
@@ -899,6 +916,23 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+              <Text style={styles.inputLabel}>Mobile Phone Number (Indian +91)</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#E2E8F0', paddingHorizontal: 10, paddingVertical: 10, borderTopLeftRadius: 7, borderBottomLeftRadius: 7, gap: 4 }}>
+                  <Text style={{ fontSize: 14 }}>🇮🇳</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#0F172A' }}>+91</Text>
+                </View>
+                <TextInput
+                  style={{ flex: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: '#0F172A' }}
+                  value={editPhone}
+                  onChangeText={(v) => setEditPhone(v.replace(/\D/g, '').slice(0, 10))}
+                  placeholder="10-digit mobile number"
+                  placeholderTextColor="#94A3B8"
+                  keyboardType="number-pad"
+                  maxLength={10}
+                />
+              </View>
+
               <Text style={styles.inputLabel}>Primary Medical Degrees (e.g. MBBS, MD, MS, DNB)</Text>
               <TextInput
                 style={styles.modalInput}

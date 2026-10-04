@@ -48,7 +48,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [editPhone, setEditPhone] = useState(user?.phone && !user.phone.includes('@') ? user.phone : '');
   const [editAbhaId, setEditAbhaId] = useState((user as any)?.abha_id || '');
   const [editAge, setEditAge] = useState((user as any)?.age ? String((user as any).age) : '');
-  const [editGender, setEditGender] = useState<'Male' | 'Female' | 'Other'>((user as any)?.gender || 'Male');
+  const [editGender, setEditGender] = useState<'Male' | 'Female' | 'Other' | ''>((user as any)?.gender || '');
   const [editEmergency, setEditEmergency] = useState((user as any)?.emergency_contact || '');
   const [savingProfile, setSavingProfile] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
@@ -124,15 +124,20 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       Alert.alert('Required', 'Please enter your full name.');
       return;
     }
-    if (!editPhone.trim()) {
-      Alert.alert('Required', 'Please enter your mobile phone number.');
+    const rawDigits = editPhone.replace(/\D/g, '');
+    if (rawDigits.length !== 10 || !/^[6-9]/.test(rawDigits)) {
+      Alert.alert(
+        'Phone Number Compulsory',
+        'Please enter a valid 10-digit Indian mobile number (+91) starting with 6, 7, 8, or 9.'
+      );
       return;
     }
+    const formattedPhone = `+91${rawDigits}`;
     setSavingProfile(true);
     try {
       const payload = {
         name: editName.trim(),
-        phone: editPhone.trim(),
+        phone: formattedPhone,
         abha_id: editAbhaId.trim() || undefined,
         age: editAge.trim() ? parseInt(editAge.trim(), 10) : undefined,
         gender: editGender,
@@ -342,7 +347,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 setEditPhone(currentUser.phone && !currentUser.phone.includes('@') ? currentUser.phone : '');
                 setEditAbhaId((currentUser as any).abha_id || '');
                 setEditAge((currentUser as any).age ? String((currentUser as any).age) : '');
-                setEditGender((currentUser as any).gender || 'Male');
+                setEditGender((currentUser as any).gender || '');
                 setEditEmergency((currentUser as any).emergency_contact || '');
                 setShowEditModal(true);
               }}
@@ -533,15 +538,25 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 placeholderTextColor="#94A3B8"
               />
 
-              <Text style={styles.inputFieldLabel}>{t('phone')}</Text>
-              <TextInput
-                style={styles.textInputField}
-                value={editPhone}
-                onChangeText={setEditPhone}
-                placeholder="10-digit Mobile Number"
-                placeholderTextColor="#94A3B8"
-                keyboardType="phone-pad"
-              />
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <Text style={styles.inputFieldLabel}>{t('phone')} * (Compulsory)</Text>
+                <Text style={{ fontSize: 11, color: Colors.primary, fontWeight: '700' }}>Indian (+91)</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 8, borderWidth: 1, borderColor: '#CBD5E1', marginBottom: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#E2E8F0', paddingHorizontal: 10, paddingVertical: 10, borderTopLeftRadius: 7, borderBottomLeftRadius: 7, gap: 4 }}>
+                  <Text style={{ fontSize: 14 }}>🇮🇳</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#0F172A' }}>+91</Text>
+                </View>
+                <TextInput
+                  style={{ flex: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: '#0F172A' }}
+                  value={editPhone.replace('+91', '').trim()}
+                  onChangeText={(v) => setEditPhone(`+91${v.replace(/\D/g, '').slice(0, 10)}`)}
+                  placeholder="10-digit Mobile Number"
+                  placeholderTextColor="#94A3B8"
+                  keyboardType="number-pad"
+                  maxLength={10}
+                />
+              </View>
 
               <Text style={styles.inputFieldLabel}>{t('abhaIdPlaceholder')}</Text>
               <TextInput

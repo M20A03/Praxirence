@@ -494,13 +494,15 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                     </View>
 
                     {/* Medical Degree - Clean Typography */}
-                    <Text style={styles.doctorDegreeText} numberOfLines={1}>
-                      {doc.degree || 'MBBS, MD (General Medicine)'}
-                    </Text>
+                    {doc.degree ? (
+                      <Text style={styles.doctorDegreeText} numberOfLines={1}>
+                        {doc.degree}
+                      </Text>
+                    ) : null}
 
                     {/* Clinical Designation & Specialty */}
                     <Text style={styles.doctorDesignation}>
-                      {doc.designation || 'Senior Consultant'} • {doc.specialty}
+                      {doc.designation ? `${doc.designation} • ` : ''}{doc.specialty || 'General Practitioner'}
                     </Text>
 
                     {/* Clinic & Location Details */}
@@ -607,11 +609,13 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                   <Ionicons name="checkmark-circle" size={17} color="#0284C7" />
                 </View>
                 {/* Degree - Clean Typography */}
-                <Text style={styles.sheetDegreeText}>
-                  {selectedDoctor?.degree || 'MBBS, MD (General Medicine)'}
-                </Text>
+                {selectedDoctor?.degree ? (
+                  <Text style={styles.sheetDegreeText}>
+                    {selectedDoctor.degree}
+                  </Text>
+                ) : null}
                 <Text style={styles.sheetSpecialtyText}>
-                  {selectedDoctor?.designation || 'Senior Consultant'} • {selectedDoctor?.specialty}
+                  {selectedDoctor?.designation ? `${selectedDoctor.designation} • ` : ''}{selectedDoctor?.specialty || 'General Practitioner'}
                 </Text>
                 <Text style={styles.sheetClinicText}>
                   {selectedDoctor?.clinic_name} • NMC: {selectedDoctor?.reg_number}

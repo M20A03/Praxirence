@@ -37,7 +37,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
   // Add Patient Modal State
   const [modalVisible, setModalVisible] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newPhone, setNewPhone] = useState('+91');
+  const [newPhone, setNewPhone] = useState('');
   const [addingPatient, setAddingPatient] = useState(false);
 
   useEffect(() => {
@@ -81,20 +81,26 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
   };
 
   const handleCreatePatient = async () => {
-    if (!newName.trim() || !newPhone.trim() || newPhone.trim() === '+91') {
-      Alert.alert('Incomplete', 'Please enter the patient name and phone number.');
+    if (!newName.trim()) {
+      Alert.alert('Incomplete', 'Please enter the patient name.');
       return;
     }
+    const cleanDigits = newPhone.replace(/\D/g, '');
+    if (cleanDigits.length !== 10 || !/^[6-9]/.test(cleanDigits)) {
+      Alert.alert('Phone Required', 'Please enter a valid 10-digit Indian mobile number (+91) starting with 6, 7, 8, or 9.');
+      return;
+    }
+    const formattedPhone = `+91${cleanDigits}`;
     setAddingPatient(true);
     try {
       const created = await mobileApi.createPatient({
         name: newName.trim(),
-        phone: newPhone.trim(),
+        phone: formattedPhone,
       });
       setPatients((prev) => [created, ...prev]);
       setModalVisible(false);
       setNewName('');
-      setNewPhone('+91');
+      setNewPhone('');
       Alert.alert('Patient Added', `${created.name} was successfully registered.`);
     } catch (err: any) {
       Alert.alert('Registration Notice', err.message || 'Patient registered in local directory.');
@@ -427,15 +433,22 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
               onChangeText={setNewName}
             />
 
-            <Text style={styles.inputLabel}>Mobile Phone (for Patient Portal)</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Enter 10-digit mobile number"
-              placeholderTextColor={Colors.textSecondary}
-              value={newPhone}
-              onChangeText={setNewPhone}
-              keyboardType="phone-pad"
-            />
+            <Text style={styles.inputLabel}>Mobile Phone (Indian +91)</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 8, borderWidth: 1, borderColor: Colors.border, marginBottom: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', paddingHorizontal: 10, paddingVertical: 12, borderTopLeftRadius: 7, borderBottomLeftRadius: 7, gap: 4, borderRightWidth: 1, borderRightColor: '#E2E8F0' }}>
+                <Text style={{ fontSize: 14 }}>🇮🇳</Text>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: Colors.text }}>+91</Text>
+              </View>
+              <TextInput
+                style={{ flex: 1, paddingHorizontal: 12, paddingVertical: 12, fontSize: 15, color: Colors.text }}
+                placeholder="10-digit mobile number"
+                placeholderTextColor={Colors.textSecondary}
+                value={newPhone.replace('+91', '').trim()}
+                onChangeText={(val) => setNewPhone(val.replace(/\D/g, '').slice(0, 10))}
+                keyboardType="number-pad"
+                maxLength={10}
+              />
+            </View>
 
             <TouchableOpacity
               style={styles.submitPatientBtn}

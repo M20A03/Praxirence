@@ -288,13 +288,16 @@ def login_doctor_password(req: DoctorLoginRequest, db: Session = Depends(get_db)
             "name": user_name,
             "phone": user_phone,
             "specialty": user_specialty,
-            "degree": getattr(user, "degree", "MBBS, MD (General Medicine)") or "MBBS, MD (General Medicine)",
-            "qualifications": getattr(user, "qualifications", "Fellowship in Internal Medicine & Diabetology") or "Fellowship in Internal Medicine & Diabetology",
-            "experience_years": getattr(user, "experience_years", "12+ Yrs Exp") or "12+ Yrs Exp",
-            "languages": getattr(user, "languages", ["English", "Hindi", "Hinglish"]) or ["English", "Hindi", "Hinglish"],
-            "designation": getattr(user, "designation", "Chief Medical Officer & Senior Physician") or "Chief Medical Officer & Senior Physician",
+            "degree": getattr(user, "degree", None),
+            "qualifications": getattr(user, "qualifications", None),
+            "experience_years": getattr(user, "experience_years", None),
+            "languages": getattr(user, "languages", None),
+            "designation": getattr(user, "designation", None),
             "clinic_name": user_clinic,
             "reg_number": user_reg,
+            "clinic_address": getattr(user, "clinic_address", None),
+            "city": getattr(user, "city", None),
+            "state": getattr(user, "state", None),
         }
     )
 
@@ -1074,20 +1077,31 @@ def verify_patient_email_otp(req: PatientEmailOTPVerifyRequest, db: Session = De
     effective_name = stored_name or derived_name
     patient = None
     try:
-        patient = db.query(Patient).filter(Patient.phone_hash == email_hash).first()
+        if hasattr(Patient, "email"):
+            patient = db.query(Patient).filter(Patient.email == clean_email).first()
+        if not patient:
+            patient = db.query(Patient).filter(Patient.phone_hash == email_hash).first()
         if not patient:
             patient = Patient(
                 name=effective_name,
+                email=clean_email,
                 consent_status=False
             )
-            patient.phone = clean_email
+            patient.phone = f"email_{clean_email}"
             db.add(patient)
             db.commit()
             db.refresh(patient)
-        elif stored_name and patient.name != stored_name:
-            patient.name = stored_name
-            db.commit()
-            db.refresh(patient)
+        else:
+            changed = False
+            if hasattr(patient, "email") and not getattr(patient, "email", None):
+                patient.email = clean_email
+                changed = True
+            if stored_name and patient.name != stored_name:
+                patient.name = stored_name
+                changed = True
+            if changed:
+                db.commit()
+                db.refresh(patient)
     except Exception as e:
         logger.warning(f"Patient lookup/creation notice: {e}")
         try:
@@ -1096,7 +1110,10 @@ def verify_patient_email_otp(req: PatientEmailOTPVerifyRequest, db: Session = De
             pass
 
     if not patient:
-        patient = db.query(Patient).filter(Patient.phone_hash == email_hash).first()
+        if hasattr(Patient, "email"):
+            patient = db.query(Patient).filter(Patient.email == clean_email).first()
+        if not patient:
+            patient = db.query(Patient).filter(Patient.phone_hash == email_hash).first()
         if not patient:
             raise HTTPException(status_code=500, detail="Failed to retrieve or provision patient profile.")
 
@@ -1132,9 +1149,12 @@ def verify_patient_email_otp(req: PatientEmailOTPVerifyRequest, db: Session = De
         user={
             "id": pat_id,
             "name": pat_name,
-            "phone": patient.phone if (patient.phone and "@" not in patient.phone) else "",
+            "phone": patient.phone if (patient.phone and not patient.phone.startswith("email_") and "@" not in patient.phone) else "",
             "email": clean_email,
             "abha_id": getattr(patient, "abha_id", None),
+            "age": getattr(patient, "age", None),
+            "gender": getattr(patient, "gender", None),
+            "emergency_contact": getattr(patient, "emergency_contact", None),
             "consent_status": patient.consent_status,
             "consent_updated_at": patient.consent_updated_at.isoformat() if patient.consent_updated_at else None
         }

@@ -47,9 +47,11 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
     }
   };
 
-  // First-Time Doctor Setup Modal
+  // First-Time Doctor Setup Modal (Compulsory Phone + Optional Practice Details)
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [pendingDoctor, setPendingDoctor] = useState<DoctorUser | null>(null);
+  const [onboardPhone, setOnboardPhone] = useState('');
+  const [onboardDoctorName, setOnboardDoctorName] = useState('');
   const [onboardQualifications, setOnboardQualifications] = useState('');
   const [onboardRegNo, setOnboardRegNo] = useState('');
   const [onboardClinic, setOnboardClinic] = useState('');
@@ -74,37 +76,71 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
   const [error, setError] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
 
-  // Unified Auth Success Routing (Prompt Onboarding if clinic details missing)
+  // Unified Auth Success Routing (Enforce compulsory Indian phone number +91)
   const handleAuthSuccess = async (user: DoctorUser) => {
-    // Check if doctor profile has realistic credentials
-    if (!user.reg_number || !user.clinic_name || user.clinic_name.includes('Clinical Centre')) {
+    const rawDigits = (user.phone || '').replace(/\D/g, '');
+    const hasValidPhone = Boolean(
+      user.phone &&
+      ((user.phone.startsWith('+91') && rawDigits.length === 12 && rawDigits.startsWith('91')) ||
+       (rawDigits.length === 10 && /^[6-9]/.test(rawDigits)))
+    );
+
+    if (!hasValidPhone) {
       setPendingDoctor(user);
+      const clean10 = rawDigits.length === 10 ? rawDigits : (rawDigits.length === 12 && rawDigits.startsWith('91') ? rawDigits.slice(2) : '');
+      setOnboardPhone(clean10);
+      setOnboardDoctorName(user.name || (doctorName ? (doctorName.startsWith('Dr.') ? doctorName : `Dr. ${doctorName}`) : ''));
       setOnboardSpecialty(user.specialty || '');
-      setOnboardClinic(user.clinic_name && !user.clinic_name.includes('Clinical Centre') ? user.clinic_name : '');
+      setOnboardClinic(user.clinic_name || '');
       setOnboardRegNo(user.reg_number || '');
       setShowOnboardingModal(true);
     } else {
       await AsyncStorage.setItem('praxirence_doctor_profile', JSON.stringify(user));
+      await AsyncStorage.setItem('praxirence_user', JSON.stringify(user));
       onAuthenticated(user);
     }
   };
 
   const handleSaveOnboarding = async () => {
     if (!pendingDoctor) return;
-    if (!onboardRegNo.trim()) {
-      Alert.alert('Registration Required', 'Please provide your NMC or State Medical Council Registration Number.');
+    const phoneDigits = onboardPhone.replace(/\D/g, '');
+    if (phoneDigits.length !== 10 || !/^[6-9]/.test(phoneDigits)) {
+      Alert.alert(
+        'Phone Number Compulsory',
+        'Please enter a valid 10-digit Indian mobile number (+91) starting with 6, 7, 8, or 9.'
+      );
       return;
     }
-    const updated: DoctorUser = {
-      ...pendingDoctor,
-      name: pendingDoctor.name.startsWith('Dr.') ? pendingDoctor.name : `Dr. ${pendingDoctor.name}`,
-      specialty: onboardSpecialty.trim() || 'Internal Medicine',
-      clinic_name: onboardClinic.trim() || 'Private Clinical Practice',
-      reg_number: onboardRegNo.trim(),
-    };
-    await AsyncStorage.setItem('praxirence_doctor_profile', JSON.stringify(updated));
-    setShowOnboardingModal(false);
-    onAuthenticated(updated);
+    const formattedPhone = `+91${phoneDigits}`;
+    setLoading(true);
+    try {
+      const payload: any = {
+        phone: formattedPhone,
+      };
+      if (onboardDoctorName.trim()) {
+        const raw = onboardDoctorName.trim();
+        payload.name = raw.startsWith('Dr.') ? raw : `Dr. ${raw}`;
+      }
+      if (onboardSpecialty.trim()) payload.specialty = onboardSpecialty.trim();
+      if (onboardClinic.trim()) payload.clinic_name = onboardClinic.trim();
+      if (onboardRegNo.trim()) payload.reg_number = onboardRegNo.trim();
+
+      const res = await mobileApi.updateDoctorProfile(payload, pendingDoctor.id);
+      const updated: DoctorUser = {
+        ...pendingDoctor,
+        ...payload,
+        ...(res.doctor || {}),
+        phone: formattedPhone,
+      };
+      await AsyncStorage.setItem('praxirence_doctor_profile', JSON.stringify(updated));
+      await AsyncStorage.setItem('praxirence_user', JSON.stringify(updated));
+      setShowOnboardingModal(false);
+      onAuthenticated(updated);
+    } catch (err: any) {
+      Alert.alert('Setup Error', err?.message || 'Failed to save doctor details. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Email OTP Request
@@ -312,24 +348,61 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
           </Text>
         </View>
 
-        {/* Doctor First-Time Clinic Setup Modal */}
-        <Modal visible={showOnboardingModal} animationType="slide" transparent onRequestClose={() => setShowOnboardingModal(false)}>
+        {/* Doctor First-Time Profile Setup Modal (Compulsory Phone + Optional Details) */}
+        <Modal visible={showOnboardingModal} animationType="slide" transparent onRequestClose={() => {}}>
           <View style={styles.modalOverlay}>
             <View style={styles.modalCard}>
               <View style={styles.modalHeader}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Ionicons name="business" size={20} color={Colors.primary} />
-                  <Text style={styles.modalTitle}>Set Up Clinic Letterhead</Text>
+                  <Ionicons name="shield-checkmark" size={20} color={Colors.primary} />
+                  <Text style={styles.modalTitle}>Set Up Doctor Profile</Text>
                 </View>
               </View>
 
               <Text style={styles.modalSubtitle}>
-                Your clinic name and registration will appear on all prescriptions and patient summaries.
+                A valid Indian mobile number (+91) is compulsory for clinical security and verification. Other details are optional and can be filled now or updated anytime in Settings.
               </Text>
 
-              <Text style={styles.label}>Medical Registration Number (NMC / SMC)</Text>
+              {/* Compulsory Indian Mobile Number */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={styles.label}>
+                  Mobile Number <Text style={{ color: '#EF4444' }}>* (Compulsory)</Text>
+                </Text>
+                <Text style={{ fontSize: 11, color: '#0284C7', fontWeight: '700' }}>Indian Format (+91)</Text>
+              </View>
+              <View style={[styles.inputContainer, { paddingLeft: 0, paddingRight: 8 }]}>
+                <View style={styles.phonePrefixPill}>
+                  <Text style={styles.flagIcon}>🇮🇳</Text>
+                  <Text style={styles.phonePrefixText}>+91</Text>
+                </View>
+                <TextInput
+                  style={[styles.input, { flex: 1, paddingLeft: 10 }]}
+                  placeholder="10-digit mobile number"
+                  placeholderTextColor={Colors.textSecondary}
+                  value={onboardPhone}
+                  onChangeText={(val) => setOnboardPhone(val.replace(/\D/g, '').slice(0, 10))}
+                  keyboardType="number-pad"
+                  maxLength={10}
+                />
+              </View>
+
+              {/* Optional Clinician Name */}
+              <Text style={styles.label}>Clinician Full Name (Optional)</Text>
               <View style={styles.inputContainer}>
-                <Ionicons name="id-card" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                <Ionicons name="person-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. Dr. Rajesh Sharma"
+                  placeholderTextColor={Colors.textSecondary}
+                  value={onboardDoctorName}
+                  onChangeText={setOnboardDoctorName}
+                />
+              </View>
+
+              {/* Optional Registration Number */}
+              <Text style={styles.label}>Medical Registration Number (Optional)</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="id-card-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                 <TextInput
                   style={styles.input}
                   placeholder="e.g. NMC/12345/2023"
@@ -339,24 +412,26 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                 />
               </View>
 
-              <Text style={styles.label}>Clinic / Hospital Name</Text>
+              {/* Optional Clinic / Hospital Name */}
+              <Text style={styles.label}>Clinic / Hospital Name (Optional)</Text>
               <View style={styles.inputContainer}>
-                <Ionicons name="business" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                <Ionicons name="business-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. City Health Clinic & Hospital"
+                  placeholder="e.g. City Health Clinic"
                   placeholderTextColor={Colors.textSecondary}
                   value={onboardClinic}
                   onChangeText={setOnboardClinic}
                 />
               </View>
 
-              <Text style={styles.label}>Specialty & Qualifications</Text>
+              {/* Optional Specialty */}
+              <Text style={styles.label}>Specialty & Qualifications (Optional)</Text>
               <View style={styles.inputContainer}>
-                <Ionicons name="fitness" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                <Ionicons name="fitness-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. MBBS, MD - General Medicine"
+                  placeholder="e.g. General Medicine, Cardiology"
                   placeholderTextColor={Colors.textSecondary}
                   value={onboardSpecialty}
                   onChangeText={setOnboardSpecialty}
@@ -364,11 +439,14 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
               </View>
 
               <TouchableOpacity
-                style={styles.primaryBtn}
+                style={[styles.primaryBtn, { marginTop: 16 }]}
                 onPress={handleSaveOnboarding}
+                disabled={loading}
               >
                 <Ionicons name="checkmark-circle" size={18} color="#ffffff" />
-                <Text style={styles.primaryBtnText}>Save & Launch Workstation</Text>
+                <Text style={styles.primaryBtnText}>
+                  {loading ? 'Saving...' : 'Save & Launch Workstation'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -406,6 +484,26 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 1,
     borderColor: '#BAE6FD',
+  },
+  phonePrefixPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
+    borderRightWidth: 1,
+    borderRightColor: '#E2E8F0',
+    gap: 4,
+  },
+  flagIcon: {
+    fontSize: 16,
+  },
+  phonePrefixText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0F172A',
   },
   doctorBadgeText: {
     fontFamily: FontFamily.semiBold,

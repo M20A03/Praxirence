@@ -21,7 +21,7 @@ class User(Base):
     qualifications = Column(String(255), nullable=True, default=None)
     designation = Column(String(255), nullable=True, default=None)
     experience_years = Column(String(50), nullable=True, default=None)
-    languages = Column(JSON, nullable=True, default=lambda: ["English", "Hindi"])
+    languages = Column(JSON, nullable=True, default=list)
 
     # Geolocation & Clinic Details
     city = Column(String(100), nullable=True, index=True, default=None)

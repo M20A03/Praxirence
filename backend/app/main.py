@@ -51,6 +51,8 @@ def auto_migrate_schema():
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS experience_years VARCHAR(50);",
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS languages JSONB DEFAULT '[\"English\", \"Hindi\"]';",
                 "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_phone ON users (phone) WHERE phone IS NOT NULL;",
+                "ALTER TABLE patients ADD COLUMN IF NOT EXISTS email VARCHAR(255);",
+                "CREATE INDEX IF NOT EXISTS ix_patients_email ON patients (email);",
                 "ALTER TABLE patients ADD COLUMN IF NOT EXISTS dob DATE;",
                 "ALTER TABLE patients ADD COLUMN IF NOT EXISTS abha_id VARCHAR(50);",
                 "ALTER TABLE patients ADD COLUMN IF NOT EXISTS age INTEGER;",
@@ -154,6 +156,7 @@ def auto_migrate_schema():
                 # check patients columns
                 patient_cols = [row[1] for row in conn.execute(text("PRAGMA table_info(patients)")).fetchall()]
                 patient_ddls = {
+                    "email": "ALTER TABLE patients ADD COLUMN email VARCHAR(255)",
                     "primary_account_phone": "ALTER TABLE patients ADD COLUMN primary_account_phone VARCHAR(32)",
                     "family_relation": "ALTER TABLE patients ADD COLUMN family_relation VARCHAR(30) DEFAULT 'Self'",
                     "abha_id": "ALTER TABLE patients ADD COLUMN abha_id VARCHAR(50)",

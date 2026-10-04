@@ -47,13 +47,14 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
     }
   };
 
-  // First-Time Patient Demographics Modal
+  // First-Time Patient Demographics Modal (Compulsory Phone + Optional Demographics)
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [pendingPatient, setPendingPatient] = useState<PatientUser | null>(null);
+  const [onboardPhone, setOnboardPhone] = useState('');
   const [onboardName, setOnboardName] = useState('');
   const [onboardAge, setOnboardAge] = useState('');
-  const [onboardGender, setOnboardGender] = useState<'Male' | 'Female' | 'Other'>('Male');
-  const [onboardLanguage, setOnboardLanguage] = useState('Hindi');
+  const [onboardGender, setOnboardGender] = useState<'Male' | 'Female' | 'Other' | ''>('');
+  const [onboardLanguage, setOnboardLanguage] = useState('English');
   const [onboardEmergency, setOnboardEmergency] = useState('');
 
   // Email OTP States
@@ -77,20 +78,26 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
 
 
 
-  // Handle Auth Success & Check Demographic Onboarding
+  // Handle Auth Success & Check Demographic Onboarding (Compulsory Indian phone number +91)
   const handleAuthSuccess = async (user: PatientUser) => {
     try {
-      const stored = await AsyncStorage.getItem('praxirence_patient_profile');
-      let profile = stored ? JSON.parse(stored) : null;
-      if (profile && (profile.id === user.id || profile.phone === user.phone)) {
-        const merged: PatientUser = { ...user, ...profile };
-        await AsyncStorage.setItem('praxirence_patient_profile', JSON.stringify(merged));
-        onAuthenticated(merged);
-        return;
-      }
-      if (!user.age || !user.language) {
+      const rawDigits = (user.phone || '').replace(/\D/g, '');
+      const hasValidPhone = Boolean(
+        user.phone &&
+        !user.phone.includes('@') &&
+        ((user.phone.startsWith('+91') && rawDigits.length === 12 && rawDigits.startsWith('91')) ||
+         (rawDigits.length === 10 && /^[6-9]/.test(rawDigits)))
+      );
+
+      if (!hasValidPhone) {
         setPendingPatient(user);
+        const clean10 = rawDigits.length === 10 ? rawDigits : (rawDigits.length === 12 && rawDigits.startsWith('91') ? rawDigits.slice(2) : '');
+        setOnboardPhone(clean10);
         setOnboardName(user.name || patientName || '');
+        setOnboardAge(user.age ? String(user.age) : '');
+        setOnboardGender((user.gender as any) || '');
+        setOnboardLanguage(user.language || 'English');
+        setOnboardEmergency(user.emergency_contact || '');
         setShowOnboardingModal(true);
       } else {
         await AsyncStorage.setItem('praxirence_patient_profile', JSON.stringify(user));
@@ -104,21 +111,44 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
 
   const handleSaveOnboarding = async () => {
     if (!pendingPatient) return;
-    if (!onboardName.trim()) {
-      Alert.alert('Name Required', 'Please enter your full name to set up your clinical record.');
+    const phoneDigits = onboardPhone.replace(/\D/g, '');
+    if (phoneDigits.length !== 10 || !/^[6-9]/.test(phoneDigits)) {
+      Alert.alert(
+        'Phone Number Compulsory',
+        'Please enter a valid 10-digit Indian mobile number (+91) starting with 6, 7, 8, or 9.'
+      );
       return;
     }
-    const updated: PatientUser = {
-      ...pendingPatient,
-      name: onboardName.trim(),
-      age: onboardAge.trim() || undefined,
-      gender: onboardGender,
-      language: onboardLanguage,
-      emergency_contact: onboardEmergency.trim() || undefined,
-    };
-    await AsyncStorage.setItem('praxirence_patient_profile', JSON.stringify(updated));
-    setShowOnboardingModal(false);
-    onAuthenticated(updated);
+    const formattedPhone = `+91${phoneDigits}`;
+    setLoading(true);
+    try {
+      const payload: any = {
+        phone: formattedPhone,
+      };
+      if (onboardName.trim()) payload.name = onboardName.trim();
+      if (onboardAge.trim()) payload.age = parseInt(onboardAge.trim(), 10);
+      if (onboardGender) payload.gender = onboardGender;
+      if (onboardEmergency.trim()) {
+        const emDigits = onboardEmergency.replace(/\D/g, '');
+        payload.emergency_contact = emDigits.length === 10 ? `+91${emDigits}` : onboardEmergency.trim();
+      }
+
+      const res = await mobileApi.updatePatientProfile(pendingPatient.id, payload);
+      const updated: PatientUser = {
+        ...pendingPatient,
+        ...payload,
+        ...(res.user || {}),
+        phone: formattedPhone,
+        language: onboardLanguage || pendingPatient.language || 'English',
+      };
+      await AsyncStorage.setItem('praxirence_patient_profile', JSON.stringify(updated));
+      setShowOnboardingModal(false);
+      onAuthenticated(updated);
+    } catch (err: any) {
+      Alert.alert('Profile Setup Notice', err?.message || 'Failed to update patient profile. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
 
@@ -347,10 +377,33 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
               </View>
 
               <Text style={styles.modalSubtitle}>
-                Please confirm your clinical details so your doctor's care instructions and dosage schedules are accurate.
+                A valid Indian mobile number (+91) is compulsory for health alerts and emergency care. Personal details can be provided now or updated anytime in Settings.
               </Text>
 
-              <Text style={styles.label}>Full Name</Text>
+              {/* Compulsory Indian Mobile Number */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={styles.label}>
+                  Mobile Number <Text style={{ color: '#EF4444' }}>* (Compulsory)</Text>
+                </Text>
+                <Text style={{ fontSize: 11, color: '#10b981', fontWeight: '700' }}>Indian Format (+91)</Text>
+              </View>
+              <View style={[styles.inputContainer, { paddingLeft: 0, paddingRight: 8 }]}>
+                <View style={styles.phonePrefixPill}>
+                  <Text style={styles.flagIcon}>🇮🇳</Text>
+                  <Text style={styles.phonePrefixText}>+91</Text>
+                </View>
+                <TextInput
+                  style={[styles.input, { flex: 1, paddingLeft: 10 }]}
+                  placeholder="10-digit mobile number"
+                  placeholderTextColor={Colors.textSecondary}
+                  value={onboardPhone}
+                  onChangeText={(val) => setOnboardPhone(val.replace(/\D/g, '').slice(0, 10))}
+                  keyboardType="number-pad"
+                  maxLength={10}
+                />
+              </View>
+
+              <Text style={styles.label}>Full Name (Optional)</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="person-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                 <TextInput
@@ -563,6 +616,26 @@ const styles = StyleSheet.create({
     padding: 18,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  phonePrefixPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
+    borderRightWidth: 1,
+    borderRightColor: '#E2E8F0',
+    gap: 4,
+  },
+  flagIcon: {
+    fontSize: 16,
+  },
+  phonePrefixText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0F172A',
   },
   label: {
     fontFamily: FontFamily.medium,

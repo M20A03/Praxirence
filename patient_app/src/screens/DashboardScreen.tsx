@@ -763,8 +763,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <View style={[styles.quickCardIconCircle, { backgroundColor: '#F0FDF4' }]}>
             <Ionicons name="chatbubbles-outline" size={20} color="#15803D" />
           </View>
-          <Text style={styles.quickCardTitle}>Clinical Assistant</Text>
-          <Text style={styles.quickCardSub}>Care & Medication Q&A</Text>
+          <Text style={styles.quickCardTitle}>{t('quickAssistant')}</Text>
+          <Text style={styles.quickCardSub}>{t('quickAssistantSub')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -775,8 +775,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <View style={[styles.quickCardIconCircle, { backgroundColor: '#EFF6FF' }]}>
             <Ionicons name="people-outline" size={20} color="#1D4ED8" />
           </View>
-          <Text style={styles.quickCardTitle}>Doctor Directory</Text>
-          <Text style={styles.quickCardSub}>Verified Clinicians</Text>
+          <Text style={styles.quickCardTitle}>{t('quickDoctors')}</Text>
+          <Text style={styles.quickCardSub}>{t('quickDoctorsSub')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -787,8 +787,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <View style={[styles.quickCardIconCircle, { backgroundColor: '#F0FDFA' }]}>
             <Ionicons name="document-text-outline" size={20} color="#0F766E" />
           </View>
-          <Text style={styles.quickCardTitle}>Care Plans</Text>
-          <Text style={styles.quickCardSub}>Digital Prescriptions</Text>
+          <Text style={styles.quickCardTitle}>{t('quickCarePlans')}</Text>
+          <Text style={styles.quickCardSub}>{t('quickCarePlansSub')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -799,8 +799,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <View style={[styles.quickCardIconCircle, { backgroundColor: '#FAF5FF' }]}>
             <Ionicons name="shield-checkmark-outline" size={20} color="#7E22CE" />
           </View>
-          <Text style={styles.quickCardTitle}>Consent & Privacy</Text>
-          <Text style={styles.quickCardSub}>Encrypted Records</Text>
+          <Text style={styles.quickCardTitle}>{t('quickConsent')}</Text>
+          <Text style={styles.quickCardSub}>{t('quickConsentSub')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -817,6 +817,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       <VitalsTelemetryGrid
         vitals={vitals}
         onLogVitalsPress={() => setShowVitalsModal(true)}
+        lang={currentLang}
       />
 
       {/* New Care Plan Alert */}

@@ -3,15 +3,18 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontFamily, FontSize } from '../../theme';
 import { VitalsRecord } from '../../types';
+import { SupportedLanguage, translateText } from '../../utils/languageTranslations';
 
 interface VitalsTelemetryGridProps {
   vitals: VitalsRecord | null;
   onLogVitalsPress: () => void;
+  lang?: SupportedLanguage;
 }
 
 export const VitalsTelemetryGrid: React.FC<VitalsTelemetryGridProps> = ({
   vitals,
   onLogVitalsPress,
+  lang = 'en',
 }) => {
   if (!vitals) {
     return (
@@ -21,7 +24,7 @@ export const VitalsTelemetryGrid: React.FC<VitalsTelemetryGridProps> = ({
             <View style={styles.headerIconCircle}>
               <Ionicons name="pulse" size={18} color="#0D9488" />
             </View>
-            <Text style={styles.vitalsHeaderTitle}>Vitals Monitoring</Text>
+            <Text style={styles.vitalsHeaderTitle}>{translateText('vitalsMonitoring', lang)}</Text>
           </View>
         </View>
 
@@ -30,9 +33,9 @@ export const VitalsTelemetryGrid: React.FC<VitalsTelemetryGridProps> = ({
           <View style={styles.emptyIconBadge}>
             <Ionicons name="fitness-outline" size={32} color="#0D9488" />
           </View>
-          <Text style={styles.emptyTitle}>No vitals logged yet</Text>
+          <Text style={styles.emptyTitle}>{translateText('noVitalsLogged', lang)}</Text>
           <Text style={styles.emptySubtitle}>
-            Track blood pressure, heart rate, oxygen & glucose to share live telemetry with your doctor.
+            {translateText('vitalsEmptyDesc', lang)}
           </Text>
           <TouchableOpacity
             style={styles.emptyCtaButton}
@@ -40,7 +43,7 @@ export const VitalsTelemetryGrid: React.FC<VitalsTelemetryGridProps> = ({
             activeOpacity={0.85}
           >
             <Ionicons name="add-circle" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
-            <Text style={styles.emptyCtaText}>Log Your First Vital Reading</Text>
+            <Text style={styles.emptyCtaText}>{translateText('logFirstVital', lang)}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -54,7 +57,7 @@ export const VitalsTelemetryGrid: React.FC<VitalsTelemetryGridProps> = ({
           <View style={styles.headerIconCircle}>
             <Ionicons name="pulse" size={18} color="#0D9488" />
           </View>
-          <Text style={styles.vitalsHeaderTitle}>Vitals Monitoring</Text>
+          <Text style={styles.vitalsHeaderTitle}>{translateText('vitalsMonitoring', lang)}</Text>
         </View>
         <TouchableOpacity
           style={styles.logVitalsButton}
@@ -62,7 +65,7 @@ export const VitalsTelemetryGrid: React.FC<VitalsTelemetryGridProps> = ({
           activeOpacity={0.8}
         >
           <Ionicons name="add" size={14} color="#0F766E" />
-          <Text style={styles.logVitalsButtonText}>Log Vitals</Text>
+          <Text style={styles.logVitalsButtonText}>{translateText('logTodayVitals', lang)}</Text>
         </TouchableOpacity>
       </View>
 
@@ -71,7 +74,7 @@ export const VitalsTelemetryGrid: React.FC<VitalsTelemetryGridProps> = ({
         <View style={styles.vitalBox}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
             <Ionicons name="pulse" size={14} color="#0284C7" />
-            <Text style={styles.vitalLabel}>Blood Pressure</Text>
+            <Text style={styles.vitalLabel}>{translateText('bloodPressure', lang)}</Text>
           </View>
           <Text style={styles.vitalValue}>{vitals.bloodPressureSystolic}/{vitals.bloodPressureDiastolic}</Text>
           <Text style={styles.vitalUnit}>mmHg</Text>
@@ -91,7 +94,7 @@ export const VitalsTelemetryGrid: React.FC<VitalsTelemetryGridProps> = ({
         <View style={styles.vitalBox}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
             <Ionicons name="heart" size={14} color="#E11D48" />
-            <Text style={styles.vitalLabel}>Heart Rate</Text>
+            <Text style={styles.vitalLabel}>{translateText('pulse', lang)}</Text>
           </View>
           <Text style={styles.vitalValue}>{vitals.heartRate}</Text>
           <Text style={styles.vitalUnit}>bpm</Text>
@@ -105,7 +108,7 @@ export const VitalsTelemetryGrid: React.FC<VitalsTelemetryGridProps> = ({
         <View style={styles.vitalBox}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
             <Ionicons name="fitness" size={14} color="#0D9488" />
-            <Text style={styles.vitalLabel}>Blood Oxygen</Text>
+            <Text style={styles.vitalLabel}>{translateText('spo2', lang)}</Text>
           </View>
           <Text style={styles.vitalValue}>{vitals.spo2}%</Text>
           <Text style={styles.vitalUnit}>SpO2</Text>

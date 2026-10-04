@@ -74,6 +74,32 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
 
   // Flexible Hours & Interactive Leave Calendar States
   const [timePickerTarget, setTimePickerTarget] = useState<'start' | 'end' | null>(null);
+  const [selectedHour, setSelectedHour] = useState<string>('09');
+  const [selectedMinute, setSelectedMinute] = useState<string>('00');
+  const [selectedPeriod, setSelectedPeriod] = useState<'AM' | 'PM'>('AM');
+
+  const openTimePicker = (target: 'start' | 'end') => {
+    setTimePickerTarget(target);
+    const curr = target === 'start' ? startTime : endTime;
+    const parts = curr.trim().split(/[:\s]+/);
+    let h = parts[0] ? parts[0].padStart(2, '0') : (target === 'start' ? '09' : '05');
+    let m = parts[1] ? parts[1].padStart(2, '0') : '00';
+    let p = (parts[2] || (target === 'start' ? 'AM' : 'PM')).toUpperCase();
+    if (p !== 'AM' && p !== 'PM') p = target === 'start' ? 'AM' : 'PM';
+    setSelectedHour(h);
+    setSelectedMinute(m);
+    setSelectedPeriod(p as 'AM' | 'PM');
+  };
+
+  const handleApplyDropdownTime = () => {
+    const formatted = `${selectedHour}:${selectedMinute} ${selectedPeriod}`;
+    if (timePickerTarget === 'start') {
+      setStartTime(formatted);
+    } else {
+      setEndTime(formatted);
+    }
+    setTimePickerTarget(null);
+  };
   const [timeFilter, setTimeFilter] = useState<'all' | 'am' | 'pm'>('all');
   const [calendarDate, setCalendarDate] = useState<Date>(new Date());
 
@@ -548,7 +574,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
             activeOpacity={0.7}
             onPress={() => {
               try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (_) {}
-              setTimePickerTarget('start');
+              openTimePicker('start');
             }}
           >
             <Ionicons name="time" size={17} color={Colors.primary} />
@@ -568,7 +594,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
             activeOpacity={0.7}
             onPress={() => {
               try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (_) {}
-              setTimePickerTarget('end');
+              openTimePicker('end');
             }}
           >
             <Ionicons name="time" size={17} color={Colors.primary} />
@@ -1120,12 +1146,12 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
         onRequestClose={() => setTimePickerTarget(null)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { maxHeight: '82%' }]}>
+          <View style={[styles.modalCard, { maxHeight: '85%' }]}>
             <View style={styles.modalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Ionicons name="time" size={20} color={Colors.primary} />
                 <Text style={styles.modalTitle}>
-                  {timePickerTarget === 'start' ? 'Select Start Consultation Time' : 'Select Closing Consultation Time'}
+                  {timePickerTarget === 'start' ? 'Select Start Time' : 'Select Closing Time'}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setTimePickerTarget(null)}>
@@ -1134,74 +1160,98 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
             </View>
 
             <Text style={{ fontSize: 12, color: '#64748B', marginBottom: 12 }}>
-              Choose your practice consultation time from the options below:
+              Select the exact hour, minute, and AM/PM for consultation:
             </Text>
 
-            {/* Time Filter Tabs */}
-            <View style={styles.timeFilterRow}>
-              {(['all', 'am', 'pm'] as const).map((filter) => (
-                <TouchableOpacity
-                  key={filter}
-                  style={[
-                    styles.timeFilterChip,
-                    timeFilter === filter && styles.timeFilterChipActive
-                  ]}
-                  onPress={() => setTimeFilter(filter)}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.timeFilterChipText,
-                      timeFilter === filter && styles.timeFilterChipTextActive
-                    ]}
-                  >
-                    {filter === 'all' ? 'All Hours' : filter === 'am' ? 'Morning (AM)' : 'Afternoon / Evening (PM)'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            {/* Time Preview Box */}
+            <View style={styles.timeDropdownPreview}>
+              <Text style={styles.timeDropdownPreviewLabel}>Selected Consultation Time</Text>
+              <Text style={styles.timeDropdownPreviewVal}>
+                {selectedHour}:{selectedMinute} {selectedPeriod}
+              </Text>
             </View>
 
-            {/* Grid of Hours */}
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.timeSlotsGrid}>
-              {AVAILABLE_HOURS
-                .filter((hour) => {
-                  if (timeFilter === 'am') return hour.includes('AM');
-                  if (timeFilter === 'pm') return hour.includes('PM');
-                  return true;
-                })
-                .map((hour) => {
-                  const isSelected = (timePickerTarget === 'start' ? startTime : endTime) === hour;
-                  return (
-                    <TouchableOpacity
-                      key={hour}
-                      style={[styles.timeSlotCard, isSelected && styles.timeSlotCardSelected]}
-                      onPress={() => {
-                        try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (_) {}
-                        if (timePickerTarget === 'start') {
-                          setStartTime(hour);
-                        } else {
-                          setEndTime(hour);
-                        }
-                        setTimePickerTarget(null);
-                      }}
-                      activeOpacity={0.75}
-                    >
-                      <Text style={[styles.timeSlotCardText, isSelected && styles.timeSlotCardTextSelected]}>
-                        {hour}
-                      </Text>
-                      {isSelected && (
-                        <Ionicons name="checkmark-circle" size={14} color="#FFFFFF" style={{ marginLeft: 4 }} />
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-            </ScrollView>
+            {/* 3 Dropdown Columns */}
+            <View style={styles.dropdownColumnsRow}>
+              {/* Hour Dropdown */}
+              <View style={styles.dropdownCol}>
+                <Text style={styles.dropdownColHeader}>HOUR</Text>
+                <ScrollView style={styles.dropdownScroll} showsVerticalScrollIndicator={false}>
+                  {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map((h) => {
+                    const isSel = selectedHour === h;
+                    return (
+                      <TouchableOpacity
+                        key={h}
+                        style={[styles.dropdownItem, isSel && styles.dropdownItemActive]}
+                        onPress={() => {
+                          try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (_) {}
+                          setSelectedHour(h);
+                        }}
+                      >
+                        <Text style={[styles.dropdownItemText, isSel && styles.dropdownItemTextActive]}>{h}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
 
+              <Text style={styles.dropdownColon}>:</Text>
+
+              {/* Minute Dropdown */}
+              <View style={styles.dropdownCol}>
+                <Text style={styles.dropdownColHeader}>MINUTE</Text>
+                <ScrollView style={styles.dropdownScroll} showsVerticalScrollIndicator={false}>
+                  {['00', '15', '30', '45'].map((m) => {
+                    const isSel = selectedMinute === m;
+                    return (
+                      <TouchableOpacity
+                        key={m}
+                        style={[styles.dropdownItem, isSel && styles.dropdownItemActive]}
+                        onPress={() => {
+                          try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (_) {}
+                          setSelectedMinute(m);
+                        }}
+                      >
+                        <Text style={[styles.dropdownItemText, isSel && styles.dropdownItemTextActive]}>{m}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+
+              {/* AM / PM Toggle */}
+              <View style={[styles.dropdownCol, { flex: 0.8 }]}>
+                <Text style={styles.dropdownColHeader}>AM / PM</Text>
+                <View style={{ gap: 8, marginTop: 4 }}>
+                  {(['AM', 'PM'] as const).map((p) => {
+                    const isSel = selectedPeriod === p;
+                    return (
+                      <TouchableOpacity
+                        key={p}
+                        style={[styles.dropdownItem, isSel && styles.dropdownItemActive, { height: 48 }]}
+                        onPress={() => {
+                          try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (_) {}
+                          setSelectedPeriod(p);
+                        }}
+                      >
+                        <Text style={[styles.dropdownItemText, isSel && styles.dropdownItemTextActive, { fontSize: 14, fontWeight: '700' }]}>
+                          {p}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            </View>
+
+            {/* Confirm Button */}
             <TouchableOpacity
-              style={[styles.modalSaveBtn, { marginTop: 12 }]}
-              onPress={() => setTimePickerTarget(null)}
+              style={[styles.modalSaveBtn, { marginTop: 16 }]}
+              onPress={handleApplyDropdownTime}
+              activeOpacity={0.85}
             >
-              <Text style={styles.modalSaveBtnText}>Done</Text>
+              <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+              <Text style={styles.modalSaveBtnText}>Set {selectedHour}:{selectedMinute} {selectedPeriod}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1211,6 +1261,82 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
 };
 
 const styles = StyleSheet.create({
+  timeDropdownPreview: {
+    backgroundColor: '#F0FDFA',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  timeDropdownPreviewLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#0F766E',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  timeDropdownPreviewVal: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#0F766E',
+    marginTop: 2,
+  },
+  dropdownColumnsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  dropdownCol: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 8,
+  },
+  dropdownColHeader: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#64748B',
+    textAlign: 'center',
+    marginBottom: 6,
+    letterSpacing: 0.5,
+  },
+  dropdownScroll: {
+    maxHeight: 180,
+  },
+  dropdownColon: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#94A3B8',
+  },
+  dropdownItem: {
+    height: 38,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 2,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  dropdownItemActive: {
+    backgroundColor: '#0D9488',
+    borderColor: '#0D9488',
+  },
+  dropdownItemText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  dropdownItemTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+
   container: {
     flex: 1,
     backgroundColor: Colors.background,

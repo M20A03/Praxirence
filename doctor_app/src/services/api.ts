@@ -1390,6 +1390,68 @@ export const mobileApi = {
       unavailable_dates: [date]
     };
   },
+
+  // ==================== DOCTOR CLINICAL COPILOT CDSS ====================
+
+  async askDoctorCopilot(params: {
+    query: string;
+    patientId?: string;
+    context?: {
+      age?: string;
+      gender?: string;
+      weight?: string;
+      pregnancy_status?: string;
+      vitals?: Record<string, any>;
+      comorbidities?: string[];
+      allergies?: string[];
+      current_medications?: string[];
+      recent_labs?: string;
+    };
+  }): Promise<{
+    success: boolean;
+    reply: string;
+    ddi_alert?: any;
+    doctor_name?: string;
+    guideline_sources?: string[];
+  }> {
+    const res = await resilientFetch(`${getEffectiveApiUrl()}/doctor/copilot/query`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(params),
+    }, 2);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Doctor Copilot service temporarily unavailable.');
+    }
+    return await res.json();
+  },
+
+  async checkDrugInteractions(params: {
+    medications: string[];
+    patientConditions?: string[];
+    renalStatus?: string;
+  }): Promise<{
+    medications_analyzed: string[];
+    severe_interactions: Array<{ drug_1: string; drug_2: string; mechanism: string; recommendation: string }>;
+    moderate_interactions: Array<{ drug_1: string; drug_2: string; mechanism: string; recommendation: string }>;
+    organ_cautions: string[];
+    summary: string;
+  }> {
+    const res = await resilientFetch(`${getEffectiveApiUrl()}/doctor/copilot/ddi-check`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        medications: params.medications,
+        patient_conditions: params.patientConditions || [],
+        renal_status: params.renalStatus || null,
+      }),
+    }, 2);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'DDI safety check service temporarily unavailable.');
+    }
+    return await res.json();
+  },
 };
 
 export function extractClinicalCarePlanLocally(
@@ -1484,39 +1546,8 @@ export function extractClinicalCarePlanLocally(
     }
   };
 
-  if (cLower.includes('augmentin') || cLower.includes('amoxicillin')) {
-    addMed('Augmentin 625mg', '1 Tablet', 'Twice daily after food (1-0-1)', 'Take after morning and night meals', 5, 'after_meal', false, ['08:30', '20:30']);
-  }
-  if (cLower.includes('azithromycin') || cLower.includes('azee')) {
-    addMed('Azithromycin 500mg', '1 Tablet', 'Once daily after breakfast (1-0-0)', 'Take 1 tablet after breakfast', 3, 'after_meal', false, ['08:30']);
-  }
-  if (cLower.includes('ascoril') || cLower.includes('levosalbutamol') || cLower.includes('cough syrup')) {
-    addMed('Ascoril LS Syrup', '10 ml', 'Three times daily after meals (1-1-1)', 'Take 10ml after breakfast, lunch, and dinner', 5, 'after_meal', false, ['08:30', '13:30', '20:30']);
-  }
-  if (cLower.includes('pantocid') || cLower.includes('pan 40') || cLower.includes('pantoprazole') || cLower.includes('acidity') || cLower.includes('reflux')) {
-    addMed('Pantocid 40mg', '1 Tablet', 'Once daily before breakfast (1-0-0)', 'Take on empty stomach 30 mins before breakfast', 10, 'empty_stomach', false, ['08:00']);
-  }
-  if (cLower.includes('paracetamol') || cLower.includes('dolo') || cLower.includes('calpol') || cLower.includes('fever')) {
-    addMed('Paracetamol 650mg', '1 Tablet', 'As needed for fever/body ache (SOS)', 'Take only if fever > 100°F or severe body ache', 3, 'after_meal', true, ['SOS']);
-  }
-  if (cLower.includes('metformin')) {
-    addMed('Metformin 500mg', '1 Tablet', 'Twice daily with meals (1-0-1)', 'Take with breakfast and dinner', 30, 'with_meal', false, ['08:30', '20:30']);
-  }
-  if (cLower.includes('glimepiride')) {
-    addMed('Glimepiride 1mg', '1 Tablet', 'Once daily before breakfast (1-0-0)', 'Take 15 mins before breakfast', 30, 'before_meal', false, ['08:15']);
-  }
-  if (cLower.includes('telmisartan')) {
-    addMed('Telmisartan 40mg', '1 Tablet', 'Once daily in the morning (1-0-0)', 'Take after morning breakfast', 30, 'after_meal', false, ['08:30']);
-  }
-  if (cLower.includes('sumatriptan')) {
-    addMed('Sumatriptan 50mg', '1 Tablet', 'At onset of headache attack (SOS)', 'Take 1 tablet at earliest onset of migraine', 5, 'after_meal', true, ['SOS']);
-  }
-  if (cLower.includes('ondansetron') || cLower.includes('vomikind') || cLower.includes('nausea')) {
-    addMed('Ondansetron 4mg', '1 Tablet', 'Twice daily as needed (SOS)', 'Take 30 mins before food if nausea persists', 3, 'before_meal', true, ['SOS']);
-  }
-  if (cLower.includes('montair') || cLower.includes('montelukast') || cLower.includes('allegra') || cLower.includes('cetirizine')) {
-    addMed('Montair LC', '1 Tablet', 'Once daily at bedtime (0-0-1)', 'Take at night before sleeping for allergy relief', 5, 'after_meal', false, ['21:30']);
-  }
+  // Pure dynamic extraction: zero hardcoded fallback medicine injection.
+  // Medications are only populated when explicitly prescribed by the attending doctor or verified in the formulary.
 
   // If no specific medicines detected, do not inject fake medications
 

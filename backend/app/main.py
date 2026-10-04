@@ -15,8 +15,9 @@ from app.core.security import get_password_hash
 from app.models.user import User
 from app.models.patient import Patient
 from app.models.audit_log import AuditLog
+from app.models.medicine import Medicine
 from app import auth
-from app.routes import visits, patients, recordings, chat, realtime, doctors
+from app.routes import visits, patients, recordings, chat, realtime, doctors, doctor_copilot, medicines
 from ml.inference import model_loader
 
 # Configure logging
@@ -217,6 +218,15 @@ def seed_initial_data():
     logger.info("Production clean slate active: Zero initial data seeding.")
 
 
+def seed_formulary_if_needed():
+    """Automatically seeds/updates verified Indian National Formulary & Jan Aushadhi database."""
+    try:
+        from scripts.seed_indian_formulary import seed_formulary
+        seed_formulary()
+    except Exception as e:
+        logger.warning(f"Formulary auto-seeder notice: {e}")
+
+
 
 async def automated_followup_cron_worker():
     """Background task running every 30 minutes to check and dispatch due Day 3 and Day 7 clinical follow-ups"""
@@ -246,6 +256,7 @@ async def lifespan(app: FastAPI):
         auto_migrate_schema()
         logger.info("Database schema initialized and verified.")
         seed_initial_data()
+        seed_formulary_if_needed()
     except Exception as e:
         logger.error(f"Database setup error: {e}")
 
@@ -375,6 +386,10 @@ app.include_router(recordings.router)
 app.include_router(recordings.router, prefix="/api/v1")
 app.include_router(chat.router)
 app.include_router(chat.router, prefix="/api/v1")
+app.include_router(doctor_copilot.router)
+app.include_router(doctor_copilot.router, prefix="/api/v1")
+app.include_router(medicines.router)
+app.include_router(medicines.router, prefix="/api/v1")
 app.include_router(realtime.router)
 
 
@@ -421,6 +436,7 @@ def trigger_migration():
     try:
         auto_migrate_schema()
         seed_initial_data()
+        seed_formulary_if_needed()
         return {
             "success": True,
             "message": "Schema auto-migration and initial seed executed successfully."

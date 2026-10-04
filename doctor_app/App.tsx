@@ -31,6 +31,7 @@ import { DoctorDashboardScreen } from './src/screens/doctor/DoctorDashboardScree
 import { DoctorPatientsScreen } from './src/screens/doctor/DoctorPatientsScreen';
 import { DoctorNewConsultationScreen } from './src/screens/doctor/DoctorNewConsultationScreen';
 import { DoctorProfileScreen } from './src/screens/doctor/DoctorProfileScreen';
+import DoctorCopilotScreen from './src/screens/doctor/DoctorCopilotScreen';
 import { ClinicianOnboardingModal } from './src/components/ClinicianOnboardingModal';
 
 import { mobileApi } from './src/services/api';
@@ -329,6 +330,13 @@ function DoctorAppContent() {
                     <Ionicons name="mic" size={20} color="#FFFFFF" />
                   </View>
                 );
+              } else if (route.name === 'Copilot') {
+                return (
+                  <View style={styles.tabIconWrapper}>
+                    <Ionicons name={focused ? 'sparkles' : 'sparkles-outline'} size={size || 22} color={color} />
+                    {focused && <View style={styles.activeTabDot} />}
+                  </View>
+                );
               } else if (route.name === 'Profile') {
                 return (
                   <View style={styles.tabIconWrapper}>
@@ -404,6 +412,18 @@ function DoctorAppContent() {
                   setSelectedComplaint(undefined);
                   props.navigation.navigate('Schedule');
                 }}
+              />
+            )}
+          </Tab.Screen>
+
+          <Tab.Screen
+            name="Copilot"
+            options={{ tabBarLabel: 'AI Copilot' }}
+          >
+            {() => (
+              <DoctorCopilotScreen
+                doctor={currentDoctor}
+                initialPatientId={selectedPatientId}
               />
             )}
           </Tab.Screen>

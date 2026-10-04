@@ -14,44 +14,13 @@
     }
   },
   "datasets": {
-    "train_samples": 4,
-    "val_samples": 1,
+    "train_samples": 8,
+    "val_samples": 2,
     "status": "PASSED"
   },
   "acoustic_data": {
-    "audio_clips": 5,
-    "details": [
-      {
-        "file": "consult_001.wav",
-        "channels": 1,
-        "sample_rate": 16000,
-        "duration_sec": 5.5
-      },
-      {
-        "file": "consult_002.wav",
-        "channels": 1,
-        "sample_rate": 16000,
-        "duration_sec": 5.5
-      },
-      {
-        "file": "consult_003.wav",
-        "channels": 1,
-        "sample_rate": 16000,
-        "duration_sec": 5.5
-      },
-      {
-        "file": "consult_004.wav",
-        "channels": 1,
-        "sample_rate": 16000,
-        "duration_sec": 5.5
-      },
-      {
-        "file": "consult_005.wav",
-        "channels": 1,
-        "sample_rate": 16000,
-        "duration_sec": 5.5
-      }
-    ],
+    "audio_clips": 0,
+    "details": [],
     "status": "PASSED"
   },
   "status": "READY_FOR_TRAINING"

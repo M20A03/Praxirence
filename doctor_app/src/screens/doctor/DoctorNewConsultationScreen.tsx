@@ -11,6 +11,7 @@ import {
   Linking,
   Share,
   BackHandler,
+  Modal,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -64,6 +65,46 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
   const [showAddMed, setShowAddMed] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
+
+  // Quick Add Patient modal states
+  const [showQuickAddPatientModal, setShowQuickAddPatientModal] = useState<boolean>(false);
+  const [quickPatientName, setQuickPatientName] = useState<string>('');
+  const [quickPatientPhone, setQuickPatientPhone] = useState<string>('');
+  const [savingQuickPatient, setSavingQuickPatient] = useState<boolean>(false);
+
+  const handleCreateQuickPatient = async () => {
+    if (!quickPatientName.trim()) {
+      Alert.alert('Required', 'Please enter the patient full name.');
+      return;
+    }
+    const cleanDigits = quickPatientPhone.replace(/\D/g, '');
+    if (cleanDigits.length !== 10 || !/^[6-9]/.test(cleanDigits)) {
+      Alert.alert(
+        'Phone Number Compulsory',
+        'Please enter a valid 10-digit Indian mobile number (+91) starting with 6, 7, 8, or 9.'
+      );
+      return;
+    }
+    const formattedPhone = `+91${cleanDigits}`;
+    setSavingQuickPatient(true);
+    try {
+      const created = await mobileApi.createPatient({
+        name: quickPatientName.trim(),
+        phone: formattedPhone,
+      });
+      setPatients((prev) => [created, ...prev]);
+      setSelectedPatientId(created.id);
+      setShowQuickAddPatientModal(false);
+      setQuickPatientName('');
+      setQuickPatientPhone('');
+      Alert.alert('Patient Selected', `${created.name} is now selected for consultation.`);
+    } catch (err: any) {
+      Alert.alert('Registration Notice', err?.message || 'Patient registered in clinical directory.');
+      setShowQuickAddPatientModal(false);
+    } finally {
+      setSavingQuickPatient(false);
+    }
+  };
 
   // Restore unsaved draft if found on patient selection
   useEffect(() => {
@@ -501,35 +542,96 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
 
       {/* Patient Selector */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>1. Select Patient</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.patientPickerScroll}>
-          {patients.map((pat) => (
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <Text style={styles.sectionTitle}>1. Select Patient</Text>
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F0F9FF', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, borderWidth: 1, borderColor: '#BAE6FD' }}
+            onPress={() => setShowQuickAddPatientModal(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="person-add" size={14} color="#0284C7" />
+            <Text style={{ fontSize: 12, color: '#0284C7', fontWeight: '700' }}>+ Add Patient</Text>
+          </TouchableOpacity>
+        </View>
+
+        {patients.length === 0 ? (
+          <View style={styles.noPatientsBox}>
+            <View style={styles.noPatientsIcon}>
+              <Ionicons name="people-outline" size={24} color="#0284C7" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.noPatientsTitle}>No Patients in Directory</Text>
+              <Text style={styles.noPatientsSubtitle}>
+                Add a patient to begin clinical voice consultation.
+              </Text>
+            </View>
             <TouchableOpacity
-              key={pat.id}
-              style={[
-                styles.patientChip,
-                selectedPatientId === pat.id && styles.patientChipActive,
-              ]}
-              onPress={() => setSelectedPatientId(pat.id)}
+              style={styles.addPatientQuickBtn}
+              onPress={() => setShowQuickAddPatientModal(true)}
+              activeOpacity={0.8}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                <Ionicons
-                  name="person"
-                  size={13}
-                  color={selectedPatientId === pat.id ? '#ffffff' : Colors.primaryDark}
-                />
-                <Text
-                  style={[
-                    styles.patientChipText,
-                    selectedPatientId === pat.id && styles.patientChipTextActive,
-                  ]}
-                >
-                  {pat.name || 'Patient'} ({(pat.phone || '').slice(-4)})
+              <Ionicons name="add" size={16} color="#FFFFFF" />
+              <Text style={styles.addPatientQuickText}>Add Patient</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.patientPickerScroll}>
+            {patients.map((pat) => (
+              <TouchableOpacity
+                key={pat.id}
+                style={[
+                  styles.patientChip,
+                  selectedPatientId === pat.id && styles.patientChipActive,
+                ]}
+                onPress={() => setSelectedPatientId(pat.id)}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <Ionicons
+                    name="person"
+                    size={13}
+                    color={selectedPatientId === pat.id ? '#ffffff' : Colors.primaryDark}
+                  />
+                  <Text
+                    style={[
+                      styles.patientChipText,
+                      selectedPatientId === pat.id && styles.patientChipTextActive,
+                    ]}
+                  >
+                    {pat.name || 'Patient'} ({(pat.phone || '').slice(-4)})
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={[styles.patientChip, { borderColor: '#0284C7', backgroundColor: '#F0F9FF' }]}
+              onPress={() => setShowQuickAddPatientModal(true)}
+              activeOpacity={0.7}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Ionicons name="add-circle" size={15} color="#0284C7" />
+                <Text style={[styles.patientChipText, { color: '#0284C7', fontWeight: '700' }]}>
+                  + New Patient
                 </Text>
               </View>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
+          </ScrollView>
+        )}
+
+        {selectedPatientId ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
+            <Ionicons name="checkmark-circle" size={14} color="#15803D" />
+            <Text style={{ fontSize: 12, color: '#15803D', fontWeight: '600' }}>
+              Active Patient: {patients.find((p) => p.id === selectedPatientId)?.name || 'Selected'}
+            </Text>
+          </View>
+        ) : (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
+            <Ionicons name="alert-circle" size={14} color="#DC2626" />
+            <Text style={{ fontSize: 12, color: '#DC2626', fontWeight: '600' }}>
+              * Please select a patient above to enable voice consultation recording
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* 2. Doctor-Patient Conversation Dialogue */}
@@ -1119,6 +1221,65 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
           <Text style={styles.cancelBtnText}>Cancel</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Quick Add Patient Modal */}
+      <Modal visible={showQuickAddPatientModal} animationType="slide" transparent onRequestClose={() => setShowQuickAddPatientModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="person-add" size={20} color="#0284C7" />
+                <Text style={styles.modalTitle}>Add / Walk-In Patient</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowQuickAddPatientModal(false)}>
+                <Ionicons name="close" size={22} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalSubtitle}>
+              Register a patient to immediately begin clinical voice consultation and prescription drafting.
+            </Text>
+
+            <Text style={styles.inputLabel}>Patient Full Name *</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="e.g. Ramesh Kumar"
+              placeholderTextColor="#94A3B8"
+              value={quickPatientName}
+              onChangeText={setQuickPatientName}
+            />
+
+            <Text style={styles.inputLabel}>Mobile Number (Indian +91) *</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 8, borderWidth: 1, borderColor: '#CBD5E1', marginBottom: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#E2E8F0', paddingHorizontal: 10, paddingVertical: 12, borderTopLeftRadius: 7, borderBottomLeftRadius: 7, gap: 4 }}>
+                <Text style={{ fontSize: 14 }}>🇮🇳</Text>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: '#0F172A' }}>+91</Text>
+              </View>
+              <TextInput
+                style={{ flex: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: '#0F172A' }}
+                placeholder="10-digit mobile number"
+                placeholderTextColor="#94A3B8"
+                value={quickPatientPhone}
+                onChangeText={(val) => setQuickPatientPhone(val.replace(/\D/g, '').slice(0, 10))}
+                keyboardType="number-pad"
+                maxLength={10}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={styles.modalSaveBtn}
+              onPress={handleCreateQuickPatient}
+              disabled={savingQuickPatient}
+            >
+              {savingQuickPatient ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.modalSaveText}>Save & Select Patient →</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -1922,5 +2083,114 @@ const styles = StyleSheet.create({
     color: '#334155',
     lineHeight: 16,
     marginTop: 2,
+  },
+  noPatientsBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 12,
+    gap: 10,
+    marginTop: 4,
+  },
+  noPatientsIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    backgroundColor: '#E0F2FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noPatientsTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  noPatientsSubtitle: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  addPatientQuickBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#0284C7',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  addPatientQuickText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#334155',
+    marginBottom: 6,
+  },
+  modalInput: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#0F172A',
+    marginBottom: 14,
+  },
+  modalSaveBtn: {
+    backgroundColor: '#0284C7',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  modalSaveText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

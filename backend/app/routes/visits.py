@@ -1268,8 +1268,8 @@ def call_next_patient(
     if not next_visit:
         db.commit()
         return CallNextPatientResponse(
-            success=True,
-            message="Live OPD queue is clear. No waiting patients."
+            success=False,
+            message="Live OPD queue is clear. There are no patients waiting in your queue right now."
         )
 
     next_visit.status = "in_progress"

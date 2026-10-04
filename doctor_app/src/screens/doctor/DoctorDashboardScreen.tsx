@@ -207,18 +207,32 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
   };
 
   const handleCallNext = async () => {
+    const waitingCount = (scheduleData?.total_scheduled || 0) - (scheduleData?.completed || 0);
+    const hasQueueItems = Boolean(
+      scheduleData?.queue &&
+      scheduleData.queue.some((q) => q.status === 'scheduled' || q.status === 'waiting' || q.status === 'draft' || q.status === 'deferred')
+    );
+
+    if (waitingCount <= 0 && !hasQueueItems) {
+      Alert.alert(
+        'Queue Empty',
+        'There are no patients waiting in your queue right now. You can add a patient using "+ Walk-In" to begin.'
+      );
+      return;
+    }
+
     try {
       setCallingNext(true);
       const res = await mobileApi.callNextPatient(doctor.id);
-      if (res.success) {
+      if (res.success && res.serving_visit_id && res.patient_name) {
         Alert.alert(
           'Patient Called Into Chamber',
-          `Token ${res.token_called || 'Next'} (${res.patient_name || 'Patient'}) called into consultation room.`
+          `Token ${res.token_called || 'PX-01'} (${res.patient_name}) called into consultation room.`
         );
         await loadUpcomingScheduleSilently();
-        if (res.serving_visit_id && res.patient_name) {
-          onNavigateToNewVisit(res.serving_visit_id, res.patient_name, 'Consultation');
-        }
+        onNavigateToNewVisit(res.serving_visit_id, res.patient_name, 'Consultation');
+      } else {
+        Alert.alert('Queue Empty', res.message || 'There are no patients waiting in your queue right now.');
       }
     } catch (err: any) {
       Alert.alert('Queue Notice', err.message || 'No patients currently waiting in queue.');

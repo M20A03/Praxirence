@@ -184,6 +184,14 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
   }, [isRecording]);
 
   const startRecording = async () => {
+    if (!patientId || !patientId.trim()) {
+      Alert.alert(
+        'Select Patient First',
+        'No patient is selected. Please select or add a patient from the patient list above before beginning the clinical voice consultation.'
+      );
+      return;
+    }
+
     try {
       let permission: Audio.PermissionResponse | null = null;
       try {
@@ -442,6 +450,16 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
         Tap the microphone to record doctor-patient dialogue. Whisper ASR & Clinical LLM will transcribe the conversation and auto-fill diagnosis & prescription.
       </Text>
 
+      {/* Warning when no patient is selected */}
+      {!isRecording && (!patientId || !patientId.trim()) && (
+        <View style={styles.noPatientWarning}>
+          <Ionicons name="alert-circle" size={17} color="#D97706" />
+          <Text style={styles.noPatientWarningText}>
+            No patient selected. Please select or register a patient above to start consultation.
+          </Text>
+        </View>
+      )}
+
       {/* Waveform & Timer Container */}
       <View style={styles.visualizerContainer}>
         {/* Waveform Bars */}
@@ -622,6 +640,25 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
 };
 
 const styles = StyleSheet.create({
+  noPatientWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FFFBEB',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    marginBottom: 12,
+  },
+  noPatientWarningText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#92400E',
+    fontWeight: '600',
+    lineHeight: 16,
+  },
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 14,

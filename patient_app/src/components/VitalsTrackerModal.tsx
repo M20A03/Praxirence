@@ -301,7 +301,7 @@ export const VitalsTrackerModal: React.FC<VitalsTrackerModalProps> = ({
                     <View style={styles.emptyIconBadge}>
                       <Ionicons name="pulse" size={28} color="#0D9488" />
                     </View>
-                    <Text style={styles.emptyTitle}>{translateText('noVitalsLogged', lang)}</Text>
+                    <Text style={styles.emptyTitle}>🩺 {translateText('noVitalsLogged', lang)}</Text>
                     <Text style={styles.emptySubtitle}>{translateText('vitalsEmptyDesc', lang)}</Text>
                     <TouchableOpacity
                       style={styles.recordBtn}
@@ -309,7 +309,7 @@ export const VitalsTrackerModal: React.FC<VitalsTrackerModalProps> = ({
                       activeOpacity={0.85}
                     >
                       <Ionicons name="add-circle" size={18} color="#FFFFFF" />
-                      <Text style={styles.recordBtnText}>{translateText('logTodayVitals', lang)}</Text>
+                      <Text style={styles.recordBtnText}>➕ {translateText('logTodayVitals', lang)}</Text>
                     </TouchableOpacity>
                   </View>
                 ) : (
@@ -340,7 +340,7 @@ export const VitalsTrackerModal: React.FC<VitalsTrackerModalProps> = ({
                       {/* Blood Pressure Card */}
                       <View style={styles.vitalsCard}>
                         <View style={styles.vitalsTop}>
-                          <Text style={styles.vitalsLabel}>{translateText('bloodPressure', lang)}</Text>
+                          <Text style={styles.vitalsLabel}>🩺 {translateText('bloodPressure', lang)}</Text>
                           {(() => {
                             const cat = getBpCategory(activeDisplayVitals.bloodPressureSys, activeDisplayVitals.bloodPressureDia);
                             return (
@@ -359,7 +359,7 @@ export const VitalsTrackerModal: React.FC<VitalsTrackerModalProps> = ({
                       {/* Blood Glucose */}
                       <View style={styles.vitalsCard}>
                         <View style={styles.vitalsTop}>
-                          <Text style={styles.vitalsLabel}>{translateText('bloodSugar', lang)}</Text>
+                          <Text style={styles.vitalsLabel}>🩸 {translateText('bloodSugar', lang)}</Text>
                           <View
                             style={[
                               styles.catBadge,
@@ -408,7 +408,7 @@ export const VitalsTrackerModal: React.FC<VitalsTrackerModalProps> = ({
 
                     {/* Weight and BMI */}
                     <View style={styles.fullCard}>
-                      <Text style={styles.vitalsLabel}>{translateText('weightBodyMetrics', lang)}</Text>
+                      <Text style={styles.vitalsLabel}>⚖️ {translateText('weightBodyMetrics', lang)}</Text>
                       <Text style={styles.vitalsVal}>
                         {activeDisplayVitals.weightKg}{' '}
                         <Text style={styles.vitalsUnit}>kg (BMI 22.4 - {translateText('healthyRange', lang)})</Text>

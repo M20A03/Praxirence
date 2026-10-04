@@ -24,7 +24,7 @@ export const VitalsTelemetryGrid: React.FC<VitalsTelemetryGridProps> = ({
             <View style={styles.headerIconCircle}>
               <Ionicons name="pulse" size={18} color="#0D9488" />
             </View>
-            <Text style={styles.vitalsHeaderTitle}>{translateText('vitalsMonitoring', lang)}</Text>
+            <Text style={styles.vitalsHeaderTitle}>🩺 {translateText('vitalsMonitoring', lang)}</Text>
           </View>
         </View>
 
@@ -33,7 +33,7 @@ export const VitalsTelemetryGrid: React.FC<VitalsTelemetryGridProps> = ({
           <View style={styles.emptyIconBadge}>
             <Ionicons name="fitness-outline" size={32} color="#0D9488" />
           </View>
-          <Text style={styles.emptyTitle}>{translateText('noVitalsLogged', lang)}</Text>
+          <Text style={styles.emptyTitle}>🩺 {translateText('noVitalsLogged', lang)}</Text>
           <Text style={styles.emptySubtitle}>
             {translateText('vitalsEmptyDesc', lang)}
           </Text>
@@ -43,7 +43,7 @@ export const VitalsTelemetryGrid: React.FC<VitalsTelemetryGridProps> = ({
             activeOpacity={0.85}
           >
             <Ionicons name="add-circle" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
-            <Text style={styles.emptyCtaText}>{translateText('logFirstVital', lang)}</Text>
+            <Text style={styles.emptyCtaText}>➕ {translateText('logFirstVital', lang)}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -57,7 +57,7 @@ export const VitalsTelemetryGrid: React.FC<VitalsTelemetryGridProps> = ({
           <View style={styles.headerIconCircle}>
             <Ionicons name="pulse" size={18} color="#0D9488" />
           </View>
-          <Text style={styles.vitalsHeaderTitle}>{translateText('vitalsMonitoring', lang)}</Text>
+          <Text style={styles.vitalsHeaderTitle}>🩺 {translateText('vitalsMonitoring', lang)}</Text>
         </View>
         <TouchableOpacity
           style={styles.logVitalsButton}
@@ -74,7 +74,7 @@ export const VitalsTelemetryGrid: React.FC<VitalsTelemetryGridProps> = ({
         <View style={styles.vitalBox}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
             <Ionicons name="pulse" size={14} color="#0284C7" />
-            <Text style={styles.vitalLabel}>{translateText('bloodPressure', lang)}</Text>
+            <Text style={styles.vitalLabel}>🩺 {translateText('bloodPressure', lang)}</Text>
           </View>
           <Text style={styles.vitalValue}>{vitals.bloodPressureSystolic}/{vitals.bloodPressureDiastolic}</Text>
           <Text style={styles.vitalUnit}>mmHg</Text>

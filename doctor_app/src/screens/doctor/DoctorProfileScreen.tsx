@@ -549,7 +549,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
         </Text>
 
         {/* Practicing Days Toggle */}
-        <Text style={styles.subHeadingLabel}>Weekly Practicing Days</Text>
+        <Text style={styles.subHeadingLabel}>🗓️ Weekly Practicing Days</Text>
         <View style={styles.daysRow}>
           {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => {
             const isActive = availableDays.includes(day);
@@ -567,7 +567,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
         </View>
 
         {/* Working Hours */}
-        <Text style={[styles.subHeadingLabel, { marginTop: 14 }]}>Clinic Consultation Hours</Text>
+        <Text style={[styles.subHeadingLabel, { marginTop: 14 }]}>⏰ Clinic Consultation Hours</Text>
         <View style={styles.hoursRow}>
           <TouchableOpacity
             style={styles.hourBox}
@@ -611,7 +611,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           <View style={styles.leaveHeaderRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Ionicons name="calendar-outline" size={16} color="#0D9488" />
-              <Text style={styles.leaveSectionTitle}>Clinician Availability & Leave</Text>
+              <Text style={styles.leaveSectionTitle}>🗓️ Clinician Availability & Leave Calendar</Text>
             </View>
             {unavailableDates.length === 0 ? (
               <View style={styles.statusBadgePill}>
@@ -630,80 +630,18 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           </Text>
 
           {/* Quick Actions Row */}
-          <View style={styles.leaveQuickActionsRow}>
-            <TouchableOpacity
-              style={[
-                styles.quickLeaveBtn,
-                unavailableDates.includes(new Date().toISOString().split('T')[0]) && styles.quickLeaveBtnActive
-              ]}
-              onPress={handleMarkLeaveToday}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name="airplane-outline"
-                size={14}
-                color={unavailableDates.includes(new Date().toISOString().split('T')[0]) ? '#DC2626' : '#0D9488'}
-              />
-              <Text
-                style={[
-                  styles.quickLeaveBtnText,
-                  unavailableDates.includes(new Date().toISOString().split('T')[0]) && { color: '#DC2626' }
-                ]}
-              >
-                {unavailableDates.includes(new Date().toISOString().split('T')[0]) ? 'Today: On Leave' : 'Mark Today Leave'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.quickLeaveBtn,
-                (() => {
-                  const d = new Date();
-                  d.setDate(d.getDate() + 1);
-                  return unavailableDates.includes(d.toISOString().split('T')[0]);
-                })() && styles.quickLeaveBtnActive
-              ]}
-              onPress={handleMarkLeaveTomorrow}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name="calendar-clear-outline"
-                size={14}
-                color={(() => {
-                  const d = new Date();
-                  d.setDate(d.getDate() + 1);
-                  return unavailableDates.includes(d.toISOString().split('T')[0]) ? '#DC2626' : '#0D9488';
-                })()}
-              />
-              <Text
-                style={[
-                  styles.quickLeaveBtnText,
-                  (() => {
-                    const d = new Date();
-                    d.setDate(d.getDate() + 1);
-                    return unavailableDates.includes(d.toISOString().split('T')[0]) ? { color: '#DC2626' } : null;
-                  })()
-                ]}
-              >
-                {(() => {
-                  const d = new Date();
-                  d.setDate(d.getDate() + 1);
-                  return unavailableDates.includes(d.toISOString().split('T')[0]) ? 'Tomorrow: On Leave' : 'Mark Tomorrow Leave';
-                })()}
-              </Text>
-            </TouchableOpacity>
-
-            {unavailableDates.length > 0 && (
+          {unavailableDates.length > 0 && (
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 12 }}>
               <TouchableOpacity
-                style={[styles.quickLeaveBtn, { flex: 0.7, borderColor: '#FECACA', backgroundColor: '#FFF5F5' }]}
+                style={[styles.quickLeaveBtn, { borderColor: '#FECACA', backgroundColor: '#FFF5F5', paddingHorizontal: 14 }]}
                 onPress={handleClearAllLeave}
                 activeOpacity={0.7}
               >
                 <Ionicons name="trash-outline" size={13} color="#DC2626" />
-                <Text style={[styles.quickLeaveBtnText, { color: '#DC2626' }]}>Clear All</Text>
+                <Text style={[styles.quickLeaveBtnText, { color: '#DC2626' }]}>🗑️ Clear All Leaves</Text>
               </TouchableOpacity>
-            )}
-          </View>
+            </View>
+          )}
 
           {/* Interactive Month-View Leave Calendar */}
           <View style={styles.calendarContainer}>
@@ -788,7 +726,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
                       </Text>
                       {isLeave && (
                         <View style={styles.calendarCellLeaveDot}>
-                          <Ionicons name="airplane" size={9} color="#FFFFFF" />
+                          <Ionicons name="calendar" size={9} color="#FFFFFF" />
                         </View>
                       )}
                     </TouchableOpacity>
@@ -816,7 +754,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
                     onPress={() => handleCancelLeave(dt)}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="airplane" size={11} color="#DC2626" />
+                    <Ionicons name="calendar-outline" size={11} color="#DC2626" />
                     <Text style={styles.leaveDateTagText}>{dt}</Text>
                     <Ionicons name="close" size={13} color="#DC2626" />
                   </TouchableOpacity>

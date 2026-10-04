@@ -333,7 +333,7 @@ function DoctorAppContent() {
               } else if (route.name === 'Copilot') {
                 return (
                   <View style={styles.tabIconWrapper}>
-                    <Ionicons name={focused ? 'sparkles' : 'sparkles-outline'} size={size || 22} color={color} />
+                    <Ionicons name={focused ? 'pulse' : 'pulse-outline'} size={size || 22} color={color} />
                     {focused && <View style={styles.activeTabDot} />}
                   </View>
                 );

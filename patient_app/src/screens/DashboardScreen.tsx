@@ -634,7 +634,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 styles.consentBadgeText,
                 { color: user.consent_status ? Colors.primaryDark : Colors.amber }
               ]}>
-                {user.consent_status ? 'ABDM Active' : 'Consent Pending'}
+                {user.consent_status ? t('abdmActive') : t('consentPending')}
               </Text>
             </View>
           </TouchableOpacity>
@@ -645,8 +645,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       <View style={styles.greetingBox}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View>
-            <Text style={styles.greetingSub}>Today's Clinical Summary</Text>
-            <Text style={styles.patientName}>Hello, {user.name}</Text>
+            <Text style={styles.greetingSub}>{t('todaysClinicalSummary')}</Text>
+            <Text style={styles.patientName}>{t('helloGreeting')}, {user.name}</Text>
           </View>
           <Image source={require('../../assets/features/today.png')} style={{ width: 44, height: 44 }} resizeMode="contain" />
         </View>
@@ -661,7 +661,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           >
             <Ionicons name="person" size={13} color={selectedMemberId === 'self' ? '#FFFFFF' : '#0D9488'} />
             <Text style={[styles.familyChipText, selectedMemberId === 'self' && styles.familyChipTextActive]}>
-              Self ({(user?.name || 'Patient').split(' ')[0]})
+              {t('selfChip')} ({(user?.name || 'Patient').split(' ')[0]})
             </Text>
           </TouchableOpacity>
 
@@ -683,7 +683,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             onPress={() => setShowAddFamilyModal(true)}
           >
             <Ionicons name="add-circle" size={14} color="#0D9488" />
-            <Text style={styles.addFamilyChipText}>+ Add Member</Text>
+            <Text style={styles.addFamilyChipText}>{t('addMemberChip')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -694,9 +694,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
             <Ionicons name="warning" size={24} color="#DC2626" />
             <View style={{ flex: 1 }}>
-              <Text style={styles.rescheduleAlertTitle}>Doctor On Leave — Reschedule Required</Text>
+              <Text style={styles.rescheduleAlertTitle}>{t('doctorLeaveTitle')}</Text>
               <Text style={styles.rescheduleAlertDesc}>
-                Dr. {pendingReschedules[0].doctor_name || 'Your Doctor'} had to take emergency leave. Your appointment slot can be rescheduled now with zero waiting fee.
+                {t('doctorLeaveNotice')}
               </Text>
             </View>
           </View>
@@ -707,7 +707,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               setShowRescheduleModal(true);
             }}
           >
-            <Text style={styles.rescheduleActionBtnText}>Choose Slot</Text>
+            <Text style={styles.rescheduleActionBtnText}>{t('chooseSlot')}</Text>
             <Ionicons name="calendar" size={14} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
@@ -828,7 +828,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         >
           <Ionicons name="sparkles" size={20} color={Colors.primaryDark} style={{ marginRight: 8 }} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.newPlanTitle}>New Care Plan Received!</Text>
+            <Text style={styles.newPlanTitle}>{t('newPlanReceived')}</Text>
             <Text style={styles.newPlanSubtitle}>{newPlanAlert}</Text>
           </View>
           <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
@@ -843,8 +843,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         >
           <Ionicons name="notifications" size={20} color={Colors.primary} style={{ marginRight: 10 }} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.bannerTitle}>Enable Push Notifications</Text>
-            <Text style={styles.bannerSubtitle}>Receive timely alerts so you never miss a dose.</Text>
+            <Text style={styles.bannerTitle}>{t('enableNotifications')}</Text>
+            <Text style={styles.bannerSubtitle}>{t('notificationsSub')}</Text>
           </View>
         </TouchableOpacity>
       )}
@@ -863,7 +863,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <View style={styles.nextDoseHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Ionicons name="alarm-outline" size={13} color={Colors.primary} />
-              <Text style={styles.nextDoseLabel}>NEXT SCHEDULED DOSE</Text>
+              <Text style={styles.nextDoseLabel}>{t('nextScheduledDose')}</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <TouchableOpacity
@@ -879,7 +879,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 }}
               >
                 <Ionicons name="notifications-outline" size={12} color="#0284C7" />
-                <Text style={styles.testAlarmPillText}>Test Alarm</Text>
+                <Text style={styles.testAlarmPillText}>{t('testAlarm')}</Text>
               </TouchableOpacity>
               <Text style={styles.nextDoseTime}>{upcomingReminders[0].time}</Text>
             </View>
@@ -914,11 +914,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       {latestVisit?.diagnosis && (
         <View style={styles.section}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <Text style={styles.sectionTitle}>Latest Doctor Consultation</Text>
+            <Text style={styles.sectionTitle}>{t('latestDoctorConsultation')}</Text>
             {onNavigateToVisits && (
               <TouchableOpacity onPress={onNavigateToVisits}>
                 <Text style={{ fontFamily: FontFamily.bold, fontSize: FontSize.xs, color: Colors.primary }}>
-                  View Full Details →
+                  {t('viewFullDetails')}
                 </Text>
               </TouchableOpacity>
             )}
@@ -927,7 +927,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <View style={styles.diagnosisCard}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.diagnosisLabel}>DIAGNOSIS</Text>
+                <Text style={styles.diagnosisLabel}>{t('diagnosisLabel')}</Text>
                 <Text style={styles.diagnosisText}>{latestVisit.diagnosis}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
                   <Text style={styles.doctorInfo}>
@@ -943,7 +943,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 </View>
               </View>
               <View style={{ backgroundColor: 'rgba(5, 150, 105, 0.12)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
-                <Text style={{ fontFamily: FontFamily.bold, fontSize: 10, color: '#059669' }}>Synced to App</Text>
+                <Text style={{ fontFamily: FontFamily.bold, fontSize: 10, color: '#059669' }}>{t('syncedToApp')}</Text>
               </View>
             </View>
 
@@ -952,7 +952,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 }}>
                 <Ionicons name="chatbubble-ellipses" size={14} color="#15803D" />
                 <Text style={{ fontFamily: FontFamily.bold, fontSize: FontSize.xs, color: '#166534' }}>
-                  What Your Doctor Explained:
+                  {t('doctorExplainedTitle')}
                 </Text>
               </View>
               <Text style={{ fontFamily: FontFamily.regular, fontSize: FontSize.xs, color: '#1F2937', lineHeight: 18 }}>
@@ -966,7 +966,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 3 }}>
                   <Ionicons name="bulb-outline" size={14} color="#B45309" />
                   <Text style={{ fontFamily: FontFamily.bold, fontSize: FontSize.xs, color: '#92400E' }}>
-                    Doctor's Home Advice:
+                    {t('doctorAdviceTitle')}
                   </Text>
                 </View>
                 <Text style={{ fontFamily: FontFamily.medium, fontSize: FontSize.xs, color: '#78350F', lineHeight: 17 }}>
@@ -982,7 +982,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               >
                 <Ionicons name="volume-high-outline" size={15} color={Colors.primaryDark} />
                 <Text style={{ fontFamily: FontFamily.bold, fontSize: FontSize.xs, color: Colors.primaryDark }}>
-                  Listen to Doctor's Advice & View Timings
+                  {t('listenDoctorAdvice')}
                 </Text>
               </TouchableOpacity>
             )}
@@ -993,15 +993,15 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       {/* Active Medications List */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Active Medications ({activeMedicines.length})</Text>
+          <Text style={styles.sectionTitle}>{t('activeMedications')} ({activeMedicines.length})</Text>
         </View>
 
         {activeMedicines.length === 0 ? (
           <EmptyState
             icon="medkit-outline"
-            title="No Active Prescriptions"
-            description="You currently have no active prescribed medications. When your doctor approves a care plan, your medicines and dosage timers will appear here."
-            actionLabel={onNavigateToDoctors ? "Find a Specialist" : undefined}
+            title={t('noActivePrescriptions')}
+            description={t('noActivePrescriptionsDesc')}
+            actionLabel={onNavigateToDoctors ? t('findSpecialist') : undefined}
             onAction={onNavigateToDoctors}
           />
         ) : (
@@ -1027,7 +1027,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               {med.duration_days && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
                   <Ionicons name="calendar-outline" size={13} color={Colors.textSecondary} />
-                  <Text style={styles.medDuration}>Duration: {med.duration_days} days</Text>
+                  <Text style={styles.medDuration}>{t('durationDays')}: {med.duration_days} {t('daysText')}</Text>
                 </View>
               )}
             </View>
@@ -1038,7 +1038,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       {/* Upcoming Reminders List */}
       {upcomingReminders.length > 1 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>All Daily Reminders</Text>
+          <Text style={styles.sectionTitle}>{t('allDailyReminders')}</Text>
           {upcomingReminders.map((rem, idx) => (
             <View key={idx} style={styles.reminderRow}>
               <View style={styles.reminderTimeBadge}>
@@ -1046,7 +1046,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.reminderMedName}>{rem.medicine_name} ({rem.dosage})</Text>
-                <Text style={styles.reminderMedInst}>{rem.instructions || 'Daily dose'}</Text>
+                <Text style={styles.reminderMedInst}>{rem.instructions || t('dailyDose')}</Text>
               </View>
             </View>
           ))}
@@ -1087,10 +1087,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         <View style={styles.langModalCard}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
             <Ionicons name="globe-outline" size={22} color={Colors.primary} />
-            <Text style={styles.langModalTitle}>Select Language / भाषा चुनें</Text>
+            <Text style={styles.langModalTitle}>{t('chooseLanguage')}</Text>
           </View>
           <Text style={styles.langModalSub}>
-            Choose your preferred language for medication schedules and care summaries.
+            {t('chooseLanguageSub')}
           </Text>
 
           <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={true}>
@@ -1130,7 +1130,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <View style={styles.actionModalHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Ionicons name="people" size={20} color={Colors.primary} />
-              <Text style={styles.actionModalTitle}>Add Family Member</Text>
+              <Text style={styles.actionModalTitle}>{t('addFamilyMemberTitle')}</Text>
             </View>
             <TouchableOpacity onPress={() => setShowAddFamilyModal(false)}>
               <Ionicons name="close" size={22} color="#64748B" />
@@ -1140,7 +1140,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             Link family members under this phone number to manage their prescriptions and track live OPD appointments.
           </Text>
 
-          <Text style={styles.fieldLabel}>FULL NAME *</Text>
+          <Text style={styles.fieldLabel}>{t('fullName')}</Text>
           <TextInput
             style={styles.textInput}
             placeholder="e.g. Family member's full name"
@@ -1149,7 +1149,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             onChangeText={setNewMemberName}
           />
 
-          <Text style={styles.fieldLabel}>RELATIONSHIP</Text>
+          <Text style={styles.fieldLabel}>{t('relationship')}</Text>
           <View style={styles.relationRow}>
             {(['child', 'spouse', 'parent', 'other'] as const).map((rel) => (
               <TouchableOpacity
@@ -1164,7 +1164,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             ))}
           </View>
 
-          <Text style={styles.fieldLabel}>YEAR OF BIRTH / AGE (OPTIONAL)</Text>
+          <Text style={styles.fieldLabel}>{t('ageOptional')}</Text>
           <TextInput
             style={styles.textInput}
             placeholder="e.g. 1995 or 12 yrs"
@@ -1198,7 +1198,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <View style={styles.actionModalHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Ionicons name="calendar" size={20} color="#DC2626" />
-              <Text style={styles.actionModalTitle}>Reschedule Appointment</Text>
+              <Text style={styles.actionModalTitle}>{t('rescheduleApptTitle')}</Text>
             </View>
             <TouchableOpacity onPress={() => setShowRescheduleModal(false)}>
               <Ionicons name="close" size={22} color="#64748B" />
@@ -1208,7 +1208,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             Your doctor had an emergency. Select an available upcoming slot for Dr. {selectedRescheduleVisit?.doctor_name || 'your physician'}.
           </Text>
 
-          <Text style={styles.fieldLabel}>SELECT NEW TIME SLOT</Text>
+          <Text style={styles.fieldLabel}>{t('selectNewSlot')}</Text>
           <View style={styles.slotGrid}>
             {['09:30 AM', '10:30 AM', '11:30 AM', '02:00 PM', '04:30 PM', '06:00 PM'].map((slot) => (
               <TouchableOpacity
@@ -1229,7 +1229,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             disabled={rescheduling}
           >
             <Text style={styles.primaryActionBtnText}>
-              {rescheduling ? 'Rescheduling...' : 'Confirm Rescheduled Slot'}
+              {rescheduling ? '...' : t('confirmRescheduleBtn')}
             </Text>
           </TouchableOpacity>
         </View>

@@ -265,9 +265,9 @@ export const PillTrackerCard: React.FC<PillTrackerCardProps> = ({
           <View style={styles.emptyIconBadge}>
             <Ionicons name="bandage-outline" size={32} color="#0D9488" />
           </View>
-          <Text style={styles.emptyTitle}>No active prescriptions for today</Text>
+          <Text style={styles.emptyTitle}>{translateText('noPrescriptionsToday', lang)}</Text>
           <Text style={styles.emptySubtitle}>
-            Your prescribed medicines, dosages, and reminder schedule will automatically appear here following your consultation.
+            {translateText('noPrescriptionsTodaySub', lang)}
           </Text>
         </View>
       </View>
@@ -291,7 +291,7 @@ export const PillTrackerCard: React.FC<PillTrackerCardProps> = ({
         {/* Adherence Ratio Pill */}
         <View style={styles.scorePill}>
           <Text style={styles.scoreText}>{takenCount}/{pills.length}</Text>
-          <Text style={styles.scoreSub}>TAKEN</Text>
+          <Text style={styles.scoreSub}>{translateText('takenCountText', lang)}</Text>
         </View>
       </View>
 
@@ -302,11 +302,11 @@ export const PillTrackerCard: React.FC<PillTrackerCardProps> = ({
             <Ionicons name="trophy" size={15} color="#059669" />
           </View>
           <Text style={styles.streakText}>
-            Adherence Streak: <Text style={styles.streakBoldText}>{streakDays} Days</Text>
+            {translateText('adherenceStreak', lang)}: <Text style={styles.streakBoldText}>{streakDays} {translateText('daysText', lang)}</Text>
           </Text>
         </View>
         <View style={styles.scorePercentageBadge}>
-          <Text style={styles.scorePercentageText}>{adherencePercent}% Score</Text>
+          <Text style={styles.scorePercentageText}>{adherencePercent}% {translateText('score', lang)}</Text>
         </View>
       </View>
 

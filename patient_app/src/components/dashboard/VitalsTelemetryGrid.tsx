@@ -128,7 +128,7 @@ export const VitalsTelemetryGrid: React.FC<VitalsTelemetryGridProps> = ({
         <View style={styles.vitalBox}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
             <Ionicons name="water" size={14} color="#D97706" />
-            <Text style={styles.vitalLabel}>Blood Glucose</Text>
+            <Text style={styles.vitalLabel}>{translateText('bloodSugar', lang)}</Text>
           </View>
           <Text style={styles.vitalValue}>{vitals.bloodSugar || 96}</Text>
           <Text style={styles.vitalUnit}>mg/dL</Text>

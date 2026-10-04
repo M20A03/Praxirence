@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FontFamily } from '../../theme';
+import { useLanguage } from '../../utils/LanguageContext';
 
 export interface PendingCheckinItem {
   visit_id: string;
@@ -32,6 +33,7 @@ export const FollowupCheckinModule: React.FC<FollowupCheckinModuleProps> = ({
   onAnswerCheckin,
   onNavigateToDoctors,
 }) => {
+  const { t } = useLanguage();
   if (!pendingCheckins || pendingCheckins.length === 0) return null;
 
   const currentCheckin = pendingCheckins[0];
@@ -47,14 +49,14 @@ export const FollowupCheckinModule: React.FC<FollowupCheckinModuleProps> = ({
             color="#0F766E"
           />
           <Text style={styles.clinicalHeaderBadgeText}>
-            {isDay3 ? '3-Day Clinical Follow-up' : '1-Week Health Evaluation'}
+            {isDay3 ? t('clinicalFollowupTitle') : t('weekFollowupTitle')}
           </Text>
         </View>
         <Text style={styles.clinicalDoctorLabel}>{currentCheckin.doctor_name}</Text>
       </View>
 
       <Text style={styles.clinicalCardTitle}>
-        {isDay3 ? 'Recovery Evaluation' : '1-Week Health Follow-up'}
+        {t('followupAssessmentTitle')}
       </Text>
       <Text style={styles.clinicalCardSubtitle}>
         {isDay3
@@ -62,7 +64,7 @@ export const FollowupCheckinModule: React.FC<FollowupCheckinModuleProps> = ({
           : `One week has elapsed since your visit with ${currentCheckin.doctor_name}. Please report your recovery status.`}
       </Text>
 
-      <Text style={styles.clinicalFieldLabel}>Select Clinical Status</Text>
+      <Text style={styles.clinicalFieldLabel}>{t('selectClinicalStatus')}</Text>
       <View style={styles.clinicalStatusSelector}>
         {isDay3 ? (
           <>
@@ -204,7 +206,7 @@ export const FollowupCheckinModule: React.FC<FollowupCheckinModuleProps> = ({
             <Ionicons name="calendar-outline" size={18} color="#0F766E" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.clinicalReferralTitle}>Schedule Follow-up Consultation</Text>
+            <Text style={styles.clinicalReferralTitle}>{t('scheduleFollowup')}</Text>
             <Text style={styles.clinicalReferralDesc}>
               Consult directly with {currentCheckin.doctor_name} for a clinical re-assessment.
             </Text>
@@ -240,7 +242,7 @@ export const FollowupCheckinModule: React.FC<FollowupCheckinModuleProps> = ({
           <ActivityIndicator size="small" color="#FFFFFF" />
         ) : (
           <>
-            <Text style={styles.clinicalSubmitBtnText}>Submit Evaluation</Text>
+            <Text style={styles.clinicalSubmitBtnText}>{t('submitEvaluation')}</Text>
             <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
           </>
         )}

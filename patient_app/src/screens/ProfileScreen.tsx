@@ -40,8 +40,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 }) => {
   const { language, setLanguage, t } = useLanguage();
   const [currentUser, setCurrentUser] = useState<ActiveUser>(user);
-  const [clinicPhone, setClinicPhone] = useState<string | null>(null);
-  const [attendingDoctorName, setAttendingDoctorName] = useState<string | null>(null);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
 
   // Edit Profile & ABHA ID Modal States
@@ -151,7 +149,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       await SecureStorage.setItem('praxirence_user', JSON.stringify(mergedUser));
       setShowEditModal(false);
       try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
-      Alert.alert('Profile Updated', 'Your personal details and ABHA ID have been safely updated.');
+      Alert.alert(t('profileUpdated'), t('profileUpdatedMsg'));
     } catch (e: any) {
       Alert.alert('Notice', e.message || 'Failed to update profile.');
     } finally {
@@ -165,50 +163,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
   const isDoctor = role === 'doctor';
 
-  useEffect(() => {
-    const loadAttendingContact = async () => {
-      try {
-        if (!user?.id) return;
-        // 1. Check cached visits
-        const cacheKey = `praxirence_cache_visits_${user.id}`;
-        const cached = await AsyncStorage.getItem(cacheKey);
-        if (cached) {
-          const list = JSON.parse(cached);
-          if (Array.isArray(list) && list.length > 0) {
-            const first = list[0] as any;
-            const phone = first.doctor?.phone || first.doctor?.clinic_phone || first.clinic_phone || null;
-            if (phone && !phone.includes('98765 43210') && !phone.includes('9876543210')) {
-              setClinicPhone(phone);
-              setAttendingDoctorName(first.doctor?.name || first.doctor_name || null);
-              return;
-            }
-          }
-        }
 
-        // 2. Query live visits
-        const visits = await mobileApi.getVisits(user.id);
-        if (visits && visits.length > 0) {
-          const first = visits[0] as any;
-          const phone = first.doctor?.phone || first.doctor?.clinic_phone || first.clinic_phone || null;
-          if (phone && !phone.includes('98765 43210') && !phone.includes('9876543210')) {
-            setClinicPhone(phone);
-            setAttendingDoctorName(first.doctor?.name || first.doctor_name || null);
-          }
-        }
-      } catch (err) {
-        console.warn('Load attending clinic contact notice:', err);
-      }
-    };
-    loadAttendingContact();
-  }, [user?.id]);
 
   const handleLogoutPress = () => {
     Alert.alert(
-      t('signOut'),
-      'Are you sure you want to sign out of your Praxirence account?',
+      t('confirmSignOut'),
+      t('confirmSignOutMsg'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: t('signOut'), style: 'destructive', onPress: onLogout },
+        { text: t('cancel'), style: 'cancel' },
+        { text: t('confirmSignOut'), style: 'destructive', onPress: onLogout },
       ]
     );
   };
@@ -222,7 +185,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={{ marginBottom: 16 }}>
-        <BrandLogoMobile variant="header" size="sm" subtitleText="Account & Compliance Settings" />
+        <BrandLogoMobile variant="header" size="sm" subtitleText={t('accountSettingsTitle')} />
       </View>
 
       {/* Profile Header */}
@@ -248,7 +211,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             style={{ marginRight: 4 }}
           />
           <Text style={styles.roleBadgeText}>
-            {isDoctor ? 'Verified Clinician (Doctor Portal)' : 'Patient Personal Vault'}
+            {isDoctor ? t('verifiedClinicianRole') : t('patientVaultRole')}
           </Text>
         </View>
       </View>
@@ -275,7 +238,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 {currentLangObj.nativeLabel} ({currentLangObj.label})
               </Text>
               <Text style={{ fontFamily: FontFamily.regular, fontSize: 11, color: Colors.textSecondary, marginTop: 2 }}>
-                App interface and medication reminders
+                {t('chooseLanguageSub')}
               </Text>
             </View>
           </View>
@@ -287,15 +250,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       <View style={styles.card}>
         <View style={styles.cardHeaderRow}>
           <Ionicons name="shield-checkmark-outline" size={18} color={Colors.primary} />
-          <Text style={styles.cardTitle}>Biometric Security & Vault Protection</Text>
+          <Text style={styles.cardTitle}>{t('biometricSecurityTitle')}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 }}>
           <View style={{ flex: 1, paddingRight: 16 }}>
             <Text style={{ fontFamily: FontFamily.semiBold, fontSize: 14, color: Colors.text }}>
-              Biometric App Lock
+              {t('biometricAppLock')}
             </Text>
             <Text style={{ fontFamily: FontFamily.regular, fontSize: 12, color: Colors.textSecondary, marginTop: 2 }}>
-              Require Fingerprint or Face ID when opening Praxirence or accessing your medical records.
+              {t('biometricAppLockSub')}
             </Text>
           </View>
           <Switch
@@ -311,21 +274,21 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       <View style={styles.card}>
         <View style={styles.cardHeaderRow}>
           <Ionicons name="finger-print-outline" size={18} color={Colors.primary} />
-          <Text style={styles.cardTitle}>Identity & Verification</Text>
+          <Text style={styles.cardTitle}>{t('identityVerificationTitle')}</Text>
         </View>
 
         {isDoctor ? (
           <>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Medical Specialty</Text>
+              <Text style={styles.infoLabel}>{t('medicalSpecialty')}</Text>
               <Text style={styles.infoValue}>{(currentUser as any).specialty || 'Specialty pending'}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Affiliated Hospital</Text>
+              <Text style={styles.infoLabel}>{t('affiliatedHospital')}</Text>
               <Text style={styles.infoValue}>{(currentUser as any).clinic_name || 'Clinic pending'}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Medical Registration</Text>
+              <Text style={styles.infoLabel}>{t('medicalRegistration')}</Text>
               <Text style={[styles.infoValue, { color: Colors.primaryDark, fontFamily: FontFamily.bold }]}>
                 {(currentUser as any).reg_number || 'Registration pending'}
               </Text>
@@ -334,7 +297,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         ) : (
           <>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>ABHA Health ID</Text>
+              <Text style={styles.infoLabel}>{t('abhaIdTitle')}</Text>
               {(currentUser as any).abha_id ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Ionicons name="shield-checkmark" size={14} color="#059669" />
@@ -344,13 +307,13 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 </View>
               ) : (
                 <Text style={[styles.infoValue, { color: Colors.textSecondary, fontStyle: 'italic' }]}>
-                  Not Linked
+                  {t('notLinked')}
                 </Text>
               )}
             </View>
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Registered Mobile</Text>
+              <Text style={styles.infoLabel}>{t('registeredMobile')}</Text>
               <Text style={styles.infoValue}>
                 {currentUser.phone && !currentUser.phone.includes('@') ? currentUser.phone : 'Not Provided'}
               </Text>
@@ -358,7 +321,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
             {Boolean((currentUser as any).age || (currentUser as any).gender) && (
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Demographics</Text>
+                <Text style={styles.infoLabel}>{t('demographics')}</Text>
                 <Text style={styles.infoValue}>
                   {[(currentUser as any).age ? `${(currentUser as any).age} Yrs` : null, (currentUser as any).gender].filter(Boolean).join(' • ')}
                 </Text>
@@ -367,7 +330,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
             {Boolean((currentUser as any).emergency_contact) && (
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Emergency Contact</Text>
+                <Text style={styles.infoLabel}>{t('emergencyContact')}</Text>
                 <Text style={styles.infoValue}>{(currentUser as any).emergency_contact}</Text>
               </View>
             )}
@@ -386,14 +349,14 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               activeOpacity={0.8}
             >
               <Ionicons name="create-outline" size={15} color="#FFFFFF" />
-              <Text style={styles.editProfileBtnText}>Edit Details & Link ABHA ID</Text>
+              <Text style={styles.editProfileBtnText}>{t('editDetailsBtn')}</Text>
             </TouchableOpacity>
           </>
         )}
 
         {((currentUser as any).email || (currentUser.phone && currentUser.phone.includes('@'))) && (
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Email Address</Text>
+            <Text style={styles.infoLabel}>{t('emailAddress')}</Text>
             <Text style={styles.infoValue}>
               {(currentUser as any).email || currentUser.phone}
             </Text>
@@ -401,7 +364,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         )}
 
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Account Status</Text>
+          <Text style={styles.infoLabel}>{t('accountStatus')}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <Ionicons name="checkmark-circle" size={14} color="#059669" />
             <Text style={[styles.infoValue, { color: '#059669', fontFamily: FontFamily.semiBold }]}>
@@ -419,27 +382,27 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </View>
 
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Encryption Standard</Text>
-          <Text style={styles.infoValue}>AES-256 (At Rest & In Transit)</Text>
+          <Text style={styles.infoLabel}>{t('encryptionStandard')}</Text>
+          <Text style={styles.infoValue}>{t('aes256Standard')}</Text>
         </View>
 
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>DPDP Act 2023</Text>
+          <Text style={styles.infoLabel}>{t('dpdpAct')}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <Ionicons name="shield-checkmark" size={13} color={Colors.primaryDark} />
-            <Text style={[styles.infoValue, { color: Colors.primaryDark }]}>Compliant</Text>
+            <Text style={[styles.infoValue, { color: Colors.primaryDark }]}>{t('compliant')}</Text>
           </View>
         </View>
 
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>ABDM Milestone 1-3</Text>
-          <Text style={[styles.infoValue, { color: Colors.primaryDark }]}>Certified HIP/HIU</Text>
+          <Text style={styles.infoLabel}>{t('abdmMilestone')}</Text>
+          <Text style={[styles.infoValue, { color: Colors.primaryDark }]}>{t('certifiedHipHiu')}</Text>
         </View>
 
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Data Protection</Text>
+          <Text style={styles.infoLabel}>{t('dataProtection')}</Text>
           <Text style={[styles.infoValue, { color: Colors.primaryDark, fontFamily: FontFamily.semiBold }]}>
-            End-to-End Encrypted
+            {t('endToEndEncrypted')}
           </Text>
         </View>
 
@@ -450,13 +413,13 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             activeOpacity={0.8}
           >
             <Ionicons name="settings-outline" size={16} color={Colors.primaryDark} />
-            <Text style={styles.manageConsentBtnText}>Manage ABDM Consent & Data Rights</Text>
+            <Text style={styles.manageConsentBtnText}>{t('manageAbdmConsent')}</Text>
             <Ionicons name="chevron-forward" size={16} color={Colors.primaryDark} />
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Clinical Support & Hotlines Card - Real Numbers Only */}
+      {/* Clinical Support & Hotlines Card */}
       <View style={styles.card}>
         <View style={styles.cardHeaderRow}>
           <Ionicons name="call-outline" size={18} color={Colors.amber} />
@@ -469,29 +432,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             108 / 112
           </Text>
         </View>
-
-        {clinicPhone ? (
-          <View style={styles.infoRow}>
-            <View style={{ flexShrink: 1 }}>
-              <Text style={styles.infoLabel}>{t('clinicSupport')}</Text>
-              {attendingDoctorName && (
-                <Text style={{ fontSize: 11, color: Colors.textSecondary, marginTop: 1 }}>
-                  Attending: {attendingDoctorName}
-                </Text>
-              )}
-            </View>
-            <Text style={[styles.infoValue, { color: Colors.primaryDark, fontFamily: FontFamily.semiBold }]}>
-              {clinicPhone}
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.clinicNoticeBox}>
-            <Ionicons name="information-circle-outline" size={16} color="#0284C7" />
-            <Text style={styles.clinicNoticeText}>
-              {t('clinicNotice')}
-            </Text>
-          </View>
-        )}
       </View>
 
       {/* Account Actions */}
@@ -527,7 +467,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <View style={styles.modalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Ionicons name="language" size={20} color={Colors.primary} />
-                <Text style={styles.modalTitle}>Choose Language / भाषा चुनें</Text>
+                <Text style={styles.modalTitle}>{t('chooseLanguage')}</Text>
               </View>
               <TouchableOpacity onPress={() => setShowLanguageModal(false)}>
                 <Ionicons name="close" size={22} color={Colors.textSecondary} />
@@ -576,7 +516,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <View style={styles.modalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Ionicons name="person-circle-outline" size={22} color={Colors.primary} />
-                <Text style={styles.modalTitle}>Edit Profile & ABHA ID</Text>
+                <Text style={styles.modalTitle}>{t('editProfileTitle')}</Text>
               </View>
               <TouchableOpacity onPress={() => setShowEditModal(false)}>
                 <Ionicons name="close" size={22} color={Colors.textSecondary} />
@@ -584,7 +524,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
-              <Text style={styles.inputFieldLabel}>Full Name *</Text>
+              <Text style={styles.inputFieldLabel}>{t('fullName')}</Text>
               <TextInput
                 style={styles.textInputField}
                 value={editName}
@@ -593,7 +533,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 placeholderTextColor="#94A3B8"
               />
 
-              <Text style={styles.inputFieldLabel}>Mobile Number *</Text>
+              <Text style={styles.inputFieldLabel}>{t('phone')}</Text>
               <TextInput
                 style={styles.textInputField}
                 value={editPhone}
@@ -603,7 +543,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 keyboardType="phone-pad"
               />
 
-              <Text style={styles.inputFieldLabel}>ABHA Health ID (14 digits or @abdm)</Text>
+              <Text style={styles.inputFieldLabel}>{t('abhaIdPlaceholder')}</Text>
               <TextInput
                 style={styles.textInputField}
                 value={editAbhaId}
@@ -615,7 +555,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
               <View style={{ flexDirection: 'row', gap: 12 }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.inputFieldLabel}>Age (Years)</Text>
+                  <Text style={styles.inputFieldLabel}>{t('age')}</Text>
                   <TextInput
                     style={styles.textInputField}
                     value={editAge}
@@ -627,7 +567,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 </View>
               </View>
 
-              <Text style={styles.inputFieldLabel}>Gender</Text>
+              <Text style={styles.inputFieldLabel}>{t('gender')}</Text>
               <View style={styles.genderSelectRow}>
                 {(['Male', 'Female', 'Other'] as const).map((g) => (
                   <TouchableOpacity
@@ -644,18 +584,18 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                         editGender === g && styles.genderSelectTextActive,
                       ]}
                     >
-                      {g}
+                      {g === 'Male' ? t('male') : g === 'Female' ? t('female') : t('other')}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={styles.inputFieldLabel}>Emergency Contact Number</Text>
+              <Text style={styles.inputFieldLabel}>{t('emergencyContactLabel')}</Text>
               <TextInput
                 style={styles.textInputField}
                 value={editEmergency}
                 onChangeText={setEditEmergency}
-                placeholder="e.g. Spouse / Parent contact"
+                placeholder={t('emergencyContactPlaceholder')}
                 placeholderTextColor="#94A3B8"
                 keyboardType="phone-pad"
               />
@@ -671,7 +611,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 ) : (
                   <>
                     <Ionicons name="checkmark-done" size={18} color="#FFFFFF" />
-                    <Text style={styles.saveProfileSubmitText}>Save Changes</Text>
+                    <Text style={styles.saveProfileSubmitText}>{t('saveChanges')}</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -786,24 +726,6 @@ const styles = StyleSheet.create({
     color: Colors.text,
     flexShrink: 1,
     textAlign: 'right',
-  },
-  clinicNoticeBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#F0F9FF',
-    borderWidth: 1,
-    borderColor: '#BAE6FD',
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 8,
-  },
-  clinicNoticeText: {
-    flex: 1,
-    fontFamily: FontFamily.regular,
-    fontSize: 12,
-    color: '#0369A1',
-    lineHeight: 16,
   },
   languageSelectorBtn: {
     flexDirection: 'row',

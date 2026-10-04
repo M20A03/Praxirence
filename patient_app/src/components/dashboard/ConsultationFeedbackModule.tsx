@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FontFamily } from '../../theme';
+import { useLanguage } from '../../utils/LanguageContext';
 
 export interface PendingReviewItem {
   doctor_id: string;
@@ -33,6 +34,7 @@ export const ConsultationFeedbackModule: React.FC<ConsultationFeedbackModuleProp
   onDismissReview,
 }) => {
   const activeReview = pendingReviews.find((r) => !dismissedReviews[r.doctor_id]);
+  const { t } = useLanguage();
   if (!activeReview) return null;
 
   const currentWords = reviewText.trim().split(/\s+/).filter(Boolean);
@@ -46,7 +48,7 @@ export const ConsultationFeedbackModule: React.FC<ConsultationFeedbackModuleProp
         <View style={styles.feedbackHeaderBadge}>
           <Ionicons name="shield-checkmark-outline" size={13} color="#0F766E" />
           <Text style={styles.feedbackHeaderBadgeText}>
-            {activeReview.is_first_visit ? 'First Consultation Feedback' : 'Consultation Feedback'}
+            {t('consultationFeedbackTitle')}
           </Text>
         </View>
         <TouchableOpacity
@@ -54,7 +56,7 @@ export const ConsultationFeedbackModule: React.FC<ConsultationFeedbackModuleProp
           onPress={() => onDismissReview(activeReview.doctor_id)}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Text style={styles.feedbackSkipActionText}>Skip for now</Text>
+          <Text style={styles.feedbackSkipActionText}>{t('skipForNow')}</Text>
           <Ionicons name="close" size={14} color="#94A3B8" />
         </TouchableOpacity>
       </View>
@@ -138,7 +140,7 @@ export const ConsultationFeedbackModule: React.FC<ConsultationFeedbackModuleProp
           onPress={() => onDismissReview(activeReview.doctor_id)}
           activeOpacity={0.7}
         >
-          <Text style={styles.feedbackDismissBtnText}>Maybe Later</Text>
+          <Text style={styles.feedbackDismissBtnText}>{t('maybeLater')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -154,7 +156,7 @@ export const ConsultationFeedbackModule: React.FC<ConsultationFeedbackModuleProp
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
             <>
-              <Text style={styles.feedbackSubmitBtnText}>Submit Feedback</Text>
+              <Text style={styles.feedbackSubmitBtnText}>{t('submitFeedback')}</Text>
               <Ionicons name="checkmark" size={15} color="#FFFFFF" />
             </>
           )}

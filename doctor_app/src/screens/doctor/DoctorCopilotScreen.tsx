@@ -157,31 +157,41 @@ ${copilotReply}`,
     } catch (_) {}
   };
 
-  const QUICK_PROMPTS = [
+  const QUICK_PROMPTS: Array<{
+    title: string;
+    query: string;
+    tray: boolean;
+    icon: keyof typeof Ionicons.glyphMap;
+  }> = [
     {
-      title: '🫀 Rule Out ACS / MI',
+      title: 'Rule Out ACS / MI',
       query: '58-year-old male with retrosternal crushing chest pain radiating to left shoulder, diaphoresis, BP 150/90. Evaluate emergency DDx, stat workup, and pharmacotherapy.',
       tray: false,
+      icon: 'pulse',
     },
     {
-      title: '🛡️ Drug Interaction Check',
+      title: 'Drug Interaction Check',
       query: 'Screen drug interactions between Clarithromycin 500mg and Atorvastatin 40mg. What are the clinical consequences and safer macrolide/statin alternatives?',
       tray: true,
+      icon: 'shield-checkmark',
     },
     {
-      title: '💊 Paracetamol Monograph',
+      title: 'Paracetamol Monograph',
       query: 'Paracetamol',
       tray: false,
+      icon: 'medkit',
     },
     {
-      title: '🧪 Renal Dosing (CKD 3)',
+      title: 'Renal Dosing (CKD 3)',
       query: 'Patient with Type 2 Diabetes and CKD Stage 3 (eGFR 42 ml/min). What are the dose titrations for Metformin, ACEi/ARB, and safe analgesics?',
       tray: false,
+      icon: 'flask',
     },
     {
-      title: '🫁 Acute Bronchitis vs CAP',
+      title: 'Acute Bronchitis vs CAP',
       query: '32-year-old female with persistent productive cough, mild wheeze, fever of 100.5F for 4 days. SpO2 97%. Give guideline-based workup and antibiotic decision tree.',
       tray: false,
+      icon: 'fitness',
     },
   ];
 
@@ -199,7 +209,7 @@ ${copilotReply}`,
           <View style={{ flex: 1 }}>
             <Text style={styles.headerTitle}>Clinical AI Copilot</Text>
             <Text style={styles.headerSubtitle}>
-              CDSS 🏥 • DDI Safety Shield 🛡️ • Jan Aushadhi 💊
+              CDSS • DDI Safety Shield • Indian Formulary
             </Text>
           </View>
           <View style={styles.badgeBox}>
@@ -295,7 +305,7 @@ ${copilotReply}`,
                 handleAskCopilot(item.query);
               }}
             >
-              <Ionicons name="flash-outline" size={14} color="#0284C7" style={{ marginRight: 4 }} />
+              <Ionicons name={item.icon} size={14} color="#0284C7" style={{ marginRight: 6 }} />
               <Text style={styles.chipText}>{item.title}</Text>
             </TouchableOpacity>
           ))}
@@ -332,7 +342,7 @@ ${copilotReply}`,
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Ionicons name="shield-checkmark-outline" size={16} color="#0284C7" />
               <Text style={styles.trayToggleText}>
-                🛡️ Multi-Drug Safety Tray ({medList.length} medications loaded)
+                Multi-Drug Safety Tray ({medList.length} medications loaded)
               </Text>
             </View>
             <Ionicons
@@ -416,7 +426,7 @@ ${copilotReply}`,
               ) : (
                 <>
                   <Ionicons name="pulse" size={18} color="#FFFFFF" />
-                  <Text style={styles.actionBtnText}>🩺 Analyze Clinical Query & Safety</Text>
+                  <Text style={styles.actionBtnText}>Analyze Clinical Query & Safety</Text>
                 </>
               )}
             </TouchableOpacity>

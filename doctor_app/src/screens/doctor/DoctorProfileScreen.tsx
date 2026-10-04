@@ -549,7 +549,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
         </Text>
 
         {/* Practicing Days Toggle */}
-        <Text style={styles.subHeadingLabel}>🗓️ Weekly Practicing Days</Text>
+        <Text style={styles.subHeadingLabel}>Weekly Practicing Days</Text>
         <View style={styles.daysRow}>
           {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => {
             const isActive = availableDays.includes(day);
@@ -567,7 +567,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
         </View>
 
         {/* Working Hours */}
-        <Text style={[styles.subHeadingLabel, { marginTop: 14 }]}>⏰ Clinic Consultation Hours</Text>
+        <Text style={[styles.subHeadingLabel, { marginTop: 14 }]}>Clinic Consultation Hours</Text>
         <View style={styles.hoursRow}>
           <TouchableOpacity
             style={styles.hourBox}
@@ -611,7 +611,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           <View style={styles.leaveHeaderRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Ionicons name="calendar-outline" size={16} color="#0D9488" />
-              <Text style={styles.leaveSectionTitle}>🗓️ Clinician Availability & Leave Calendar</Text>
+              <Text style={styles.leaveSectionTitle}>Clinician Availability & Leave Calendar</Text>
             </View>
             {unavailableDates.length === 0 ? (
               <View style={styles.statusBadgePill}>
@@ -638,7 +638,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
                 activeOpacity={0.7}
               >
                 <Ionicons name="trash-outline" size={13} color="#DC2626" />
-                <Text style={[styles.quickLeaveBtnText, { color: '#DC2626' }]}>🗑️ Clear All Leaves</Text>
+                <Text style={[styles.quickLeaveBtnText, { color: '#DC2626' }]}>Clear All Leaves</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -744,7 +744,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
                 <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.textSecondary }}>
                   Marked Leave Dates ({unavailableDates.length}):
                 </Text>
-                <Text style={{ fontSize: 10, color: '#94A3B8' }}>Tap ✕ to remove</Text>
+                <Text style={{ fontSize: 10, color: '#94A3B8' }}>Tap to remove</Text>
               </View>
               <View style={styles.leaveTagsRow}>
                 {unavailableDates.slice().sort().map((dt) => (

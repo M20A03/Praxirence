@@ -761,9 +761,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           activeOpacity={0.8}
         >
           <View style={[styles.quickCardIconCircle, { backgroundColor: '#F0FDF4' }]}>
-            <Ionicons name="chatbubbles-outline" size={20} color="#15803D" />
+            <Ionicons name="medkit-outline" size={20} color="#15803D" />
           </View>
-          <Text style={styles.quickCardTitle}>🩺 {t('quickAssistant')}</Text>
+          <Text style={styles.quickCardTitle}>{t('quickAssistant')}</Text>
           <Text style={styles.quickCardSub}>{t('quickAssistantSub')}</Text>
         </TouchableOpacity>
 
@@ -773,9 +773,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           activeOpacity={0.8}
         >
           <View style={[styles.quickCardIconCircle, { backgroundColor: '#EFF6FF' }]}>
-            <Ionicons name="people-outline" size={20} color="#1D4ED8" />
+            <Ionicons name="medical-outline" size={20} color="#1D4ED8" />
           </View>
-          <Text style={styles.quickCardTitle}>👨‍⚕️ {t('quickDoctors')}</Text>
+          <Text style={styles.quickCardTitle}>{t('quickDoctors')}</Text>
           <Text style={styles.quickCardSub}>{t('quickDoctorsSub')}</Text>
         </TouchableOpacity>
 
@@ -785,9 +785,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           activeOpacity={0.8}
         >
           <View style={[styles.quickCardIconCircle, { backgroundColor: '#F0FDFA' }]}>
-            <Ionicons name="document-text-outline" size={20} color="#0F766E" />
+            <Ionicons name="reader-outline" size={20} color="#0F766E" />
           </View>
-          <Text style={styles.quickCardTitle}>📋 {t('quickCarePlans')}</Text>
+          <Text style={styles.quickCardTitle}>{t('quickCarePlans')}</Text>
           <Text style={styles.quickCardSub}>{t('quickCarePlansSub')}</Text>
         </TouchableOpacity>
 
@@ -799,7 +799,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <View style={[styles.quickCardIconCircle, { backgroundColor: '#FAF5FF' }]}>
             <Ionicons name="shield-checkmark-outline" size={20} color="#7E22CE" />
           </View>
-          <Text style={styles.quickCardTitle}>🔒 {t('quickConsent')}</Text>
+          <Text style={styles.quickCardTitle}>{t('quickConsent')}</Text>
           <Text style={styles.quickCardSub}>{t('quickConsentSub')}</Text>
         </TouchableOpacity>
       </View>

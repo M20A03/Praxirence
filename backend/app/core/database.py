@@ -5,7 +5,7 @@ from app.core.config import settings
 
 # Configure database engine
 connect_args = {}
-db_url = settings.DATABASE_URL or ""
+db_url = (settings.DATABASE_URL or "").strip("\"' \t\n\r")
 
 # 1. Normalize Railway postgres dialect (postgres:// -> postgresql://)
 if db_url.startswith("postgres://"):

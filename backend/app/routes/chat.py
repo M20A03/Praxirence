@@ -636,7 +636,7 @@ async def patient_chat_assistant(
         rec_docs = [
             RecommendedDoctor(
                 id=str(d.id),
-                name=f"Dr. {re.sub(r'^(Dr\.?\s*)+', '', d.name, flags=re.IGNORECASE).strip()}",
+                name="Dr. " + re.sub(r'^(Dr\.?\s*)+', '', d.name, flags=re.IGNORECASE).strip(),
                 specialty=getattr(d, "specialty", None),
                 clinic_name=getattr(d, "clinic_name", None),
                 reg_number=getattr(d, "reg_number", None),

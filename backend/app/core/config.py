@@ -1,6 +1,6 @@
 import os
 import base64
-from typing import List, Optional
+from typing import List, Optional, Union, Any
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     AUDIO_UPLOAD_DIR: str = "/tmp/praxirence_recordings"
 
     # CORS
-    ALLOWED_ORIGINS: List[str] = [
+    ALLOWED_ORIGINS: Union[List[str], str] = [
         "https://www.praxirence.com",
         "https://praxirence.com",
         "https://praxirence-production-9a92.up.railway.app",
@@ -62,6 +62,15 @@ class Settings(BaseSettings):
         "http://localhost:8081",
         "*"
     ]
+
+    @field_validator("ALLOWED_ORIGINS")
+    @classmethod
+    def assemble_cors_origins(cls, v: Any) -> List[str]:
+        if isinstance(v, str):
+            if v.strip() == "*":
+                return ["*"]
+            return [i.strip() for i in v.split(",") if i.strip()]
+        return v
 
     model_config = SettingsConfigDict(
         env_file=(

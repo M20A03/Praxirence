@@ -33,7 +33,7 @@ export const setCustomApiUrl = async (url: string | null) => {
   }
 };
 
-const PRODUCTION_RAILWAY_URL = 'https://praxirence-production.up.railway.app';
+const PRODUCTION_RAILWAY_URL = 'https://praxirence-production-9a92.up.railway.app';
 
 export const getEffectiveApiUrl = (): string => {
   if (customApiUrl) return customApiUrl;

@@ -272,7 +272,7 @@ export const generatePrescriptionHtml = (data: PrescriptionPdfData): string => {
 
         <div class="footer">
           <div style="display: flex; align-items: center; gap: 12px;">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=70x70&data=https://praxirence-production.up.railway.app/health" width="70" height="70" style="border-radius: 4px; border: 1px solid #CBD5E1;" alt="Verify QR" />
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=70x70&data=https://praxirence-production-9a92.up.railway.app/health" width="70" height="70" style="border-radius: 4px; border: 1px solid #CBD5E1;" alt="Verify QR" />
             <div class="security-footer">
               <strong>Scan to Verify Prescription</strong><br>
               Cryptographically signed & timestamped via Praxirence Clinical Gateway.<br>

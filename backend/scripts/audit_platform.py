@@ -5,7 +5,7 @@ import urllib.parse
 import sys
 import time
 
-BASE_URL = "https://praxirence-production.up.railway.app"
+BASE_URL = "https://praxirence-production-9a92.up.railway.app"
 results = {}
 
 print("================================================================================")

@@ -12,7 +12,7 @@ import {
 export const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_URL ||
-  'https://praxirence-production.up.railway.app'
+  'https://praxirence-production-9a92.up.railway.app'
 ).replace(/\/+$/, '');
 
 function getAuthHeaders(): HeadersInit {

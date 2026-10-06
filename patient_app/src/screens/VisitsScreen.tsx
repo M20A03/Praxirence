@@ -1004,6 +1004,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.xl,
     lineHeight: 28,
     letterSpacing: LetterSpacing.tight,
@@ -1036,12 +1037,14 @@ const styles = StyleSheet.create({
   },
   visitDate: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.md,
     letterSpacing: LetterSpacing.tight,
     color: Colors.text,
   },
   doctorName: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.sm,
     color: Colors.textSecondary,
     marginTop: 2,
@@ -1056,6 +1059,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.caption,
     color: '#166534',
   },
@@ -1069,6 +1073,7 @@ const styles = StyleSheet.create({
   },
   diagnosisLabel: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     letterSpacing: LetterSpacing.wide,
@@ -1076,6 +1081,7 @@ const styles = StyleSheet.create({
   },
   diagnosisText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.base,
     color: Colors.text,
     marginTop: 3,
@@ -1096,6 +1102,7 @@ const styles = StyleSheet.create({
   },
   explanationTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.sm,
     color: Colors.text,
   },
@@ -1110,6 +1117,7 @@ const styles = StyleSheet.create({
   },
   pdfBadgeButtonText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 11,
     color: '#FFFFFF',
   },
@@ -1137,6 +1145,7 @@ const styles = StyleSheet.create({
   },
   downloadPdfTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 13,
     color: '#FFFFFF',
   },
@@ -1159,6 +1168,7 @@ const styles = StyleSheet.create({
   },
   shareButtonText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.caption,
     color: Colors.textSecondary,
   },
@@ -1181,6 +1191,7 @@ const styles = StyleSheet.create({
   },
   adviceHeading: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: '#B45309',
   },
@@ -1214,6 +1225,7 @@ const styles = StyleSheet.create({
   },
   audioTitle: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: Colors.text,
   },
@@ -1236,11 +1248,13 @@ const styles = StyleSheet.create({
   },
   medsCount: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.sm,
     color: Colors.textSecondary,
   },
   expandPrompt: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: Colors.primary,
   },
@@ -1252,6 +1266,7 @@ const styles = StyleSheet.create({
   },
   expandedTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     textTransform: 'uppercase',
@@ -1273,11 +1288,13 @@ const styles = StyleSheet.create({
   },
   medDetailName: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.base,
     color: Colors.text,
   },
   medDetailFreq: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.primary,
     marginTop: 2,
@@ -1290,6 +1307,7 @@ const styles = StyleSheet.create({
   },
   medDetailDuration: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
   },
@@ -1315,6 +1333,7 @@ const styles = StyleSheet.create({
   },
   securityTrustText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.caption,
     color: Colors.textSecondary,
     flex: 1,
@@ -1327,6 +1346,7 @@ const styles = StyleSheet.create({
   },
   doseTrackerTitle: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 10,
     color: Colors.textMuted,
     textTransform: 'uppercase',
@@ -1354,12 +1374,14 @@ const styles = StyleSheet.create({
   },
   dosePillText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 11,
     color: Colors.textSecondary,
   },
   dosePillTextActive: {
     color: '#FFFFFF',
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
   },
   emptyCard: {
     backgroundColor: Colors.card,
@@ -1375,6 +1397,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.md,
     color: Colors.text,
   },
@@ -1401,6 +1424,7 @@ const styles = StyleSheet.create({
   },
   adherenceScoreText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.sm,
     color: Colors.textPrimary,
   },
@@ -1414,6 +1438,7 @@ const styles = StyleSheet.create({
   },
   adherenceBadgeText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 9,
     color: '#166534',
     letterSpacing: 0.5,
@@ -1466,6 +1491,7 @@ const styles = StyleSheet.create({
   },
   liveQueueTag: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 10,
     color: '#0369A1',
     letterSpacing: 0.8,
@@ -1480,6 +1506,7 @@ const styles = StyleSheet.create({
   },
   refreshQueueBtnText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 10,
     color: Colors.primary,
   },
@@ -1491,6 +1518,7 @@ const styles = StyleSheet.create({
   },
   queueDoctorName: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.md,
     color: Colors.textPrimary,
   },
@@ -1513,6 +1541,7 @@ const styles = StyleSheet.create({
   },
   queueSlotText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 10,
     color: Colors.primaryDark,
   },
@@ -1530,12 +1559,14 @@ const styles = StyleSheet.create({
   },
   tokenHeroLabel: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 9,
     color: '#166534',
     letterSpacing: 0.8,
   },
   tokenHeroNumber: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 30,
     color: '#15803D',
     letterSpacing: 1.5,
@@ -1554,6 +1585,7 @@ const styles = StyleSheet.create({
   },
   queueStatusBadgeText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 11,
     color: '#B45309',
   },
@@ -1573,6 +1605,7 @@ const styles = StyleSheet.create({
   },
   queueMetricLabel: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 8.5,
     color: Colors.textSecondary,
     letterSpacing: 0.5,
@@ -1580,6 +1613,7 @@ const styles = StyleSheet.create({
   },
   queueMetricValue: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.md,
     color: Colors.textPrimary,
   },

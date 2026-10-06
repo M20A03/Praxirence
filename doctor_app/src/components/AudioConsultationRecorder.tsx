@@ -742,6 +742,7 @@ const styles = StyleSheet.create({
   timerText: {
     fontSize: 16,
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontVariant: ['tabular-nums'],
     color: '#64748B',
   },

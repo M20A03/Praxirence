@@ -1,52 +1,35 @@
 import { Platform, TextStyle } from 'react-native';
 
 /**
- * Praxirence Clinical Typography System
- * High-legibility, institutional-grade clinical typography powered by Inter
- * Synchronized with Web & Mobile clinical design standards (Apple Health / Epic / Linear)
+ * Praxirence System-Adaptive Typography Engine
+ * Inherits the user's active device font (custom fonts, design fonts, or system font
+ * selected in Android / iOS Settings) so both apps seamlessly honor their personal phone typography.
+ * Font weights are strictly preserved via standard numeric weight mapping.
  */
 
 export const FontFamily = {
-  regular: Platform.select({
-    android: 'Inter-Regular',
-    ios: 'Inter-Regular',
-    default: 'sans-serif',
-  }),
-  medium: Platform.select({
-    android: 'Inter-Medium',
-    ios: 'Inter-Medium',
-    default: 'sans-serif-medium',
-  }),
-  semiBold: Platform.select({
-    android: 'Inter-SemiBold',
-    ios: 'Inter-SemiBold',
-    default: 'sans-serif-medium',
-  }),
-  bold: Platform.select({
-    android: 'Inter-Bold',
-    ios: 'Inter-Bold',
-    default: 'sans-serif',
-  }),
-  extraBold: Platform.select({
-    android: 'Inter-Bold',
-    ios: 'Inter-Bold',
-    default: 'sans-serif',
-  }),
-  sans: Platform.select({
-    android: 'Inter-Regular',
-    ios: 'Inter-Regular',
-    default: 'sans-serif',
-  }),
-  display: Platform.select({
-    android: 'Inter-Bold',
-    ios: 'Inter-Bold',
-    default: 'sans-serif',
-  }),
+  // Using undefined allows React Native on Android and iOS to render with the
+  // user's active system/custom font configured in their device's Settings.
+  regular: undefined,
+  medium: undefined,
+  semiBold: undefined,
+  bold: undefined,
+  extraBold: undefined,
+  sans: undefined,
+  display: undefined,
   mono: Platform.select({
     android: 'monospace',
     ios: 'Menlo',
     default: 'monospace',
   }),
+};
+
+export const FontWeight = {
+  regular: '400' as const,
+  medium: '500' as const,
+  semiBold: '600' as const,
+  bold: '700' as const,
+  extraBold: '800' as const,
 };
 
 export const FontSize = {
@@ -75,6 +58,7 @@ export const LetterSpacing = {
 export const Typography = {
   hero: {
     fontFamily: FontFamily.bold,
+    fontWeight: FontWeight.extraBold,
     fontSize: FontSize.hero,
     lineHeight: 36,
     letterSpacing: LetterSpacing.tighter,
@@ -82,6 +66,7 @@ export const Typography = {
 
   display: {
     fontFamily: FontFamily.bold,
+    fontWeight: FontWeight.bold,
     fontSize: FontSize.display,
     lineHeight: 32,
     letterSpacing: LetterSpacing.tight,
@@ -89,6 +74,7 @@ export const Typography = {
 
   h1: {
     fontFamily: FontFamily.bold,
+    fontWeight: FontWeight.bold,
     fontSize: FontSize.xxl,
     lineHeight: 28,
     letterSpacing: LetterSpacing.tight,
@@ -96,6 +82,7 @@ export const Typography = {
 
   h2: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: FontWeight.semiBold,
     fontSize: FontSize.xl,
     lineHeight: 26,
     letterSpacing: LetterSpacing.tight,
@@ -103,6 +90,7 @@ export const Typography = {
 
   h3: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: FontWeight.semiBold,
     fontSize: FontSize.lg,
     lineHeight: 24,
     letterSpacing: LetterSpacing.normal,
@@ -110,6 +98,7 @@ export const Typography = {
 
   h4: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: FontWeight.semiBold,
     fontSize: FontSize.md,
     lineHeight: 22,
     letterSpacing: LetterSpacing.normal,
@@ -117,6 +106,7 @@ export const Typography = {
 
   body: {
     fontFamily: FontFamily.regular,
+    fontWeight: FontWeight.regular,
     fontSize: FontSize.body,
     lineHeight: 22,
     letterSpacing: LetterSpacing.normal,
@@ -124,6 +114,7 @@ export const Typography = {
 
   bodyMedium: {
     fontFamily: FontFamily.medium,
+    fontWeight: FontWeight.medium,
     fontSize: FontSize.body,
     lineHeight: 22,
     letterSpacing: LetterSpacing.normal,
@@ -131,6 +122,7 @@ export const Typography = {
 
   bodyBold: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: FontWeight.bold,
     fontSize: FontSize.body,
     lineHeight: 22,
     letterSpacing: LetterSpacing.normal,
@@ -138,6 +130,7 @@ export const Typography = {
 
   subtext: {
     fontFamily: FontFamily.regular,
+    fontWeight: FontWeight.regular,
     fontSize: FontSize.sm,
     lineHeight: 18,
     letterSpacing: LetterSpacing.normal,
@@ -145,6 +138,7 @@ export const Typography = {
 
   subtextMedium: {
     fontFamily: FontFamily.medium,
+    fontWeight: FontWeight.medium,
     fontSize: FontSize.sm,
     lineHeight: 18,
     letterSpacing: LetterSpacing.normal,
@@ -152,6 +146,7 @@ export const Typography = {
 
   caption: {
     fontFamily: FontFamily.regular,
+    fontWeight: FontWeight.regular,
     fontSize: FontSize.xs,
     lineHeight: 16,
     letterSpacing: LetterSpacing.normal,
@@ -159,6 +154,7 @@ export const Typography = {
 
   captionMedium: {
     fontFamily: FontFamily.medium,
+    fontWeight: FontWeight.medium,
     fontSize: FontSize.xs,
     lineHeight: 16,
     letterSpacing: LetterSpacing.normal,
@@ -166,6 +162,7 @@ export const Typography = {
 
   badge: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: FontWeight.semiBold,
     fontSize: FontSize.xs,
     lineHeight: 16,
     letterSpacing: LetterSpacing.normal,
@@ -173,6 +170,7 @@ export const Typography = {
 
   button: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: FontWeight.semiBold,
     fontSize: FontSize.body,
     lineHeight: 20,
     letterSpacing: LetterSpacing.normal,
@@ -180,6 +178,7 @@ export const Typography = {
 
   buttonSmall: {
     fontFamily: FontFamily.medium,
+    fontWeight: FontWeight.medium,
     fontSize: FontSize.sm,
     lineHeight: 18,
     letterSpacing: LetterSpacing.normal,
@@ -187,6 +186,7 @@ export const Typography = {
 
   metric: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: FontWeight.semiBold,
     fontSize: FontSize.xl,
     lineHeight: 26,
     letterSpacing: LetterSpacing.tight,

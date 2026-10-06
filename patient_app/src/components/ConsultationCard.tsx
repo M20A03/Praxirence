@@ -170,6 +170,7 @@ const styles = StyleSheet.create({
   },
   doctorName: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.base,
     color: Colors.text,
   },
@@ -189,6 +190,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
   },
@@ -202,6 +204,7 @@ const styles = StyleSheet.create({
   },
   diagnosisLabel: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 10,
     color: Colors.primary,
     letterSpacing: 0.5,
@@ -209,6 +212,7 @@ const styles = StyleSheet.create({
   },
   diagnosisText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.text,
     flex: 1,
@@ -228,6 +232,7 @@ const styles = StyleSheet.create({
   },
   medsHeader: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: Colors.text,
     marginBottom: 8,
@@ -249,6 +254,7 @@ const styles = StyleSheet.create({
   },
   medName: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: Colors.text,
   },
@@ -286,6 +292,7 @@ const styles = StyleSheet.create({
   },
   audioBtnText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.primary,
   },
@@ -305,6 +312,7 @@ const styles = StyleSheet.create({
   },
   pdfBtnText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
   },

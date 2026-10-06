@@ -161,6 +161,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 16,
     color: '#0F172A',
   },
@@ -181,6 +182,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 14,
     color: '#0F172A',
     padding: 0,
@@ -203,11 +205,13 @@ const styles = StyleSheet.create({
   },
   itemText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 14,
     color: '#334155',
   },
   itemTextActive: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     color: Colors.primaryDark,
   },
   emptyContainer: {
@@ -216,6 +220,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 13,
     color: '#94A3B8',
   },

@@ -1299,18 +1299,21 @@ const styles = StyleSheet.create({
   },
   doctorVerifiedTagText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 10,
     color: '#166534',
     textTransform: 'uppercase',
   },
   clinicianDegrees: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 12.5,
     color: '#334155',
     marginTop: 3,
   },
   clinicianDesignationText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 12,
     color: '#0284C7',
     marginTop: 1,
@@ -1332,6 +1335,7 @@ const styles = StyleSheet.create({
   },
   credentialsMetaText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 11.5,
     color: '#64748B',
     flex: 1,
@@ -1356,6 +1360,7 @@ const styles = StyleSheet.create({
   },
   systemStatusText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 11,
     color: '#15803D',
   },
@@ -1416,12 +1421,14 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.textMuted,
     marginBottom: 2,
   },
   doctorName: {
     fontFamily: FontFamily.display,
+    fontWeight: '700',
     fontSize: FontSize.lg,
     color: Colors.textPrimary,
   },
@@ -1433,6 +1440,7 @@ const styles = StyleSheet.create({
   },
   regBadge: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.textMuted,
     marginTop: 4,
@@ -1450,6 +1458,7 @@ const styles = StyleSheet.create({
   },
   verifiedDoctorText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.caption,
     color: '#166534',
   },
@@ -1473,6 +1482,7 @@ const styles = StyleSheet.create({
   },
   dateLabel: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
   },
@@ -1495,6 +1505,7 @@ const styles = StyleSheet.create({
   },
   activeRoomText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
   },
@@ -1540,6 +1551,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 10,
     color: '#64748B',
     textAlign: 'center',
@@ -1555,6 +1567,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: FontFamily.display,
+    fontWeight: '700',
     fontSize: FontSize.md,
     color: Colors.textPrimary,
   },
@@ -1574,6 +1587,7 @@ const styles = StyleSheet.create({
   },
   addWalkInText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: '#ffffff',
   },
@@ -1629,6 +1643,7 @@ const styles = StyleSheet.create({
   },
   tokenText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.sm,
     color: '#1E293B',
   },
@@ -1655,6 +1670,7 @@ const styles = StyleSheet.create({
   },
   nextBadgeText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 10,
     color: '#1D4ED8',
   },
@@ -1674,6 +1690,7 @@ const styles = StyleSheet.create({
   },
   triageText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.caption,
   },
   patientInfoRow: {
@@ -1692,6 +1709,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.sm,
     color: '#0284C7',
   },
@@ -1733,6 +1751,7 @@ const styles = StyleSheet.create({
   },
   complaintTitle: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.caption,
     color: '#475569',
   },
@@ -1768,6 +1787,7 @@ const styles = StyleSheet.create({
   },
   startConsultBtnText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.sm,
     color: '#ffffff',
   },
@@ -1787,6 +1807,7 @@ const styles = StyleSheet.create({
   completeConsultBtnText: {
     fontSize: 12,
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     color: '#059669',
   },
   standbyBtn: {
@@ -1805,6 +1826,7 @@ const styles = StyleSheet.create({
   standbyBtnText: {
     fontSize: 12,
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     color: '#B45309',
   },
   recallBtn: {
@@ -1823,6 +1845,7 @@ const styles = StyleSheet.create({
   recallBtnText: {
     fontSize: 12,
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     color: '#0284C7',
   },
   secondaryActionRow: {
@@ -1849,6 +1872,7 @@ const styles = StyleSheet.create({
   },
   secondaryActionChipText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 11,
     color: '#475569',
   },
@@ -1876,6 +1900,7 @@ const styles = StyleSheet.create({
   },
   patientHistoryBtnText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.sm,
     color: Colors.textSecondary,
   },
@@ -1890,6 +1915,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontFamily: FontFamily.display,
+    fontWeight: '700',
     fontSize: FontSize.md,
     color: Colors.textPrimary,
     marginTop: 10,
@@ -1916,6 +1942,7 @@ const styles = StyleSheet.create({
   },
   directoryCardTitle: {
     fontFamily: FontFamily.display,
+    fontWeight: '700',
     fontSize: FontSize.sm,
     color: Colors.textPrimary,
   },
@@ -1936,6 +1963,7 @@ const styles = StyleSheet.create({
   },
   viewDirectoryBtnText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: '#ffffff',
   },
@@ -1945,6 +1973,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginTop: 10,
@@ -1975,11 +2004,13 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontFamily: FontFamily.display,
+    fontWeight: '700',
     fontSize: FontSize.lg,
     color: Colors.textPrimary,
   },
   inputLabel: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginBottom: 6,
@@ -2017,12 +2048,14 @@ const styles = StyleSheet.create({
   },
   triageOptionText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
   },
   triageOptionTextActive: {
     color: '#ffffff',
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
   },
   modalSubmitBtn: {
     flexDirection: 'row',
@@ -2035,6 +2068,7 @@ const styles = StyleSheet.create({
   },
   modalSubmitBtnText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.sm,
     color: '#ffffff',
   },
@@ -2065,6 +2099,7 @@ const styles = StyleSheet.create({
   callNextHeroTitle: {
     fontSize: 15,
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
   macroBadge: {
@@ -2076,6 +2111,7 @@ const styles = StyleSheet.create({
   macroBadgeText: {
     fontSize: 9,
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: 0.5,
   },
@@ -2108,6 +2144,7 @@ const styles = StyleSheet.create({
   delayTitle: {
     fontSize: 13,
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     color: '#0F172A',
   },
   delayCurrentBadge: {
@@ -2136,6 +2173,7 @@ const styles = StyleSheet.create({
   delayStatusText: {
     fontSize: 11,
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
   },
   delayChipsRow: {
     flexDirection: 'row',
@@ -2159,11 +2197,13 @@ const styles = StyleSheet.create({
   delayChipText: {
     fontSize: 11,
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     color: '#334155',
   },
   delayChipTextActive: {
     color: '#FFFFFF',
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
   },
 
   quickPill: {
@@ -2181,10 +2221,12 @@ const styles = StyleSheet.create({
   quickPillText: {
     fontSize: 12,
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     color: Colors.textSecondary,
   },
   quickPillTextActive: {
     color: '#FFFFFF',
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
   },
 });

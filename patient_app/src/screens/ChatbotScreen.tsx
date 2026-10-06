@@ -296,7 +296,7 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
             onPress={() => setShowHistoryModal(true)}
             activeOpacity={0.7}
           >
-            <Ionicons name="time-outline" size={13} color="#0D9488" style={{ marginRight: 3 }} />
+            <Ionicons name="reader-outline" size={13} color="#0D9488" style={{ marginRight: 4 }} />
             <Text style={styles.historyPillText}>History</Text>
           </TouchableOpacity>
 
@@ -559,9 +559,14 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
         <View style={styles.historyModalOverlay}>
           <View style={styles.historyModalCard}>
             <View style={styles.historyModalHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name="time" size={20} color="#0D9488" />
-                <Text style={styles.historyModalTitle}>Chat Search History</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View style={styles.historyModalIconWrap}>
+                  <Ionicons name="reader-outline" size={18} color="#0D9488" />
+                </View>
+                <View>
+                  <Text style={styles.historyModalTitle}>Consultation Records</Text>
+                  <Text style={styles.historyModalSubtitle}>Logged health queries & explanations</Text>
+                </View>
               </View>
               <TouchableOpacity onPress={() => setShowHistoryModal(false)} style={{ padding: 4 }}>
                 <Ionicons name="close-circle" size={22} color="#94A3B8" />
@@ -590,7 +595,7 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
                       <Ionicons name="calendar-outline" size={12} color="#0D9488" style={{ marginRight: 4 }} />
                       <Text style={styles.historyItemTimestamp}>{item.timestamp}</Text>
                       <View style={styles.reAskPill}>
-                        <Text style={styles.reAskPillText}>Ask Again</Text>
+                        <Text style={styles.reAskPillText}>Review</Text>
                       </View>
                     </View>
                     <Text style={styles.historyItemQuery}>{item.query}</Text>
@@ -644,6 +649,7 @@ const styles = StyleSheet.create({
   },
   languagePillText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.caption,
     color: Colors.primaryDark,
   },
@@ -656,6 +662,7 @@ const styles = StyleSheet.create({
   },
   languageDropdownTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.caption,
     color: Colors.textSecondary,
     marginBottom: 6,
@@ -679,12 +686,14 @@ const styles = StyleSheet.create({
   },
   langOptionText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.caption,
     color: Colors.text,
   },
   langOptionTextActive: {
     color: '#FFFFFF',
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
   },
   safetyBanner: {
     flexDirection: 'row',
@@ -701,6 +710,7 @@ const styles = StyleSheet.create({
   },
   safetyText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 11,
     color: Colors.amber,
     flex: 1,
@@ -757,6 +767,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.caption,
     color: Colors.textSecondary,
   },
@@ -794,6 +805,7 @@ const styles = StyleSheet.create({
   },
   doctorCardsHeader: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.caption,
     color: Colors.primaryDark,
     marginBottom: 6,
@@ -819,11 +831,13 @@ const styles = StyleSheet.create({
   },
   doctorCardName: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.caption,
     color: Colors.text,
   },
   doctorCardSpecialty: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 11,
     color: Colors.primary,
   },
@@ -834,6 +848,7 @@ const styles = StyleSheet.create({
   },
   doctorCardNmc: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 9,
     color: Colors.textSecondary,
   },
@@ -863,6 +878,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 12.5,
     color: Colors.primaryDark,
   },
@@ -933,12 +949,14 @@ const styles = StyleSheet.create({
   },
   emergencyTitleText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 13,
     color: '#DC2626',
     letterSpacing: 0.5,
   },
   emergencyReasonBadge: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 12,
     color: '#991B1B',
     marginBottom: 10,
@@ -966,6 +984,7 @@ const styles = StyleSheet.create({
   },
   emergencyDialPrimaryText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 13,
     color: '#FFFFFF',
   },
@@ -982,6 +1001,7 @@ const styles = StyleSheet.create({
   },
   emergencyDialSecondaryText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 13,
     color: '#DC2626',
   },
@@ -1020,6 +1040,7 @@ const styles = StyleSheet.create({
   },
   citationText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 11,
     color: Colors.primaryDark,
   },
@@ -1036,6 +1057,7 @@ const styles = StyleSheet.create({
   },
   historyPillText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.caption,
     color: '#0D9488',
   },
@@ -1067,10 +1089,28 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F1F5F9',
     marginBottom: 10,
   },
+  historyModalIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   historyModalTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 16,
     color: Colors.text,
+  },
+  historyModalSubtitle: {
+    fontFamily: FontFamily.regular,
+    fontWeight: '400',
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 1,
   },
   historyItemCard: {
     backgroundColor: '#F8FAFC',
@@ -1087,6 +1127,7 @@ const styles = StyleSheet.create({
   },
   historyItemTimestamp: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 11,
     color: '#0D9488',
     flex: 1,
@@ -1099,11 +1140,13 @@ const styles = StyleSheet.create({
   },
   reAskPillText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 10,
     color: '#0D9488',
   },
   historyItemQuery: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 13,
     color: Colors.text,
     marginBottom: 4,
@@ -1121,6 +1164,7 @@ const styles = StyleSheet.create({
   },
   emptyHistoryText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 14,
     color: Colors.text,
     marginBottom: 4,
@@ -1146,6 +1190,7 @@ const styles = StyleSheet.create({
   },
   clearHistoryBtnText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 12,
     color: '#DC2626',
   },

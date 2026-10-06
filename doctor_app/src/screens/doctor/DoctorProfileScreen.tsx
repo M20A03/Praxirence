@@ -1364,6 +1364,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
                 fontSize: 22,
                 letterSpacing: 8,
                 fontFamily: FontFamily.bold,
+                fontWeight: '700',
                 color: Colors.text,
               }}
               value={pinInput}
@@ -1393,6 +1394,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
                 fontSize: 22,
                 letterSpacing: 8,
                 fontFamily: FontFamily.bold,
+                fontWeight: '700',
                 color: Colors.text,
               }}
               value={confirmPinInput}
@@ -1531,6 +1533,7 @@ const styles = StyleSheet.create({
   },
   doctorDegreesText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 13,
     color: '#334155',
     marginBottom: 3,
@@ -1538,6 +1541,7 @@ const styles = StyleSheet.create({
   },
   designationText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 13,
     color: '#0284C7',
     marginTop: 2,
@@ -1552,6 +1556,7 @@ const styles = StyleSheet.create({
   },
   doctorMetaText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 11.5,
     color: '#64748B',
   },
@@ -1568,6 +1573,7 @@ const styles = StyleSheet.create({
   },
   editCredentialsBtnText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 12,
     color: Colors.primary,
   },
@@ -1597,11 +1603,13 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 16,
     color: '#0F172A',
   },
   inputLabel: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 11.5,
     color: '#475569',
     marginTop: 8,
@@ -1654,12 +1662,14 @@ const styles = StyleSheet.create({
 
   doctorName: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.xl,
     color: Colors.textPrimary,
     textAlign: 'center',
   },
   specialtyText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.sm,
     color: Colors.primary,
     marginTop: 2,
@@ -1680,6 +1690,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.sm,
     color: Colors.textPrimary,
     marginBottom: 12,
@@ -1707,6 +1718,7 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.sm,
     color: Colors.textPrimary,
     marginTop: 1,
@@ -1719,6 +1731,7 @@ const styles = StyleSheet.create({
   },
   securityHeading: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: Colors.textPrimary,
   },
@@ -1737,6 +1750,7 @@ const styles = StyleSheet.create({
   },
   pingBtnText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.primary,
   },
@@ -1760,6 +1774,7 @@ const styles = StyleSheet.create({
   },
   telemetryVal: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: Colors.textPrimary,
   },
@@ -1788,6 +1803,7 @@ const styles = StyleSheet.create({
   },
   logoutBtnText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.sm,
     color: '#DC2626',
     letterSpacing: 0.2,
@@ -1812,6 +1828,7 @@ const styles = StyleSheet.create({
   },
   liveSyncText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 10,
     color: '#059669',
   },
@@ -1824,6 +1841,7 @@ const styles = StyleSheet.create({
   },
   subHeadingLabel: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: Colors.textPrimary,
     marginBottom: 8,
@@ -1852,12 +1870,14 @@ const styles = StyleSheet.create({
   },
   dayPillText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 11,
     color: '#64748B',
   },
   dayPillTextActive: {
     color: '#FFFFFF',
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
   },
   hoursRow: {
     flexDirection: 'row',
@@ -1891,18 +1911,21 @@ const styles = StyleSheet.create({
   },
   hourBoxSub: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 9,
     color: '#64748B',
     letterSpacing: 0.5,
   },
   hourBoxValue: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 13,
     color: '#0F172A',
     marginTop: 1,
   },
   hourBoxLabel: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.textPrimary,
   },
@@ -1922,6 +1945,7 @@ const styles = StyleSheet.create({
   },
   leaveSectionTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 13,
     color: '#0F172A',
   },
@@ -1938,6 +1962,7 @@ const styles = StyleSheet.create({
   },
   statusBadgeText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 10,
     color: '#059669',
   },
@@ -1966,6 +1991,7 @@ const styles = StyleSheet.create({
   },
   quickLeaveBtnText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 11,
     color: '#0F766E',
   },
@@ -1983,11 +2009,13 @@ const styles = StyleSheet.create({
   },
   leaveDateText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 11,
     color: '#B91C1C',
   },
   cancelLeaveText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 11,
     color: Colors.primary,
   },
@@ -2017,6 +2045,7 @@ const styles = StyleSheet.create({
   },
   saveScheduleBtnText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.sm,
     color: '#FFFFFF',
     letterSpacing: 0.3,
@@ -2034,6 +2063,7 @@ const styles = StyleSheet.create({
   },
   editLocBadgeText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 12,
     color: Colors.primaryDark,
   },
@@ -2051,6 +2081,7 @@ const styles = StyleSheet.create({
   },
   locDropdownBtnText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 14,
     color: '#0F172A',
   },
@@ -2082,6 +2113,7 @@ const styles = StyleSheet.create({
   },
   calendarMonthTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 13,
     color: '#0F172A',
   },
@@ -2095,6 +2127,7 @@ const styles = StyleSheet.create({
   },
   calendarWeekdayText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 11,
     color: '#94A3B8',
     width: '14.28%',
@@ -2128,15 +2161,18 @@ const styles = StyleSheet.create({
   },
   calendarCellText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 12,
     color: '#1E293B',
   },
   calendarCellTextToday: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     color: '#0D9488',
   },
   calendarCellTextLeave: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
   calendarCellTextPast: {
@@ -2164,6 +2200,7 @@ const styles = StyleSheet.create({
   },
   leaveDateTagText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 11,
     color: '#DC2626',
   },
@@ -2187,11 +2224,13 @@ const styles = StyleSheet.create({
   },
   timeFilterChipText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 11,
     color: '#64748B',
   },
   timeFilterChipTextActive: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
   timeSlotsGrid: {
@@ -2217,11 +2256,13 @@ const styles = StyleSheet.create({
   },
   timeSlotCardText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 12,
     color: '#334155',
   },
   timeSlotCardTextSelected: {
     color: '#FFFFFF',
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
   },
 });

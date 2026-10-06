@@ -229,6 +229,7 @@ const styles = StyleSheet.create({
   },
   liveQueueHeaderTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.xs,
     color: '#0369A1',
     letterSpacing: LetterSpacing.wide,
@@ -244,6 +245,7 @@ const styles = StyleSheet.create({
   },
   liveQueueStatusBadgeText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 10,
   },
   liveQueueDoctorInfo: {
@@ -254,6 +256,7 @@ const styles = StyleSheet.create({
   },
   liveQueueDoctorText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
   },
@@ -278,6 +281,7 @@ const styles = StyleSheet.create({
   },
   activeBannerTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.xs,
     color: '#166534',
     lineHeight: 18,
@@ -316,6 +320,7 @@ const styles = StyleSheet.create({
   },
   liveQueueMetricLabel: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 9,
     letterSpacing: LetterSpacing.wide,
     color: Colors.primaryDark,
@@ -323,15 +328,18 @@ const styles = StyleSheet.create({
   },
   liveQueueTokenText: {
     fontFamily: FontFamily.extraBold,
+    fontWeight: '800',
     fontSize: 20,
     color: Colors.primaryDark,
   },
   liveQueueWaitText: {
     fontFamily: FontFamily.extraBold,
+    fontWeight: '800',
     fontSize: 18,
   },
   liveQueueSubLabel: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 10,
     color: Colors.textMuted,
     marginTop: 2,
@@ -349,6 +357,7 @@ const styles = StyleSheet.create({
   },
   delayAlertText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: '#92400E',
     flex: 1,
@@ -363,6 +372,7 @@ const styles = StyleSheet.create({
   },
   commuteAdvisoryTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.xs,
     color: '#0F766E',
     letterSpacing: LetterSpacing.wide,
@@ -378,6 +388,7 @@ const styles = StyleSheet.create({
   },
   commuteBadgeText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 10,
     color: '#0F766E',
   },
@@ -411,6 +422,7 @@ const styles = StyleSheet.create({
   },
   cancelApptBtnText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 11,
     color: '#DC2626',
   },
@@ -423,6 +435,7 @@ const styles = StyleSheet.create({
   },
   dismissTrackerBtnText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 11,
     color: '#64748B',
   },

@@ -259,7 +259,7 @@ ${copilotReply}`,
               onPress={() => setShowHistoryModal(true)}
               activeOpacity={0.7}
             >
-              <Ionicons name="time-outline" size={14} color="#0284C7" />
+              <Ionicons name="journal-outline" size={14} color="#0284C7" />
               <Text style={styles.copilotHistoryBtnText}>History</Text>
             </TouchableOpacity>
             <View style={styles.badgeBox}>
@@ -591,9 +591,14 @@ ${copilotReply}`,
         <View style={styles.historyModalOverlay}>
           <View style={styles.historyModalCard}>
             <View style={styles.historyModalHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name="time" size={20} color="#0284C7" />
-                <Text style={styles.historyModalTitle}>Clinical Query History</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View style={styles.copilotModalIconWrap}>
+                  <Ionicons name="journal-outline" size={18} color="#0284C7" />
+                </View>
+                <View>
+                  <Text style={styles.historyModalTitle}>Clinical Case Log</Text>
+                  <Text style={styles.historyModalSubtitle}>Logged drug reviews & safety checks</Text>
+                </View>
               </View>
               <TouchableOpacity onPress={() => setShowHistoryModal(false)} style={{ padding: 4 }}>
                 <Ionicons name="close-circle" size={22} color="#94A3B8" />
@@ -687,6 +692,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.lg,
     color: '#0F172A',
   },
@@ -715,6 +721,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: '#15803D',
   },
@@ -733,6 +740,7 @@ const styles = StyleSheet.create({
   patientBarText: {
     flex: 1,
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: '#334155',
   },
@@ -765,6 +773,7 @@ const styles = StyleSheet.create({
   },
   patientOptionTextSelected: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     color: '#0284C7',
   },
   scrollContent: {
@@ -773,6 +782,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.xs,
     color: '#64748B',
     marginBottom: 8,
@@ -800,6 +810,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: '#334155',
   },
@@ -824,6 +835,7 @@ const styles = StyleSheet.create({
   },
   inputCardTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.sm,
     color: '#1E293B',
     flex: 1,
@@ -856,6 +868,7 @@ const styles = StyleSheet.create({
   },
   trayToggleText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: '#0369A1',
   },
@@ -869,6 +882,7 @@ const styles = StyleSheet.create({
   },
   medTrayHeading: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: '#475569',
     marginBottom: 8,
@@ -904,6 +918,7 @@ const styles = StyleSheet.create({
   },
   medTagText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: '#0369A1',
   },
@@ -928,6 +943,7 @@ const styles = StyleSheet.create({
   },
   renalChipText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 10,
     color: '#64748B',
     textAlign: 'center',
@@ -935,6 +951,7 @@ const styles = StyleSheet.create({
   renalChipTextActive: {
     color: '#0369A1',
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
   },
   inputFooter: {
     flexDirection: 'row',
@@ -961,6 +978,7 @@ const styles = StyleSheet.create({
   },
   actionBtnText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.sm,
     color: '#FFFFFF',
   },
@@ -977,6 +995,7 @@ const styles = StyleSheet.create({
   },
   clearBtnText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: '#64748B',
   },
@@ -996,6 +1015,7 @@ const styles = StyleSheet.create({
   },
   ddiAlertTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.sm,
     flex: 1,
   },
@@ -1009,6 +1029,7 @@ const styles = StyleSheet.create({
   },
   severePair: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.sm,
     color: '#991B1B',
     marginBottom: 4,
@@ -1026,11 +1047,13 @@ const styles = StyleSheet.create({
   },
   directiveLabel: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.xs,
     color: '#0F172A',
   },
   directiveText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: '#0F172A',
   },
@@ -1044,6 +1067,7 @@ const styles = StyleSheet.create({
   },
   moderatePair: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.sm,
     color: '#B45309',
     marginBottom: 4,
@@ -1068,6 +1092,7 @@ const styles = StyleSheet.create({
   },
   cautionText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: '#0369A1',
     flex: 1,
@@ -1095,6 +1120,7 @@ const styles = StyleSheet.create({
   },
   replyTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.sm,
     color: '#0284C7',
   },
@@ -1117,6 +1143,7 @@ const styles = StyleSheet.create({
   },
   guidelineFooterText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 10,
     color: '#94A3B8',
     textAlign: 'center',
@@ -1135,6 +1162,7 @@ const styles = StyleSheet.create({
   },
   copilotHistoryBtnText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 11,
     color: '#0284C7',
   },
@@ -1166,10 +1194,28 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F1F5F9',
     marginBottom: 10,
   },
+  copilotModalIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   historyModalTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 16,
     color: Colors.text,
+  },
+  historyModalSubtitle: {
+    fontFamily: FontFamily.regular,
+    fontWeight: '400',
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 1,
   },
   historyItemCard: {
     backgroundColor: '#F8FAFC',
@@ -1186,6 +1232,7 @@ const styles = StyleSheet.create({
   },
   historyItemTimestamp: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 11,
     color: '#0284C7',
     flex: 1,
@@ -1198,11 +1245,13 @@ const styles = StyleSheet.create({
   },
   reAskPillText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 10,
     color: '#0284C7',
   },
   historyItemQuery: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 13,
     color: Colors.text,
     marginBottom: 4,
@@ -1220,6 +1269,7 @@ const styles = StyleSheet.create({
   },
   emptyHistoryText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 14,
     color: Colors.text,
     marginBottom: 4,
@@ -1245,6 +1295,7 @@ const styles = StyleSheet.create({
   },
   clearHistoryBtnText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 12,
     color: '#DC2626',
   },

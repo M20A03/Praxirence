@@ -199,6 +199,7 @@ const styles = StyleSheet.create({
   },
   feedbackHeaderBadgeText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 11,
     color: '#0F766E',
     letterSpacing: 0.3,
@@ -212,11 +213,13 @@ const styles = StyleSheet.create({
   },
   feedbackSkipActionText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 12,
     color: '#94A3B8',
   },
   feedbackPromptTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 16,
     color: '#0F172A',
     marginBottom: 4,
@@ -251,6 +254,7 @@ const styles = StyleSheet.create({
   },
   feedbackRatingLabel: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 12,
     color: '#475569',
   },
@@ -279,6 +283,7 @@ const styles = StyleSheet.create({
   },
   wordCounterText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 11,
     color: '#64748B',
   },
@@ -289,6 +294,7 @@ const styles = StyleSheet.create({
   },
   wordCounterVerifiedText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 11,
     color: '#059669',
   },
@@ -320,6 +326,7 @@ const styles = StyleSheet.create({
   },
   feedbackDismissBtnText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 13,
     color: '#64748B',
   },
@@ -345,6 +352,7 @@ const styles = StyleSheet.create({
   },
   feedbackSubmitBtnText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 13,
     color: '#FFFFFF',
   },

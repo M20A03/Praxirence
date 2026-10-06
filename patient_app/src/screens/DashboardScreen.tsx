@@ -1504,11 +1504,13 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.sm,
     color: Colors.textSecondary,
   },
   patientName: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.xxl,
     lineHeight: 28,
     letterSpacing: LetterSpacing.tight,
@@ -1524,6 +1526,7 @@ const styles = StyleSheet.create({
   },
   switchRoleBadgeText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.caption,
     color: Colors.textSecondary,
   },
@@ -1536,6 +1539,7 @@ const styles = StyleSheet.create({
   },
   consentBadgeText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.xs,
     letterSpacing: LetterSpacing.wide,
   },
@@ -1569,6 +1573,7 @@ const styles = StyleSheet.create({
   },
   cloudStatusText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: Colors.text,
   },
@@ -1593,6 +1598,7 @@ const styles = StyleSheet.create({
   },
   newPlanTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.base,
     color: Colors.primaryLight,
   },
@@ -1623,6 +1629,7 @@ const styles = StyleSheet.create({
   },
   bannerTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.base,
     color: Colors.cyan,
   },
@@ -1645,6 +1652,7 @@ const styles = StyleSheet.create({
   },
   offlineTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.sm,
     color: Colors.amber,
   },
@@ -1675,6 +1683,7 @@ const styles = StyleSheet.create({
   },
   nextDoseLabel: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     letterSpacing: LetterSpacing.wide,
@@ -1682,6 +1691,7 @@ const styles = StyleSheet.create({
   },
   nextDoseTime: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.md,
     color: Colors.primary,
   },
@@ -1698,11 +1708,13 @@ const styles = StyleSheet.create({
   },
   testAlarmPillText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 10,
     color: '#0284C7',
   },
   nextDoseMedicine: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.xl,
     lineHeight: 26,
     letterSpacing: LetterSpacing.tight,
@@ -1726,6 +1738,7 @@ const styles = StyleSheet.create({
   },
   takenButtonText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     color: '#ffffff',
     fontSize: FontSize.body,
     letterSpacing: LetterSpacing.wide,
@@ -1741,6 +1754,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.lg,
     letterSpacing: LetterSpacing.tight,
     color: Colors.text,
@@ -1755,6 +1769,7 @@ const styles = StyleSheet.create({
   },
   diagnosisLabel: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.caption,
     color: Colors.textMuted,
     letterSpacing: LetterSpacing.wider,
@@ -1762,6 +1777,7 @@ const styles = StyleSheet.create({
   },
   diagnosisText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.md,
     color: Colors.text,
     marginTop: 4,
@@ -1788,6 +1804,7 @@ const styles = StyleSheet.create({
   },
   medName: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.md,
     letterSpacing: LetterSpacing.tight,
     color: Colors.text,
@@ -1800,11 +1817,13 @@ const styles = StyleSheet.create({
   },
   dosageText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     color: Colors.primaryLight,
     fontSize: FontSize.xs,
   },
   medTiming: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.sm,
     color: Colors.cyan,
     marginTop: 2,
@@ -1817,6 +1836,7 @@ const styles = StyleSheet.create({
   },
   medDuration: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.caption,
     color: Colors.textMuted,
     marginTop: 4,
@@ -1831,6 +1851,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.body,
     color: Colors.textSecondary,
   },
@@ -1860,11 +1881,13 @@ const styles = StyleSheet.create({
   },
   reminderTimeText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     color: Colors.cyan,
     fontSize: FontSize.base,
   },
   reminderMedName: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.base,
     color: Colors.text,
   },
@@ -1892,6 +1915,7 @@ const styles = StyleSheet.create({
   },
   greetingSub: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.caption,
     color: Colors.textSecondary,
     textTransform: 'uppercase',
@@ -1921,6 +1945,7 @@ const styles = StyleSheet.create({
   },
   quickActionTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.body,
     color: Colors.text,
   },
@@ -1954,6 +1979,7 @@ const styles = StyleSheet.create({
   },
   vitalsHeaderTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.lg,
     color: Colors.text,
   },
@@ -1967,6 +1993,7 @@ const styles = StyleSheet.create({
   },
   logVitalsButtonText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 12,
     color: Colors.textSecondary,
   },
@@ -1986,12 +2013,14 @@ const styles = StyleSheet.create({
   },
   vitalLabel: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 12,
     color: Colors.textSecondary,
     marginBottom: 4,
   },
   vitalValue: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 20,
     color: Colors.text,
   },
@@ -2010,6 +2039,7 @@ const styles = StyleSheet.create({
   },
   vitalStatusText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 10,
     color: '#059669',
   },
@@ -2034,6 +2064,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.xl,
     color: Colors.text,
     marginBottom: 4,
@@ -2051,6 +2082,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 12,
     color: Colors.text,
     marginBottom: 4,
@@ -2063,6 +2095,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.body,
     color: Colors.text,
   },
@@ -2079,6 +2112,7 @@ const styles = StyleSheet.create({
   },
   modalCancelText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.body,
     color: Colors.textSecondary,
   },
@@ -2095,6 +2129,7 @@ const styles = StyleSheet.create({
   },
   modalSaveText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.body,
     color: '#FFFFFF',
   },
@@ -2111,6 +2146,7 @@ const styles = StyleSheet.create({
   },
   langBadgeText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.xs,
     color: Colors.primaryDark,
   },
@@ -2128,6 +2164,7 @@ const styles = StyleSheet.create({
   },
   langModalTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.lg,
     color: Colors.text,
   },
@@ -2156,6 +2193,7 @@ const styles = StyleSheet.create({
   },
   langOptionNative: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.body,
     color: Colors.text,
   },
@@ -2197,6 +2235,7 @@ const styles = StyleSheet.create({
   },
   liveQueueHeaderTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.xs,
     color: '#0369A1',
     letterSpacing: LetterSpacing.wide,
@@ -2208,6 +2247,7 @@ const styles = StyleSheet.create({
   },
   liveQueueStatusBadgeText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 10,
   },
   liveQueueDoctorInfo: {
@@ -2218,6 +2258,7 @@ const styles = StyleSheet.create({
   },
   liveQueueDoctorText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
   },
@@ -2248,6 +2289,7 @@ const styles = StyleSheet.create({
   },
   liveQueueMetricLabel: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 9,
     letterSpacing: LetterSpacing.wide,
     color: Colors.primaryDark,
@@ -2255,15 +2297,18 @@ const styles = StyleSheet.create({
   },
   liveQueueTokenText: {
     fontFamily: FontFamily.extraBold,
+    fontWeight: '800',
     fontSize: 20,
     color: Colors.primaryDark,
   },
   liveQueueWaitText: {
     fontFamily: FontFamily.extraBold,
+    fontWeight: '800',
     fontSize: 18,
   },
   liveQueueSubLabel: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 10,
     color: Colors.textMuted,
     marginTop: 2,
@@ -2288,6 +2333,7 @@ const styles = StyleSheet.create({
   clinicalSuccessToastText: {
     flex: 1,
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 13,
     color: '#166534',
     lineHeight: 18,
@@ -2324,17 +2370,20 @@ const styles = StyleSheet.create({
   },
   clinicalHeaderBadgeText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 11,
     color: '#0F766E',
     letterSpacing: 0.3,
   },
   clinicalDoctorLabel: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 12,
     color: '#64748B',
   },
   clinicalCardTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 16,
     color: '#0F172A',
     marginBottom: 4,
@@ -2349,6 +2398,7 @@ const styles = StyleSheet.create({
   },
   clinicalFieldLabel: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 11,
     color: '#64748B',
     marginBottom: 8,
@@ -2376,6 +2426,7 @@ const styles = StyleSheet.create({
   },
   clinicalStatusPillText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 11,
     color: '#475569',
   },
@@ -2424,6 +2475,7 @@ const styles = StyleSheet.create({
   },
   clinicalReferralTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 13,
     color: '#0F766E',
   },
@@ -2445,6 +2497,7 @@ const styles = StyleSheet.create({
   },
   clinicalReferralActionBtnText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 12,
     color: '#FFFFFF',
   },
@@ -2478,6 +2531,7 @@ const styles = StyleSheet.create({
   },
   clinicalSubmitBtnText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 14,
     color: '#FFFFFF',
   },
@@ -2515,6 +2569,7 @@ const styles = StyleSheet.create({
   },
   feedbackHeaderBadgeText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 11,
     color: '#0F766E',
     letterSpacing: 0.3,
@@ -2528,11 +2583,13 @@ const styles = StyleSheet.create({
   },
   feedbackSkipActionText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 12,
     color: '#94A3B8',
   },
   feedbackPromptTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 16,
     color: '#0F172A',
     marginBottom: 4,
@@ -2567,6 +2624,7 @@ const styles = StyleSheet.create({
   },
   feedbackRatingLabel: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 12,
     color: '#475569',
   },
@@ -2595,6 +2653,7 @@ const styles = StyleSheet.create({
   },
   wordCounterText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 11,
     color: '#64748B',
   },
@@ -2605,6 +2664,7 @@ const styles = StyleSheet.create({
   },
   wordCounterVerifiedText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 11,
     color: '#059669',
   },
@@ -2636,6 +2696,7 @@ const styles = StyleSheet.create({
   },
   feedbackDismissBtnText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 13,
     color: '#64748B',
   },
@@ -2661,6 +2722,7 @@ const styles = StyleSheet.create({
   },
   feedbackSubmitBtnText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 13,
     color: '#FFFFFF',
   },
@@ -2690,6 +2752,7 @@ const styles = StyleSheet.create({
   },
   quickCardTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 14,
     color: '#0F172A',
   },

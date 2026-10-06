@@ -1299,6 +1299,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: FontFamily.display,
+    fontWeight: '700',
     fontSize: FontSize.xl,
     color: Colors.textPrimary,
   },
@@ -1320,11 +1321,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: FontFamily.display,
+    fontWeight: '700',
     fontSize: FontSize.base,
     color: Colors.textPrimary,
   },
   badgeText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.caption,
     color: Colors.primary,
     backgroundColor: '#F0F9FF',
@@ -1354,6 +1357,7 @@ const styles = StyleSheet.create({
   },
   presetChipText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.caption,
     color: Colors.textSecondary,
   },
@@ -1379,6 +1383,7 @@ const styles = StyleSheet.create({
   },
   summarizeBtnText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     color: '#FFFFFF',
     fontSize: FontSize.sm,
   },
@@ -1398,6 +1403,7 @@ const styles = StyleSheet.create({
   },
   patientPreviewTitle: {
     fontFamily: FontFamily.display,
+    fontWeight: '700',
     fontSize: FontSize.base,
     color: '#166534',
   },
@@ -1409,11 +1415,13 @@ const styles = StyleSheet.create({
   },
   liveSyncText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.caption,
     color: '#15803D',
   },
   previewLabel: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: '#166534',
     marginBottom: 4,
@@ -1441,12 +1449,14 @@ const styles = StyleSheet.create({
   },
   warningText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.rose,
     flex: 1,
   },
   addMedToggle: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: Colors.primary,
   },
@@ -1469,15 +1479,18 @@ const styles = StyleSheet.create({
   },
   patientChipText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
   },
   patientChipTextActive: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     color: Colors.primary,
   },
   diagnosisInput: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     backgroundColor: Colors.card,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -1498,6 +1511,7 @@ const styles = StyleSheet.create({
   },
   addMedTitle: {
     fontFamily: FontFamily.display,
+    fontWeight: '700',
     fontSize: FontSize.base,
     color: Colors.textPrimary,
     marginBottom: 8,
@@ -1526,6 +1540,7 @@ const styles = StyleSheet.create({
   },
   confirmAddText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     color: '#FFFFFF',
     fontSize: FontSize.xs,
   },
@@ -1543,6 +1558,7 @@ const styles = StyleSheet.create({
   },
   medName: {
     fontFamily: FontFamily.display,
+    fontWeight: '700',
     fontSize: FontSize.base,
     color: Colors.textPrimary,
   },
@@ -1556,11 +1572,13 @@ const styles = StyleSheet.create({
   },
   medTagText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 11,
     color: '#334155',
   },
   medDosage: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginTop: 2,
@@ -1573,6 +1591,7 @@ const styles = StyleSheet.create({
   },
   medDuration: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.caption,
     color: Colors.textMuted,
     marginTop: 2,
@@ -1582,6 +1601,7 @@ const styles = StyleSheet.create({
   },
   removeBtnText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.base,
     color: Colors.rose,
   },
@@ -1598,6 +1618,7 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     color: '#FFFFFF',
     fontSize: FontSize.sm,
     textAlign: 'center',
@@ -1621,11 +1642,13 @@ const styles = StyleSheet.create({
   },
   endConsultBtnText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.sm,
     color: '#0F766E',
   },
   cancelBtnText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.textMuted,
   },
@@ -1660,11 +1683,13 @@ const styles = StyleSheet.create({
   },
   verificationTitle: {
     fontFamily: FontFamily.display,
+    fontWeight: '700',
     fontSize: FontSize.base,
     color: Colors.textPrimary,
   },
   verificationSubtitle: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.caption,
     color: Colors.textMuted,
     marginTop: 1,
@@ -1741,6 +1766,7 @@ const styles = StyleSheet.create({
     color: '#0284C7',
     fontSize: FontSize.xs,
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     textAlign: 'center',
     flexShrink: 1,
   },
@@ -1756,6 +1782,7 @@ const styles = StyleSheet.create({
   backBtnText: {
     fontSize: 12,
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     color: Colors.textPrimary,
   },
   draftIndicator: {
@@ -1772,11 +1799,13 @@ const styles = StyleSheet.create({
   draftIndicatorText: {
     fontSize: 11,
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     color: '#065F46',
   },
   inputSublabel: {
     fontSize: 11,
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     color: '#64748B',
     marginTop: 6,
     marginBottom: 4,
@@ -1804,11 +1833,13 @@ const styles = StyleSheet.create({
   medTimingChipText: {
     fontSize: 11,
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     color: '#334155',
   },
   medTimingChipTextActive: {
     color: '#FFFFFF',
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
   },
   sosChipActive: {
     backgroundColor: '#DC2626',
@@ -1817,6 +1848,7 @@ const styles = StyleSheet.create({
   sosChipTextActive: {
     color: '#FFFFFF',
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
   },
   // Amber Clinical Alert Styles
   amberAlertCard: {
@@ -1836,6 +1868,7 @@ const styles = StyleSheet.create({
   },
   amberHeaderTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 13,
     color: '#B45309',
   },
@@ -1857,11 +1890,13 @@ const styles = StyleSheet.create({
   },
   amberTermText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 12,
     color: '#B45309',
   },
   amberSuggestedText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 12,
     color: '#047857',
   },
@@ -1873,6 +1908,7 @@ const styles = StyleSheet.create({
   },
   amberConfidenceText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 10,
     color: '#D97706',
     marginTop: 2,
@@ -1893,6 +1929,7 @@ const styles = StyleSheet.create({
   },
   amberAcceptText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 11,
     color: '#FFFFFF',
   },
@@ -1905,6 +1942,7 @@ const styles = StyleSheet.create({
   },
   amberDismissText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 11,
     color: '#64748B',
   },
@@ -1922,11 +1960,13 @@ const styles = StyleSheet.create({
   },
   diarizationTitle: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 12,
     color: Colors.text,
   },
   diarizationToggleText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 11,
     color: Colors.primary,
   },
@@ -1960,6 +2000,7 @@ const styles = StyleSheet.create({
   },
   turnSpeakerText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 10,
     textTransform: 'uppercase',
   },
@@ -1995,6 +2036,7 @@ const styles = StyleSheet.create({
   },
   soapTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 13,
     color: '#0369A1',
   },
@@ -2006,6 +2048,7 @@ const styles = StyleSheet.create({
   },
   soapBadgeText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 10,
     color: '#0284C7',
   },
@@ -2014,6 +2057,7 @@ const styles = StyleSheet.create({
   },
   soapSectionTag: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 11,
     color: '#475569',
     textTransform: 'uppercase',
@@ -2022,6 +2066,7 @@ const styles = StyleSheet.create({
   },
   soapItemText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 12,
     color: '#1E293B',
   },
@@ -2051,16 +2096,19 @@ const styles = StyleSheet.create({
   },
   vitalLabel: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 10,
     color: '#64748B',
   },
   vitalVal: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 11,
     color: '#0F172A',
   },
   soapDiagText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 13,
     color: '#0F172A',
   },
@@ -2074,6 +2122,7 @@ const styles = StyleSheet.create({
   },
   icdChipText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 10,
     color: '#065F46',
   },

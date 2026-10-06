@@ -222,23 +222,27 @@ const styles = StyleSheet.create({
   },
   brandText: {
     fontFamily: FontFamily.extraBold,
+    fontWeight: '800',
     fontSize: 32,
     color: Colors.text,
     letterSpacing: LetterSpacing.tighter,
   },
   brandTextCyan: {
     fontFamily: FontFamily.extraBold,
+    fontWeight: '800',
     fontSize: 32,
     color: Colors.cyan,
   },
   brandTextEmerald: {
     fontFamily: FontFamily.extraBold,
+    fontWeight: '800',
     fontSize: 32,
     color: Colors.primary,
     letterSpacing: LetterSpacing.tighter,
   },
   brandSubtitle: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     letterSpacing: LetterSpacing.wide,
@@ -275,6 +279,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.caption,
     color: Colors.textSecondary,
   },
@@ -289,6 +294,7 @@ const styles = StyleSheet.create({
   },
   versionText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 10,
     color: Colors.textMuted,
     letterSpacing: LetterSpacing.wider,

@@ -64,6 +64,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.lg,
     color: Colors.text,
     letterSpacing: LetterSpacing.tight,
@@ -95,6 +96,7 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.sm,
     color: '#FFFFFF',
     letterSpacing: LetterSpacing.wide,

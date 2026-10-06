@@ -513,11 +513,13 @@ const styles = StyleSheet.create({
   },
   doctorBadgeText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.caption,
     color: '#0284C7',
   },
   title: {
     fontFamily: FontFamily.display,
+    fontWeight: '700',
     fontSize: FontSize.xl,
     color: Colors.textPrimary,
     marginTop: 6,
@@ -560,11 +562,13 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
   },
   tabTextActive: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     color: Colors.textPrimary,
   },
   card: {
@@ -576,6 +580,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginBottom: 5,
@@ -608,6 +613,7 @@ const styles = StyleSheet.create({
   },
   countryCodeText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.sm,
     color: Colors.textPrimary,
   },
@@ -630,6 +636,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.sm,
     color: '#ffffff',
   },
@@ -640,6 +647,7 @@ const styles = StyleSheet.create({
   },
   resendText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.primary,
   },
@@ -653,6 +661,7 @@ const styles = StyleSheet.create({
   },
   demoNoticeText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: '#0284C7',
     textAlign: 'center',
@@ -670,6 +679,7 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.caption,
     color: Colors.textMuted,
   },
@@ -686,6 +696,7 @@ const styles = StyleSheet.create({
   },
   demoLoginBtnText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: Colors.primary,
   },
@@ -762,6 +773,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.md,
     color: Colors.textPrimary,
   },
@@ -795,6 +807,7 @@ const styles = StyleSheet.create({
   },
   pilotOptionTitle: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.sm,
     color: Colors.textPrimary,
   },
@@ -811,6 +824,7 @@ const styles = StyleSheet.create({
   },
   modalCloseBtnText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
   },
@@ -830,6 +844,7 @@ const styles = StyleSheet.create({
   },
   serverSectionTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 11,
     color: Colors.textPrimary,
     textTransform: 'uppercase',
@@ -859,6 +874,7 @@ const styles = StyleSheet.create({
   },
   healthBadgeText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 10.5,
     color: '#0F172A',
   },
@@ -898,12 +914,14 @@ const styles = StyleSheet.create({
   },
   presetBtnText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 10.5,
     color: Colors.textPrimary,
   },
   presetBtnTextActive: {
     color: '#FFFFFF',
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
   },
   customUrlRow: {
     flexDirection: 'row',
@@ -930,6 +948,7 @@ const styles = StyleSheet.create({
   },
   customUrlSaveBtnText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 11,
     color: '#FFFFFF',
   },
@@ -944,6 +963,7 @@ const styles = StyleSheet.create({
   },
   sectionDividerLabel: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 11,
     color: Colors.textSecondary,
     textTransform: 'uppercase',

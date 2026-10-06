@@ -246,6 +246,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
                         style={{
                           fontSize: FontSize.xs,
                           fontFamily: FontFamily.medium,
+                          fontWeight: '500',
                           color: pat.consent_status ? '#10b981' : '#f59e0b',
                         }}
                       >
@@ -617,6 +618,7 @@ const styles = StyleSheet.create({
   },
   patientIdBadgeText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 10,
     color: '#475569',
     letterSpacing: 0.5,
@@ -724,6 +726,7 @@ const styles = StyleSheet.create({
   },
   modalSubtitle: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: Colors.primary,
     letterSpacing: 0.5,
@@ -731,6 +734,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.xl,
     color: Colors.textPrimary,
   },
@@ -759,6 +763,7 @@ const styles = StyleSheet.create({
   },
   emptyCarePlansTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.md,
     color: Colors.textPrimary,
     marginTop: 12,
@@ -782,11 +787,13 @@ const styles = StyleSheet.create({
   },
   startFirstConsultBtnText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.sm,
     color: '#ffffff',
   },
   archiveHeader: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginBottom: 12,
@@ -812,11 +819,13 @@ const styles = StyleSheet.create({
   },
   visitDate: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
   },
   visitDiagnosis: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.md,
     color: Colors.textPrimary,
     marginTop: 2,
@@ -834,6 +843,7 @@ const styles = StyleSheet.create({
   },
   verifiedText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: '#166534',
   },
@@ -847,6 +857,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginBottom: 4,
@@ -883,12 +894,14 @@ const styles = StyleSheet.create({
   },
   medName: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.sm,
     color: Colors.textPrimary,
   },
   medDose: {
     color: Colors.primary,
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
   },
   medInstructions: {
     fontFamily: FontFamily.regular,
@@ -923,6 +936,7 @@ const styles = StyleSheet.create({
   },
   reminderChipText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
   },
@@ -953,6 +967,7 @@ const styles = StyleSheet.create({
   },
   downloadPdfBtnText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 12,
     color: '#FFFFFF',
   },

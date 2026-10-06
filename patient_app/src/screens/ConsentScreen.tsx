@@ -502,6 +502,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginTop: 12,
@@ -530,12 +531,14 @@ const styles = StyleSheet.create({
   },
   complianceBadgeText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: '#166534',
     letterSpacing: 0.2,
   },
   title: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.xl,
     color: Colors.textPrimary,
   },
@@ -565,6 +568,7 @@ const styles = StyleSheet.create({
   },
   statusBannerTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.md,
   },
   statusBannerSubtitle: {
@@ -584,6 +588,7 @@ const styles = StyleSheet.create({
   },
   cardSectionHeader: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     letterSpacing: 0.5,
@@ -598,6 +603,7 @@ const styles = StyleSheet.create({
   },
   toggleTitle: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.sm,
     color: Colors.textPrimary,
   },
@@ -628,6 +634,7 @@ const styles = StyleSheet.create({
   },
   guaranteeTitle: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.sm,
     color: Colors.textPrimary,
   },
@@ -646,6 +653,7 @@ const styles = StyleSheet.create({
   },
   actionBtnTitle: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.sm,
     color: Colors.textPrimary,
   },

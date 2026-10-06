@@ -166,6 +166,7 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     color: Colors.textSecondary,
     letterSpacing: LetterSpacing.wide,
     textTransform: 'uppercase',
@@ -205,20 +206,24 @@ const styles = StyleSheet.create({
   },
   brandText: {
     fontFamily: FontFamily.extraBold,
+    fontWeight: '800',
     color: Colors.text,
     letterSpacing: LetterSpacing.tighter,
   },
   brandTextCyan: {
     fontFamily: FontFamily.extraBold,
+    fontWeight: '800',
     color: Colors.cyan,
   },
   brandTextEmerald: {
     fontFamily: FontFamily.extraBold,
+    fontWeight: '800',
     color: Colors.primary,
     letterSpacing: LetterSpacing.tighter,
   },
   brandSubtitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.caption,
     color: Colors.textSecondary,
     letterSpacing: LetterSpacing.wider,

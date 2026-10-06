@@ -171,6 +171,7 @@ const styles = StyleSheet.create({
   },
   vitalsHeaderTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 16,
     color: '#0F172A',
   },
@@ -187,6 +188,7 @@ const styles = StyleSheet.create({
   },
   logVitalsButtonText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 12,
     color: '#0F766E',
   },
@@ -209,6 +211,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 15,
     color: '#0F172A',
     marginBottom: 6,
@@ -237,6 +240,7 @@ const styles = StyleSheet.create({
   },
   emptyCtaText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 13,
     color: '#FFFFFF',
   },
@@ -256,11 +260,13 @@ const styles = StyleSheet.create({
   },
   vitalLabel: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 12,
     color: '#64748B',
   },
   vitalValue: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 22,
     color: '#0F172A',
     marginTop: 6,
@@ -280,6 +286,7 @@ const styles = StyleSheet.create({
   },
   vitalStatusText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 10,
   },
 });

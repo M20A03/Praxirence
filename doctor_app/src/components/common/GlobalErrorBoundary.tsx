@@ -111,6 +111,7 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 20,
     color: '#0F172A',
     marginBottom: 8,
@@ -142,6 +143,7 @@ const styles = StyleSheet.create({
   },
   primaryRecoverBtnText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 15,
     color: '#FFFFFF',
   },
@@ -166,6 +168,7 @@ const styles = StyleSheet.create({
   },
   compactTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 14,
     color: '#0F172A',
   },
@@ -188,6 +191,7 @@ const styles = StyleSheet.create({
   },
   compactRetryBtnText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 12,
     color: '#FFFFFF',
   },

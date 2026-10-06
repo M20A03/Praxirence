@@ -284,17 +284,20 @@ const styles = StyleSheet.create({
   },
   clinicalHeaderBadgeText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 11,
     color: '#0F766E',
     letterSpacing: 0.3,
   },
   clinicalDoctorLabel: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: 12,
     color: '#64748B',
   },
   clinicalCardTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 16,
     color: '#0F172A',
     marginBottom: 4,
@@ -309,6 +312,7 @@ const styles = StyleSheet.create({
   },
   clinicalFieldLabel: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 11,
     color: '#64748B',
     marginBottom: 8,
@@ -336,6 +340,7 @@ const styles = StyleSheet.create({
   },
   clinicalStatusPillText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 11,
     color: '#475569',
   },
@@ -384,6 +389,7 @@ const styles = StyleSheet.create({
   },
   clinicalReferralTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 13,
     color: '#0F766E',
   },
@@ -405,6 +411,7 @@ const styles = StyleSheet.create({
   },
   clinicalReferralActionBtnText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 12,
     color: '#FFFFFF',
   },
@@ -438,6 +445,7 @@ const styles = StyleSheet.create({
   },
   clinicalSubmitBtnText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 14,
     color: '#FFFFFF',
   },

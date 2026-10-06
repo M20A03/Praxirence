@@ -837,11 +837,13 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.xl,
     color: Colors.text,
   },
   phone: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.sm,
     color: Colors.textSecondary,
     marginTop: 2,
@@ -857,6 +859,7 @@ const styles = StyleSheet.create({
   },
   roleBadgeText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.caption,
     color: Colors.primaryDark,
     letterSpacing: LetterSpacing.wide,
@@ -885,6 +888,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.body,
     letterSpacing: LetterSpacing.tight,
     color: Colors.text,
@@ -900,12 +904,14 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.sm,
     color: Colors.textSecondary,
     flexShrink: 0,
   },
   infoValue: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.sm,
     color: Colors.text,
     flexShrink: 1,
@@ -952,6 +958,7 @@ const styles = StyleSheet.create({
   },
   switchAccountButtonText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.sm,
     color: '#0F766E',
     letterSpacing: 0.2,
@@ -976,6 +983,7 @@ const styles = StyleSheet.create({
   },
   logoutButtonText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.sm,
     color: '#DC2626',
     letterSpacing: 0.2,
@@ -995,6 +1003,7 @@ const styles = StyleSheet.create({
   manageConsentBtnText: {
     flex: 1,
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.xs,
     color: Colors.primaryDark,
     marginLeft: 8,
@@ -1029,6 +1038,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 16,
     color: Colors.text,
   },
@@ -1050,6 +1060,7 @@ const styles = StyleSheet.create({
   },
   langNativeLabel: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 15,
     color: Colors.text,
   },
@@ -1071,10 +1082,12 @@ const styles = StyleSheet.create({
   editProfileBtnText: {
     color: '#FFFFFF',
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 13,
   },
   inputFieldLabel: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: 12,
     color: Colors.textSecondary,
     marginBottom: 4,
@@ -1113,11 +1126,13 @@ const styles = StyleSheet.create({
   genderSelectText: {
     fontSize: 12,
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     color: Colors.textSecondary,
   },
   genderSelectTextActive: {
     color: '#FFFFFF',
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
   },
   saveProfileSubmitBtn: {
     flexDirection: 'row',
@@ -1132,6 +1147,7 @@ const styles = StyleSheet.create({
   saveProfileSubmitText: {
     color: '#FFFFFF',
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: 14,
   },
 });

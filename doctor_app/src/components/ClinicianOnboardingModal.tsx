@@ -315,12 +315,14 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontFamily: FontFamily.semiBold,
+    fontWeight: '600',
     fontSize: FontSize.xs,
     color: '#0284C7',
     letterSpacing: 0.5,
   },
   title: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.xxl,
     color: '#0F172A',
     marginBottom: 8,
@@ -345,6 +347,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: '#334155',
     marginTop: 12,
@@ -378,6 +381,7 @@ const styles = StyleSheet.create({
   },
   dropdownSelectorText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.sm,
     color: '#0F172A',
   },
@@ -398,6 +402,7 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     fontFamily: FontFamily.bold,
+    fontWeight: '700',
     fontSize: FontSize.sm,
     color: '#FFFFFF',
   },
@@ -411,6 +416,7 @@ const styles = StyleSheet.create({
   },
   logoutBtnText: {
     fontFamily: FontFamily.medium,
+    fontWeight: '500',
     fontSize: FontSize.xs,
     color: '#64748B',
   },

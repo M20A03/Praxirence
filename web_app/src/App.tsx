@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './styles/landing.css';
 import { LandingNavbar } from './components/landing/LandingNavbar';
 import { LandingHero } from './components/landing/LandingHero';
@@ -10,9 +10,27 @@ import { FaqSection } from './components/landing/FaqSection';
 import { EarlyAccessForm } from './components/landing/EarlyAccessForm';
 import { LandingFooter } from './components/landing/LandingFooter';
 import { MobileStickyBar } from './components/landing/MobileStickyBar';
+import { DownloadPage } from './components/landing/DownloadPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 const MainWebsite: React.FC = () => {
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+
+  useEffect(() => {
+    const handlePopState = () => setCurrentPath(window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const isDownload =
+    currentPath.startsWith('/download') ||
+    window.location.search.includes('download') ||
+    window.location.hash === '#download';
+
+  if (isDownload) {
+    return <DownloadPage />;
+  }
+
   return (
     <main id="main-content" className="landing-container" role="main">
       {/* Ambient background glows */}

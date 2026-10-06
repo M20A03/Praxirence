@@ -1,0 +1,29 @@
+# Praxirence Healthcare Technologies
+
+> Institutional-Grade Ambient Clinical Voice Intelligence, ABDM FHIR Health Records, and Digital Care Vault Platform for India.
+
+## Executive Summary
+Praxirence (https://www.praxirence.com) is an Indian healthcare software architecture designed for hospitals, outpatient clinics (OPDs), clinicians, and patients. It automates medical consultation documentation via ambient voice capture, synthesizes doctor-verified care plans, and synchronizes encrypted medical records to native mobile vaults.
+
+## Core Capabilities
+- **Ambient Voice Clinical Intelligence**: Real-time ambient dialogue capture during patient consultations with speech-to-text powered by local Whisper ASR fine-tuned for Indian clinical accents, Hinglish, and multilingual medical terminology.
+- **Zero Audio Retention Guarantee**: Audio streams are processed strictly in volatile RAM to extract structured clinical text and immediately wiped. No patient audio recordings are saved to disk or persistent cloud storage.
+- **Physician-in-the-Loop Verification**: Telemedicine guidelines and DPDP Act 2023 compliance require explicit clinician sign-off. AI assists in drafting SOAP notes, medication dosages, and ICD-10 diagnostic codes, but care plans cannot be dispatched without attending doctor confirmation.
+- **Doctor & Patient Mobile Apps**:
+  - Doctor App: Clinical Copilot, automated prescription generation, OPD token queue, drug-drug interaction (DDI) alerts, and biometric security.
+  - Patient App: Encrypted digital care vault, offline care plan access, biometric and 4-digit PIN lock, multilingual consultation chatbot, and 1-click ABDM PDF prescription downloads.
+- **ABDM & DPDP Act 2023 Compliance**: Built for the Ayushman Bharat Digital Mission (ABDM) with M2 FHIR R4 interoperability, SHA-256 cryptographic signatures on prescriptions, AES-256 GCM encryption, and immutable patient consent logs.
+
+## Quick Links & Endpoints
+- Homepage: https://www.praxirence.com/
+- App Downloads: https://www.praxirence.com/download
+- Patient App Direct APK: https://www.praxirence.com/downloads/Praxirence-Patient-v2.1-Production.apk
+- Architecture & Compliance: https://www.praxirence.com/#architecture
+- Clinical FAQs: https://www.praxirence.com/#faq
+- Contact & Inquiries: contact@praxirence.com
+
+## Technical Specifications
+- Backend: Python 3.12, FastAPI, SQLite / PostgreSQL with SQLAlchemy, Pydantic v2
+- Mobile Apps: React Native, Expo SDK 51, TypeScript, Offline SQLiteCipher
+- Web Application: React 18, Vite, TypeScript, Tailwind/Vanilla CSS
+- AI Models: Whisper ASR (Fine-tuned for Indian Clinical Accents), Mistral-7B / BioMistral clinical care plan summarization with quantized on-device fallbacks.

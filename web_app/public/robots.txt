@@ -1,13 +1,69 @@
-# Praxirence Clinical Intelligence Suite - Search Engine Directive
+# Praxirence Healthcare Technologies - Comprehensive Search Engine & AI Crawler Directives
+# Designed for Google (Chrome), Microsoft Bing (Edge/Copilot), Brave Search, Mozilla Firefox, Apple Safari
+# and Generative AI Engines: Google Gemini, OpenAI ChatGPT, Anthropic Claude, Perplexity AI
+
 User-agent: *
 Allow: /
+Allow: /download
+Allow: /downloads/
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /sitemap.xml
 Disallow: /api/
 Disallow: /auth/
 Disallow: /admin/
 Disallow: /portal/private/
 
-# Sitemap location for canonical www domain
-Sitemap: https://www.praxirence.com/sitemap.xml
+# Google AI Mode & Gemini Crawler
+User-agent: Googlebot
+Allow: /
 
-# Crawl-delay for optimal indexing
-Crawl-delay: 1
+User-agent: Google-Extended
+Allow: /
+Allow: /llms.txt
+
+# OpenAI ChatGPT Search & GPTBot
+User-agent: GPTBot
+Allow: /
+Allow: /llms.txt
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+# Anthropic Claude Search & Crawlers
+User-agent: ClaudeBot
+Allow: /
+Allow: /llms.txt
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+# Microsoft Bing & Edge Copilot
+User-agent: Bingbot
+Allow: /
+
+# Brave Browser & Independent Search Index
+User-agent: Bravebot
+Allow: /
+
+# Perplexity AI
+User-agent: PerplexityBot
+Allow: /
+Allow: /llms.txt
+
+# Apple Safari & Siri Suggestions
+User-agent: Applebot
+Allow: /
+
+# DuckDuckGo
+User-agent: DuckDuckBot
+Allow: /
+
+# Sitemaps & Machine-Readable AI Knowledge
+Sitemap: https://www.praxirence.com/sitemap.xml

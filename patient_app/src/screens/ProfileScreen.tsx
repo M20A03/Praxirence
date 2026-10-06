@@ -10,6 +10,7 @@ import {
   TextInput,
   ActivityIndicator,
   Switch,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -222,6 +223,41 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const isDoctor = role === 'doctor';
 
 
+
+  const handleCheckForUpdates = async () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (_) {}
+
+    const websiteUpdateUrl = 'https://www.praxirence.com/download?app=patient&auto=true';
+
+    Alert.alert(
+      'Download Latest Update',
+      'This will open the official Praxirence website in your browser and automatically download the latest Patient App APK (v2.1). Your stored health vault and biometric keys remain completely intact.\n\nOpen download portal?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Download Update',
+          onPress: async () => {
+            try {
+              const supported = await Linking.canOpenURL(websiteUpdateUrl);
+              if (supported) {
+                await Linking.openURL(websiteUpdateUrl);
+              } else {
+                await Linking.openURL('https://www.praxirence.com/download');
+              }
+            } catch (_) {
+              Alert.alert(
+                'Direct Link',
+                'Please open https://www.praxirence.com/download in your phone browser to download the latest APK.',
+                [{ text: 'OK' }]
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const handleLogoutPress = () => {
     Alert.alert(
@@ -514,6 +550,33 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <Ionicons name="chevron-forward" size={16} color={Colors.primaryDark} />
           </TouchableOpacity>
         )}
+      </View>
+
+      {/* App Version & Direct Website APK Update Card */}
+      <View style={styles.card}>
+        <View style={styles.cardHeaderRow}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+            <Ionicons name="cloud-download-outline" size={18} color="#0D9488" />
+            <Text style={styles.cardTitle}>App Version & Updates</Text>
+          </View>
+          <View style={styles.versionBadge}>
+            <Text style={styles.versionBadgeText}>v2.1 Production</Text>
+          </View>
+        </View>
+
+        <Text style={styles.updateCardSubtitle}>
+          Download latest updates directly from our official portal with 1-click APK installer.
+        </Text>
+
+        <TouchableOpacity
+          style={styles.updateNowButton}
+          onPress={handleCheckForUpdates}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="arrow-down-circle-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+          <Text style={styles.updateNowButtonText}>Update App via Website</Text>
+          <Ionicons name="open-outline" size={14} color="#FFFFFF" style={{ marginLeft: 6 }} />
+        </TouchableOpacity>
       </View>
 
       {/* Clinical Support & Hotlines Card */}
@@ -1143,6 +1206,47 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
     marginTop: 18,
+  },
+  versionBadge: {
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  versionBadgeText: {
+    fontFamily: FontFamily.bold,
+    fontWeight: '700',
+    fontSize: 11,
+    color: '#0F766E',
+  },
+  updateCardSubtitle: {
+    fontFamily: FontFamily.regular,
+    fontWeight: '400',
+    fontSize: 12,
+    color: Colors.textSecondary,
+    lineHeight: 17,
+    marginBottom: 12,
+  },
+  updateNowButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0D9488',
+    paddingVertical: 11,
+    borderRadius: 10,
+    shadowColor: '#0D9488',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  updateNowButtonText: {
+    color: '#FFFFFF',
+    fontFamily: FontFamily.bold,
+    fontWeight: '700',
+    fontSize: 13,
   },
   saveProfileSubmitText: {
     color: '#FFFFFF',

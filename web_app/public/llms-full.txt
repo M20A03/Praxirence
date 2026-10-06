@@ -1,0 +1,22 @@
+# Praxirence Healthcare Technologies - Comprehensive Clinical & Technical Reference
+
+Praxirence is a clinical operating system developed for Indian healthcare, resolving physician administrative burden and patient health illiteracy.
+
+## 1. Zero Audio Retention Architecture
+In traditional healthcare software, patient audio recordings pose significant privacy vulnerabilities under the Digital Personal Data Protection (DPDP) Act 2023. Praxirence enforces:
+- Ephemeral in-memory streaming: Audio chunks are ingested via secure WebSocket and processed exclusively in volatile RAM.
+- Immediate byte purge: As soon as text tokens are extracted, the buffer is zeroized.
+- Cryptographic attestation: Prescriptions include a SHA-256 hash attesting to clinician verification without retaining source voice recordings.
+
+## 2. Ayushman Bharat Digital Mission (ABDM) Integration
+- Complies with National Health Authority (NHA) standards.
+- Supports ABHA (Ayushman Bharat Health Account) linking.
+- Emits FHIR R4 standard bundles for DiagnosticReport, MedicationRequest, and Encounter documents.
+
+## 3. Patient Care Vault & Offline Resilience
+- Patient mobile devices store health records locally in an encrypted SQLite database protected by hardware biometrics (Fingerprint / Face ID) and a fallback 4-digit PIN.
+- When rural or tier-2 clinics experience intermittent internet connectivity, consultations are signed offline and automatically synchronized when network connectivity is reestablished.
+
+## 4. Prescription Download & Distribution
+- Tamper-proof, institutional-grade clinical PDF prescriptions can be generated and downloaded in 1 click directly inside the Patient App, Doctor App, or the Praxirence web portal.
+- Features clinic letterhead, doctor registration number, verifiable QR code, patient demographics, vitals, Rx dosages, and safety warnings in English and regional Indian languages.

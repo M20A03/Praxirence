@@ -171,37 +171,30 @@ class AIService:
 
         return vitals
 
+    @classmethod
+    def _get_icd_mappings(cls) -> list:
+        if not hasattr(cls, "_icd_cache"):
+            import json
+            from pathlib import Path
+            json_path = Path(__file__).resolve().parent.parent.parent / "data" / "icd10_mappings.json"
+            if json_path.exists():
+                with open(json_path, "r", encoding="utf-8") as f:
+                    cls._icd_cache = json.load(f)
+            else:
+                cls._icd_cache = []
+        return cls._icd_cache
+
     def map_icd10_diagnosis(self, raw_diagnosis: str) -> Dict[str, str]:
         """
         Maps clinical diagnostic terminology to standard ICD-10 codes.
         """
         diag_lower = raw_diagnosis.lower()
 
-        icd_map = [
-            ("hypertension", "I10", "Essential (primary) hypertension"),
-            ("high blood pressure", "I10", "Essential (primary) hypertension"),
-            ("diabetes", "E11.9", "Type 2 diabetes mellitus without complications"),
-            ("diabetic", "E11.9", "Type 2 diabetes mellitus without complications"),
-            ("bronchitis", "J20.9", "Acute bronchitis, unspecified"),
-            ("asthma", "J45.909", "Unspecified asthma, uncomplicated"),
-            ("gerd", "K21.9", "Gastro-esophageal reflux disease without esophagitis"),
-            ("acid reflux", "K21.9", "Gastro-esophageal reflux disease without esophagitis"),
-            ("gastritis", "K29.70", "Gastritis, unspecified, without bleeding"),
-            ("pharyngitis", "J02.9", "Acute pharyngitis, unspecified"),
-            ("sore throat", "J02.9", "Acute pharyngitis, unspecified"),
-            ("tonsillitis", "J03.90", "Acute tonsillitis, unspecified"),
-            ("sinusitis", "J01.90", "Acute sinusitis, unspecified"),
-            ("rhinitis", "J30.9", "Allergic rhinitis, unspecified"),
-            ("urinary tract infection", "N39.0", "Urinary tract infection, site not specified"),
-            ("uti", "N39.0", "Urinary tract infection, site not specified"),
-            ("pyrexia", "R50.9", "Fever, unspecified"),
-            ("viral fever", "B34.9", "Viral infection, unspecified"),
-            ("migraine", "G43.909", "Migraine, unspecified, not intractable"),
-            ("osteoarthritis", "M19.90", "Unspecified osteoarthritis, unspecified site")
-        ]
-
-        for key, code, title in icd_map:
-            if key in diag_lower:
+        icd_rules = self._get_icd_mappings()
+        for item in icd_rules:
+            if item.get("keyword") in diag_lower:
+                code = item.get("code")
+                title = item.get("title")
                 return {"code": code, "title": title, "display": f"{title} (ICD-10: {code})"}
 
         return {"code": "R69", "title": raw_diagnosis.strip(), "display": f"{raw_diagnosis.strip()} (ICD-10: R69)"}

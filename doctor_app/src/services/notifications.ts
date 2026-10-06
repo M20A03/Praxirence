@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
   // Graceful stub for development & web preview
   if (Platform.OS === 'web') {
-    return 'web_mock_push_token_123';
+    return null;
   }
 
   try {
@@ -12,7 +12,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
 
     if (!Device.isDevice) {
       console.log('Running on emulator/simulator: using local notification token');
-      return 'emulator_mock_token_123';
+      return null;
     }
 
     if (Platform.OS === 'android') {

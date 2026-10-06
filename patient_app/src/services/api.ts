@@ -1098,39 +1098,31 @@ export const mobileApi = {
         return await res.json();
       }
     } catch (e) {
-      console.warn('Live availability fetch warning, generating simulated schedule:', e);
+      console.warn('Live availability fetch notice:', e);
     }
 
-    // High-fidelity fallback slot generation
     const d = new Date(targetDate);
     const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
-    const isSunday = dayName === 'Sun';
-
-    const simulatedSlots: DoctorSlot[] = [
-      { time: '10:00 AM', available: true, reason: 'open' },
-      { time: '05:30 PM', available: true, reason: 'open' },
-      { time: '08:00 PM', available: true, reason: 'open' },
-    ];
 
     return {
       doctor_id: doctorId,
       doctor_name: 'Attending Physician',
       date: targetDate,
       day_of_week: dayName,
-      is_available: !isSunday,
-      reason: isSunday ? 'Doctor does not practice on Sundays' : undefined,
+      is_available: false,
+      reason: 'Doctor schedule currently unavailable or clinic is offline.',
       working_hours: {
         start: '09:00',
         end: '18:00',
         slot_duration_mins: 30,
       },
-      slots: isSunday ? [] : simulatedSlots,
-      total_slots: isSunday ? 0 : simulatedSlots.length,
-      available_slots_count: isSunday ? 0 : simulatedSlots.filter((s) => s.available).length,
+      slots: [],
+      total_slots: 0,
+      available_slots_count: 0,
     };
   },
 
-  async bookAppointmentSlot(payload: BookAppointmentSlotRequest): Promise<BookAppointmentSlotResponse> {
+    async bookAppointmentSlot(payload: BookAppointmentSlotRequest): Promise<BookAppointmentSlotResponse> {
     const url = `${getEffectiveApiUrl()}/visits/book-slot`;
     try {
       const res = await resilientFetch(url, {

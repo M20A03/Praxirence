@@ -1,0 +1,102 @@
+[
+  {
+    "keyword": "hypertension",
+    "code": "I10",
+    "title": "Essential (primary) hypertension"
+  },
+  {
+    "keyword": "high blood pressure",
+    "code": "I10",
+    "title": "Essential (primary) hypertension"
+  },
+  {
+    "keyword": "diabetes",
+    "code": "E11.9",
+    "title": "Type 2 diabetes mellitus without complications"
+  },
+  {
+    "keyword": "diabetic",
+    "code": "E11.9",
+    "title": "Type 2 diabetes mellitus without complications"
+  },
+  {
+    "keyword": "bronchitis",
+    "code": "J20.9",
+    "title": "Acute bronchitis, unspecified"
+  },
+  {
+    "keyword": "asthma",
+    "code": "J45.909",
+    "title": "Unspecified asthma, uncomplicated"
+  },
+  {
+    "keyword": "gerd",
+    "code": "K21.9",
+    "title": "Gastro-esophageal reflux disease without esophagitis"
+  },
+  {
+    "keyword": "acid reflux",
+    "code": "K21.9",
+    "title": "Gastro-esophageal reflux disease without esophagitis"
+  },
+  {
+    "keyword": "gastritis",
+    "code": "K29.70",
+    "title": "Gastritis, unspecified, without bleeding"
+  },
+  {
+    "keyword": "pharyngitis",
+    "code": "J02.9",
+    "title": "Acute pharyngitis, unspecified"
+  },
+  {
+    "keyword": "sore throat",
+    "code": "J02.9",
+    "title": "Acute pharyngitis, unspecified"
+  },
+  {
+    "keyword": "tonsillitis",
+    "code": "J03.90",
+    "title": "Acute tonsillitis, unspecified"
+  },
+  {
+    "keyword": "sinusitis",
+    "code": "J01.90",
+    "title": "Acute sinusitis, unspecified"
+  },
+  {
+    "keyword": "rhinitis",
+    "code": "J30.9",
+    "title": "Allergic rhinitis, unspecified"
+  },
+  {
+    "keyword": "urinary tract infection",
+    "code": "N39.0",
+    "title": "Urinary tract infection, site not specified"
+  },
+  {
+    "keyword": "uti",
+    "code": "N39.0",
+    "title": "Urinary tract infection, site not specified"
+  },
+  {
+    "keyword": "pyrexia",
+    "code": "R50.9",
+    "title": "Fever, unspecified"
+  },
+  {
+    "keyword": "viral fever",
+    "code": "B34.9",
+    "title": "Viral infection, unspecified"
+  },
+  {
+    "keyword": "migraine",
+    "code": "G43.909",
+    "title": "Migraine, unspecified, not intractable"
+  },
+  {
+    "keyword": "osteoarthritis",
+    "code": "M19.90",
+    "title": "Unspecified osteoarthritis, unspecified site"
+  }
+]

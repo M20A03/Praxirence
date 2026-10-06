@@ -28,3 +28,8 @@
 -dontwarn androidx.security.crypto.**
 -keep class expo.modules.securestore.** { *; }
 -keep class expo.modules.crypto.** { *; }
+
+# React Native Screens & Safe Area Context
+-keep class com.swmansion.rnscreens.** { *; }
+-keep class com.th3rdwave.safeareacontext.** { *; }
+-dontwarn com.swmansion.rnscreens.**

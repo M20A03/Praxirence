@@ -313,11 +313,13 @@ def is_pharmacological_query(query: str, db: Session) -> Optional[Dict[str, Any]
         return None
 
     # Exclude obvious complex clinical presentations
-    case_markers = [
-        "patient presents", "complaining of", "year old male", "year old female",
-        "severe chest pain", "shortness of breath", "fever with chills for",
-        "altered sensorium", "vomiting since", "bp:", "spo2:"
-    ]
+    import json
+    from pathlib import Path
+    markers_path = Path(__file__).resolve().parent.parent.parent / "data" / "copilot_case_markers.json"
+    case_markers = []
+    if markers_path.exists():
+        with open(markers_path, "r", encoding="utf-8") as mf:
+            case_markers = json.load(mf)
     if any(marker in q_clean.lower() for marker in case_markers):
         return None
 

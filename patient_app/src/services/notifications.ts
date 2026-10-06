@@ -4,11 +4,7 @@ import { mobileApi } from './api';
 export async function registerForPushNotificationsAsync(patientId?: string): Promise<string | null> {
   // Graceful stub for development & web preview
   if (Platform.OS === 'web') {
-    const mockToken = 'web_mock_push_token_123';
-    if (patientId) {
-      mobileApi.updateFcmToken(patientId, mockToken).catch(() => {});
-    }
-    return mockToken;
+    return null;
   }
 
   try {
@@ -16,12 +12,8 @@ export async function registerForPushNotificationsAsync(patientId?: string): Pro
     const Notifications = require('expo-notifications');
 
     if (!Device.isDevice) {
-      console.log('Running on emulator/simulator: using local notification token');
-      const emuToken = 'emulator_mock_token_123';
-      if (patientId) {
-        mobileApi.updateFcmToken(patientId, emuToken).catch(() => {});
-      }
-      return emuToken;
+      console.log('Running on emulator/simulator: physical push tokens not applicable');
+      return null;
     }
 
     // Request permissions safely

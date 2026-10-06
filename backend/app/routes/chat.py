@@ -293,10 +293,13 @@ def generate_grounded_fallback(
             return reply, intent, all_meds, [], sugg
 
     # Intent 4: Check if inquiring about an unrecorded condition
-    medical_conditions = [
-        "cancer", "diabetes", "asthma", "covid", "tuberculosis", "tb", "thyroid",
-        "migraine", "ulcer", "kidney stone", "arthritis", "कैंसर", "शुगर", "टीबी"
-    ]
+    import json
+    from pathlib import Path
+    cond_path = Path(__file__).resolve().parent.parent.parent / "data" / "unrecorded_conditions.json"
+    medical_conditions = []
+    if cond_path.exists():
+        with open(cond_path, "r", encoding="utf-8") as cf:
+            medical_conditions = json.load(cf)
     for cond in medical_conditions:
         if cond in q_lower:
             found = False

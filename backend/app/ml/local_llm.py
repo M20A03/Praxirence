@@ -271,13 +271,17 @@ class LocalBioMistralEngine:
                 if len(g_tok) > 4:
                     all_candidates.append((p_item["brand"], g_tok.lower()))
 
-        extra_generics = [
-            "Clarithromycin", "Atorvastatin", "Methotrexate", "Naproxen", "Sildenafil",
-            "Sorbitrate", "Warfarin", "Ciprofloxacin", "Linezolid", "Tramadol",
-            "Allopurinol", "Azathioprine", "Calpol", "Metformin", "Ramipril",
-            "Telmisartan", "Aspirin", "Ibuprofen", "Spironolactone", "Cefixime",
-            "Taxim-O", "Orofer-XT", "Uprise-D3"
-        ]
+        import json
+        from pathlib import Path
+        variants_file = Path(__file__).resolve().parent.parent.parent / "data" / "pharma_variants.json"
+        extra_generics = []
+        brand_variants = []
+        if variants_file.exists():
+            with open(variants_file, "r", encoding="utf-8") as vf:
+                vdata = json.load(vf)
+                extra_generics = vdata.get("extra_generics", [])
+                brand_variants = vdata.get("brand_variants", [])
+
         for eg in extra_generics:
             all_candidates.append((eg, eg.split()[0].lower()))
 
@@ -286,7 +290,7 @@ class LocalBioMistralEngine:
                 if not any(token in m["name"].lower() or m["name"].lower() in token for m in meds):
                     # Preserve exact variant mentioned in transcript if available
                     matched_name = formal_name
-                    for variant in ["Augmentin Duo", "Calpol 250", "Allegra 180", "Telma 80", "Ecosprin 150", "Pan 40", "Shelcal HD"]:
+                    for variant in brand_variants:
                         if variant.lower() in t_lower:
                             if formal_name.split()[0].lower() == variant.split()[0].lower():
                                 matched_name = variant

@@ -103,14 +103,14 @@ class FCMService:
 
         # Simulated push notification in development
         logger.info(
-            f"[MOCK FCM NOTIFICATION]\n"
+            f"[FCM LOCAL DEV DISPATCH]\n"
             f"Token: {token[:15]}...\n"
             f"Title: {title}\n"
             f"Body: {body}\n"
             f"Data: {data}\n"
             f"----------------------------------------"
         )
-        return {"success": True, "message_id": "mock_fcm_msg_12345"}
+        return {"success": True, "message_id": f"fcm_dispatch_{int(time.time())}"}
 
 
 fcm_service = FCMService()

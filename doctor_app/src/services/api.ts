@@ -1011,31 +1011,15 @@ export const mobileApi = {
         };
       } else {
         const errText = await res.text().catch(() => '');
-        console.warn(`Server audio processing notice (${res.status}), activating resilient clinical engine:`, errText);
+        throw new Error(`Server audio transcription failed (${res.status}): ${errText || 'Processing error'}`);
       }
     } catch (netErr: any) {
-      console.warn('Network connectivity notice during audio upload, activating resilient clinical engine:', netErr);
+      console.warn('Network or server error during audio upload:', netErr);
+      throw netErr;
     }
-
-    // Resilient Clinical Intelligence Engine Fallback
-    // Guarantees that the doctor's recorded consultation dialogue is transcribed,
-    // medications are structured, and the care plan is pre-filled even without stable internet.
-    return {
-      diagnosis: 'Acute Upper Respiratory Tract Infection & Bronchial Congestion',
-      patient_summary: 'Doctor conducted physical examination and chest auscultation. Airway inflammation noted with dry cough. Prescribed antibiotic course, bronchodilator syrup, and acid reducer.',
-      doctor_advice: 'Drink warm water with honey, avoid cold beverages and fried food, take steam inhalation twice daily, and complete the full 5-day antibiotic course even if symptoms improve.',
-      medicines: [],
-      reminders: [],
-      warning_signs: [
-        'High fever (>102°F) persisting for more than 48 hours',
-        'Shortness of breath, chest tightness, or wheezing',
-        'Inability to keep liquids down or severe dizziness',
-      ],
-      conversation: `Doctor: Namaste, please sit down. What seems to be the main problem today?\nPatient: Doctor, I have had a severe cough and chest tightness for the past 3 days, especially at night. Mild fever also.\nDoctor: Let me check your chest... Take a deep breath in... and out. There is mild bronchial congestion and wheezing. Any throat pain or acidity?\nPatient: Yes, burning sensation in the throat and chest after meals.\nDoctor: Alright, you have acute bronchitis with mild reflux. I am prescribing Augmentin 625mg twice a day for 5 days. For the cough, take Ascoril LS syrup 10ml three times a day. Take Pantocid 40mg before breakfast for acidity. Drink warm water and take steam inhalation.\nPatient: Thank you doctor. When should I follow up?\nDoctor: If fever or breathlessness persists after 3 days, come back immediately, otherwise review in 5 days.`,
-    };
   },
 
-  async createStructuredVisit(params: {
+    async createStructuredVisit(params: {
     patient_id: string;
     diagnosis: string;
     medicines: MedicineItem[];

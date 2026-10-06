@@ -10,6 +10,7 @@ import {
   Switch,
   Modal,
   TextInput,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -411,6 +412,32 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
     } finally {
       setSavingLocation(false);
     }
+  };
+
+  const handleCheckForUpdates = async () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (_) {}
+
+    const websiteUpdateUrl = 'https://www.praxirence.com/download?app=doctor';
+
+    Alert.alert(
+      'Clinician Suite Updates',
+      'Praxirence Doctor Suite updates are securely distributed to verified medical practitioners. Would you like to check the portal in your browser?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Open Portal',
+          onPress: async () => {
+            try {
+              await Linking.openURL(websiteUpdateUrl);
+            } catch (_) {
+              Alert.alert('Notice', 'Please visit https://www.praxirence.com/download in your browser.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleLogoutPress = () => {
@@ -977,6 +1004,41 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
             <Text style={[styles.telemetryVal, { color: '#10B981' }]}>Active</Text>
           </View>
         </View>
+      </View>
+
+      {/* App Version & Direct Update Card */}
+      <View style={styles.sectionCard}>
+        <View style={styles.telemetryHeader}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+            <Ionicons name="cloud-download-outline" size={18} color="#0284C7" />
+            <Text style={styles.sectionTitle}>App Version & Updates</Text>
+          </View>
+          <View style={{ backgroundColor: '#F0F9FF', borderWidth: 1, borderColor: '#BAE6FD', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 }}>
+            <Text style={{ fontFamily: FontFamily.bold, fontWeight: '700', fontSize: 11, color: '#0284C7' }}>v2.1 Production</Text>
+          </View>
+        </View>
+
+        <Text style={{ fontSize: 12, color: Colors.textSecondary, marginBottom: 12, lineHeight: 17, fontFamily: FontFamily.regular }}>
+          Keep your clinician suite updated with the latest DDI safety rules, drug formulary databases, and ABDM FHIR integrations.
+        </Text>
+
+        <TouchableOpacity
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#0284C7',
+            paddingVertical: 11,
+            borderRadius: 10,
+            gap: 6,
+          }}
+          onPress={handleCheckForUpdates}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="arrow-down-circle-outline" size={18} color="#FFFFFF" />
+          <Text style={{ color: '#FFFFFF', fontFamily: FontFamily.bold, fontWeight: '700', fontSize: 13 }}>Check for Updates</Text>
+          <Ionicons name="open-outline" size={14} color="#FFFFFF" />
+        </TouchableOpacity>
       </View>
 
       {/* Sign Out Button */}

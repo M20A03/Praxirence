@@ -15,7 +15,7 @@ class MedicineItem(BaseModel):
 
 class ReminderItem(BaseModel):
     medicine_name: str
-    dosage: str
+    dosage: Optional[str] = "1 dose" 
     time: str = Field(..., description="24-hour time e.g. 08:00, 14:00, 20:00")
     frequency: str = Field("daily", description="daily, weekly, etc.")
     instructions: Optional[str] = None

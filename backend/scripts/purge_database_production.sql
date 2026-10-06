@@ -12,6 +12,7 @@ BEGIN;
 -- 1. Purge all consultation and operational tables
 TRUNCATE TABLE visits CASCADE;
 TRUNCATE TABLE patients CASCADE;
+TRUNCATE TABLE doctor_patient_links CASCADE;
 TRUNCATE TABLE doctor_reviews CASCADE;
 TRUNCATE TABLE consent_logs CASCADE;
 TRUNCATE TABLE audit_logs CASCADE;
@@ -22,6 +23,7 @@ TRUNCATE TABLE users CASCADE;
 -- 3. Reset all auto-increment sequences so new IDs start from 1
 ALTER SEQUENCE IF EXISTS visits_id_seq RESTART WITH 1;
 ALTER SEQUENCE IF EXISTS patients_id_seq RESTART WITH 1;
+ALTER SEQUENCE IF EXISTS doctor_patient_links_id_seq RESTART WITH 1;
 ALTER SEQUENCE IF EXISTS doctor_reviews_id_seq RESTART WITH 1;
 ALTER SEQUENCE IF EXISTS consent_logs_id_seq RESTART WITH 1;
 ALTER SEQUENCE IF EXISTS audit_logs_id_seq RESTART WITH 1;
@@ -33,6 +35,8 @@ COMMIT;
 SELECT 'visits' AS table_name, count(*) AS remaining FROM visits
 UNION ALL
 SELECT 'patients', count(*) FROM patients
+UNION ALL
+SELECT 'doctor_patient_links', count(*) FROM doctor_patient_links
 UNION ALL
 SELECT 'users', count(*) FROM users
 UNION ALL

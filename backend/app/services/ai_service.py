@@ -1,3 +1,8 @@
+from app.ml.local_llm import (
+    ClinicalConnectivityHeartbeat,
+    local_biomistral_engine,
+    ClinicalCarePlanSchema
+)
 """
 Praxirence Tier-1 Ambient Consultation & Care Plan AI Service
 Features:
@@ -237,7 +242,22 @@ class AIService:
                     gemini_result["amber_alerts"] = amber_alerts
                 return gemini_result
 
-        # 4. Resilient Clinical Fallback Extraction
+        # 4. Edge Tier Failover: 4-bit BioMistral Local Engine
+        edge_result = local_biomistral_engine.synthesize_edge_care_plan(
+            effective_transcript,
+            patient_name=patient_name,
+            doctor_name=doctor_name
+        )
+        if edge_result:
+            if not edge_result.get("diarized_transcript"):
+                edge_result["diarized_transcript"] = diarized_transcript
+            if not edge_result.get("amber_alerts"):
+                edge_result["amber_alerts"] = amber_alerts
+            if not edge_result.get("vitals"):
+                edge_result["vitals"] = vitals
+            return edge_result
+
+        # 5. Resilient Institutional Heuristic Fallback
         c_lower = conversation.lower()
         if any(k in c_lower for k in ["hypertension", "bp", "blood pressure", "telma"]):
             raw_diag = "Primary Systemic Hypertension"
@@ -365,8 +385,13 @@ class AIService:
         api_key: str
     ) -> Optional[Dict[str, Any]]:
         """
-        Executes Gemini 3.8 / 3.5 Flash JSON extraction for clinical care plans.
+        Executes Gemini 2.5 / 2.0 Flash structured JSON extraction for clinical care plans.
+        Guarded by < 800ms cloud latency heartbeat check.
         """
+        if not ClinicalConnectivityHeartbeat.check_cloud_availability(max_latency_ms=800.0):
+            logger.info("Cloud latency > 800ms or offline. Skipping cloud tier to trigger immediate edge failover.")
+            return None
+
         system_prompt = (
             "You are an expert Chief Medical Information Officer (CMIO). "
             "Analyze the doctor-patient dialogue transcript and generate a structured clinical SOAP care plan. "
@@ -406,7 +431,7 @@ class AIService:
         payload = {
             "system_instruction": {"parts": [{"text": system_prompt}]},
             "contents": [{"parts": [{"text": user_content}]}],
-            "generationConfig": {"temperature": 0.1, "maxOutputTokens": 4096}
+            "generationConfig": {"temperature": 0.1, "maxOutputTokens": 4096, "response_mime_type": "application/json"}
         }
 
         models = ["gemini-2.0-flash", "gemini-1.5-flash"]
@@ -435,6 +460,15 @@ class AIService:
                                 "instructions": med.get("instructions", "Take as directed")
                             })
                         parsed["reminders"] = rems
+                        parsed["generation_tier"] = "cloud_frontier"
+                        # Zero Hallucination Ambiguity Check
+                        requires_conf = parsed.get("requires_doctor_confirmation", [])
+                        t_low = transcript.lower()
+                        for med in parsed.get("medicines", []):
+                            m_name = med.get("name", "").lower()
+                            if m_name and m_name not in t_low:
+                                requires_conf.append(f"Prescription '{med.get('name')}' not explicitly matched in audio transcript. Confirm with physician.")
+                        parsed["requires_doctor_confirmation"] = requires_conf
                         return parsed
             except Exception as e:
                 logger.warning(f"Gemini Care Plan extraction ({m}) notice: {e}")

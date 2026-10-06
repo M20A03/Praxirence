@@ -16,6 +16,13 @@ try:
 except (ImportError, Exception):
     torch = None
 
+from ml.vocab_booster import (
+    build_whisper_clinical_prompt,
+    normalize_indian_clinical_terms,
+    TOP_INDIAN_PHARMA_BRANDS,
+    INDIAN_DOSAGE_CONVENTIONS,
+    CODE_SWITCHING_DICTIONARY
+)
 from ml.config import (
     WHISPER_BASE_MODEL,
     WHISPER_ADAPTER_DIR,
@@ -174,11 +181,15 @@ class ModelLoader:
         # In-House Local Speech Recognition (Zero external API, 100% On-Premise)
         if hasattr(self, "_faster_whisper_model") and self._faster_whisper_model:
             try:
+                clinical_prompt = build_whisper_clinical_prompt()
                 transcribe_kwargs = {
-                    "beam_size": 1,
-                    "initial_prompt": WHISPER_AUDIO_PROMPT,
+                    "beam_size": 2,
+                    "best_of": 2,
+                    "temperature": [0.0, 0.2, 0.4, 0.6],
+                    "repetition_penalty": 1.2,
+                    "initial_prompt": clinical_prompt,
                     "vad_filter": True,
-                    "vad_parameters": dict(min_silence_duration_ms=500),
+                    "vad_parameters": dict(min_silence_duration_ms=500, threshold=0.45),
                 }
                 if language and language.lower() not in ("auto", "none"):
                     transcribe_kwargs["language"] = language.lower()
@@ -186,6 +197,7 @@ class ModelLoader:
                 segments, _ = self._faster_whisper_model.transcribe(target_path, **transcribe_kwargs)
                 text = " ".join([seg.text for seg in segments]).strip()
                 if text and len(text) > 3:
+                    text = normalize_indian_clinical_terms(text)
                     if converted_wav and os.path.exists(converted_wav):
                         try:
                             os.remove(converted_wav)
@@ -244,7 +256,7 @@ class ModelLoader:
                     except Exception:
                         pass
                 if transcription and transcription.strip():
-                    return transcription.strip()
+                    return normalize_indian_clinical_terms(transcription.strip())
             except Exception as e:
                 logger.error(f"Inference transcription error: {e}. Using fallback.")
 

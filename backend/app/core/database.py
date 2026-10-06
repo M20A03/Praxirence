@@ -1,3 +1,4 @@
+import os
 from typing import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
@@ -25,7 +26,8 @@ if db_url.startswith("postgresql://"):
 
 # 2. Resilient local fallback if Railway template variable is unexpanded or invalid outside Railway runtime
 if not db_url or "://" not in db_url or db_url.startswith("${{"):
-    db_url = "sqlite:///./praxirence_dev.db"
+    sqlite_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "praxirence_dev.db"))
+    db_url = f"sqlite:///{sqlite_file}"
 
 engine_kwargs = {"pool_pre_ping": True}
 if db_url.startswith("sqlite"):
@@ -59,7 +61,8 @@ try:
 except Exception as e:
     # Resilient local dev fallback to SQLite
     print(f"[Database] Primary database ({db_url}) unreachable: {e}. Falling back to SQLite praxirence_dev.db")
-    db_url = "sqlite:///./praxirence_dev.db"
+    sqlite_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "praxirence_dev.db"))
+    db_url = f"sqlite:///{sqlite_file}"
     connect_args = {"check_same_thread": False}
     engine = create_engine(
         db_url,

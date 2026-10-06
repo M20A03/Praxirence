@@ -24,6 +24,7 @@ from app.models.medicine import Medicine
 from sqlalchemy import or_, func
 from app.routes.deps import get_current_doctor
 from app.services.pharmacology_service import pharmacology_service
+from app.services.cdss_service import cdss_service
 
 logger = logging.getLogger("praxirence.doctor_copilot")
 
@@ -233,6 +234,7 @@ def evaluate_clinical_ddi(medications: List[str], renal_status: Optional[str] = 
     moderate = []
     cautions = []
 
+    # 1. Baseline known pairs
     for rule in KNOWN_DDI_DATABASE:
         d1, d2 = rule["pair"]
         d1_present = any(d1 in tok for tok in all_tokens)
@@ -249,6 +251,31 @@ def evaluate_clinical_ddi(medications: List[str], renal_status: Optional[str] = 
                 severe.append(item)
             else:
                 moderate.append(item)
+
+    # 2. Advanced CDSS Engine Expansion (Indian Pharmacopoeia & NLEM)
+    cdss_res = cdss_service.evaluate_prescription_safety(
+        medications=all_tokens,
+        egfr=25.0 if renal_status and "stage" in renal_status.lower() else None
+    )
+    for c_alert in cdss_res.contraindicated_alerts:
+        if not any(s["drug_1"].lower() == c_alert.drug_1.lower() and s["drug_2"].lower() == c_alert.drug_2.lower() for s in severe):
+            severe.append({
+                "drug_1": c_alert.drug_1,
+                "drug_2": c_alert.drug_2,
+                "mechanism": c_alert.mechanism,
+                "recommendation": c_alert.recommendation + (f" Alternatives: {', '.join(c_alert.alternative_molecules)}" if c_alert.alternative_molecules else "")
+            })
+    for m_alert in cdss_res.moderate_alerts:
+        if not any(m["drug_1"].lower() == m_alert.drug_1.lower() and m["drug_2"].lower() == m_alert.drug_2.lower() for m in moderate):
+            moderate.append({
+                "drug_1": m_alert.drug_1,
+                "drug_2": m_alert.drug_2,
+                "mechanism": m_alert.mechanism,
+                "recommendation": m_alert.recommendation
+            })
+    for rc in cdss_res.renal_hepatic_cautions:
+        if rc not in cautions:
+            cautions.append(rc)
 
     if renal_status and "stage" in renal_status.lower():
         if any("metformin" in tok for tok in all_tokens):

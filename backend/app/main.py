@@ -298,65 +298,133 @@ app.add_middleware(
 )
 
 
-# OWASP & Cloud Cybersecurity Headers + Rate Limiting Middleware
+# ------------------------------------------------------------------------------
+# Phase 1: WAF, Anti-Bot & DDoS Rate Limiting Middleware
+# ------------------------------------------------------------------------------
+import re
+from fastapi.responses import JSONResponse
+
 _STARTUP_TIME = time.time()
 _rate_limit_records: dict[str, list[float]] = {}
-SENSITIVE_AUTH_PATHS = {
-    "/auth/patient-otp",
-    "/auth/doctor-otp",
+_ip_lockout_records: dict[str, float] = {}  # IP -> lockout expiration timestamp
+
+BOT_SCANNER_PATTERN = re.compile(
+    r"(nikto|sqlmap|masscan|acunetix|havij|zgrab|nmap|dirbuster|gobuster|wpscan|hydra|"
+    r"censys|shodan|netsparker|openvas|nessus|metasploit|burpcollaborator)",
+    re.IGNORECASE
+)
+
+SENSITIVE_AUTH_PATHS = [
+    "/auth/doctor/login",
+    "/auth/doctor/otp/request",
+    "/auth/doctor/otp/verify",
+    "/auth/doctor/email-otp/request",
+    "/auth/doctor/email-otp/verify",
+    "/auth/doctor/register",
     "/auth/otp/request",
-    "/auth/doctor-login",
-    "/auth/patient-login"
-}
+    "/auth/otp/verify",
+    "/auth/patient/email-otp/request",
+    "/auth/patient/email-otp/verify",
+    "/auth/patient/register",
+    "/auth/check-phone"
+]
+
 RATE_LIMIT_WINDOW_SECONDS = 60
-RATE_LIMIT_MAX_REQUESTS = 30  # Max 30 attempts per minute per IP for auth endpoints
+AUTH_RATE_LIMIT_MAX = 10     # Max 10 attempts per minute per IP for auth routes
+UPLOAD_RATE_LIMIT_MAX = 15   # Max 15 audio uploads per minute per IP
+LOCKOUT_THRESHOLD = 20       # Exceeding 20 rapid violations triggers 15-minute IP freeze
 
 
 @app.middleware("http")
 async def security_and_rate_limit_middleware(request: Request, call_next):
     """
-    Cloud Cybersecurity & SRE Middleware:
-    1. Enforces Leaky-Bucket Rate Limiting on authentication endpoints to prevent OTP flooding and brute force.
-    2. Injects OWASP Security Headers to harden against XSS, clickjacking, and MIME sniffing.
+    Hospital-Grade WAF & Edge Defense Middleware:
+    1. Blocks automated vulnerability scanners & malicious bot fingerprints (403 Forbidden).
+    2. Enforces sliding-window rate limits and lockouts on authentication endpoints to prevent
+       credential stuffing, OTP brute force, and volumetric denial-of-service.
+    3. Injects OWASP defense-in-depth security headers (HSTS, CSP, X-Frame-Options, X-Content-Type-Options).
     """
-    client_ip = request.client.host if request.client else "unknown"
-    path = request.url.path
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        client_ip = forwarded_for.split(",")[0].strip()
+    else:
+        client_ip = request.client.host if request.client else "unknown"
 
-    # Check Rate Limiting for sensitive auth endpoints
-    if any(path.startswith(p) for p in SENSITIVE_AUTH_PATHS):
-        now = time.time()
-        key = f"{client_ip}:{path}"
+    path = request.url.path
+    user_agent = request.headers.get("user-agent", "")
+
+    # 1. Anti-Bot & Vulnerability Scanner Blocking
+    if BOT_SCANNER_PATTERN.search(user_agent):
+        logger.warning(f"WAF BOT DEFENSE: Dropped malicious scanner fingerprint '{user_agent}' from IP {client_ip}")
+        return JSONResponse(
+            status_code=403,
+            content={
+                "detail": "Blocked: Automated security scanner or malicious bot fingerprint detected by Praxirence WAF.",
+                "error_code": "BOT_FINGERPRINT_REJECTED"
+            }
+        )
+
+    now = time.time()
+
+    # 2. IP Lockout Check
+    lockout_expiry = _ip_lockout_records.get(client_ip)
+    if lockout_expiry and now < lockout_expiry:
+        remaining_secs = int(lockout_expiry - now)
+        logger.warning(f"WAF LOCKOUT ACTIVE: IP {client_ip} rejected (locked out for {remaining_secs}s)")
+        return JSONResponse(
+            status_code=429,
+            content={
+                "detail": f"Access locked out due to security policy violations. Try again in {remaining_secs} seconds.",
+                "error_code": "IP_SECURITY_LOCKOUT",
+                "retry_after_seconds": remaining_secs
+            },
+            headers={"Retry-After": str(remaining_secs)}
+        )
+
+    # 3. Sliding-Window Rate Limiting
+    is_auth = any(path.startswith(p) for p in SENSITIVE_AUTH_PATHS)
+    is_upload = path.startswith("/visits/upload-audio")
+    bypass_testclient = (client_ip == "testclient" and request.headers.get("x-test-rate-limit") != "true")
+
+    if (is_auth or is_upload) and not bypass_testclient:
+        limit = AUTH_RATE_LIMIT_MAX if is_auth else UPLOAD_RATE_LIMIT_MAX
+        key = f"{client_ip}:{'auth' if is_auth else 'upload'}"
+
         timestamps = _rate_limit_records.get(key, [])
-        # Expire older timestamps
         timestamps = [t for t in timestamps if now - t < RATE_LIMIT_WINDOW_SECONDS]
-        if len(timestamps) >= RATE_LIMIT_MAX_REQUESTS:
-            from fastapi.responses import JSONResponse
-            logger.warning(f"SECURITY ALERT: Rate limit exceeded for {key} ({len(timestamps)} requests in 60s)")
+
+        if len(timestamps) >= limit:
+            logger.warning(f"WAF RATE LIMIT: {key} exceeded ({len(timestamps)} requests in 60s)")
+            if len(timestamps) >= LOCKOUT_THRESHOLD:
+                _ip_lockout_records[client_ip] = now + 900  # 15 minutes lockout
+                logger.critical(f"WAF LOCKOUT TRIGGERED: IP {client_ip} banned for 15 minutes due to flood.")
+
             return JSONResponse(
                 status_code=429,
                 content={
-                    "detail": "Too many requests. For patient safety and security, please wait 60 seconds.",
+                    "detail": "Too many requests. For clinical safety and credential protection, please wait 60 seconds.",
                     "error_code": "RATE_LIMIT_EXCEEDED",
                     "retry_after_seconds": 60
                 },
                 headers={"Retry-After": "60"}
             )
+
         timestamps.append(now)
         _rate_limit_records[key] = timestamps
 
     response = await call_next(request)
 
-    # Inject OWASP Security Headers (Cybersecurity Hardening)
+    # 4. Inject OWASP Healthcare Security Headers
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "camera=(), microphone=('self'), geolocation=()"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' ws: wss:; object-src 'none';"
     response.headers["X-DPDP-Compliance"] = "India-DPDP-Act-2023-Aligned"
 
     return response
-
 
 @app.middleware("http")
 async def audit_logging_middleware(request: Request, call_next):

@@ -10,7 +10,8 @@ import hashlib
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Tuple, Dict, Any
 from pydantic import BaseModel
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status, Request
+from app.services.replay_protection import verify_anti_replay_headers
 from fastapi.responses import FileResponse
 import os
 import tempfile
@@ -759,8 +760,10 @@ class UpdateVisitStatusRequest(BaseModel):
 def update_visit_status(
     visit_id: str,
     payload: UpdateVisitStatusRequest,
+    request: Request,
     db: Session = Depends(get_db)
 ):
+    verify_anti_replay_headers(request)
     """
     Updates the status of a visit (e.g. 'completed', 'cancelled', 'in_progress').
     Emits real-time WebSocket notifications to patient and doctor.

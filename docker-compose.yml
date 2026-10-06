@@ -97,6 +97,41 @@ services:
       - audio_recordings:/tmp/praxirence_recordings
 
 
+  # ----------------------------------------------------------------------------
+  # ClamAV Antivirus Daemon (Malware & EICAR Scanning Sandbox)
+  # ----------------------------------------------------------------------------
+  clamav:
+    image: clamav/clamav:latest
+    container_name: praxirence-clamav
+    restart: unless-stopped
+    ports:
+      - "3310:3310"
+    environment:
+      CLAMAV_NO_FRESHCLAM: "false"
+    volumes:
+      - clamav_db:/var/lib/clamav
+    healthcheck:
+      test: ["CMD", "clamdscan", "--ping", "10"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # ----------------------------------------------------------------------------
+  # Nginx Edge Reverse Proxy, WAF & Anti-Bot Defense
+  # ----------------------------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: praxirence-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deployment/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - backend
+
 volumes:
   pgdata:
   redisdata:

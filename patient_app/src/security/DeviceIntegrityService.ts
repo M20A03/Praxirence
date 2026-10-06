@@ -11,16 +11,14 @@ export interface IntegrityAssessment {
 }
 
 /**
- * Hospital-Grade Device Integrity & Anti-Tampering Service (OWASP MASVS-R)
- * Detects rooted environments, emulators, dynamic hooking frameworks (Frida/Xposed),
- * and attached debuggers to protect patient healthcare records.
+ * Hospital-Grade Runtime Application Self-Protection (RASP) & Anti-Tampering Service
+ * (Patient App - OWASP MASVS-R Standard)
+ * Protects patient health records against rooted environments, dynamic instrumentation (Frida),
+ * and debugger attachment.
  */
 class DeviceIntegrityService {
   private cachedAssessment: IntegrityAssessment | null = null;
 
-  /**
-   * Run comprehensive device security audit
-   */
   async assessDeviceIntegrity(): Promise<IntegrityAssessment> {
     if (this.cachedAssessment) {
       return this.cachedAssessment;
@@ -42,10 +40,17 @@ class DeviceIntegrityService {
         brand.includes('generic') ||
         modelName.includes('emulator') ||
         modelName.includes('sdk') ||
-        modelName.includes('droid4x');
+        modelName.includes('droid4x') ||
+        modelName.includes('vbox') ||
+        modelName.includes('goldfish');
 
       if (isKnownEmulatorHardware) {
         violations.push('Generic or custom Android emulator hardware profile detected');
+      }
+
+      const supportedCpuArchs = (Device as any).supportedCpuArchitectures || [];
+      if (typeof __DEV__ !== 'undefined' && !__DEV__ && supportedCpuArchs.includes('x86')) {
+        violations.push('Non-standard x86 CPU architecture in production release');
       }
     }
 
@@ -54,25 +59,24 @@ class DeviceIntegrityService {
     const hasHookArtifacts =
       typeof globalObj.__frida !== 'undefined' ||
       typeof globalObj._frida !== 'undefined' ||
-      typeof globalObj.Module !== 'undefined' && typeof globalObj.Process !== 'undefined';
+      (typeof globalObj.Module !== 'undefined' && typeof globalObj.Process !== 'undefined') ||
+      typeof globalObj.__xposed !== 'undefined' ||
+      typeof globalObj.cydia !== 'undefined';
 
     if (hasHookArtifacts) {
       violations.push('Dynamic instrumentation engine (Frida/Xposed) hook detected');
     }
 
     // 4. Debugger Attachment Check
-    // When running in production release build, __DEV__ should never be true
     const isProduction = !__DEV__;
     let isDebuggerAttached = false;
     if (isProduction && typeof globalObj.nativeCallSyncHook !== 'undefined') {
-      // Possible Chrome/Hermes Remote Debugger attached
       isDebuggerAttached = true;
       violations.push('Remote debugger or native interception hook attached in production build');
     }
 
-    // Determine Risk Score
     let riskScore: 'LOW' | 'MEDIUM' | 'HIGH' = 'LOW';
-    const isRootedOrJailbroken = violations.some((v) => v.includes('hook') || v.includes('test-keys'));
+    const isRootedOrJailbroken = violations.some((v) => v.includes('hook') || v.includes('emulator'));
 
     if (violations.length >= 2 || isRootedOrJailbroken) {
       riskScore = 'HIGH';
@@ -93,18 +97,14 @@ class DeviceIntegrityService {
     return assessment;
   }
 
-  /**
-   * Enforce Patient App Clinical Security Policy
-   */
   async enforcePatientPolicy(): Promise<boolean> {
     const assessment = await this.assessDeviceIntegrity();
 
-    if (assessment.riskScore === 'HIGH') {
+    if (assessment.riskScore === 'HIGH' && !__DEV__) {
       console.warn('[DeviceIntegrity] High-risk runtime environment detected:', assessment.violations);
-      // Inform patient of compromised environment
       Alert.alert(
         'Security Notice',
-        'Your device security environment appears modified or virtualized. For your privacy, sensitive health records will require re-authentication and offline caching is disabled.',
+        'Your device security environment appears modified or virtualized. For your privacy, sensitive health records will require re-authentication.',
         [{ text: 'Acknowledge', style: 'default' }]
       );
       return false;

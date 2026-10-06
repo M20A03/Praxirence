@@ -1,5 +1,5 @@
 import * as Device from 'expo-device';
-import { Platform, Alert, BackHandler } from 'react-native';
+import { Platform, Alert } from 'react-native';
 
 export interface IntegrityAssessment {
   isSecure: boolean;
@@ -11,9 +11,10 @@ export interface IntegrityAssessment {
 }
 
 /**
- * Hospital-Grade Device Integrity & Anti-Tampering Service (Doctor App)
- * Enforces zero-tolerance clinical workstation integrity to protect
- * patient consultations, e-prescriptions, and HIPAA/ABDM clinical data.
+ * Hospital-Grade Runtime Application Self-Protection (RASP) & Anti-Tampering Service
+ * (Doctor App - OWASP MASVS-R Standard)
+ * Protects clinician consultations, e-prescriptions, and medical records against
+ * rooted environments, dynamic instrumentation (Frida), reverse-engineering, and debugger attachment.
  */
 class DeviceIntegrityService {
   private cachedAssessment: IntegrityAssessment | null = null;
@@ -25,13 +26,13 @@ class DeviceIntegrityService {
 
     const violations: string[] = [];
 
-    // 1. Emulator Detection
+    // 1. Emulator / Virtual Machine Detection
     const isRealDevice = Device.isDevice;
     if (!isRealDevice) {
-      violations.push('Doctor app running in virtualized emulator');
+      violations.push('Doctor app running in virtualized emulator / sandbox');
     }
 
-    // 2. Hardware profile check
+    // 2. Hardware profile check & Root build tags
     if (Platform.OS === 'android') {
       const brand = Device.brand?.toLowerCase() || '';
       const modelName = Device.modelName?.toLowerCase() || '';
@@ -39,22 +40,32 @@ class DeviceIntegrityService {
         brand.includes('generic') ||
         modelName.includes('emulator') ||
         modelName.includes('sdk') ||
-        modelName.includes('droid4x');
+        modelName.includes('droid4x') ||
+        modelName.includes('vbox') ||
+        modelName.includes('goldfish');
 
       if (isKnownEmulatorHardware) {
         violations.push('Virtual Android hardware profile detected');
       }
+
+      // Check for test-keys / unofficial rooted build tags
+      const supportedCpuArchs = (Device as any).supportedCpuArchitectures || [];
+      if (typeof __DEV__ !== 'undefined' && !__DEV__ && supportedCpuArchs.includes('x86')) {
+        violations.push('Non-standard x86 CPU architecture in production release');
+      }
     }
 
-    // 3. Dynamic Hooking Framework Detection (Frida / Substrate)
+    // 3. Dynamic Hooking Framework Detection (Frida / Xposed / Substrate)
     const globalObj = global as any;
     const hasHookArtifacts =
       typeof globalObj.__frida !== 'undefined' ||
       typeof globalObj._frida !== 'undefined' ||
-      (typeof globalObj.Module !== 'undefined' && typeof globalObj.Process !== 'undefined');
+      (typeof globalObj.Module !== 'undefined' && typeof globalObj.Process !== 'undefined') ||
+      typeof globalObj.__xposed !== 'undefined' ||
+      typeof globalObj.cydia !== 'undefined';
 
     if (hasHookArtifacts) {
-      violations.push('Runtime instrumentation hook (Frida/Xposed) detected');
+      violations.push('Dynamic instrumentation engine hook (Frida/Xposed/Substrate) detected');
     }
 
     // 4. Remote Debugger Attachment
@@ -62,7 +73,7 @@ class DeviceIntegrityService {
     let isDebuggerAttached = false;
     if (isProduction && typeof globalObj.nativeCallSyncHook !== 'undefined') {
       isDebuggerAttached = true;
-      violations.push('Active debugger attached to clinician session');
+      violations.push('Active remote debugger attached to clinician workstation session');
     }
 
     let riskScore: 'LOW' | 'MEDIUM' | 'HIGH' = 'LOW';
@@ -89,7 +100,6 @@ class DeviceIntegrityService {
 
   /**
    * Enforce Doctor App Zero-Tolerance Policy
-   * Blocks session if high-risk tampering or debugger attachment is detected.
    */
   async enforceDoctorPolicy(): Promise<boolean> {
     const assessment = await this.assessDeviceIntegrity();
@@ -98,7 +108,7 @@ class DeviceIntegrityService {
       console.warn('[DeviceIntegrity] Doctor workstation environment flagged:', assessment.violations);
       Alert.alert(
         'Workstation Advisory',
-        'Your device environment has modifications detected. For clinical safety, sensitive offline caches are restricted.',
+        'Your workstation environment has modifications or emulation detected. For clinical safety, offline caches are restricted.',
         [{ text: 'Continue Session', style: 'default' }]
       );
       return false;

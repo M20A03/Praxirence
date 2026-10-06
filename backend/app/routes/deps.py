@@ -10,6 +10,9 @@ from app.models.patient import Patient
 security_bearer = HTTPBearer(auto_error=False)
 
 
+from app.services.token_blacklist import token_blacklist
+
+
 def get_token_payload(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_bearer)
 ) -> Dict[str, Any]:
@@ -20,6 +23,12 @@ def get_token_payload(
             headers={"WWW-Authenticate": "Bearer"},
         )
     token = credentials.credentials or ""
+    if token_blacklist.is_blacklisted(token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been revoked or session terminated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     payload = decode_access_token(token)
     if not payload:
         raise HTTPException(
@@ -27,6 +36,7 @@ def get_token_payload(
             detail="Invalid or expired token",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    payload["_raw_token"] = token
     return payload
 
 

@@ -1321,3 +1321,32 @@ def get_me(
 
     raise HTTPException(status_code=401, detail="Unknown or invalid role")
 
+
+
+@router.post("/logout")
+def logout_user(
+    payload: dict = Depends(get_token_payload),
+    db: Session = Depends(get_db)
+):
+    """
+    Terminates the active session and immediately blacklists the JWT token.
+    """
+    from app.services.token_blacklist import token_blacklist
+    raw_token = payload.get("_raw_token")
+    exp = payload.get("exp")
+    if raw_token:
+        token_blacklist.blacklist_token(raw_token, expiry_timestamp=float(exp) if exp else None)
+
+    sub_id = payload.get("sub")
+    role = payload.get("role")
+    audit = AuditLog(
+        actor_id=str(sub_id),
+        actor_role=str(role),
+        action="user_logout",
+        resource="auth_session",
+        details={"status": "revoked"}
+    )
+    db.add(audit)
+    db.commit()
+
+    return {"success": True, "message": "Session terminated and token revoked successfully."}

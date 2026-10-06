@@ -1,12 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Enforce HTTPS across all traffic and trust only official system CAs -->
+    <!-- Enforce HTTPS across all traffic and trust only official system CAs (Zero Trust) -->
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
     </base-config>
-    <!-- Allow cleartext only for local emulator loopback development -->
+
+    <!-- Hospital-Grade SSL / TLS Certificate Pinning for Production Endpoints -->
+    <domain-config>
+        <domain includeSubdomains="true">api.praxirence.com</domain>
+        <domain includeSubdomains="true">praxirence.com</domain>
+        <pin-set expiration="2027-12-31">
+            <!-- Let's Encrypt ISRG Root X1 SHA-256 SPKI Pin -->
+            <pin digest="SHA-256">C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=</pin>
+            <!-- DigiCert Global Root G2 SHA-256 SPKI Pin (Backup Pin) -->
+            <pin digest="SHA-256">i7WTqTvh0OioIruIfFR4kRqqZ58q4BGYKZZQ734vn7U=</pin>
+            <!-- Google Trust Services Root R1 SHA-256 SPKI Pin -->
+            <pin digest="SHA-256">hxqRlPTuQjvW/PHwdnXObUXYer7F792NetIHUCIWDVk=</pin>
+        </pin-set>
+    </domain-config>
+
+    <!-- Development loopback only for local emulators -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">10.0.2.2</domain>
         <domain includeSubdomains="true">localhost</domain>

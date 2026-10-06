@@ -156,6 +156,31 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
     } catch (_) {}
   };
 
+  const handlePromptClearChat = () => {
+    Alert.alert(
+      'Clear Conversation?',
+      'Are you sure you want to clear your AI chat history? All current messages and saved queries will be deleted.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear All',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem('@praxirence_patient_chat_history');
+              await AsyncStorage.removeItem('@praxirence_patient_chat_messages');
+              setChatHistory([]);
+              initializeWelcomeMessage(selectedLanguage);
+              Alert.alert('Chat Cleared', 'Your AI chat conversation has been reset.');
+            } catch (err) {
+              console.warn('Clear chat notice:', err);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   useEffect(() => {
     const targetChatLang = CODE_TO_CHAT_LANG[language] || 'English';
     setSelectedLanguage(targetChatLang);
@@ -298,6 +323,16 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
           >
             <Ionicons name="reader-outline" size={13} color="#0D9488" style={{ marginRight: 4 }} />
             <Text style={styles.historyPillText}>History</Text>
+          </TouchableOpacity>
+
+          {/* Clear / Reset Chat Pill */}
+          <TouchableOpacity
+            style={styles.clearPill}
+            onPress={handlePromptClearChat}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="trash-outline" size={13} color="#EF4444" style={{ marginRight: 4 }} />
+            <Text style={styles.clearPillText}>Clear</Text>
           </TouchableOpacity>
 
           {/* Language Selection Pill */}
@@ -638,6 +673,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
+  },
+  clearPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.25)',
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  clearPillText: {
+    fontFamily: FontFamily.bold,
+    fontWeight: '700',
+    fontSize: FontSize.caption,
+    color: '#EF4444',
   },
   languagePill: {
     backgroundColor: 'rgba(13, 148, 136, 0.1)',

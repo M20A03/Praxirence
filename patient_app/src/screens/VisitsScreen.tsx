@@ -440,10 +440,8 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
 
           const summaryText =
             visit.patient_summary ||
-            `During your consultation, your doctor evaluated your symptoms and confirmed ${visit.diagnosis || 'your condition'}. Please adhere to your medication schedule and home rest instructions.`;
-          const adviceText =
-            visit.doctor_advice ||
-            'Drink plenty of warm fluids, rest in a well-ventilated room, and maintain balanced nutrition.';
+            (visit.diagnosis ? `Consultation concluded for ${visit.diagnosis}. Please adhere to your prescribed medication schedule.` : 'Consultation concluded by attending physician.');
+          const adviceText = visit.doctor_advice || '';
 
           return (
             <View key={visit.id} style={styles.visitCard}>
@@ -567,14 +565,16 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
 
                     <Text style={styles.explanationBody}>{summaryText}</Text>
 
-                    {/* Doctor's Advice Box */}
-                    <View style={styles.adviceBox}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 }}>
-                        <Ionicons name="bulb-outline" size={15} color="#B45309" />
-                        <Text style={styles.adviceHeading}>Doctor's Advice & Home Care:</Text>
+                    {/* Doctor's Advice Box (Only when recorded by clinician) */}
+                    {Boolean(visit.doctor_advice) && (
+                      <View style={styles.adviceBox}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+                          <Ionicons name="bulb-outline" size={15} color="#B45309" />
+                          <Text style={styles.adviceHeading}>Doctor's Advice & Home Care:</Text>
+                        </View>
+                        <Text style={styles.adviceBody}>{visit.doctor_advice}</Text>
                       </View>
-                      <Text style={styles.adviceBody}>{adviceText}</Text>
-                    </View>
+                    )}
 
                     {/* Audio Read-Out Player */}
                     <TouchableOpacity

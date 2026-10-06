@@ -339,8 +339,8 @@ export const AppShowcase: React.FC<AppShowcaseProps> = () => {
 
               {/* Action Buttons */}
               <div style={{ marginTop: '16px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <a href="#contact" className="btn-primary" style={{ padding: '10px 18px', fontSize: '0.85rem' }}>
-                  <span>Inquire for Patients</span>
+                <a href="/download" className="btn-primary" style={{ padding: '10px 18px', fontSize: '0.85rem', background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)' }}>
+                  <span>Download Patient App APK</span>
                 </a>
               </div>
             </div>

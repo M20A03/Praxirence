@@ -39,8 +39,8 @@ export const LandingFooter: React.FC = () => {
         {/* Legal & Policy Links */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'flex-end' }}>
           <div className="footer-links">
-            <a href="#apps" className="footer-link">Doctor App</a>
-            <a href="#apps" className="footer-link">Patient App</a>
+            <a href="#contact" className="footer-link">Doctor Portal (Invite-Only)</a>
+            <a href="/download" className="footer-link">Patient App (Download APK)</a>
             <a href="#architecture" className="footer-link">Architecture</a>
             <a href="#contact" className="footer-link">Contact & Inquiries</a>
           </div>

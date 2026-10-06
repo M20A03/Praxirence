@@ -100,29 +100,36 @@ export const QrDownloadModal: React.FC<QrDownloadModalProps> = ({ isOpen, onClos
           </span>
         </div>
 
-        {/* Direct Download Options */}
+        {/* Direct Download Options - Patient Only (Doctor is Enterprise/Invite-Only) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <a
-            href="https://github.com/M20A03/Praxirence/releases"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/downloads/Praxirence-Patient.apk"
+            download="Praxirence-Patient.apk"
             className="btn-primary"
-            style={{ justifyContent: 'center', padding: '12px' }}
+            style={{ justifyContent: 'center', padding: '12px', background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)' }}
           >
             <Download size={16} />
-            <span>Download Doctor App APK (32 MB)</span>
+            <span>Download Patient App APK (66 MB)</span>
           </a>
 
-          <a
-            href="https://github.com/M20A03/Praxirence/releases"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-secondary"
-            style={{ justifyContent: 'center', padding: '12px' }}
-          >
-            <Download size={16} color="#059669" />
-            <span>Download Patient Companion APK (28 MB)</span>
-          </a>
+          <div style={{
+            padding: '10px 14px',
+            borderRadius: '10px',
+            background: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            textAlign: 'center'
+          }}>
+            <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b', lineHeight: 1.4 }}>
+              <b>Are you a Doctor?</b> Doctor App is enterprise/invite-only and distributed privately.
+            </p>
+            <a
+              href="#contact"
+              onClick={onClose}
+              style={{ display: 'inline-block', marginTop: '4px', fontSize: '0.75rem', color: '#0d9488', fontWeight: 700, textDecoration: 'underline' }}
+            >
+              Request Clinical Access →
+            </a>
+          </div>
         </div>
 
         {/* Security verification stamp */}

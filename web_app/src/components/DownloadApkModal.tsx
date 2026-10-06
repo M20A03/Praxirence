@@ -25,10 +25,13 @@ export const DownloadApkModal: React.FC<DownloadApkModalProps> = ({ isOpen, onCl
 
   if (!isOpen) return null;
 
-  const githubReleaseUrl = 'https://github.com/M20A03/Praxirence/releases/tag/v1.0.0';
-
   const handleDownloadClick = () => {
-    window.open(githubReleaseUrl, '_blank');
+    const link = document.createElement('a');
+    link.href = '/downloads/Praxirence-Patient.apk';
+    link.setAttribute('download', 'Praxirence-Patient.apk');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (

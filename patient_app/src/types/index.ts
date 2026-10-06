@@ -118,6 +118,7 @@ export interface QueueStatusResponse {
 
 export interface PatientUser {
   id: string;
+  uhid?: string;
   name: string;
   phone: string;
   email?: string;
@@ -291,3 +292,14 @@ export interface ChatMessage {
   emergencyAlert?: ChatEmergencyAlert;
 }
 
+
+
+export interface DoctorAuthorizationRequest {
+  link_id: string;
+  doctor_id: string;
+  doctor_name: string;
+  doctor_specialty?: string;
+  clinic_name?: string;
+  confirmation_code?: string;
+  created_at: string;
+}

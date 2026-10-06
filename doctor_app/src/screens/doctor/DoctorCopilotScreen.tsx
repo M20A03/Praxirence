@@ -1,3 +1,4 @@
+import { useIsFocused } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Modal } from 'react-native';
@@ -92,6 +93,14 @@ export default function DoctorCopilotScreen({
       setCopilotHistory([]);
     } catch (_) {}
   };
+
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (isFocused) {
+      loadPatients();
+    }
+  }, [isFocused]);
 
   const loadPatients = async () => {
     try {
@@ -282,7 +291,7 @@ ${copilotReply}`,
           />
           <Text style={styles.patientBarText} numberOfLines={1}>
             {selectedPatient
-              ? `Patient: ${selectedPatient.name} (${selectedPatient.age || 'Age N/A'}, ${selectedPatient.gender || 'N/A'})`
+              ? `Patient: ${selectedPatient.name} (${selectedPatient.uhid || selectedPatient.phone || 'ID N/A'})`
               : 'Attach Patient Profile for Grounded Analysis...'}
           </Text>
           <Ionicons
@@ -332,7 +341,7 @@ ${copilotReply}`,
                     selectedPatientId === p.id && styles.patientOptionTextSelected,
                   ]}
                 >
-                  {p.name} • {p.age || 'Age N/A'} • {p.gender || ''}
+                  {p.name} • {p.uhid || (p.phone || '').slice(-4)}
                 </Text>
               </TouchableOpacity>
             ))}

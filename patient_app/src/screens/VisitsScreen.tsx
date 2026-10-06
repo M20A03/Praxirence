@@ -501,239 +501,124 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
                 </View>
               </View>
 
-              {/* Diagnosis Banner */}
-              <View style={styles.diagnosisSection}>
-                <Text style={styles.diagnosisLabel}>DIAGNOSIS</Text>
-                <Text style={styles.diagnosisText}>
-                  {visit.diagnosis || 'Clinical Consultation'}
-                </Text>
-              </View>
-
-              {/* What Your Doctor Explained (Plain-Language Explanation) */}
-              <View style={styles.explanationCard}>
-                <View style={styles.explanationHeader}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Ionicons name="chatbubble-ellipses" size={17} color={Colors.primaryDark} />
-                    <Text style={styles.explanationTitle}>What Your Doctor Explained</Text>
+              {['scheduled', 'waiting', 'booked', 'in_progress'].includes(visit.status) ? (
+                <View style={{ backgroundColor: '#F0F9FF', borderRadius: 8, padding: 14, marginTop: 12, borderWidth: 1, borderColor: '#BAE6FD' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    <Ionicons name="time-outline" size={18} color="#0284C7" />
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#0369A1' }}>Consultation Awaiting Clinician</Text>
                   </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <TouchableOpacity
-                      style={styles.pdfBadgeButton}
-                      onPress={() => handleDownloadPdf(visit)}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="document-text" size={14} color="#FFFFFF" />
-                      <Text style={styles.pdfBadgeButtonText}>PDF</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.shareButton}
-                      onPress={() => handleShareSummary(visit)}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="share-social-outline" size={15} color={Colors.primaryDark} />
-                      <Text style={styles.shareButtonText}>Share</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <Text style={styles.explanationBody}>{summaryText}</Text>
-
-                {/* Doctor's Advice Box */}
-                <View style={styles.adviceBox}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 }}>
-                    <Ionicons name="bulb-outline" size={15} color="#B45309" />
-                    <Text style={styles.adviceHeading}>Doctor's Advice & Home Care:</Text>
-                  </View>
-                  <Text style={styles.adviceBody}>{adviceText}</Text>
-                </View>
-
-                {/* Audio Read-Out Player */}
-                <TouchableOpacity
-                  style={[styles.audioPlayerBar, isPlayingAudio && styles.audioPlayerBarActive]}
-                  onPress={() => handleToggleAudio(visit.id)}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.audioIconCircle}>
-                    <Ionicons
-                      name={isPlayingAudio ? 'pause' : 'volume-high'}
-                      size={16}
-                      color="#FFFFFF"
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.audioTitle}>
-                      {isPlayingAudio ? 'Speaking Doctor\'s Explanation...' : 'Listen to Doctor\'s Advice (Read Aloud)'}
-                    </Text>
-                    <Text style={styles.audioSub}>
-                      {isPlayingAudio ? 'Tap to pause audio playback' : 'Voice guidance for elderly & multilingual patients'}
-                    </Text>
-                  </View>
-                  {isPlayingAudio && (
-                    <View style={styles.audioWavePulse}>
-                      <Ionicons name="pulse" size={18} color={Colors.primaryDark} />
-                    </View>
-                  )}
-                </TouchableOpacity>
-              </View>
-
-              {/* Medicines Summary */}
-              {visit.medicines && visit.medicines.length > 0 && (
-                <TouchableOpacity
-                  style={styles.medsSummary}
-                  onPress={() => toggleExpand(visit.id)}
-                  activeOpacity={0.7}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Ionicons name="medkit-outline" size={16} color={Colors.primary} />
-                    <Text style={styles.medsCount}>
-                      {visit.medicines.length} Medication{visit.medicines.length > 1 ? 's' : ''} Prescribed
-                    </Text>
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <Text style={styles.expandPrompt}>
-                      {isExpanded ? 'Hide Details' : 'View Timings'}
-                    </Text>
-                    <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.primary} />
-                  </View>
-                </TouchableOpacity>
-              )}
-
-              {/* Expanded Care Plan Details */}
-              {isExpanded && (
-                <View style={styles.expandedContent}>
-                  <Text style={styles.expandedTitle}>Medication Timings & Instructions:</Text>
-                  {visit.medicines.map((med, mIdx) => (
-                    <View key={mIdx} style={styles.medDetailRow}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.medDetailName}>
-                          {mIdx + 1}. {med.name} ({med.dosage})
-                        </Text>
-
-                        {/* Meal timing badge */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 3 }}>
-                          <View style={[
-                            styles.mealBadge,
-                            {
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              gap: 4,
-                              backgroundColor: med.is_sos
-                                ? '#FEE2E2'
-                                : med.meal_relation === 'empty_stomach'
-                                ? '#CCFBF1'
-                                : med.meal_relation === 'before_meal'
-                                ? '#FEF3C7'
-                                : '#DCFCE7'
-                            }
-                          ]}>
-                            <Ionicons
-                              name={
-                                med.is_sos
-                                  ? 'flash-outline'
-                                  : med.meal_relation === 'empty_stomach'
-                                  ? 'water-outline'
-                                  : med.meal_relation === 'before_meal'
-                                  ? 'time-outline'
-                                  : 'restaurant-outline'
-                              }
-                              size={11}
-                              color={
-                                med.is_sos
-                                  ? '#DC2626'
-                                  : med.meal_relation === 'empty_stomach'
-                                  ? '#0F766E'
-                                  : med.meal_relation === 'before_meal'
-                                  ? '#B45309'
-                                  : '#15803D'
-                              }
-                            />
-                            <Text style={[
-                              styles.mealBadgeText,
-                              {
-                                color: med.is_sos
-                                  ? '#DC2626'
-                                  : med.meal_relation === 'empty_stomach'
-                                  ? '#0F766E'
-                                  : med.meal_relation === 'before_meal'
-                                  ? '#B45309'
-                                  : '#15803D'
-                              }
-                            ]}>
-                              {med.is_sos
-                                ? 'SOS (When Needed)'
-                                : med.meal_relation === 'empty_stomach'
-                                ? 'Khali Pet (Empty Stomach)'
-                                : med.meal_relation === 'before_meal'
-                                ? 'Before Meal'
-                                : 'After Meal'}
-                            </Text>
-                          </View>
+                  <Text style={{ fontSize: 13, color: '#075985', lineHeight: 18 }}>
+                    Your appointment is confirmed. Attending clinician {cleanDoctorName(visit.doctor_name)} has not yet conducted this consultation. Once concluded, your official diagnosis, prescriptions, and personalized home care guidance will appear here.
+                  </Text>
+                  {(Boolean(visit.time_slot) || Boolean(visit.token_display)) && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 }}>
+                      {Boolean(visit.time_slot) && (
+                        <View style={{ backgroundColor: '#FFFFFF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 5, borderWidth: 1, borderColor: '#BAE6FD' }}>
+                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#0284C7' }}>Slot: {visit.time_slot}</Text>
                         </View>
-
-                        <Text style={styles.medDetailFreq}>Timing: {med.frequency}</Text>
-                        {med.instructions && (
-                          <Text style={styles.medDetailInst}>Note: {med.instructions}</Text>
-                        )}
-
-                        {/* Interactive Daily Dose Checklist */}
-                        <View style={styles.doseTrackerContainer}>
-                          <Text style={styles.doseTrackerTitle}>Track dose today:</Text>
-                          <View style={styles.dosePillRow}>
-                            {['Morning', 'Afternoon', 'Night'].map((slot) => {
-                              const doseKey = `${visit.id}_${med.name}_${slot}`;
-                              const isTaken = !!doseTracker[doseKey];
-                              return (
-                                <TouchableOpacity
-                                  key={slot}
-                                  style={[
-                                    styles.dosePill,
-                                    isTaken && styles.dosePillActive,
-                                  ]}
-                                  onPress={() => toggleDose(doseKey)}
-                                  activeOpacity={0.7}
-                                >
-                                  <Ionicons
-                                    name={isTaken ? 'checkmark-circle' : 'ellipse-outline'}
-                                    size={13}
-                                    color={isTaken ? '#FFFFFF' : Colors.textMuted}
-                                  />
-                                  <Text
-                                    style={[
-                                      styles.dosePillText,
-                                      isTaken && styles.dosePillTextActive,
-                                    ]}
-                                  >
-                                    {slot}
-                                  </Text>
-                                </TouchableOpacity>
-                              );
-                            })}
-                          </View>
+                      )}
+                      {Boolean(visit.token_display) && (
+                        <View style={{ backgroundColor: '#FFFFFF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 5, borderWidth: 1, borderColor: '#BAE6FD' }}>
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: '#0284C7' }}>Token: {visit.token_display}</Text>
                         </View>
-                      </View>
-                      {med.duration_days && (
-                        <Text style={styles.medDetailDuration}>{med.duration_days} days</Text>
                       )}
                     </View>
-                  ))}
+                  )}
                 </View>
-              )}
+              ) : (
+                <>
+                  {/* Diagnosis Banner */}
+                  <View style={styles.diagnosisSection}>
+                    <Text style={styles.diagnosisLabel}>DIAGNOSIS</Text>
+                    <Text style={styles.diagnosisText}>
+                      {visit.diagnosis || 'Clinical Consultation'}
+                    </Text>
+                  </View>
 
-              {/* Official Tamper-Evident Prescription PDF Download Button */}
-              <TouchableOpacity
-                style={styles.downloadPdfBannerBtn}
-                onPress={() => handleDownloadPdf(visit)}
-                activeOpacity={0.8}
-              >
-                <View style={styles.downloadPdfIconCircle}>
-                  <Ionicons name="document-text" size={18} color="#0D9488" />
-                </View>
-                <View style={{ flex: 1, marginLeft: 10 }}>
-                  <Text style={styles.downloadPdfTitle}>Download Prescription (PDF)</Text>
-                  <Text style={styles.downloadPdfSubtitle}>ABDM Certified • Tamper-Evident Digital Seal</Text>
-                </View>
-                <Ionicons name="download-outline" size={18} color="#FFFFFF" />
-              </TouchableOpacity>
+                  {/* What Your Doctor Explained (Plain-Language Explanation) */}
+                  <View style={styles.explanationCard}>
+                    <View style={styles.explanationHeader}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Ionicons name="chatbubble-ellipses" size={17} color={Colors.primaryDark} />
+                        <Text style={styles.explanationTitle}>What Your Doctor Explained</Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <TouchableOpacity
+                          style={styles.pdfBadgeButton}
+                          onPress={() => handleDownloadPdf(visit)}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="document-text" size={14} color="#FFFFFF" />
+                          <Text style={styles.pdfBadgeButtonText}>PDF</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.shareButton}
+                          onPress={() => handleShareSummary(visit)}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="share-social-outline" size={15} color={Colors.primaryDark} />
+                          <Text style={styles.shareButtonText}>Share</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    <Text style={styles.explanationBody}>{summaryText}</Text>
+
+                    {/* Doctor's Advice Box */}
+                    <View style={styles.adviceBox}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+                        <Ionicons name="bulb-outline" size={15} color="#B45309" />
+                        <Text style={styles.adviceHeading}>Doctor's Advice & Home Care:</Text>
+                      </View>
+                      <Text style={styles.adviceBody}>{adviceText}</Text>
+                    </View>
+
+                    {/* Audio Read-Out Player */}
+                    <TouchableOpacity
+                      style={[styles.audioPlayerBar, isPlayingAudio && styles.audioPlayerBarActive]}
+                      onPress={() => handleToggleAudio(visit.id)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.audioIconCircle}>
+                        <Ionicons
+                          name={isPlayingAudio ? 'pause' : 'volume-high'}
+                          size={16}
+                          color="#FFFFFF"
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.audioTitle}>
+                          {isPlayingAudio ? 'Speaking Doctor\'s Explanation...' : 'Listen to Doctor\'s Advice (Read Aloud)'}
+                        </Text>
+                        <Text style={styles.audioSub}>
+                          {isPlayingAudio ? 'Tap to pause audio playback' : 'Voice guidance for elderly & multilingual patients'}
+                        </Text>
+                      </View>
+                      {isPlayingAudio && (
+                        <View style={styles.audioWavePulse}>
+                          <Ionicons name="pulse" size={18} color={Colors.primaryDark} />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Official Tamper-Evident Prescription PDF Download Button */}
+                  <TouchableOpacity
+                    style={styles.downloadPdfBannerBtn}
+                    onPress={() => handleDownloadPdf(visit)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.downloadPdfIconCircle}>
+                      <Ionicons name="document-text" size={18} color="#0D9488" />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 10 }}>
+                      <Text style={styles.downloadPdfTitle}>Download Prescription (PDF)</Text>
+                      <Text style={styles.downloadPdfSubtitle}>ABDM Certified • Tamper-Evident Digital Seal</Text>
+                    </View>
+                    <Ionicons name="download-outline" size={18} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </>
+              )}
 
               {/* Scheduled Appointment Cancellation Action */}
               {['scheduled', 'draft', 'booked', 'waiting'].includes(visit.status) && (

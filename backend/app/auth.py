@@ -18,7 +18,7 @@ from app.core.security import (
     decode_access_token
 )
 from app.models.user import User
-from app.models.patient import Patient
+from app.models.patient import Patient, generate_uhid
 from app.models.audit_log import AuditLog
 from app.routes.deps import get_token_payload
 from app.schemas.auth import (
@@ -120,8 +120,12 @@ def get_auth_directory(db: Session = Depends(get_db)):
         patient_list = []
         for p in patients:
             phone_display = getattr(p, "phone", "") or ""
+            if not getattr(p, "uhid", None):
+                p.uhid = generate_uhid(db)
+                db.commit()
             patient_list.append({
                 "id": str(p.id),
+                "uhid": p.uhid,
                 "name": p.name or "Patient",
                 "phone": phone_display,
                 "consent_status": bool(p.consent_status),
@@ -905,6 +909,7 @@ def get_me(
             "role": "patient",
             "user": {
                 "id": pat_id,
+                "uhid": getattr(patient, "uhid", None) if patient else None,
                 "name": pat_name,
                 "phone": pat_phone,
                 "consent_status": pat_consent,
@@ -948,7 +953,8 @@ async def request_patient_otp(req: PatientOTPRequest, db: Session = Depends(get_
     if not patient:
         patient = Patient(
             name=f"Patient {last10[-4:] if len(last10) >= 4 else 'Guest'}",
-            consent_status=False
+            consent_status=False,
+            uhid=generate_uhid(db)
         )
         patient.phone = norm
         db.add(patient)
@@ -1005,7 +1011,8 @@ def verify_patient_otp(req: PatientOTPVerifyRequest, db: Session = Depends(get_d
     if not patient:
         patient = Patient(
             name=f"Patient {last10[-4:] if len(last10) >= 4 else 'Guest'}",
-            consent_status=False
+            consent_status=False,
+            uhid=generate_uhid(db)
         )
         patient.phone = norm
         db.add(patient)
@@ -1033,6 +1040,7 @@ def verify_patient_otp(req: PatientOTPVerifyRequest, db: Session = Depends(get_d
         role="patient",
         user={
             "id": patient.id,
+            "uhid": getattr(patient, "uhid", None),
             "name": patient.name,
             "phone": patient.phone,
             "consent_status": patient.consent_status,
@@ -1106,7 +1114,8 @@ def verify_patient_email_otp(req: PatientEmailOTPVerifyRequest, db: Session = De
             patient = Patient(
                 name=effective_name,
                 email=clean_email,
-                consent_status=False
+                consent_status=False,
+                uhid=generate_uhid(db)
             )
             patient.phone = f"email_{clean_email}"
             db.add(patient)
@@ -1169,6 +1178,7 @@ def verify_patient_email_otp(req: PatientEmailOTPVerifyRequest, db: Session = De
         role="patient",
         user={
             "id": pat_id,
+                "uhid": getattr(patient, "uhid", None) if patient else None,
             "name": pat_name,
             "phone": patient.phone if (patient.phone and not patient.phone.startswith("email_") and "@" not in patient.phone) else "",
             "email": clean_email,
@@ -1209,6 +1219,7 @@ def register_patient(req: PatientRegisterRequest, db: Session = Depends(get_db))
                 role="patient",
                 user={
                     "id": existing.id,
+                    "uhid": getattr(existing, "uhid", None),
                     "name": existing.name,
                     "phone": existing.phone,
                     "consent_status": existing.consent_status,
@@ -1226,7 +1237,8 @@ def register_patient(req: PatientRegisterRequest, db: Session = Depends(get_db))
     patient = Patient(
         name=req.name.strip(),
         consent_status=False,
-        dob=dob_val
+        dob=dob_val,
+        uhid=generate_uhid(db)
     )
     patient.phone = norm
     db.add(patient)
@@ -1244,6 +1256,7 @@ def register_patient(req: PatientRegisterRequest, db: Session = Depends(get_db))
         role="patient",
         user={
             "id": patient.id,
+            "uhid": getattr(patient, "uhid", None),
             "name": patient.name,
             "phone": patient.phone,
             "consent_status": patient.consent_status,
@@ -1298,6 +1311,7 @@ def get_me(
             "role": "patient",
             "user": {
                 "id": patient.id,
+            "uhid": getattr(patient, "uhid", None),
                 "name": patient.name,
                 "phone": patient.phone,
                 "consent_status": patient.consent_status,

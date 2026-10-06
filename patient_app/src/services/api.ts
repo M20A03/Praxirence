@@ -814,6 +814,37 @@ export const mobileApi = {
     }
   },
 
+  async getPendingDoctorRequests(): Promise<any[]> {
+    try {
+      const res = await resilientFetch(`${getEffectiveApiUrl()}/patients/pending-doctor-requests`, {
+        headers: getHeaders(),
+      }, 1);
+      if (!res.ok) return [];
+      return await res.json();
+    } catch (err) {
+      console.log('Pending doctor requests notice:', err);
+      return [];
+    }
+  },
+
+  async authorizeDoctor(linkId: string, action: 'approve' | 'reject'): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await resilientFetch(`${getEffectiveApiUrl()}/patients/authorize-doctor`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ link_id: linkId, action }),
+      }, 0);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Failed to update authorization');
+      }
+      return await res.json();
+    } catch (err: any) {
+      console.warn('Authorize doctor notice:', err);
+      return { success: false, message: err?.message || 'Network error' };
+    }
+  },
+
   async submitDoctorReview(doctorId: string, payload: {
     patient_id: string;
     patient_name?: string;

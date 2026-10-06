@@ -816,7 +816,7 @@ export const mobileApi = {
     }
   },
 
-  async createPatient(params: { name: string; phone: string }): Promise<PatientSummary> {
+  async createPatient(params: { name: string; phone: string; uhid?: string }): Promise<PatientSummary> {
     const res = await resilientFetch(`${getEffectiveApiUrl()}/patients`, {
       method: 'POST',
       headers: getHeaders(),
@@ -825,6 +825,19 @@ export const mobileApi = {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || 'Failed to register patient');
+    }
+    return await res.json();
+  },
+
+  async verifyPatientLinkCode(linkId: string, confirmationCode: string): Promise<PatientSummary> {
+    const res = await resilientFetch(`${getEffectiveApiUrl()}/patients/verify-link-code`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ link_id: linkId, confirmation_code: confirmationCode }),
+    }, 0);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Invalid confirmation code');
     }
     return await res.json();
   },

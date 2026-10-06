@@ -18,6 +18,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../../theme';
 import { PatientSummary, MedicineItem, ReminderItem, DoctorUser, ConsultationSummarizeResult, AmberAlertItem, SOAPStructure } from '../../types';
 import { mobileApi, extractClinicalCarePlanLocally } from '../../services/api';
+import { useIsFocused } from '@react-navigation/native';
+import { doctorRealtime } from '../../services/realtime';
 import { AudioConsultationRecorder } from '../../components/AudioConsultationRecorder';
 import { generateAndSharePrescriptionPdf } from '../../services/PrescriptionPdfService';
 
@@ -71,6 +73,11 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
   const [quickPatientName, setQuickPatientName] = useState<string>('');
   const [quickPatientPhone, setQuickPatientPhone] = useState<string>('');
   const [savingQuickPatient, setSavingQuickPatient] = useState<boolean>(false);
+  const isFocused = useIsFocused();
+  const [quickPatientUhid, setQuickPatientUhid] = useState<string>('');
+  const [pendingLink, setPendingLink] = useState<{ linkId: string; patientName: string; code?: string } | null>(null);
+  const [inputCode, setInputCode] = useState<string>('');
+  const [verifyingCode, setVerifyingCode] = useState<boolean>(false);
 
   const handleCreateQuickPatient = async () => {
     if (!quickPatientName.trim()) {
@@ -91,18 +98,58 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
       const created = await mobileApi.createPatient({
         name: quickPatientName.trim(),
         phone: formattedPhone,
+        uhid: quickPatientUhid.trim() ? quickPatientUhid.trim().toUpperCase() : undefined,
       });
-      setPatients((prev) => [created, ...prev]);
-      setSelectedPatientId(created.id);
-      setShowQuickAddPatientModal(false);
-      setQuickPatientName('');
-      setQuickPatientPhone('');
-      Alert.alert('Patient Selected', `${created.name} is now selected for consultation.`);
+
+      if (created.authorization_status === 'pending_confirmation') {
+        setPendingLink({
+          linkId: created.link_id || '',
+          patientName: created.name,
+          code: created.confirmation_code,
+        });
+        Alert.alert(
+          'Confirmation Dispatched to Patient App',
+          `A real-time confirmation request has been sent to ${created.name}'s Praxirence app with 4-digit code: ${created.confirmation_code}.\n\nPatient can tap 'Authorize' in their app, or tell you the code shown on their screen.`
+        );
+      } else {
+        setPatients((prev) => [created, ...prev.filter((p) => p.id !== created.id)]);
+        setSelectedPatientId(created.id);
+        setShowQuickAddPatientModal(false);
+        setQuickPatientName('');
+        setQuickPatientPhone('');
+        setQuickPatientUhid('');
+        setPendingLink(null);
+        Alert.alert('Patient Authorized', `${created.name} (${created.uhid || ''}) is now selected.`);
+      }
     } catch (err: any) {
       Alert.alert('Registration Notice', err?.message || 'Patient registered in clinical directory.');
       setShowQuickAddPatientModal(false);
     } finally {
       setSavingQuickPatient(false);
+    }
+  };
+
+  const handleVerifyPatientCode = async () => {
+    if (!pendingLink || !inputCode.trim()) {
+      Alert.alert('Code Required', 'Please enter the 4-digit code shown on the patient phone.');
+      return;
+    }
+    setVerifyingCode(true);
+    try {
+      const verified = await mobileApi.verifyPatientLinkCode(pendingLink.linkId, inputCode.trim());
+      setPatients((prev) => [verified, ...prev.filter((p) => p.id !== verified.id)]);
+      setSelectedPatientId(verified.id);
+      setShowQuickAddPatientModal(false);
+      setQuickPatientName('');
+      setQuickPatientPhone('');
+      setQuickPatientUhid('');
+      setPendingLink(null);
+      setInputCode('');
+      Alert.alert('Verification Successful', `${verified.name} (${verified.uhid || ''}) is authorized and selected.`);
+    } catch (err: any) {
+      Alert.alert('Invalid Code', err?.message || 'Code did not match. Please check patient screen.');
+    } finally {
+      setVerifyingCode(false);
     }
   };
 
@@ -201,7 +248,31 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
   }, [diagnosis, medicines, conversationText, selectedPatientId]);
 
   useEffect(() => {
-    loadPatients();
+    if (isFocused) {
+      loadPatients();
+    }
+  }, [isFocused]);
+
+  useEffect(() => {
+    if (preselectedPatientId) {
+      setSelectedPatientId(preselectedPatientId);
+    }
+  }, [preselectedPatientId]);
+
+  useEffect(() => {
+    const unsub = doctorRealtime.on('PATIENT_LINK_AUTHORIZED', (payload: any) => {
+      loadPatients();
+      if (payload?.patient_id) {
+        setSelectedPatientId(payload.patient_id);
+        setShowQuickAddPatientModal(false);
+        setPendingLink(null);
+        Alert.alert(
+          'Authorization Confirmed',
+          `${payload.patient_name || 'Patient'} has confirmed authorization and is now selected.`
+        );
+      }
+    });
+    return () => { unsub(); };
   }, []);
 
   const loadPatients = async () => {
@@ -597,7 +668,7 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
                       selectedPatientId === pat.id && styles.patientChipTextActive,
                     ]}
                   >
-                    {pat.name || 'Patient'} ({(pat.phone || '').slice(-4)})
+                    {pat.name || 'Patient'} • {pat.uhid || (pat.phone || '').slice(-4)}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -621,7 +692,7 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
             <Ionicons name="checkmark-circle" size={14} color="#15803D" />
             <Text style={{ fontSize: 12, color: '#15803D', fontWeight: '600' }}>
-              Active Patient: {patients.find((p) => p.id === selectedPatientId)?.name || 'Selected'}
+              Active Patient: {patients.find((p) => p.id === selectedPatientId)?.name || 'Selected'}{patients.find((p) => p.id === selectedPatientId)?.uhid ? ` • ${patients.find((p) => p.id === selectedPatientId)?.uhid}` : ''}
             </Text>
           </View>
         ) : (
@@ -1265,6 +1336,50 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
                 maxLength={10}
               />
             </View>
+
+            <Text style={styles.inputLabel}>Unique Patient ID / Hospital UHID (Optional)</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="e.g. PRX-PAT-1001 (Leave empty to auto-generate)"
+              placeholderTextColor="#94A3B8"
+              value={quickPatientUhid}
+              onChangeText={setQuickPatientUhid}
+              autoCapitalize="characters"
+            />
+
+            {pendingLink && (
+              <View style={{ backgroundColor: '#FEF3C7', borderRadius: 8, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: '#FDE68A' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <Ionicons name="shield-checkmark" size={16} color="#B45309" />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#92400E' }}>Patient Confirmation Pending</Text>
+                </View>
+                <Text style={{ fontSize: 12, color: '#78350F', lineHeight: 16 }}>
+                  A confirmation message has been dispatched to {pendingLink.patientName}'s Praxirence app. Once patient taps 'Authorize' in their app, they will automatically be selected.
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                  <TextInput
+                    style={{ flex: 1, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#F59E0B', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 8, fontSize: 14, fontWeight: '700', letterSpacing: 2, textAlign: 'center' }}
+                    placeholder="4-digit code"
+                    placeholderTextColor="#94A3B8"
+                    value={inputCode}
+                    onChangeText={setInputCode}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                  />
+                  <TouchableOpacity
+                    style={{ backgroundColor: '#0284C7', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 6 }}
+                    onPress={handleVerifyPatientCode}
+                    disabled={verifyingCode}
+                  >
+                    {verifyingCode ? (
+                      <ActivityIndicator color="#FFFFFF" size="small" />
+                    ) : (
+                      <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 12 }}>Verify Code</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
 
             <TouchableOpacity
               style={styles.modalSaveBtn}

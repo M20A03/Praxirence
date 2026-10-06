@@ -108,6 +108,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const [reviewText, setReviewText] = useState<string>('');
   const [submittingReview, setSubmittingReview] = useState<boolean>(false);
   const [reviewSubmittedSuccess, setReviewSubmittedSuccess] = useState<string | null>(null);
+
+  // Doctor Authorization Request State
+  const [pendingDoctorRequests, setPendingDoctorRequests] = useState<any[]>([]);
+  const [processingDoctorReq, setProcessingDoctorReq] = useState<boolean>(false);
   const [dismissedReviews, setDismissedReviews] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -159,6 +163,19 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     if (user?.id) {
       patientRealtime.connect(user.id);
     }
+
+    const unsubDoctorAuth = patientRealtime.on('DOCTOR_AUTHORIZATION_REQUEST', (data: any) => {
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); } catch (_) {}
+      setPendingDoctorRequests((prev) => [data, ...prev.filter((r: any) => r.link_id !== data.link_id)]);
+      Alert.alert(
+        'Clinician Authorization Request',
+        `${data.doctor_name} (${data.doctor_specialty || data.clinic_name || 'Clinician'}) has requested permission to add you to their patient list.\n\nSecurity Code: ${data.confirmation_code}\n\nDo you authorize this clinician?`,
+        [
+          { text: 'Decline', style: 'destructive', onPress: () => handleRespondDoctorRequest(data.link_id, 'reject') },
+          { text: 'Authorize Doctor', style: 'default', onPress: () => handleRespondDoctorRequest(data.link_id, 'approve') }
+        ]
+      );
+    });
 
     const unsubQueue = patientRealtime.on('QUEUE_UPDATE', () => {
       loadDashboardDataSilently();
@@ -362,13 +379,15 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     const cacheKey = `praxirence_careplan_${user.id}`;
     try {
       setLoading(true);
-      const [data, family, reschedules, checkins, reviews] = await Promise.all([
+      const [data, family, reschedules, checkins, reviews, docRequests] = await Promise.all([
         mobileApi.getVisits(user.id),
         mobileApi.getFamilyMembers(user.id).catch(() => []),
         mobileApi.getPendingReschedules(user.id).catch(() => []),
         mobileApi.getPendingCheckins(user.id).catch(() => []),
         mobileApi.getPendingDoctorReviews(user.id).catch(() => []),
+        mobileApi.getPendingDoctorRequests().catch(() => []),
       ]);
+      setPendingDoctorRequests(docRequests || []);
       setVisits(data || []);
       setFamilyMembers(family || []);
       setPendingReschedules(reschedules || []);
@@ -496,6 +515,24 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     Alert.alert('Vitals Recorded', `Status: ${note}. Your health trends have been updated.`);
   };
 
+  const handleRespondDoctorRequest = async (linkId: string, action: 'approve' | 'reject') => {
+    setProcessingDoctorReq(true);
+    try {
+      const res = await mobileApi.authorizeDoctor(linkId, action);
+      setPendingDoctorRequests((prev) => prev.filter((r: any) => r.link_id !== linkId));
+      if (action === 'approve') {
+        try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
+        Alert.alert('Doctor Authorized', 'The clinician has been authorized. They can now conduct consultations and deliver your care plans.');
+      } else {
+        Alert.alert('Declined', 'Doctor authorization request was declined.');
+      }
+    } catch (err: any) {
+      Alert.alert('Notice', err?.message || 'Could not update authorization.');
+    } finally {
+      setProcessingDoctorReq(false);
+    }
+  };
+
   const handleAnswerCheckin = async (checkin: any, statusChoice?: 'feeling_better' | 'recovering' | 'same' | 'worse') => {
     const finalStatus = statusChoice || checkinStatus;
     try {
@@ -566,9 +603,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     }
   };
 
-  const latestVisit = visits.length > 0 ? visits[0] : null;
-  const activeMedicines: MedicineItem[] = latestVisit?.medicines || [];
-  const upcomingReminders: ReminderItem[] = latestVisit?.reminders || [];
+  const latestApprovedVisit = visits.find(
+    (v) => (v.status === 'approved' || v.status === 'completed') && (Boolean(v.diagnosis) || (v.medicines && v.medicines.length > 0))
+  );
+  const activeMedicines: MedicineItem[] = latestApprovedVisit?.medicines || [];
+  const upcomingReminders: ReminderItem[] = latestApprovedVisit?.reminders || [];
 
   const handleMarkTaken = async (key: string) => {
     try {
@@ -646,11 +685,59 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View>
             <Text style={styles.greetingSub}>{t('todaysClinicalSummary')}</Text>
-            <Text style={styles.patientName}>{t('helloGreeting')}, {user.name}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={styles.patientName}>{t('helloGreeting')}, {user.name}</Text>
+              {Boolean(user.uhid) && (
+                <View style={{ backgroundColor: '#E0F2FE', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: '#BAE6FD' }}>
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: '#0369A1' }}>{user.uhid}</Text>
+                </View>
+              )}
+            </View>
           </View>
           <Image source={require('../../assets/features/today.png')} style={{ width: 44, height: 44 }} resizeMode="contain" />
         </View>
       </View>
+
+      {/* Doctor Authorization Requests Banner Card */}
+      {pendingDoctorRequests.length > 0 && (
+        <View style={{ backgroundColor: '#FEF3C7', borderRadius: 12, padding: 14, marginHorizontal: 16, marginBottom: 12, borderWidth: 1.5, borderColor: '#F59E0B' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <Ionicons name="shield-checkmark" size={20} color="#B45309" />
+            <Text style={{ fontSize: 14, fontWeight: '700', color: '#92400E' }}>Doctor Authorization Request</Text>
+          </View>
+          {pendingDoctorRequests.map((req: any) => (
+            <View key={req.link_id} style={{ marginTop: 4 }}>
+              <Text style={{ fontSize: 13, color: '#78350F', lineHeight: 18 }}>
+                <Text style={{ fontWeight: '700' }}>{req.doctor_name}</Text> ({req.doctor_specialty || req.clinic_name || 'Clinician'}) has requested permission to add you to their clinical directory.
+              </Text>
+              {Boolean(req.confirmation_code) && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                  <Text style={{ fontSize: 12, color: '#92400E', fontWeight: '600' }}>Security Code:</Text>
+                  <View style={{ backgroundColor: '#FFFFFF', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: '#FDE68A' }}>
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: '#B45309', letterSpacing: 1 }}>{req.confirmation_code}</Text>
+                  </View>
+                </View>
+              )}
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+                <TouchableOpacity
+                  style={{ flex: 1, backgroundColor: '#059669', paddingVertical: 9, borderRadius: 7, alignItems: 'center', justifyContent: 'center' }}
+                  onPress={() => handleRespondDoctorRequest(req.link_id, 'approve')}
+                  disabled={processingDoctorReq}
+                >
+                  <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>Authorize Doctor</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ backgroundColor: '#FFFFFF', paddingHorizontal: 14, paddingVertical: 9, borderRadius: 7, borderWidth: 1, borderColor: '#DC2626', alignItems: 'center', justifyContent: 'center' }}
+                  onPress={() => handleRespondDoctorRequest(req.link_id, 'reject')}
+                  disabled={processingDoctorReq}
+                >
+                  <Text style={{ color: '#DC2626', fontWeight: '700', fontSize: 13 }}>Decline</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
 
       {/* Family Member Profile Selector Chips */}
       <View style={styles.familyBar}>
@@ -911,7 +998,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       )}
 
       {/* Active Care Plan Summary */}
-      {latestVisit?.diagnosis && (
+      {latestApprovedVisit?.diagnosis && (
         <View style={styles.section}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <Text style={styles.sectionTitle}>{t('latestDoctorConsultation')}</Text>
@@ -928,15 +1015,15 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.diagnosisLabel}>{t('diagnosisLabel')}</Text>
-                <Text style={styles.diagnosisText}>{latestVisit.diagnosis}</Text>
+                <Text style={styles.diagnosisText}>{latestApprovedVisit.diagnosis}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
                   <Text style={styles.doctorInfo}>
-                    {latestVisit.doctor_name ? (latestVisit.doctor_name.startsWith('Dr.') ? latestVisit.doctor_name : `Dr. ${latestVisit.doctor_name}`) : 'Attending Physician'}
+                    {latestApprovedVisit.doctor_name ? (latestApprovedVisit.doctor_name.startsWith('Dr.') ? latestApprovedVisit.doctor_name : `Dr. ${latestApprovedVisit.doctor_name}`) : 'Attending Physician'}
                   </Text>
-                  {Boolean((latestVisit as any).doctor_degree) && (
+                  {Boolean((latestApprovedVisit as any).doctor_degree) && (
                     <View style={{ backgroundColor: '#EEF2FF', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: '#C7D2FE' }}>
                       <Text style={{ fontFamily: FontFamily.semiBold, fontSize: 10, color: '#1E40AF' }}>
-                        {(latestVisit as any).doctor_degree}
+                        {(latestApprovedVisit as any).doctor_degree}
                       </Text>
                     </View>
                   )}
@@ -956,12 +1043,12 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 </Text>
               </View>
               <Text style={{ fontFamily: FontFamily.regular, fontSize: FontSize.xs, color: '#1F2937', lineHeight: 18 }}>
-                {latestVisit.patient_summary || `Your doctor assessed your symptoms and prescribed a personalized care plan for ${latestVisit.diagnosis}.`}
+                {latestApprovedVisit.patient_summary || `Your doctor assessed your symptoms and prescribed a personalized care plan for ${latestApprovedVisit.diagnosis}.`}
               </Text>
             </View>
 
             {/* Quick Home Care Advice */}
-            {latestVisit.doctor_advice && (
+            {latestApprovedVisit.doctor_advice && (
               <View style={{ backgroundColor: '#FEF3C7', borderRadius: 8, padding: 10, marginTop: 8, borderWidth: 1, borderColor: '#FDE68A' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 3 }}>
                   <Ionicons name="bulb-outline" size={14} color="#B45309" />
@@ -970,7 +1057,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                   </Text>
                 </View>
                 <Text style={{ fontFamily: FontFamily.medium, fontSize: FontSize.xs, color: '#78350F', lineHeight: 17 }}>
-                  {latestVisit.doctor_advice}
+                  {latestApprovedVisit.doctor_advice}
                 </Text>
               </View>
             )}

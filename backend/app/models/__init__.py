@@ -5,5 +5,6 @@ from app.models.consent_log import ConsentLog
 from app.models.audit_log import AuditLog
 from app.models.doctor_review import DoctorReview
 from app.models.medicine import Medicine
+from app.models.doctor_patient_link import DoctorPatientLink
 
-__all__ = ["User", "Patient", "Visit", "ConsentLog", "AuditLog", "DoctorReview", "Medicine"]
+__all__ = ["User", "Patient", "Visit", "ConsentLog", "AuditLog", "DoctorReview", "Medicine", "DoctorPatientLink"]

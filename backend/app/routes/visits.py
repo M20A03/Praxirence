@@ -956,7 +956,7 @@ def book_appointment_slot(
         chief_complaint=payload.chief_complaint or "Consultation Assessment",
         token_number=token_num,
         status="scheduled",
-        diagnosis=f"Scheduled Consultation: {payload.chief_complaint or 'Routine Checkup'}",
+        diagnosis=None,
         medicines=[],
         reminders=[]
     )
@@ -1099,7 +1099,7 @@ def create_walk_in_visit(
         token_number=token_num,
         triage_level="Urgent" if is_urgent else ("Priority" if triage_lvl.lower() == "priority" else "Routine"),
         status="scheduled",
-        diagnosis=f"Walk-In Assessment ({triage_lvl}): {payload.chief_complaint or 'Clinical Triage'}",
+        diagnosis=None,
         medicines=[],
         reminders=[]
     )

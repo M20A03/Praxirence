@@ -55,6 +55,7 @@ export type ActiveUser = DoctorUser | PatientUser;
 
 export interface PatientSummary {
   id: string;
+  uhid?: string;
   name: string;
   phone: string;
   consent_status: boolean;
@@ -62,6 +63,10 @@ export interface PatientSummary {
   created_at?: string;
   age?: number | string;
   gender?: string;
+  authorization_status?: 'authorized' | 'pending_confirmation';
+  link_id?: string;
+  confirmation_code?: string;
+  message?: string;
 }
 
 export interface MedicineItem {

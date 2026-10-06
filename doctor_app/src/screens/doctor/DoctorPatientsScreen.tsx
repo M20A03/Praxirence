@@ -16,6 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../../theme';
 import { PatientSummary, Visit } from '../../types';
 import { mobileApi } from '../../services/api';
+import { useIsFocused } from '@react-navigation/native';
+import { doctorRealtime } from '../../services/realtime';
 import { EmptyState } from '../../components/EmptyState';
 
 interface DoctorPatientsScreenProps {
@@ -39,6 +41,21 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
   const [modalVisible, setModalVisible] = useState(false);
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState('');
+  const [newUhid, setNewUhid] = useState('');
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (isFocused) {
+      loadPatients(searchQuery);
+    }
+  }, [isFocused]);
+
+  useEffect(() => {
+    const unsub = doctorRealtime.on('PATIENT_LINK_AUTHORIZED', () => {
+      loadPatients(searchQuery);
+    });
+    return () => { unsub(); };
+  }, [searchQuery]);
   const [addingPatient, setAddingPatient] = useState(false);
 
   useEffect(() => {
@@ -111,12 +128,21 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
       const created = await mobileApi.createPatient({
         name: newName.trim(),
         phone: formattedPhone,
+        uhid: newUhid.trim() ? newUhid.trim().toUpperCase() : undefined,
       });
-      setPatients((prev) => [created, ...prev]);
+      setPatients((prev) => [created, ...prev.filter(p => p.id !== created.id)]);
       setModalVisible(false);
       setNewName('');
       setNewPhone('');
-      Alert.alert('Patient Added', `${created.name} was successfully registered.`);
+      setNewUhid('');
+      if (created.authorization_status === 'pending_confirmation') {
+        Alert.alert(
+          'Confirmation Request Dispatched',
+          `A confirmation request has been dispatched to ${created.name}'s Praxirence app with code: ${created.confirmation_code}.\n\nPatient must tap 'Authorize' in their app to link.`
+        );
+      } else {
+        Alert.alert('Patient Registered', `${created.name} (${created.uhid || ''}) was successfully authorized.`);
+      }
     } catch (err: any) {
       Alert.alert('Registration Notice', err.message || 'Patient registered in local directory.');
       setModalVisible(false);
@@ -172,7 +198,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
           <Ionicons name="search" size={16} color={Colors.textSecondary} style={{ marginRight: 6 }} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search by patient name or phone..."
+            placeholder="Search by name, phone, or Unique ID (UHID)..."
             placeholderTextColor={Colors.textSecondary}
             value={searchQuery}
             onChangeText={handleSearch}
@@ -222,7 +248,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
                     <Text style={styles.patientPhone}>{pat.phone}</Text>
                     <View style={styles.patientIdBadge}>
-                      <Text style={styles.patientIdBadgeText}>ID: PX-{pat.id.slice(0, 8).toUpperCase()}</Text>
+                      <Text style={styles.patientIdBadgeText}>ID: {pat.uhid || `PX-${pat.id.slice(0, 8).toUpperCase()}`}</Text>
                     </View>
                   </View>
                   <View style={styles.consentTagRow}>
@@ -476,6 +502,16 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
                 maxLength={10}
               />
             </View>
+
+            <Text style={styles.inputLabel}>Unique Patient ID / Hospital UHID (Optional)</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="e.g. PRX-PAT-1001 (Leave empty to auto-generate)"
+              placeholderTextColor={Colors.textSecondary}
+              value={newUhid}
+              onChangeText={setNewUhid}
+              autoCapitalize="characters"
+            />
 
             <TouchableOpacity
               style={styles.submitPatientBtn}

@@ -430,6 +430,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         ) : (
           <>
             <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Patient Unique ID (UHID)</Text>
+              <View style={{ backgroundColor: '#E0F2FE', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 5, borderWidth: 1, borderColor: '#BAE6FD' }}>
+                <Text style={[styles.infoValue, { color: '#0369A1', fontFamily: FontFamily.bold, fontSize: 13 }]}>
+                  {(currentUser as any).uhid || `PRX-PAT-${currentUser.id.slice(0, 4).toUpperCase()}`}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>{t('abhaIdTitle')}</Text>
               {(currentUser as any).abha_id ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

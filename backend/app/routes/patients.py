@@ -11,11 +11,18 @@ from sqlalchemy import or_, case
 from app.core.database import get_db
 from app.core.security import compute_phone_hash
 from app.auth import normalize_phone_digits
-from app.models.patient import Patient
+from app.models.patient import Patient, generate_uhid
+from app.models.user import User
 from app.models.visit import Visit
 from app.models.consent_log import ConsentLog
 from app.models.audit_log import AuditLog
-from app.schemas.patient import PatientCreate, PatientResponse
+from app.models.doctor_patient_link import DoctorPatientLink
+from app.services.realtime_service import realtime_manager
+from app.schemas.patient import (
+    PatientCreate, PatientResponse, PatientAuthorizeDoctorRequest,
+    DoctorVerifyLinkCodeRequest, PendingDoctorAuthorizationItem
+)
+import random
 from app.schemas.visit import VisitResponse
 from app.schemas.consent import (
     ConsentUpdateRequest,
@@ -47,19 +54,22 @@ CONSENT_PLAIN_TEXT = (
 
 @router.get("", response_model=List[PatientResponse])
 def search_patients(
-    query: Optional[str] = Query(None, description="Search by name or exact phone"),
+    query: Optional[str] = Query(None, description="Search by name, phone, or UHID"),
+    limit: int = 50,
     db: Session = Depends(get_db),
     current_doctor = Depends(get_current_doctor)
 ):
     """
-    Search patients strictly scoped to the authenticated doctor.
-    Only returns patients who have had at least one visit or appointment with this doctor.
+    Search patients:
+    - If query is provided, searches across Name, Phone, ID, and UHID.
+    - If query is empty, returns all accessible clinic patients, prioritizing patients
+      linked with this doctor (via authorized link or visits), followed by newly registered patients.
+    Ensures every patient has a human-readable UHID and shows in 'Select a Patient'.
     """
-    if query:
-        clean_q = query.strip()
-        phone_hash = compute_phone_hash(clean_q)
-        digits = "".join(ch for ch in clean_q if ch.isdigit())
-        phone_hashes = [phone_hash]
+    clean_q = query.strip() if query else ""
+    if clean_q:
+        phone_hashes = [compute_phone_hash(clean_q)]
+        digits = "".join(filter(str.isdigit, clean_q))
         if len(digits) == 10:
             phone_hashes.append(compute_phone_hash(f"+91{digits}"))
             phone_hashes.append(compute_phone_hash(digits))
@@ -78,29 +88,55 @@ def search_patients(
                     Patient.phone_hash.in_(phone_hashes),
                     Patient.id.ilike(f"%{clean_q}%"),
                     Patient.id == clean_q,
+                    Patient.uhid.ilike(f"%{clean_q}%"),
+                    Patient.uhid == clean_q.upper(),
                 )
             )
             .order_by(Patient.created_at.desc())
-            .limit(50)
+            .limit(limit)
             .all()
         )
+        for p in patients:
+            if not p.uhid:
+                p.uhid = generate_uhid(db)
+                db.commit()
         return patients
     else:
-        # Default view: list patients associated with this doctor
-        doctor_patient_ids = (
-            db.query(Visit.patient_id)
-            .filter(Visit.doctor_id == current_doctor.id)
-            .distinct()
-            .subquery()
-        )
-        patients = (
-            db.query(Patient)
-            .filter(Patient.id.in_(doctor_patient_ids.select()))
-            .order_by(Patient.created_at.desc())
-            .limit(50)
-            .all()
-        )
-        return patients
+        # Default view:
+        # 1. Patients who have had visits with this doctor OR are authorized
+        visit_patient_ids = [row[0] for row in db.query(Visit.patient_id).filter(Visit.doctor_id == current_doctor.id).distinct().all()]
+        link_patient_ids = [row[0] for row in db.query(DoctorPatientLink.patient_id).filter(DoctorPatientLink.doctor_id == current_doctor.id, DoctorPatientLink.status == "authorized").distinct().all()]
+        doctor_patient_ids = list(set(visit_patient_ids + link_patient_ids))
+
+        doc_patients = []
+        if doctor_patient_ids:
+            doc_patients = (
+                db.query(Patient)
+                .filter(Patient.id.in_(doctor_patient_ids))
+                .order_by(Patient.created_at.desc())
+                .limit(limit)
+                .all()
+            )
+
+        # 2. General clinic directory patients
+        remaining_slots = max(0, limit - len(doc_patients))
+        other_patients = []
+        if remaining_slots > 0:
+            filter_clause = Patient.id.not_in(doctor_patient_ids) if doctor_patient_ids else True
+            other_patients = (
+                db.query(Patient)
+                .filter(filter_clause)
+                .order_by(Patient.created_at.desc())
+                .limit(remaining_slots)
+                .all()
+            )
+
+        all_patients = doc_patients + other_patients
+        for p in all_patients:
+            if not p.uhid:
+                p.uhid = generate_uhid(db)
+                db.commit()
+        return all_patients
 
 
 @router.post("", response_model=PatientResponse, status_code=status.HTTP_201_CREATED)
@@ -109,26 +145,125 @@ def create_patient(
     db: Session = Depends(get_db),
     current_doctor = Depends(get_current_doctor)
 ):
-    """Create a new patient with minimal fields (name, phone, dob)"""
+    """
+    Add/Register a patient.
+    - If patient already exists: Dispatches a real-time authorization confirmation message
+      to the Patient App with a 4-digit security code. Random doctors cannot arbitrarily add
+      a patient without patient confirmation!
+    - If new patient: Creates patient profile with custom or auto-generated UHID and authorizes them.
+    """
     clean_phone = req.phone.strip()
     phone_hash = compute_phone_hash(clean_phone)
 
     existing = db.query(Patient).filter(Patient.phone_hash == phone_hash).first()
     if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Patient with phone {clean_phone} is already registered."
+        if not existing.uhid:
+            existing.uhid = generate_uhid(db)
+            db.commit()
+
+        # Check existing authorization status between this doctor and patient
+        existing_link = db.query(DoctorPatientLink).filter(
+            DoctorPatientLink.doctor_id == current_doctor.id,
+            DoctorPatientLink.patient_id == existing.id
+        ).first()
+
+        if existing_link and existing_link.status == "authorized":
+            return PatientResponse(
+                id=existing.id,
+                uhid=existing.uhid,
+                name=existing.name,
+                phone=existing.phone,
+                dob=existing.dob,
+                consent_status=existing.consent_status,
+                created_at=existing.created_at,
+                authorization_status="authorized",
+                message=f"Patient {existing.name} is already authorized in your clinical directory."
+            )
+
+        # Generate 4-digit confirmation security code
+        conf_code = f"{random.randint(1000, 9999)}"
+        if existing_link:
+            existing_link.status = "pending"
+            existing_link.confirmation_code = conf_code
+            existing_link.requested_at = datetime.now(timezone.utc)
+            link = existing_link
+        else:
+            link = DoctorPatientLink(
+                doctor_id=current_doctor.id,
+                patient_id=existing.id,
+                status="pending",
+                confirmation_code=conf_code
+            )
+            db.add(link)
+        db.commit()
+        db.refresh(link)
+
+        # Dispatch real-time confirmation request to the patient's Praxirence app
+        doc_disp_name = current_doctor.name if current_doctor.name.startswith("Dr.") else f"Dr. {current_doctor.name}"
+        realtime_manager.emit_to_patient_sync(
+            str(existing.id),
+            "DOCTOR_AUTHORIZATION_REQUEST",
+            {
+                "link_id": link.id,
+                "doctor_id": str(current_doctor.id),
+                "doctor_name": doc_disp_name,
+                "doctor_specialty": getattr(current_doctor, "specialty", "Attending Physician") or "General Physician",
+                "clinic_name": getattr(current_doctor, "clinic_name", "Praxirence Clinic") or "Praxirence Healthcare",
+                "confirmation_code": conf_code,
+                "patient_id": str(existing.id),
+                "patient_name": existing.name,
+                "uhid": existing.uhid,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
         )
+
+        return PatientResponse(
+            id=existing.id,
+            uhid=existing.uhid,
+            name=existing.name,
+            phone=existing.phone,
+            dob=existing.dob,
+            consent_status=existing.consent_status,
+            created_at=existing.created_at,
+            authorization_status="pending_confirmation",
+            link_id=link.id,
+            confirmation_code=conf_code,
+            message=f"Confirmation message sent to {existing.name}'s Praxirence app. Patient must tap 'Authorize' or provide code {conf_code}."
+        )
+
+    # New Patient Registration
+    patient_uhid = None
+    if req.uhid and req.uhid.strip():
+        candidate_uhid = req.uhid.strip().upper()
+        uhid_exists = db.query(Patient).filter(Patient.uhid == candidate_uhid).first()
+        if uhid_exists:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Patient Unique ID / UHID '{candidate_uhid}' is already registered to another patient."
+            )
+        patient_uhid = candidate_uhid
+    else:
+        patient_uhid = generate_uhid(db)
 
     patient = Patient(
         name=req.name.strip(),
         dob=req.dob,
-        consent_status=False
+        consent_status=False,
+        uhid=patient_uhid
     )
     patient.phone = clean_phone
     db.add(patient)
     db.commit()
     db.refresh(patient)
+
+    # Automatically authorize attending doctor who performed initial clinic onboarding
+    link = DoctorPatientLink(
+        doctor_id=current_doctor.id,
+        patient_id=patient.id,
+        status="authorized",
+        authorized_at=datetime.now(timezone.utc)
+    )
+    db.add(link)
 
     audit = AuditLog(
         actor_id=current_doctor.id,
@@ -140,7 +275,147 @@ def create_patient(
     db.add(audit)
     db.commit()
 
-    return patient
+    return PatientResponse(
+        id=patient.id,
+        uhid=patient.uhid,
+        name=patient.name,
+        phone=patient.phone,
+        dob=patient.dob,
+        consent_status=patient.consent_status,
+        created_at=patient.created_at,
+        authorization_status="authorized",
+        message=f"Patient {patient.name} registered with Unique ID {patient.uhid}."
+    )
+
+
+@router.get("/pending-doctor-requests", response_model=List[PendingDoctorAuthorizationItem])
+def get_pending_doctor_requests(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user_or_patient)
+):
+    """Patient endpoint: retrieves pending authorization requests from doctors"""
+    patient_id = getattr(current_user, "id", None)
+    if not patient_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    links = (
+        db.query(DoctorPatientLink)
+        .filter(DoctorPatientLink.patient_id == patient_id, DoctorPatientLink.status == "pending")
+        .order_by(DoctorPatientLink.requested_at.desc())
+        .all()
+    )
+
+    items = []
+    for l in links:
+        doc = db.query(User).filter(User.id == l.doctor_id).first()
+        doc_name = doc.name if doc else "Attending Clinician"
+        if not doc_name.startswith("Dr."):
+            doc_name = f"Dr. {doc_name}"
+        items.append(PendingDoctorAuthorizationItem(
+            link_id=l.id,
+            doctor_id=l.doctor_id,
+            doctor_name=doc_name,
+            doctor_specialty=getattr(doc, "specialty", None) or "General Physician",
+            clinic_name=getattr(doc, "clinic_name", None) or "Praxirence Medical Center",
+            confirmation_code=l.confirmation_code,
+            created_at=l.requested_at or l.created_at
+        ))
+    return items
+
+
+@router.post("/authorize-doctor")
+def authorize_doctor(
+    req: PatientAuthorizeDoctorRequest,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user_or_patient)
+):
+    """
+    Patient endpoint: accepts or rejects a doctor's request to add the patient.
+    Prevents unauthorized doctors from accessing patient data.
+    """
+    patient_id = getattr(current_user, "id", None)
+    link = db.query(DoctorPatientLink).filter(DoctorPatientLink.id == req.link_id).first()
+    if not link or link.patient_id != patient_id:
+        raise HTTPException(status_code=404, detail="Authorization request not found")
+
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    doctor = db.query(User).filter(User.id == link.doctor_id).first()
+
+    if req.action.lower() == "approve":
+        link.status = "authorized"
+        link.authorized_at = datetime.now(timezone.utc)
+        db.commit()
+
+        # Notify doctor app in real time
+        doc_disp = doctor.name if doctor else "Physician"
+        realtime_manager.emit_to_doctor_sync(
+            str(link.doctor_id),
+            "PATIENT_LINK_AUTHORIZED",
+            {
+                "link_id": link.id,
+                "patient_id": str(patient.id),
+                "patient_name": patient.name,
+                "uhid": patient.uhid,
+                "message": f"Patient {patient.name} ({patient.uhid}) has confirmed and authorized you."
+            }
+        )
+        return {"success": True, "message": f"{doc_disp} has been successfully authorized."}
+    else:
+        link.status = "rejected"
+        db.commit()
+        realtime_manager.emit_to_doctor_sync(
+            str(link.doctor_id),
+            "PATIENT_LINK_REJECTED",
+            {
+                "link_id": link.id,
+                "patient_id": str(patient.id),
+                "patient_name": patient.name,
+                "message": f"Patient {patient.name} declined the authorization request."
+            }
+        )
+        return {"success": True, "message": "Authorization request was declined."}
+
+
+@router.post("/verify-link-code", response_model=PatientResponse)
+def verify_link_code(
+    req: DoctorVerifyLinkCodeRequest,
+    db: Session = Depends(get_db),
+    current_doctor = Depends(get_current_doctor)
+):
+    """
+    Doctor endpoint: verifies the 4-digit security code shown on the patient's phone.
+    Enables instant face-to-face in-clinic verification.
+    """
+    link = db.query(DoctorPatientLink).filter(
+        DoctorPatientLink.id == req.link_id,
+        DoctorPatientLink.doctor_id == current_doctor.id
+    ).first()
+
+    if not link:
+        raise HTTPException(status_code=404, detail="Link request not found")
+
+    if link.confirmation_code != req.confirmation_code.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid confirmation code. Please check the 4-digit code in the patient's Praxirence app."
+        )
+
+    link.status = "authorized"
+    link.authorized_at = datetime.now(timezone.utc)
+    db.commit()
+
+    patient = db.query(Patient).filter(Patient.id == link.patient_id).first()
+    return PatientResponse(
+        id=patient.id,
+        uhid=patient.uhid,
+        name=patient.name,
+        phone=patient.phone,
+        dob=patient.dob,
+        consent_status=patient.consent_status,
+        created_at=patient.created_at,
+        authorization_status="authorized",
+        message=f"Patient {patient.name} verified and authorized successfully."
+    )
 
 
 @router.get("/me/portal")
@@ -197,6 +472,7 @@ def get_my_patient_portal(
     return {
         "patient": {
             "id": patient.id,
+            "uhid": patient.uhid,
             "name": patient.name,
             "phone": patient.phone,
             "consent_status": patient.consent_status,

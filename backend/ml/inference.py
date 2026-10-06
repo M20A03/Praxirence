@@ -177,6 +177,8 @@ class ModelLoader:
                 transcribe_kwargs = {
                     "beam_size": 1,
                     "initial_prompt": WHISPER_AUDIO_PROMPT,
+                    "vad_filter": True,
+                    "vad_parameters": dict(min_silence_duration_ms=500),
                 }
                 if language and language.lower() not in ("auto", "none"):
                     transcribe_kwargs["language"] = language.lower()
@@ -199,18 +201,43 @@ class ModelLoader:
                 audio_data, sr = sf.read(target_path)
                 if len(audio_data.shape) > 1:
                     audio_data = audio_data.mean(axis=1)
-                inputs = self.whisper_processor(
-                    audio_data,
-                    sampling_rate=SAMPLE_RATE,
-                    return_tensors="pt"
-                ).input_features.to(self.device)
+                max_chunk_samples = 30 * SAMPLE_RATE
+                if len(audio_data) <= max_chunk_samples:
+                    inputs = self.whisper_processor(
+                        audio_data,
+                        sampling_rate=SAMPLE_RATE,
+                        return_tensors="pt"
+                    ).input_features.to(self.device)
 
-                with torch.no_grad():
-                    predicted_ids = self.whisper_model.generate(inputs)
-                transcription = self.whisper_processor.batch_decode(
-                    predicted_ids,
-                    skip_special_tokens=True
-                )[0]
+                    with torch.no_grad():
+                        predicted_ids = self.whisper_model.generate(inputs)
+                    transcription = self.whisper_processor.batch_decode(
+                        predicted_ids,
+                        skip_special_tokens=True
+                    )[0]
+                else:
+                    # Multi-chunk sliding window for long clinical audio (8-12+ mins)
+                    chunk_step = 29 * SAMPLE_RATE
+                    transcriptions = []
+                    for start_idx in range(0, len(audio_data), chunk_step):
+                        end_idx = min(start_idx + max_chunk_samples, len(audio_data))
+                        chunk_samples = audio_data[start_idx:end_idx]
+                        if len(chunk_samples) < 1.0 * SAMPLE_RATE:
+                            continue
+                        inputs = self.whisper_processor(
+                            chunk_samples,
+                            sampling_rate=SAMPLE_RATE,
+                            return_tensors="pt"
+                        ).input_features.to(self.device)
+                        with torch.no_grad():
+                            predicted_ids = self.whisper_model.generate(inputs)
+                        c_text = self.whisper_processor.batch_decode(
+                            predicted_ids,
+                            skip_special_tokens=True
+                        )[0].strip()
+                        if c_text:
+                            transcriptions.append(c_text)
+                    transcription = " ".join(transcriptions).strip()
                 if converted_wav and os.path.exists(converted_wav):
                     try:
                         os.remove(converted_wav)
@@ -374,8 +401,148 @@ class ModelLoader:
                 "Headache accompanied by stiff neck, rash, and high fever"
             ]
             follow_up_days = 5
+        elif "angina" in t_lower or "sorbitrate" in t_lower or "coronary" in t_lower:
+            diagnosis = "Chronic Stable Angina Pectoris with Exertional Dyspnea"
+            summary = "Your doctor evaluated your exertional chest tightness and diagnosed stable angina. Anti-anginal therapy and cardio-protective medication have been prescribed."
+            advice = "Rest immediately if chest tightness occurs. Avoid sudden strenuous exertion or heavy unaccustomed lifting. Keep sublingual medication accessible at all times."
+            warning_signs = [
+                "Chest pain persisting for more than 10 minutes despite rest and sublingual tablet",
+                "Radiation of pain to jaw, neck, left arm, or back with cold sweats",
+                "Severe unexplained dizziness, syncope, or breathless collapse"
+            ]
+            follow_up_days = 7
+        elif "post-mi" in t_lower or "myocardial" in t_lower or "heart attack" in t_lower or "atorvastatin" in t_lower:
+            diagnosis = "Post-Myocardial Infarction Surveillance with Hyperlipidemia"
+            summary = "Your doctor completed your post-MI follow-up evaluation. Lipid-lowering statin therapy and antiplatelet protection have been reaffirmed."
+            advice = "Adhere strictly to daily lipid and antiplatelet therapy. Walk at a gentle pace for 20-30 minutes daily on level ground. Avoid tobacco and high-cholesterol fried foods."
+            warning_signs = [
+                "Recurrent squeezing chest pain or pressure",
+                "Shortness of breath on mild exertion or while lying flat",
+                "Unusual bruising, bleeding from gums, or tarry black stools"
+            ]
+            follow_up_days = 14
+        elif "heart failure" in t_lower or "chf" in t_lower or "furosemide" in t_lower or "edema" in t_lower:
+            diagnosis = "Congestive Heart Failure (NYHA Class II-III) with Fluid Overload"
+            summary = "Your doctor noted bilateral ankle swelling and exertional breathlessness consistent with heart failure. Diuretic therapy has been initiated to eliminate excess fluid."
+            advice = "Restrict fluid intake to 1.5 liters per day and reduce dietary salt strictly. Weigh yourself daily in the morning after urinating and log in the app."
+            warning_signs = [
+                "Sudden weight gain of more than 1.5 kg in 2 consecutive days",
+                "Waking up gasping for breath at night (paroxysmal nocturnal dyspnea)",
+                "Rapidly worsening pedal edema or blue discoloration of lips"
+            ]
+            follow_up_days = 5
+        elif "asthma" in t_lower or "budesonide" in t_lower or "rotacaps" in t_lower:
+            diagnosis = "Moderate Persistent Bronchial Asthma"
+            summary = "Your doctor evaluated your nocturnal wheezing and shortness of breath, diagnosing bronchial asthma. Inhaler controller and leukotriene inhibitor therapy have been prescribed."
+            advice = "Rinse mouth thoroughly with clean water after each inhaler dose. Avoid exposure to dust, aerosol sprays, damp air, and cold air triggers."
+            warning_signs = [
+                "Inability to speak in full sentences due to breathlessness",
+                "Cyanosis (bluish tint around lips or fingernails)",
+                "Peak expiratory flow dropping below 50% predicted"
+            ]
+            follow_up_days = 7
+        elif "copd" in t_lower or "doxofylline" in t_lower or "emphysema" in t_lower:
+            diagnosis = "Chronic Obstructive Pulmonary Disease (COPD) Acute Exacerbation"
+            summary = "Your doctor assessed your productive cough and exertional wheeze, indicating an acute flare of COPD. Bronchodilators and respiratory support therapy have been prescribed."
+            advice = "Complete full course of bronchodilators. Practice pursed-lip breathing during exertion. Avoid passive smoke and indoor biomass combustion."
+            warning_signs = [
+                "High persistent fever with purulent dark green sputum",
+                "Drowsiness, severe confusion, or morning headaches (hypercapnia)",
+                "Resting SpO2 dropping below 88%"
+            ]
+            follow_up_days = 5
+        elif "gastroenteritis" in t_lower or "diarrhea" in t_lower or "vomiting" in t_lower or "dast" in t_lower:
+            diagnosis = "Acute Infectious Gastroenteritis with Moderate Dehydration"
+            summary = "Your doctor evaluated your frequent watery stools and dehydration. Oral rehydration salt (ORS) therapy, gut zinc supplementation, and antimicrobials have been prescribed."
+            advice = "Drink at least 2 to 3 liters of prepared ORS solution sip-by-sip. Eat light bland foods like rice gruel (kanji), curd, and boiled potatoes. Avoid milk, tea, and fatty food."
+            warning_signs = [
+                "Inability to keep down oral fluids or vomiting everything",
+                "Dry tongue, sunken eyes, absence of urine for > 8 hours",
+                "Blood in stools or severe localized lower abdominal rigidity"
+            ]
+            follow_up_days = 3
+        elif "typhoid" in t_lower or "enteric" in t_lower or "step-ladder" in t_lower:
+            diagnosis = "Enteric (Typhoid) Fever with Toxic Pyrexia"
+            summary = "Your persistent step-ladder fever and constitutional symptoms indicate enteric fever. Specific oral third-generation cephalosporin antibiotic therapy has been prescribed."
+            advice = "Complete the full 7 to 10 day antibiotic course without skipping a single dose. Drink only boiled or filtered water. Eat soft, thoroughly cooked food."
+            warning_signs = [
+                "Severe sharp abdominal pain or localized tenderness (suspected perforation)",
+                "Extreme delirium, lethargy, or inability to respond to spoken questions",
+                "Persistent vomiting preventing antibiotic ingestion"
+            ]
+            follow_up_days = 5
+        elif "hypothyroid" in t_lower or "thyroxine" in t_lower or "tsh" in t_lower:
+            diagnosis = "Primary Hypothyroidism under Hormone Replacement Titration"
+            summary = "Your doctor reviewed your thyroid levels and lethargy, titrating your levothyroxine dose. Take this hormone replacement consistently on an empty stomach."
+            advice = "Take your Thyroxine tablet immediately upon waking with a glass of water on an empty stomach. Wait at least 45 minutes before tea, coffee, breakfast, or calcium tablets."
+            warning_signs = [
+                "Rapid fluttering heart palpitations or chest tightness",
+                "Severe unexplained tremors, heat intolerance, or restlessness",
+                "Severe generalized edema or extreme cold intolerance"
+            ]
+            follow_up_days = 30
+        elif "febrile" in t_lower or "convulsion" in t_lower or "seizure" in t_lower or "exanthem" in t_lower:
+            diagnosis = "Pediatric Simple Febrile Seizure / Viral Exanthem"
+            summary = "Your child was assessed following a high fever spike with brief convulsion. Weight-adjusted antipyretic dosing and cooling measures have been established."
+            advice = "Keep child in loose, light clothing. Administer weight-adjusted Paracetamol drops promptly when temperature rises above 99.5°F. Perform lukewarm tepid sponging."
+            warning_signs = [
+                "Any seizure episode lasting longer than 5 minutes",
+                "Abnormal child behavior, neck stiffness, or failure to wake up after fever drops",
+                "Repeated convulsions within a 24-hour period"
+            ]
+            follow_up_days = 2
+        elif "colic" in t_lower or "simethicone" in t_lower or "infantile" in t_lower:
+            diagnosis = "Infantile Colic & Transient Feeding Discomfort"
+            summary = "Your baby was evaluated for excessive evening crying and gas distension. Safe pediatric antiflatulent drops and gentle burping techniques have been guided."
+            advice = "Burp your baby thoroughly after every feeding (hold upright against shoulder for 10-15 mins). Practice gentle bicycle leg movements. Avoid maternal gas-producing foods if breastfeeding."
+            warning_signs = [
+                "Green or blood-tinged vomiting (bilious vomit)",
+                "High persistent rectal or axillary temperature (>100.4°F)",
+                "Blood in baby stools or tense hard abdominal distension"
+            ]
+            follow_up_days = 3
+        elif "tinea" in t_lower or "fungal" in t_lower or "itraconazole" in t_lower or "dad" in t_lower:
+            diagnosis = "Tinea Corporis & Cruris (Extensive Dermatophytosis)"
+            summary = "Your circular red itchy skin rings were diagnosed as an active fungal infection. Oral and topical antifungal therapy has been prescribed."
+            advice = "Apply antifungal cream 2 cm beyond the visible rash margin twice daily. Bathe daily, dry skin thoroughly, and wear loose, washed cotton clothes. Do not use steroid creams!"
+            warning_signs = [
+                "Spreading bacterial infection with yellow crusting or oozing pus",
+                "High fever or painful swelling of nearby lymph nodes",
+                "Dark tea-colored urine or yellowing of eyes (rare antifungal hepatic caution)"
+            ]
+            follow_up_days = 14
+        elif "atopic" in t_lower or "eczema" in t_lower or "dermatitis" in t_lower:
+            diagnosis = "Acute Atopic Dermatitis Flare-up with Pruritus"
+            summary = "Your itchy, inflamed skin patches were diagnosed as atopic dermatitis eczema. Mild topical anti-inflammatory therapy and barrier emollient protection have been prescribed."
+            advice = "Apply emollient moisturizer liberally within 3 minutes after lukewarm bath on damp skin. Use mild soap-free body wash. Avoid wool, synthetic fabrics, and scratching."
+            warning_signs = [
+                "Oozing blisters, honey-colored crusts, or painful skin weeping (secondary impetigo)",
+                "Severe sleep disruption despite anti-itch medication",
+                "Sudden generalized rash accompanied by high fever"
+            ]
+            follow_up_days = 7
+        elif "acne" in t_lower or "pustules" in t_lower or "benzoyl" in t_lower:
+            diagnosis = "Acne Vulgaris (Grade 3 Inflammatory Papulopustular)"
+            summary = "Your facial pustules and inflammatory comedones were diagnosed as Grade 3 acne. Oral antimicrobial therapy and topical keratolytic agent have been prescribed."
+            advice = "Wash face twice daily with a gentle foaming cleanser. Apply topical gel in a thin layer across affected areas at night. Do not squeeze, pop, or scrub pimples."
+            warning_signs = [
+                "Severe persistent stomach irritation or heartburn from oral capsules",
+                "Sudden severe peeling or acute allergic swelling of eyelids/face",
+                "Appearance of deep painful cystic nodules or scarring lesions"
+            ]
+            follow_up_days = 21
+        elif "urticaria" in t_lower or "pruritus" in t_lower or "bilastine" in t_lower or "pitti" in t_lower:
+            diagnosis = "Acute Urticaria with Severe Generalized Pruritus"
+            summary = "Your sudden raised red hives and intense itching were diagnosed as acute urticaria. Modern non-sedating antihistamine and soothing lotion have been prescribed."
+            advice = "Take your antihistamine once daily. Apply soothing calamine lotion gently with clean hands. Avoid hot water showers, tight clothing, and known allergenic foods."
+            warning_signs = [
+                "Swelling of the lips, tongue, uvula, or throat (Angioedema)",
+                "Difficulty breathing, wheezing, or hoarse raspy voice",
+                "Sudden dizziness, fainting, or plummeting blood pressure (Anaphylaxis)"
+            ]
+            follow_up_days = 5
         elif "hypertension" in t_lower or "blood pressure" in t_lower:
-            diagnosis = "Primary Essential Hypertension (Stage 1)"
+            diagnosis = "Primary Essential Hypertension (Stage 1-2)"
             summary = "Your blood pressure reading was elevated during the consultation. Antihypertensive therapy has been prescribed to keep your heart and blood vessels protected."
             advice = "Reduce salt intake strictly (< 5g per day). Avoid processed/canned foods. Check blood pressure 3 times a week and record in your Praxirence app."
             warning_signs = [
@@ -745,6 +912,285 @@ class ModelLoader:
                 "duration_days": 2,
                 "meal_relation": "with_meal",
                 "is_sos": False,
+            })
+
+        # Cardiology Specialists: Sorbitrate, Metoprolol, Atorvastatin, Aspirin, Furosemide, Spironolactone
+        if "sorbitrate" in med_search_text or "isosorbide" in med_search_text:
+            medicines.append({
+                "name": "Sorbitrate 5mg",
+                "dosage": "5mg",
+                "frequency": "Sublingually as needed for chest tightness (SOS)",
+                "instructions": "Place 1 tablet under tongue upon exertional chest pain.",
+                "duration_days": 30,
+                "meal_relation": "empty_stomach",
+                "is_sos": True,
+            })
+        if "metoprolol" in med_search_text or "betaloc" in med_search_text:
+            medicines.append({
+                "name": "Metoprolol Tartrate 25mg",
+                "dosage": "25mg",
+                "frequency": "Once daily after morning meal (1-0-0)",
+                "instructions": "Take after breakfast. Do not discontinue abruptly.",
+                "duration_days": 30,
+                "meal_relation": "after_meal",
+                "is_sos": False,
+            })
+            reminders.append({"medicine_name": "Metoprolol 25mg", "dosage": "25mg", "time": "08:30", "frequency": "daily", "instructions": "Take after breakfast."})
+        if "atorvastatin" in med_search_text or "atorva" in med_search_text:
+            medicines.append({
+                "name": "Atorvastatin 40mg",
+                "dosage": "40mg",
+                "frequency": "Once daily at bedtime (0-0-1)",
+                "instructions": "Take at night with water.",
+                "duration_days": 30,
+                "meal_relation": "after_meal",
+                "is_sos": False,
+            })
+            reminders.append({"medicine_name": "Atorvastatin 40mg", "dosage": "40mg", "time": "21:30", "frequency": "daily", "instructions": "Take at night."})
+        if "aspirin" in med_search_text or "ecosprin" in med_search_text:
+            medicines.append({
+                "name": "Ecosprin 75mg",
+                "dosage": "75mg",
+                "frequency": "Once daily after dinner (0-0-1)",
+                "instructions": "Take after dinner with a full glass of water.",
+                "duration_days": 30,
+                "meal_relation": "after_meal",
+                "is_sos": False,
+            })
+            reminders.append({"medicine_name": "Ecosprin 75mg", "dosage": "75mg", "time": "20:30", "frequency": "daily", "instructions": "Take after dinner."})
+        if "furosemide" in med_search_text or "lasix" in med_search_text:
+            medicines.append({
+                "name": "Furosemide 40mg",
+                "dosage": "40mg",
+                "frequency": "Once daily in morning (1-0-0)",
+                "instructions": "Take in morning with water. Monitor urine output.",
+                "duration_days": 30,
+                "meal_relation": "after_meal",
+                "is_sos": False,
+            })
+            reminders.append({"medicine_name": "Furosemide 40mg", "dosage": "40mg", "time": "08:00", "frequency": "daily", "instructions": "Take in morning."})
+        if "spironolactone" in med_search_text or "aldactone" in med_search_text:
+            medicines.append({
+                "name": "Spironolactone 25mg",
+                "dosage": "25mg",
+                "frequency": "Once daily after breakfast (1-0-0)",
+                "instructions": "Take with morning meal.",
+                "duration_days": 30,
+                "meal_relation": "after_meal",
+                "is_sos": False,
+            })
+            reminders.append({"medicine_name": "Spironolactone 25mg", "dosage": "25mg", "time": "08:30", "frequency": "daily", "instructions": "Take after breakfast."})
+
+        # Pulmonology: Budesonide, Dextromethorphan, Doxofylline, Ipratropium
+        if "budesonide" in med_search_text or "rotacaps" in med_search_text or "budecort" in med_search_text:
+            medicines.append({
+                "name": "Budesonide Rotacaps 200mcg",
+                "dosage": "200mcg",
+                "frequency": "Twice daily via Rotahaler (1-0-1)",
+                "instructions": "Inhale via Rotahaler. Rinse mouth with clean water after use.",
+                "duration_days": 30,
+                "meal_relation": "after_meal",
+                "is_sos": False,
+            })
+            reminders.append({"medicine_name": "Budesonide 200mcg", "dosage": "200mcg", "time": "08:00", "frequency": "daily", "instructions": "Inhale & rinse mouth."})
+            reminders.append({"medicine_name": "Budesonide 200mcg", "dosage": "200mcg", "time": "20:00", "frequency": "daily", "instructions": "Inhale & rinse mouth."})
+        if "dextromethorphan" in med_search_text or "koflet" in med_search_text or "grilinctus" in med_search_text:
+            medicines.append({
+                "name": "Dextromethorphan Cough Syrup 10mg/5ml",
+                "dosage": "10ml",
+                "frequency": "Three times daily after food (1-1-1)",
+                "instructions": "Take 10ml for dry irritating cough.",
+                "duration_days": 5,
+                "meal_relation": "after_meal",
+                "is_sos": False,
+            })
+        if "doxofylline" in med_search_text or "doxolin" in med_search_text:
+            medicines.append({
+                "name": "Doxofylline 400mg",
+                "dosage": "400mg",
+                "frequency": "Twice daily after food (1-0-1)",
+                "instructions": "Take after breakfast and dinner.",
+                "duration_days": 10,
+                "meal_relation": "after_meal",
+                "is_sos": False,
+            })
+            reminders.append({"medicine_name": "Doxofylline 400mg", "dosage": "400mg", "time": "08:30", "frequency": "daily", "instructions": "Take after breakfast."})
+            reminders.append({"medicine_name": "Doxofylline 400mg", "dosage": "400mg", "time": "20:30", "frequency": "daily", "instructions": "Take after dinner."})
+        if "ipratropium" in med_search_text or "ipravent" in med_search_text:
+            medicines.append({
+                "name": "Ipratropium Respules 500mcg",
+                "dosage": "500mcg / 2ml",
+                "frequency": "Twice daily via nebulizer (1-0-1)",
+                "instructions": "Nebulize 1 respule with air compressor over 10 minutes.",
+                "duration_days": 5,
+                "meal_relation": "after_meal",
+                "is_sos": False,
+            })
+
+        # Internal Medicine: Teneligliptin, Zinc, Ofloxacin-Ornidazole, Thyroxine
+        if "teneligliptin" in med_search_text or "tenlimac" in med_search_text or "zita" in med_search_text:
+            medicines.append({
+                "name": "Teneligliptin 20mg",
+                "dosage": "20mg",
+                "frequency": "Once daily with breakfast (1-0-0)",
+                "instructions": "Take with morning breakfast.",
+                "duration_days": 30,
+                "meal_relation": "with_meal",
+                "is_sos": False,
+            })
+            reminders.append({"medicine_name": "Teneligliptin 20mg", "dosage": "20mg", "time": "08:30", "frequency": "daily", "instructions": "Take with breakfast."})
+        if "zinc" in med_search_text or "zinconia" in med_search_text:
+            medicines.append({
+                "name": "Zinc 20mg Dispersible Tablet",
+                "dosage": "20mg",
+                "frequency": "Once daily for 14 days (1-0-0)",
+                "instructions": "Disperse in 1 spoon of clean drinking water.",
+                "duration_days": 14,
+                "meal_relation": "after_meal",
+                "is_sos": False,
+            })
+            reminders.append({"medicine_name": "Zinc 20mg", "dosage": "20mg", "time": "09:00", "frequency": "daily", "instructions": "Take 1 dispersible tablet."})
+        if "ofloxacin" in med_search_text or "o2" in med_search_text or "ornidazole" in med_search_text:
+            medicines.append({
+                "name": "Ofloxacin + Ornidazole 200mg/500mg",
+                "dosage": "1 Tablet",
+                "frequency": "Twice daily after food (1-0-1)",
+                "instructions": "Take 1 tablet after meals for 5 days. Complete course.",
+                "duration_days": 5,
+                "meal_relation": "after_meal",
+                "is_sos": False,
+            })
+            reminders.append({"medicine_name": "Oflox-Ornidazole", "dosage": "1 Tab", "time": "08:30", "frequency": "daily", "instructions": "Take after breakfast."})
+            reminders.append({"medicine_name": "Oflox-Ornidazole", "dosage": "1 Tab", "time": "20:30", "frequency": "daily", "instructions": "Take after dinner."})
+        if "thyroxine" in med_search_text or "thyronorm" in med_search_text or "eltroxin" in med_search_text:
+            medicines.append({
+                "name": "Thyroxine Sodium 50mcg",
+                "dosage": "50mcg",
+                "frequency": "Once daily on empty stomach (1-0-0)",
+                "instructions": "Take with water first thing in the morning. Wait 45 mins before breakfast.",
+                "duration_days": 30,
+                "meal_relation": "empty_stomach",
+                "is_sos": False,
+            })
+            reminders.append({"medicine_name": "Thyroxine 50mcg", "dosage": "50mcg", "time": "07:00", "frequency": "daily", "instructions": "Fasting on empty stomach."})
+
+        # Pediatrics: Paracetamol drops, Saline nasal drops, Simethicone, Ferrous Ascorbate
+        if "paracetamol drops" in med_search_text or "calpol drops" in med_search_text or "drops" in med_search_text and "paracetamol" in med_search_text:
+            medicines.append({
+                "name": "Paracetamol Paediatric Drops (100mg/ml)",
+                "dosage": "1.0 ml (15 mg/kg)",
+                "frequency": "Every 6 hours as needed for fever > 100°F (SOS)",
+                "instructions": "Administer with calibrated dropper. Max 4 doses in 24 hours.",
+                "duration_days": 3,
+                "meal_relation": "after_meal",
+                "is_sos": True,
+            })
+        if "saline" in med_search_text or "nasoclear" in med_search_text:
+            medicines.append({
+                "name": "Isotonic Saline Nasal Drops 0.65%",
+                "dosage": "2 Drops each nostril",
+                "frequency": "Three times daily before feeds",
+                "instructions": "Instill 2 drops in each nostril before feeding and sleeping.",
+                "duration_days": 5,
+                "meal_relation": "before_meal",
+                "is_sos": False,
+            })
+        if "simethicone" in med_search_text or "colicaid" in med_search_text or "bonnisan" in med_search_text:
+            medicines.append({
+                "name": "Simethicone Infant Drops (40mg/ml)",
+                "dosage": "0.5 ml (20mg)",
+                "frequency": "Before feeds as needed for colic (SOS)",
+                "instructions": "Give 15 minutes before feeding.",
+                "duration_days": 5,
+                "meal_relation": "before_meal",
+                "is_sos": True,
+            })
+        if "ferrous" in med_search_text or "orofer" in med_search_text or "iron" in med_search_text and "syrup" in med_search_text:
+            medicines.append({
+                "name": "Ferrous Ascorbate Paediatric Syrup",
+                "dosage": "2.5 ml",
+                "frequency": "Once daily between meals (1-0-0)",
+                "instructions": "Give between meals with fruit juice (Vitamin C enhances absorption).",
+                "duration_days": 30,
+                "meal_relation": "between_meals",
+                "is_sos": False,
+            })
+            reminders.append({"medicine_name": "Ferrous Ascorbate Syrup", "dosage": "2.5ml", "time": "11:00", "frequency": "daily", "instructions": "Take between meals."})
+
+        # Dermatology: Itraconazole, Luliconazole, Desonide, Doxycycline, Benzoyl Peroxide, Bilastine, Calamine
+        if "itraconazole" in med_search_text or "canditral" in med_search_text or "itzmac" in med_search_text:
+            medicines.append({
+                "name": "Itraconazole Capsules 100mg",
+                "dosage": "100mg",
+                "frequency": "Twice daily immediately after full meals (1-0-1)",
+                "instructions": "Swallow whole with a full meal.",
+                "duration_days": 14,
+                "meal_relation": "after_meal",
+                "is_sos": False,
+            })
+            reminders.append({"medicine_name": "Itraconazole 100mg", "dosage": "100mg", "time": "08:30", "frequency": "daily", "instructions": "Take after breakfast."})
+            reminders.append({"medicine_name": "Itraconazole 100mg", "dosage": "100mg", "time": "20:30", "frequency": "daily", "instructions": "Take after dinner."})
+        if "luliconazole" in med_search_text or "lulisphin" in med_search_text or "cream" in med_search_text and "tinea" in t_lower:
+            medicines.append({
+                "name": "Luliconazole Cream 1% w/w",
+                "dosage": "Thin topical layer",
+                "frequency": "Apply once daily on clean dry lesion (0-0-1)",
+                "instructions": "Apply 2cm beyond rash boundary at bedtime. Keep skin dry.",
+                "duration_days": 14,
+                "meal_relation": "topical",
+                "is_sos": False,
+            })
+        if "desonide" in med_search_text or "desowen" in med_search_text or "lotion" in med_search_text and "atopic" in t_lower:
+            medicines.append({
+                "name": "Desonide Lotion 0.05%",
+                "dosage": "Thin film",
+                "frequency": "Apply twice daily to inflamed eczema patches (1-0-1)",
+                "instructions": "Apply a thin layer to affected skin. Do not apply on broken skin.",
+                "duration_days": 7,
+                "meal_relation": "topical",
+                "is_sos": False,
+            })
+        if "doxycycline" in med_search_text or "doxypal" in med_search_text:
+            medicines.append({
+                "name": "Doxycycline 100mg",
+                "dosage": "100mg",
+                "frequency": "Once daily after lunch with a full glass of water (1-0-0)",
+                "instructions": "Take with a tall glass of water. Do not lie down for 30 mins after taking.",
+                "duration_days": 21,
+                "meal_relation": "after_meal",
+                "is_sos": False,
+            })
+            reminders.append({"medicine_name": "Doxycycline 100mg", "dosage": "100mg", "time": "13:30", "frequency": "daily", "instructions": "Take with full glass of water."})
+        if "benzoyl" in med_search_text or "persol" in med_search_text:
+            medicines.append({
+                "name": "Benzoyl Peroxide Gel 2.5%",
+                "dosage": "Pea-sized amount",
+                "frequency": "Apply once daily at night (0-0-1)",
+                "instructions": "Apply sparingly on pustules at bedtime. May bleach fabrics.",
+                "duration_days": 21,
+                "meal_relation": "topical",
+                "is_sos": False,
+            })
+        if "bilastine" in med_search_text or "bilashine" in med_search_text:
+            medicines.append({
+                "name": "Bilastine 20mg",
+                "dosage": "20mg",
+                "frequency": "Once daily 1 hour before dinner (0-0-1)",
+                "instructions": "Take 1 tablet on an empty stomach with water.",
+                "duration_days": 10,
+                "meal_relation": "empty_stomach",
+                "is_sos": False,
+            })
+            reminders.append({"medicine_name": "Bilastine 20mg", "dosage": "20mg", "time": "19:00", "frequency": "daily", "instructions": "Take before dinner."})
+        if "calamine" in med_search_text or "lactocalamine" in med_search_text:
+            medicines.append({
+                "name": "Calamine Soothing Lotion",
+                "dosage": "Gentle application",
+                "frequency": "Apply 2-3 times daily as needed for itch (SOS)",
+                "instructions": "Shake well and apply gently with clean cotton.",
+                "duration_days": 7,
+                "meal_relation": "topical",
+                "is_sos": True,
             })
 
         # Ensure fallback reminders if medicines exist but no specific reminders generated

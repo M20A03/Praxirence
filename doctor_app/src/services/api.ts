@@ -980,6 +980,9 @@ export const mobileApi = {
       type: mimeType,
     } as any);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s timeout for long 8+ min audio
+
     try {
       const headers = getHeaders();
       delete (headers as any)['Content-Type'];
@@ -988,7 +991,9 @@ export const mobileApi = {
         method: 'POST',
         headers,
         body: formData,
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       if (res.ok) {
         const visit = await res.json();

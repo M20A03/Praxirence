@@ -76,6 +76,38 @@ async def websocket_endpoint(websocket: WebSocket, role: str, user_id: str):
                             "medicines_count": payload.get("medicines_count")
                         })
 
+                elif event_type == "AUDIO_STREAM_START" and role == "doctor":
+                    # Acknowledge start of long-duration consultation audio stream
+                    pat_id = payload.get("patient_id")
+                    await websocket.send_text(json.dumps({
+                        "event": "AUDIO_STREAM_ACK",
+                        "payload": {
+                            "status": "ready",
+                            "patient_id": pat_id,
+                            "buffer_mode": "streaming_rolling_window"
+                        }
+                    }))
+
+                elif event_type == "AUDIO_STREAM_CHUNK" and role == "doctor":
+                    # Acknowledge receipt of streaming chunk to prevent buffer congestion
+                    seq = payload.get("seq", 0)
+                    pat_id = payload.get("patient_id")
+                    await websocket.send_text(json.dumps({
+                        "event": "AUDIO_CHUNK_ACK",
+                        "payload": {"seq": seq, "patient_id": pat_id}
+                    }))
+
+                elif event_type == "AUDIO_STREAM_END" and role == "doctor":
+                    # Signal stream termination and synthesis pipeline readiness
+                    pat_id = payload.get("patient_id")
+                    await websocket.send_text(json.dumps({
+                        "event": "AUDIO_STREAM_COMPLETED",
+                        "payload": {
+                            "status": "processing",
+                            "patient_id": pat_id
+                        }
+                    }))
+
             except json.JSONDecodeError:
                 pass
 

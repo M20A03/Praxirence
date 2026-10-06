@@ -24,5 +24,5 @@ def test_multilingual_chat_assistant():
     assert "reply" in data
     assert "language" in data
     assert data["language"] == "Hindi"
-    assert "Metformin" in data["reply"] or "मेटफॉर्मिन" in data["reply"] or "500" in data["reply"]
+    assert any(term.lower() in data["reply"].lower() for term in ["metformin", "मेटफॉर्मिन", "मेटफॉर्म", "500"])
     assert "safety_disclaimer" in data

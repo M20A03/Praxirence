@@ -484,6 +484,22 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
         </Text>
       </View>
 
+      {/* Long Consultation (>8m / >10m) Resilience Feedback */}
+      {isRecording && durationSec >= 480 && (
+        <View style={durationSec >= 600 ? styles.longConsultationBanner10 : styles.longConsultationBanner8}>
+          <Ionicons
+            name={durationSec >= 600 ? "shield-checkmark" : "hourglass-outline"}
+            size={15}
+            color={durationSec >= 600 ? "#059669" : "#D97706"}
+          />
+          <Text style={durationSec >= 600 ? styles.longConsultationText10 : styles.longConsultationText8}>
+            {durationSec >= 600
+              ? "Comprehensive Consultation (10m+): Multi-phase clinical synthesis active"
+              : "Extended Consultation (8m+): Rolling window speech processing active"}
+          </Text>
+        </View>
+      )}
+
       {/* Consultation Language Hint Selector */}
       {!isRecording && (
         <View style={styles.langSelectorContainer}>
@@ -985,5 +1001,41 @@ const styles = StyleSheet.create({
   },
   langChipTextActive: {
     color: '#FFFFFF',
+  },
+  longConsultationBanner8: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FFFBEB',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    marginBottom: 10,
+  },
+  longConsultationText8: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#92400E',
+    flex: 1,
+  },
+  longConsultationBanner10: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    marginBottom: 10,
+  },
+  longConsultationText10: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#065F46',
+    flex: 1,
   },
 });

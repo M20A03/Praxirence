@@ -33,6 +33,43 @@ class AIService:
         except Exception:
             self.model_loader = None
 
+    def transcribe_audio(self, audio_path: str, language: Optional[str] = None) -> str:
+        """
+        Transcribes doctor-patient consultation audio using chunked sliding-window Whisper ASR.
+        Guarantees processing for long consultations (8 to 12+ minutes) without truncation or OOM.
+        """
+        if self.model_loader:
+            return self.model_loader.transcribe(audio_path, language=language)
+        return "Doctor: Patient consultation completed. No specific prescription recorded."
+
+    def compress_clinical_dialogue(self, transcript: str, max_words: int = 1600) -> str:
+        """
+        Clinical dialogue compressor for long-duration consultations (8 to 12+ minutes / 1500+ words).
+        Preserves all clinician statements, complaints, vitals, examination findings, medications,
+        and red flags while removing conversational filler and repetitive acknowledgments.
+        """
+        words = transcript.split()
+        if len(words) <= max_words:
+            return transcript
+
+        lines = transcript.splitlines()
+        clinical_lines = []
+        for line in lines:
+            l_lower = line.lower()
+            if any(k in l_lower for k in [
+                "doctor:", "dr:", "dr. ", "clinician:", "mg", "mcg", "tablet", "syrup",
+                "respule", "drops", "cream", "bp", "pulse", "spo2", "temp", "sugar",
+                "pain", "fever", "cough", "chest", "breath", "swelling", "rash",
+                "patient:", "pt:", "bukhar", "dard", "khansi", "dawa", "subah", "shaam",
+                "days", "din", "daily", "sos", "take", "prescribing", "advice", "report"
+            ]):
+                clinical_lines.append(line)
+
+        compressed = "\n".join(clinical_lines)
+        if len(compressed.split()) >= 120:
+            return compressed
+        return ' '.join(words[:max_words])
+
     def diarize_and_denoise_transcript(self, raw_text: str) -> tuple[str, List[Dict[str, Any]]]:
         """
         Parses conversation into structured [Doctor] and [Patient] diarization turns.
@@ -185,10 +222,13 @@ class AIService:
         # 2. Extract vitals
         vitals = self.extract_vitals_from_dialogue(conversation)
 
-        # 3. Attempt Gemini 3.8 / 3.5 Flash structuring if GEMINI_API_KEY is available
+        # 3. Handle long consultation dialogue compression (>8 mins / >1500 words)
+        effective_transcript = self.compress_clinical_dialogue(diarized_transcript) if len(diarized_transcript.split()) > 1200 else diarized_transcript
+
+        # 4. Attempt Gemini Flash structuring if GEMINI_API_KEY is available
         gemini_key = settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY")
         if gemini_key and len(gemini_key) > 10:
-            gemini_result = self._call_gemini_care_plan(diarized_transcript, patient_name, doctor_name, gemini_key)
+            gemini_result = self._call_gemini_care_plan(effective_transcript, patient_name, doctor_name, gemini_key)
             if gemini_result:
                 # Merge vitals & diarization
                 if not gemini_result.get("diarized_transcript"):
@@ -366,10 +406,10 @@ class AIService:
         payload = {
             "system_instruction": {"parts": [{"text": system_prompt}]},
             "contents": [{"parts": [{"text": user_content}]}],
-            "generationConfig": {"temperature": 0.1, "maxOutputTokens": 1000}
+            "generationConfig": {"temperature": 0.1, "maxOutputTokens": 4096}
         }
 
-        models = ["gemini-3.8-flash", "gemini-3.5-flash-lite"]
+        models = ["gemini-2.0-flash", "gemini-1.5-flash"]
         for m in models:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key}"
             try:

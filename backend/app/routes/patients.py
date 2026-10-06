@@ -52,6 +52,39 @@ CONSENT_PLAIN_TEXT = (
 )
 
 
+def serialize_patient_response(
+    patient: Patient,
+    doctor_id: Optional[str] = None,
+    db: Optional[Session] = None
+) -> PatientResponse:
+    auth_status = "authorized"
+    link_id = None
+    conf_code = None
+    if doctor_id and db:
+        link = db.query(DoctorPatientLink).filter(
+            DoctorPatientLink.doctor_id == doctor_id,
+            DoctorPatientLink.patient_id == patient.id
+        ).first()
+        if link:
+            auth_status = link.status
+            link_id = link.id
+            conf_code = link.confirmation_code
+
+    return PatientResponse(
+        id=patient.id,
+        uhid=patient.uhid,
+        name=patient.name,
+        phone=patient.phone,
+        dob=patient.dob,
+        consent_status=patient.consent_status,
+        consent_updated_at=patient.consent_updated_at,
+        created_at=patient.created_at,
+        authorization_status=auth_status,
+        link_id=link_id,
+        confirmation_code=conf_code,
+    )
+
+
 @router.get("", response_model=List[PatientResponse])
 def search_patients(
     query: Optional[str] = Query(None, description="Search by name, phone, or UHID"),

@@ -23,7 +23,8 @@ class PDFPrescriptionService:
         doctor_name: str,
         diagnosis: str,
         medicines: List[Dict[str, str]],
-        output_path: str
+        output_path: str,
+        patient_uhid: str = None
     ) -> str:
         """
         Generates a clinical PDF prescription and writes to output_path.
@@ -63,10 +64,11 @@ class PDFPrescriptionService:
         elements.append(Spacer(1, 8))
 
         # 2. Doctor & Patient Info Table
+        uhid_text = f" • UHID: {patient_uhid}" if patient_uhid else ""
         info_data = [
             [f"<b>Doctor:</b> {doctor_name}", f"<b>Date:</b> {datetime.now().strftime('%d %b %Y')}"],
-            [f"<b>Patient:</b> {patient_name} ({patient_age}y, {patient_gender})", f"<b>Status:</b> Consent Active (ABDM Verified)"],
-            [f"<b>Clinical Diagnosis:</b> {diagnosis}", ""]
+            [f"<b>Patient:</b> {patient_name} ({patient_age}y, {patient_gender}){uhid_text}", f"<b>UHID:</b> {patient_uhid or 'Auto-assigned'}"],
+            [f"<b>Clinical Diagnosis:</b> {diagnosis}", f"<b>Status:</b> Consent Active (ABDM Verified)"]
         ]
         info_table = Table(info_data, colWidths=[300, 240])
         info_table.setStyle(TableStyle([

@@ -96,11 +96,13 @@ def search_patients(
             .limit(limit)
             .all()
         )
+        res = []
         for p in patients:
             if not p.uhid:
                 p.uhid = generate_uhid(db)
                 db.commit()
-        return patients
+            res.append(serialize_patient_response(p, current_doctor.id, db))
+        return res
     else:
         # Default view:
         # 1. Patients who have had visits with this doctor OR are authorized
@@ -132,11 +134,13 @@ def search_patients(
             )
 
         all_patients = doc_patients + other_patients
+        res = []
         for p in all_patients:
             if not p.uhid:
                 p.uhid = generate_uhid(db)
                 db.commit()
-        return all_patients
+            res.append(serialize_patient_response(p, current_doctor.id, db))
+        return res
 
 
 @router.post("", response_model=PatientResponse, status_code=status.HTTP_201_CREATED)
@@ -290,17 +294,18 @@ def create_patient(
 
 @router.get("/pending-doctor-requests", response_model=List[PendingDoctorAuthorizationItem])
 def get_pending_doctor_requests(
+    patient_id: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user_or_patient)
 ):
     """Patient endpoint: retrieves pending authorization requests from doctors"""
-    patient_id = getattr(current_user, "id", None)
-    if not patient_id:
+    target_patient_id = patient_id if (patient_id and isinstance(current_user, User)) else getattr(current_user, "id", None)
+    if not target_patient_id:
         raise HTTPException(status_code=401, detail="Authentication required")
 
     links = (
         db.query(DoctorPatientLink)
-        .filter(DoctorPatientLink.patient_id == patient_id, DoctorPatientLink.status == "pending")
+        .filter(DoctorPatientLink.patient_id == target_patient_id, DoctorPatientLink.status == "pending")
         .order_by(DoctorPatientLink.requested_at.desc())
         .all()
     )
@@ -335,8 +340,10 @@ def authorize_doctor(
     """
     patient_id = getattr(current_user, "id", None)
     link = db.query(DoctorPatientLink).filter(DoctorPatientLink.id == req.link_id).first()
-    if not link or link.patient_id != patient_id:
+    if not link:
         raise HTTPException(status_code=404, detail="Authorization request not found")
+    if not isinstance(current_user, User) and link.patient_id != patient_id:
+        raise HTTPException(status_code=403, detail="Not authorized to act on this request")
 
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     doctor = db.query(User).filter(User.id == link.doctor_id).first()
@@ -494,7 +501,21 @@ def get_patient(
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
-    return patient
+
+    doc_id = None
+    if isinstance(current_user, User):
+        doc_id = current_user.id
+        link = db.query(DoctorPatientLink).filter(
+            DoctorPatientLink.doctor_id == current_user.id,
+            DoctorPatientLink.patient_id == patient.id
+        ).first()
+        if link and link.status in ("pending", "rejected"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied: Doctor-patient link status is '{link.status}'. Patient authorization required."
+            )
+
+    return serialize_patient_response(patient, doc_id, db)
 
 
 @router.get("/{patient_id}/visits", response_model=List[VisitResponse])
@@ -507,6 +528,17 @@ def get_patient_visits(
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
+
+    if isinstance(current_user, User):
+        link = db.query(DoctorPatientLink).filter(
+            DoctorPatientLink.doctor_id == current_user.id,
+            DoctorPatientLink.patient_id == patient.id
+        ).first()
+        if link and link.status in ("pending", "rejected"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied: Doctor-patient link status is '{link.status}'. Patient authorization required."
+            )
 
     visits = db.query(Visit).filter(Visit.patient_id == patient_id).order_by(Visit.date.desc()).all()
 

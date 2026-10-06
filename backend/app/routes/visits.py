@@ -23,6 +23,7 @@ from app.models.visit import Visit
 from app.models.patient import Patient
 from app.models.user import User
 from app.models.audit_log import AuditLog
+from app.models.doctor_patient_link import DoctorPatientLink
 from app.schemas.visit import (
     VisitCreate,
     VisitResponse,
@@ -155,6 +156,16 @@ def create_structured_visit(
     patient = db.query(Patient).filter(Patient.id == req.patient_id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
+
+    link = db.query(DoctorPatientLink).filter(
+        DoctorPatientLink.doctor_id == current_doctor.id,
+        DoctorPatientLink.patient_id == patient.id
+    ).first()
+    if link and link.status in ("pending", "rejected"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Access denied: Doctor-patient link status is '{link.status}'. Patient authorization required."
+        )
 
     today_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     visit = None
@@ -535,6 +546,23 @@ def approve_and_send_care_plan(
     visit.approved_at = datetime.now(timezone.utc)
     visit.retention_until = datetime.now(timezone.utc) + timedelta(days=3 * 365)  # 3-year NMC statutory lock
 
+    # Ensure link is marked authorized upon consultation approval
+    link = db.query(DoctorPatientLink).filter(
+        DoctorPatientLink.doctor_id == current_doctor.id,
+        DoctorPatientLink.patient_id == visit.patient_id
+    ).first()
+    if not link:
+        link = DoctorPatientLink(
+            doctor_id=current_doctor.id,
+            patient_id=visit.patient_id,
+            status="authorized",
+            authorized_at=datetime.now(timezone.utc)
+        )
+        db.add(link)
+    elif link.status != "authorized":
+        link.status = "authorized"
+        link.authorized_at = datetime.now(timezone.utc)
+
     # Compute deterministic SHA-256 cryptographic digital signature hash
     sig_payload = f"{current_doctor.reg_number}:{visit.patient_id}:{visit.date.isoformat() if visit.date else ''}:{json.dumps(visit.medicines or [], sort_keys=True)}"
     visit.signature_hash = hashlib.sha256(sig_payload.encode()).hexdigest()
@@ -611,6 +639,16 @@ def start_consultation(
     visit = db.query(Visit).filter(Visit.id == visit_id).first()
     if not visit:
         raise HTTPException(status_code=404, detail="Visit not found")
+
+    link = db.query(DoctorPatientLink).filter(
+        DoctorPatientLink.doctor_id == current_doctor.id,
+        DoctorPatientLink.patient_id == visit.patient_id
+    ).first()
+    if link and link.status in ("pending", "rejected"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Access denied: Doctor-patient link status is '{link.status}'. Patient authorization required."
+        )
 
     visit.status = "in_progress"
     db.commit()
@@ -1059,6 +1097,19 @@ def create_walk_in_visit(
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
 
+    # Verify link authorization if doctor specified
+    doc_id_check = payload.doctor_id
+    if doc_id_check:
+        link = db.query(DoctorPatientLink).filter(
+            DoctorPatientLink.doctor_id == doc_id_check,
+            DoctorPatientLink.patient_id == patient.id
+        ).first()
+        if link and link.status in ("pending", "rejected"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied: Doctor-patient link status is '{link.status}'. Patient authorization required."
+            )
+
     # 2. Fetch Doctor
     if payload.doctor_id:
         doctor = db.query(User).filter(User.id == payload.doctor_id).first()
@@ -1461,7 +1512,8 @@ def get_visit_prescription_pdf(
             doctor_name=doctor_name,
             diagnosis=diagnosis,
             medicines=medicines,
-            output_path=pdf_path
+            output_path=pdf_path,
+            patient_uhid=getattr(patient, "uhid", None) if patient else None
         )
     except Exception as e:
         logging.error(f"Failed to generate prescription PDF: {e}", exc_info=True)

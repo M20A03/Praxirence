@@ -292,11 +292,14 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const url = mobileApi.getPrescriptionPdfUrl(visit.id);
-      const supported = await Linking.canOpenURL(url).catch(() => true);
-      if (supported) {
+      try {
         await Linking.openURL(url);
-      } else {
-        Alert.alert('Prescription Link', `Prescription URL: ${url}`);
+      } catch (openErr) {
+        await Share.share({
+          title: 'Prescription PDF',
+          message: `Official Praxirence Prescription for ${visit.patient_name || 'Patient'}: ${url}`,
+          url: url,
+        });
       }
     } catch (err: any) {
       Alert.alert('Notice', 'Unable to download prescription PDF: ' + (err?.message || 'Network error'));

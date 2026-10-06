@@ -5,40 +5,16 @@ Utilizes PEFT (LoRA r=32, alpha=64), HuggingFace Transformers, and PyTorch.
 """
 
 import os
-import sys
 import json
 import logging
 import argparse
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 import numpy as np
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("praxirence.train_whisper")
 
-try:
-    import torch
-    import torch.nn as nn
-    from torch.utils.data import Dataset, DataLoader
-except ImportError:
-    torch = None
-
-try:
-    from transformers import (
-        WhisperForConditionalGeneration,
-        WhisperProcessor,
-        Seq2SeqTrainer,
-        Seq2SeqTrainingArguments,
-    )
-    from peft import (
-        LoraConfig,
-        get_peft_model,
-        prepare_model_for_kbit_training,
-        PeftModel
-    )
-except ImportError:
-    pass
-
-from ml.vocab_booster import TOP_INDIAN_PHARMA_BRANDS, INDIAN_DOSAGE_CONVENTIONS, CODE_SWITCHING_DICTIONARY
+from ml.vocab_booster import get_active_formulary
 
 
 class SyntheticIndianClinicalAudioDataset:
@@ -46,27 +22,27 @@ class SyntheticIndianClinicalAudioDataset:
     Generates synthetic paired doctor-patient speech transcripts and audio features
     reflecting Indian clinic outpatient dialogue, pharmaceutical brands, and multi-accent speech.
     """
-    def __init__(self, size: int = 100, processor: Any = None):
+    def __init__(self, size: int = 100):
         self.size = size
-        self.processor = processor
+        self.formulary = get_active_formulary()
         self.samples = self._generate_synthetic_corpus()
 
-    def _generate_synthetic_corpus(self) -> List[Dict[str, str]]:
+    def _generate_synthetic_corpus(self) -> List[Dict[str, Any]]:
         corpus = []
         accents = ["North_Indian_Hindi", "South_Indian_Tamil", "West_Indian_Marathi", "East_Indian_Bengali"]
-        
+        num_brands = max(len(self.formulary), 1)
+
         for i in range(self.size):
-            brand_idx = i % len(TOP_INDIAN_PHARMA_BRANDS)
-            brand_info = TOP_INDIAN_PHARMA_BRANDS[brand_idx]
+            brand_info = self.formulary[i % num_brands] if self.formulary else {"brand": "Augmentin 625", "generic": "Amoxicillin Clavulanate"}
             accent = accents[i % len(accents)]
-            
+
             transcript = (
                 f"Doctor: Namaste. Patient presenting with symptoms. "
                 f"Prescribing {brand_info['brand']} ({brand_info['generic']}). "
                 f"Take 1-0-1 BD after food for 5 days. Monitor blood pressure and fever. "
                 f"Accent context: {accent}."
             )
-            
+
             corpus.append({
                 "id": f"SYNTH-CLINIC-{i:04d}",
                 "transcript": transcript,
@@ -77,12 +53,11 @@ class SyntheticIndianClinicalAudioDataset:
             })
         return corpus
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.samples)
 
     def __getitem__(self, idx: int) -> Dict[str, Any]:
         item = self.samples[idx]
-        # Return mock audio tensor (16kHz 12.5s) if processor is not fitted in standalone dry-runs
         mock_audio = np.random.normal(0, 0.05, int(16000 * 12.5)).astype(np.float32)
         return {
             "audio": mock_audio,
@@ -95,28 +70,26 @@ class SyntheticIndianClinicalAudioDataset:
 def compute_clinical_mer_and_wer(predictions: List[str], references: List[str]) -> Dict[str, float]:
     """
     Computes:
-    1. Word Error Rate (WER) via Levenshtein distance on words.
+    1. Word Error Rate (WER) via Levenshtein-like distance on words.
     2. Medical Entity Error Rate (MER) specifically evaluating recall & accuracy
        of prescribed Indian pharmaceutical brand names and dosages.
     """
-    import re
     total_words = 0
     word_errors = 0
     total_entities = 0
     entity_errors = 0
 
-    known_entities = {b["brand"].lower() for b in TOP_INDIAN_PHARMA_BRANDS}
+    formulary = get_active_formulary()
+    known_entities = {b["brand"].lower() for b in formulary}
 
     for pred, ref in zip(predictions, references):
         p_words = pred.lower().split()
         r_words = ref.lower().split()
         total_words += max(len(r_words), 1)
 
-        # Simple Levenshtein-like distance approximation for fast evaluation
         diff = abs(len(p_words) - len(r_words)) + sum(1 for pw, rw in zip(p_words, r_words) if pw != rw)
         word_errors += min(diff, len(r_words))
 
-        # Check medical entities
         for ent in known_entities:
             if ent in ref.lower():
                 total_entities += 1
@@ -137,20 +110,16 @@ def train_whisper_lora(
     output_dir: str = "./models/whisper_lora_indian_pharma",
     lora_r: int = 32,
     lora_alpha: int = 64,
-    epochs: int = 3,
-    batch_size: int = 4,
-    learning_rate: float = 1e-4,
     dry_run: bool = False
 ) -> Dict[str, Any]:
     """
-    Executes PEFT LoRA training on Whisper for Indian clinical speech.
-    If run in dry-run or CPU-only container mode, outputs a validated configuration
-    and evaluation report without requiring 24GB VRAM.
+    Executes PEFT LoRA training configuration on Whisper for Indian clinical speech.
     """
-    logger.info(f"Starting Praxirence Whisper LoRA Training Pipeline")
+    formulary = get_active_formulary()
+    logger.info("Starting Praxirence Whisper LoRA Training Pipeline")
     logger.info(f"Base Model: {base_model_name}")
     logger.info(f"LoRA Config: r={lora_r}, alpha={lora_alpha}, target_modules=['q_proj', 'v_proj']")
-    logger.info(f"Target Vocabulary: {len(TOP_INDIAN_PHARMA_BRANDS)} Indian pharma formulations")
+    logger.info(f"Target Vocabulary: {len(formulary)} Indian pharma formulations")
 
     lora_config = {
         "r": lora_r,
@@ -164,7 +133,6 @@ def train_whisper_lora(
     dataset = SyntheticIndianClinicalAudioDataset(size=50)
     logger.info(f"Loaded {len(dataset)} synthetic multi-accent clinical audio samples.")
 
-    # Evaluate baseline vs target
     sample_refs = [s["transcript"] for s in dataset.samples[:10]]
     sample_preds = [
         s["transcript"].replace("Augmentin 625", "Augmentin 625mg") for s in dataset.samples[:10]
@@ -176,14 +144,15 @@ def train_whisper_lora(
         "base_model": base_model_name,
         "lora_config": lora_config,
         "metrics": eval_metrics,
-        "target_pharma_entities": len(TOP_INDIAN_PHARMA_BRANDS),
+        "target_pharma_entities": len(formulary),
         "status": "TRAINING_MANIFEST_VALIDATED"
     }
 
-    with open(os.path.join(output_dir, "adapter_config.json"), "w") as f:
+    manifest_path = os.path.join(output_dir, "adapter_config.json")
+    with open(manifest_path, "w") as f:
         json.dump(metadata, f, indent=2)
 
-    logger.info(f"Training manifest saved to {output_dir}/adapter_config.json")
+    logger.info(f"Training manifest saved to {manifest_path}")
     logger.info(f"Clinical Evaluation Metrics: WER={eval_metrics['wer']}, MER={eval_metrics['mer']}, Accuracy={eval_metrics['clinical_accuracy_pct']}%")
     return metadata
 
@@ -192,7 +161,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train Whisper LoRA for Indian Clinical ASR")
     parser.add_argument("--base-model", default="openai/whisper-large-v3-turbo", help="Base model identifier")
     parser.add_argument("--output-dir", default="./models/whisper_lora_indian_pharma", help="Output directory")
-    parser.add_argument("--dry-run", action="store_true", help="Dry run mode without GPU allocation")
+    parser.add_argument("--dry-run", action="store_true", help="Dry run mode")
     args = parser.parse_args()
 
     train_whisper_lora(

@@ -1,0 +1,303 @@
+[
+  {
+    "pair": [
+      "clarithromycin",
+      "atorvastatin"
+    ],
+    "severity": "CONTRAINDICATED",
+    "mechanism": "Potent CYP3A4 inhibition increases atorvastatin AUC up to 400%.",
+    "clinical_risk": "High risk of acute rhabdomyolysis, myoglobinuria, and acute tubular necrosis.",
+    "recommendation": "Contraindicated. Suspend statin therapy for the duration of the macrolide course.",
+    "alternatives": [
+      "Azithromycin (non-CYP3A4)",
+      "Rosuvastatin (CYP2C9 metabolized)"
+    ]
+  },
+  {
+    "pair": [
+      "erythromycin",
+      "simvastatin"
+    ],
+    "severity": "CONTRAINDICATED",
+    "mechanism": "CYP3A4 inhibition elevates simvastatin plasma levels markedly.",
+    "clinical_risk": "Severe statin-induced myopathy and rhabdomyolysis.",
+    "recommendation": "Contraindicated. Discontinue simvastatin or switch to Azithromycin.",
+    "alternatives": [
+      "Pravastatin",
+      "Azithromycin"
+    ]
+  },
+  {
+    "pair": [
+      "telmisartan",
+      "ramipril"
+    ],
+    "severity": "CONTRAINDICATED",
+    "mechanism": "Dual renin-angiotensin-aldosterone system (RAAS) blockade.",
+    "clinical_risk": "Precipitous drop in GFR, acute kidney injury, hyperkalemia, and severe hypotension.",
+    "recommendation": "Absolute contraindication (ONTARGET trial). Withhold one RAAS blocker immediately.",
+    "alternatives": [
+      "Amlodipine (CCB)",
+      "Chlorthalidone (Thiazide-like diuretic)"
+    ]
+  },
+  {
+    "pair": [
+      "losartan",
+      "enalapril"
+    ],
+    "severity": "CONTRAINDICATED",
+    "mechanism": "Combined ARB and ACE inhibitor synergistic renal perfusion compromise.",
+    "clinical_risk": "Acute renal failure and hyperkalemic cardiac arrest.",
+    "recommendation": "Discontinue one agent. Use monotherapy titrated to target BP.",
+    "alternatives": [
+      "Cilnidipine",
+      "Indapamide"
+    ]
+  },
+  {
+    "pair": [
+      "methotrexate",
+      "naproxen"
+    ],
+    "severity": "CONTRAINDICATED",
+    "mechanism": "NSAIDs decrease renal prostaglandin synthesis, reducing renal blood flow and MTX clearance.",
+    "clinical_risk": "Fatal methotrexate toxicity: pancytopenia, severe stomatitis, and bone marrow suppression.",
+    "recommendation": "Contraindicated with intermediate/high-dose MTX. Use Paracetamol for analgesia.",
+    "alternatives": [
+      "Paracetamol 650mg",
+      "Tramadol"
+    ]
+  },
+  {
+    "pair": [
+      "methotrexate",
+      "ibuprofen"
+    ],
+    "severity": "CONTRAINDICATED",
+    "mechanism": "Competition for renal organic anion transporter (OAT3) tubular secretion.",
+    "clinical_risk": "Severe hematological toxicity and nephrotoxicity.",
+    "recommendation": "Avoid NSAID co-prescription with methotrexate.",
+    "alternatives": [
+      "Paracetamol 650mg",
+      "Low-dose Prednisolone"
+    ]
+  },
+  {
+    "pair": [
+      "sildenafil",
+      "sorbitrate"
+    ],
+    "severity": "CONTRAINDICATED",
+    "mechanism": "Synergistic cyclic GMP accumulation and profound arterial vasodilation.",
+    "clinical_risk": "Refractory life-threatening hypotension and coronary hypoperfusion.",
+    "recommendation": "Strictly contraindicated within 24-48 hours of nitrate administration.",
+    "alternatives": [
+      "Non-nitrate anti-anginal (e.g. Trimetazidine, Ranolazine)"
+    ]
+  },
+  {
+    "pair": [
+      "tadalafil",
+      "monit"
+    ],
+    "severity": "CONTRAINDICATED",
+    "mechanism": "PDE-5 inhibition prevents cGMP breakdown while isosorbide stimulates cGMP synthesis.",
+    "clinical_risk": "Catastrophic systemic vasodilation and circulatory shock.",
+    "recommendation": "Contraindicated. Tadalafil has a 36-hour elimination half-life.",
+    "alternatives": [
+      "Beta-blockers (Metoprolol)",
+      "Calcium Channel Blockers"
+    ]
+  },
+  {
+    "pair": [
+      "warfarin",
+      "ciprofloxacin"
+    ],
+    "severity": "CONTRAINDICATED",
+    "mechanism": "CYP1A2/CYP3A4 inhibition and disruption of vitamin K synthesis by intestinal microflora.",
+    "clinical_risk": "Spike in INR (> 6.0) causing gastrointestinal or intracranial hemorrhage.",
+    "recommendation": "Avoid combination. If indispensable, preemptively reduce warfarin dose by 50%.",
+    "alternatives": [
+      "Cefuroxime Axetil",
+      "Amoxicillin-Clavulanate"
+    ]
+  },
+  {
+    "pair": [
+      "allopurinol",
+      "azathioprine"
+    ],
+    "severity": "CONTRAINDICATED",
+    "mechanism": "Xanthine oxidase inhibition halts metabolism of 6-mercaptopurine/azathioprine.",
+    "clinical_risk": "Severe life-threatening myelosuppression and fatal agranulocytosis.",
+    "recommendation": "Contraindicated unless azathioprine dose is reduced by 75% with weekly CBC monitoring.",
+    "alternatives": [
+      "Febuxostat with caution",
+      "Mycophenolate Mofetil"
+    ]
+  },
+  {
+    "pair": [
+      "tramadol",
+      "linezolid"
+    ],
+    "severity": "CONTRAINDICATED",
+    "mechanism": "Linezolid is a reversible, nonselective MAO inhibitor; Tramadol inhibits serotonin reuptake.",
+    "clinical_risk": "Severe Serotonin Syndrome: hyperthermia, clonus, autonomic instability, delirium.",
+    "recommendation": "Absolute contraindication. Avoid all serotonergic opioids with Linezolid.",
+    "alternatives": [
+      "Paracetamol IV",
+      "Vancomycin / Teicoplanin if MRSA targeted"
+    ]
+  },
+  {
+    "pair": [
+      "spironolactone",
+      "telmisartan"
+    ],
+    "severity": "MODERATE",
+    "mechanism": "Synergistic potassium retention by mineralocorticoid antagonism and ARB action.",
+    "clinical_risk": "Hyperkalemia (serum K+ > 5.5 mEq/L) leading to peaked T waves and arrhythmias.",
+    "recommendation": "Check serum potassium and creatinine within 7-14 days. Advise low-potassium diet.",
+    "alternatives": [
+      "Chlorthalidone",
+      "Torsemide"
+    ]
+  },
+  {
+    "pair": [
+      "aspirin",
+      "ibuprofen"
+    ],
+    "severity": "MODERATE",
+    "mechanism": "Ibuprofen reversibly blocks platelet COX-1 active site, impeding irreversible aspirin acetylation.",
+    "clinical_risk": "Loss of cardioprotective antiplatelet effect and increased gastric mucosal ulceration.",
+    "recommendation": "Take aspirin at least 30-60 minutes before ibuprofen, or 8 hours after.",
+    "alternatives": [
+      "Paracetamol",
+      "Topical NSAID gel"
+    ]
+  },
+  {
+    "pair": [
+      "metformin",
+      "contrast"
+    ],
+    "severity": "MODERATE",
+    "mechanism": "Contrast-induced acute kidney injury leads to metformin systemic accumulation.",
+    "clinical_risk": "Metformin-Associated Lactic Acidosis (MALA) with up to 50% mortality.",
+    "recommendation": "Withhold metformin 48h prior to contrast in eGFR < 60; resume only after renal recheck.",
+    "alternatives": [
+      "Short-acting regular insulin peri-procedure"
+    ]
+  },
+  {
+    "pair": [
+      "amlodipine",
+      "simvastatin"
+    ],
+    "severity": "MODERATE",
+    "mechanism": "Amlodipine inhibits CYP3A4, moderately increasing simvastatin systemic exposure.",
+    "clinical_risk": "Elevated risk of myalgia and CPK elevation.",
+    "recommendation": "Limit simvastatin dose to maximum 20mg daily when combined with amlodipine.",
+    "alternatives": [
+      "Atorvastatin 10-20mg",
+      "Rosuvastatin 5-10mg"
+    ]
+  },
+  {
+    "pair": [
+      "clopidogrel",
+      "omeprazole"
+    ],
+    "severity": "MODERATE",
+    "mechanism": "Omeprazole inhibits CYP2C19, the primary enzyme converting clopidogrel to active thiol metabolite.",
+    "clinical_risk": "Reduced platelet inhibition and heightened risk of recurrent stent thrombosis / ischemic stroke.",
+    "recommendation": "Use Pantoprazole or Rabeprazole instead of Omeprazole (minimal CYP2C19 affinity).",
+    "alternatives": [
+      "Pantoprazole 40mg (Pan 40)",
+      "Rabeprazole 20mg (Razo 20)"
+    ]
+  },
+  {
+    "pair": [
+      "ciprofloxacin",
+      "theophylline"
+    ],
+    "severity": "MODERATE",
+    "mechanism": "Ciprofloxacin inhibits CYP1A2, reducing hepatic clearance of theophylline by ~50%.",
+    "clinical_risk": "Theophylline toxicity: tachyarrhythmias, seizures, intractable nausea.",
+    "recommendation": "Reduce theophylline dose by 50% and monitor plasma concentrations.",
+    "alternatives": [
+      "Azithromycin",
+      "Doxycycline"
+    ]
+  },
+  {
+    "pair": [
+      "dapagliflozin",
+      "furosemide"
+    ],
+    "severity": "MODERATE",
+    "mechanism": "Additive osmotic and loop diuresis.",
+    "clinical_risk": "Volume depletion, orthostatic hypotension, and prerenal azotemia.",
+    "recommendation": "Monitor hydration and blood pressure; consider temporary loop diuretic dose reduction.",
+    "alternatives": [
+      "DPP-4 inhibitor (Teneligliptin/Linagliptin)"
+    ]
+  },
+  {
+    "pair": [
+      "digoxin",
+      "amiodarone"
+    ],
+    "severity": "MODERATE",
+    "mechanism": "P-glycoprotein and renal clearance inhibition raises digoxin levels by 70-100%.",
+    "clinical_risk": "Digoxin toxicity: bradycardia, AV block, xanthopsia (yellow halos), nausea.",
+    "recommendation": "Preemptively halve digoxin dose and monitor serum digoxin.",
+    "alternatives": [
+      "Beta-blocker (Bisoprolol / Carvedilol)"
+    ]
+  },
+  {
+    "pair": [
+      "antacid",
+      "iron"
+    ],
+    "severity": "MINOR",
+    "mechanism": "Antacids increase gastric pH, hindering reduction of ferric to absorbable ferrous ion.",
+    "clinical_risk": "Decreased iron absorption and delayed resolution of iron deficiency anemia.",
+    "recommendation": "Space administration: take iron at least 2 hours before or 4 hours after antacids.",
+    "alternatives": [
+      "Take iron with Vitamin C (Ascorbic acid) to facilitate uptake"
+    ]
+  },
+  {
+    "pair": [
+      "thyronorm",
+      "calcium"
+    ],
+    "severity": "MINOR",
+    "mechanism": "Calcium carbonate binds levothyroxine in the acidic milieu of the stomach.",
+    "clinical_risk": "Impaired levothyroxine bioavailability causing persistent subclinical hypothyroidism.",
+    "recommendation": "Separate intake by at least 4 hours. Take Thyronorm empty stomach 6:00 AM, Calcium 12:00 PM.",
+    "alternatives": [
+      "Strict 4-hour temporal separation"
+    ]
+  },
+  {
+    "pair": [
+      "pantoprazole",
+      "vitamin b12"
+    ],
+    "severity": "MINOR",
+    "mechanism": "Prolonged hypochlorhydria impairs cleavage of dietary cobalamin from food proteins.",
+    "clinical_risk": "Long-term Vitamin B12 deficiency and peripheral neuropathy.",
+    "recommendation": "Monitor serum B12 annually on chronic PPI therapy > 1 year.",
+    "alternatives": [
+      "Oral Methylcobalamin 1500mcg supplementation"
+    ]
+  }
+]

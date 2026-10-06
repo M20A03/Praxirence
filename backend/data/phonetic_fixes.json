@@ -1,0 +1,50 @@
+[
+  {
+    "pattern": "\\b(?:dolo|dollo|dolu)\\s*(?:six\\s*fifty|650)\\b",
+    "replacement": "Dolo 650mg"
+  },
+  {
+    "pattern": "\\b(?:augmentin|ogmentin|augmantin)\\s*(?:six\\s*twenty\\s*five|625)\\b",
+    "replacement": "Augmentin 625mg"
+  },
+  {
+    "pattern": "\\b(?:telma|talma)\\s*(?:am|a\\s*m)\\b",
+    "replacement": "Telma-AM"
+  },
+  {
+    "pattern": "\\b(?:telma|talma)\\s*(?:forty|40)\\b",
+    "replacement": "Telma 40mg"
+  },
+  {
+    "pattern": "\\b(?:montair|montek)\\s*(?:lc|l\\s*c)\\b",
+    "replacement": "Montair-LC"
+  },
+  {
+    "pattern": "\\b(?:pan|pantocid)\\s*(?:d|dsr|d\\s*s\\s*r)\\b",
+    "replacement": "Pan-D"
+  },
+  {
+    "pattern": "\\b(?:ecosprin|ecospirin)\\s*(?:av|a\\s*v)\\b",
+    "replacement": "Ecosprin-AV"
+  },
+  {
+    "pattern": "\\b(?:glycomet|glicomet)\\s*(?:gp|g\\s*p)\\b",
+    "replacement": "Glycomet-GP"
+  },
+  {
+    "pattern": "\\b(?:azithral|azee)\\s*(?:five\\s*hundred|500)\\b",
+    "replacement": "Azithral 500mg"
+  },
+  {
+    "pattern": "\\b(?:shelcal|shelkal)\\s*(?:five\\s*hundred|500)\\b",
+    "replacement": "Shelcal 500mg"
+  },
+  {
+    "pattern": "\\b(?:zerodol|zerodoll)\\s*(?:sp|s\\s*p)\\b",
+    "replacement": "Zerodol-SP"
+  },
+  {
+    "pattern": "\\b(?:uprise|aprise)\\s*(?:d3|d\\s*three)\\s*(?:60k|60\\s*thousand|sixty\\s*thousand)\\b",
+    "replacement": "Uprise-D3 60,000 IU"
+  }
+]

@@ -1,0 +1,21 @@
+{
+  "od": "Once daily (1-0-0 or 0-0-1)",
+  "bd": "Twice daily (1-0-1)",
+  "bid": "Twice daily (1-0-1)",
+  "tds": "Thrice daily (1-1-1)",
+  "tid": "Thrice daily (1-1-1)",
+  "qid": "Four times daily (1-1-1-1)",
+  "sos": "As needed for acute symptoms",
+  "hs": "At bedtime / night (0-0-1)",
+  "ac": "Before food / meals (empty stomach)",
+  "pc": "After food / meals",
+  "stat": "Immediately as a single loading dose",
+  "qod": "Every alternate day",
+  "weekly": "Once a week (e.g. Cholecalciferol 60K)",
+  "1-0-0": "Once daily in morning after breakfast",
+  "0-1-0": "Once daily in afternoon after lunch",
+  "0-0-1": "Once daily at night after dinner",
+  "1-0-1": "Twice daily (morning and night)",
+  "1-1-1": "Thrice daily (morning, afternoon, night)",
+  "1-1-0": "Twice daily (morning and afternoon)"
+}

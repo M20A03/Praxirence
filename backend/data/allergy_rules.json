@@ -1,0 +1,68 @@
+[
+  {
+    "allergen_keyword": "penicillin",
+    "target_drugs": [
+      "amoxicillin",
+      "augmentin",
+      "clavam",
+      "ampicillin",
+      "piperacillin"
+    ],
+    "severity": "CONTRAINDICATED",
+    "rationale": "Direct cross-allergenicity to beta-lactam core structure. High risk of anaphylaxis.",
+    "action": "Avoid all penicillins. Substitute with Macrolides (Azithromycin) or Fluoroquinolones."
+  },
+  {
+    "allergen_keyword": "penicillin",
+    "target_drugs": [
+      "cefixime",
+      "ceftriaxone",
+      "taxim",
+      "zifi",
+      "monocef",
+      "cephalexin"
+    ],
+    "severity": "MODERATE",
+    "rationale": "~2-5% cross-reactivity with 1st/2nd gen cephalosporins due to common beta-lactam ring.",
+    "action": "Caution. 3rd-generation cephalosporins (Cefixime, Ceftriaxone) carry low risk unless prior anaphylaxis was severe."
+  },
+  {
+    "allergen_keyword": "sulfa",
+    "target_drugs": [
+      "glimepiride",
+      "amaryl",
+      "gliclazide",
+      "glycomet-gp"
+    ],
+    "severity": "MODERATE",
+    "rationale": "Sulfonylureas possess an arylsulfonylurea structure related to sulfonamides.",
+    "action": "Monitor closely for skin rash or urticaria; consider DPP-4 inhibitors (Sitagliptin) instead."
+  },
+  {
+    "allergen_keyword": "sulfa",
+    "target_drugs": [
+      "furosemide",
+      "lasix",
+      "torsemide",
+      "dytor"
+    ],
+    "severity": "MINOR",
+    "rationale": "Sulfonamide diuretic moiety has very low cross-reactivity with antimicrobial sulfas.",
+    "action": "Use with clinical awareness; true cross-reactivity is rare."
+  },
+  {
+    "allergen_keyword": "aspirin",
+    "target_drugs": [
+      "ibuprofen",
+      "combiflam",
+      "diclofenac",
+      "voveran",
+      "aceclofenac",
+      "zerodol",
+      "naproxen"
+    ],
+    "severity": "CONTRAINDICATED",
+    "rationale": "Aspirin-Exacerbated Respiratory Disease (AERD) / Samter's triad and severe bronchospasm from COX-1 inhibition.",
+    "action": "Avoid all non-selective NSAIDs. Use Paracetamol (up to 1000mg) or selective COX-2 inhibitor under observation."
+  }
+]

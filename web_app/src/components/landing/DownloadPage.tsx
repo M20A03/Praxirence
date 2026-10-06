@@ -5,13 +5,13 @@ export const DownloadPage: React.FC = () => {
   const [downloadStarted, setDownloadStarted] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
 
-  const patientApkUrl = '/downloads/Praxirence-Patient-v2.1-Production.apk';
+  const patientApkUrl = '/downloads/Praxirence-Patient.apk';
 
   const triggerDownload = () => {
     setDownloadStarted(true);
     const link = document.createElement('a');
     link.href = patientApkUrl;
-    link.setAttribute('download', 'Praxirence-Patient-v2.1-Production.apk');
+    link.setAttribute('download', 'Praxirence-Patient.apk');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -124,7 +124,7 @@ export const DownloadPage: React.FC = () => {
               download
               className="text-teal-400 hover:underline flex items-center gap-1 font-mono text-[11px]"
             >
-              Praxirence-Patient-v2.1-Production.apk
+              Praxirence-Patient.apk
             </a>
           </div>
         </div>

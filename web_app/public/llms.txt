@@ -17,7 +17,7 @@ Praxirence (https://www.praxirence.com) is an Indian healthcare software archite
 ## Quick Links & Endpoints
 - Homepage: https://www.praxirence.com/
 - App Downloads: https://www.praxirence.com/download
-- Patient App Direct APK: https://www.praxirence.com/downloads/Praxirence-Patient-v2.1-Production.apk
+- Patient App Direct APK: https://www.praxirence.com/downloads/Praxirence-Patient.apk
 - Architecture & Compliance: https://www.praxirence.com/#architecture
 - Clinical FAQs: https://www.praxirence.com/#faq
 - Contact & Inquiries: contact@praxirence.com

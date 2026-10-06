@@ -45,6 +45,7 @@ class DoctorEmailOTPRequest(BaseModel):
 class DoctorEmailOTPVerifyRequest(BaseModel):
     email: EmailStr
     code: str
+    name: Optional[str] = None
 
 
 
@@ -73,6 +74,7 @@ class PatientEmailOTPRequest(BaseModel):
 class PatientEmailOTPVerifyRequest(BaseModel):
     email: EmailStr
     code: str
+    name: Optional[str] = None
 
 
 

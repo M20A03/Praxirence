@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   AppState,
+  TextInput,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -51,13 +52,18 @@ function PatientAppContent() {
   const [showConsentModal, setShowConsentModal] = useState<boolean>(false);
   const [isBiometricLocked, setIsBiometricLocked] = useState<boolean>(false);
   const [authenticatingBiometric, setAuthenticatingBiometric] = useState<boolean>(false);
+  const [pinUnlockInput, setPinUnlockInput] = useState<string>('');
+  const [pinUnlockError, setPinUnlockError] = useState<string>('');
+  const [storedPin, setStoredPin] = useState<string | null>(null);
   const appState = React.useRef(AppState.currentState);
 
   const checkAndPromptBiometric = async () => {
     try {
       const p1 = await AsyncStorage.getItem('@praxirence_patient_biometrics');
       const p2 = await AsyncStorage.getItem('praxirence_biometric_enabled');
-      if (p1 === 'true' || p2 === 'true') {
+      const pin = await AsyncStorage.getItem('@praxirence_app_pin');
+      setStoredPin(pin);
+      if (p1 === 'true' || p2 === 'true' || !!pin) {
         setIsBiometricLocked(true);
       } else {
         setIsBiometricLocked(false);
@@ -243,10 +249,47 @@ function PatientAppContent() {
               ) : (
                 <>
                   <Ionicons name="scan-outline" size={20} color="#FFFFFF" />
-                  <Text style={styles.unlockBtnText}>Unlock Health Vault</Text>
+                  <Text style={styles.unlockBtnText}>Unlock with Fingerprint / Face ID</Text>
                 </>
               )}
             </TouchableOpacity>
+
+            {/* 4-Digit Security PIN Option */}
+            <View style={styles.pinLockBox}>
+              <Text style={styles.pinLockHeading}>Or Enter 4-Digit Security PIN</Text>
+              <TextInput
+                style={styles.pinLockInput}
+                value={pinUnlockInput}
+                onChangeText={(val) => {
+                  const clean = val.replace(/[^0-9]/g, '').slice(0, 4);
+                  setPinUnlockInput(clean);
+                  setPinUnlockError('');
+                  if (clean.length === 4) {
+                    setTimeout(() => {
+                      AsyncStorage.getItem('@praxirence_app_pin').then((p) => {
+                        if (!p || clean === p) {
+                          setIsBiometricLocked(false);
+                          setPinUnlockInput('');
+                          setPinUnlockError('');
+                        } else {
+                          setPinUnlockError('Incorrect PIN. Please try again.');
+                          setPinUnlockInput('');
+                        }
+                      });
+                    }, 50);
+                  }
+                }}
+                keyboardType="number-pad"
+                maxLength={4}
+                secureTextEntry={true}
+                placeholder="••••"
+                placeholderTextColor="rgba(167, 243, 208, 0.6)"
+              />
+              {pinUnlockError ? (
+                <Text style={styles.pinLockError}>{pinUnlockError}</Text>
+              ) : null}
+            </View>
+
             <TouchableOpacity style={styles.lockSignOutBtn} onPress={handleLogout} activeOpacity={0.7}>
               <Ionicons name="log-out-outline" size={16} color="#94A3B8" />
               <Text style={styles.lockSignOutText}>Sign Out</Text>
@@ -302,6 +345,7 @@ function PatientTabsNavigator({
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
+        tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: '#059669',
         tabBarInactiveTintColor: '#64748B',
         tabBarStyle: styles.tabBar,
@@ -498,6 +542,40 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.bold,
     fontSize: FontSize.md,
     color: '#FFFFFF',
+  },
+  pinLockBox: {
+    width: '100%',
+    marginTop: 20,
+    alignItems: 'center',
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(52, 211, 153, 0.25)',
+  },
+  pinLockHeading: {
+    fontFamily: FontFamily.medium,
+    fontSize: 13,
+    color: '#A7F3D0',
+    marginBottom: 8,
+  },
+  pinLockInput: {
+    width: 160,
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    borderWidth: 1.5,
+    borderColor: '#34D399',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    textAlign: 'center',
+    fontSize: 24,
+    letterSpacing: 10,
+    fontFamily: FontFamily.bold,
+    color: '#FFFFFF',
+  },
+  pinLockError: {
+    color: '#F87171',
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    marginTop: 6,
   },
   lockSignOutBtn: {
     flexDirection: 'row',

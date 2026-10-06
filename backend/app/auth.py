@@ -567,7 +567,7 @@ def request_doctor_email_otp(req: DoctorEmailOTPRequest, background_tasks: Backg
         )
 
     code = generate_email_otp()
-    store_email_otp(clean_email, code, ttl_minutes=10)
+    store_email_otp(clean_email, code, name=req.name, ttl_minutes=10)
 
     # Dispatch email asynchronously in background to ensure instant HTTP response (<50ms)
     background_tasks.add_task(
@@ -592,6 +592,8 @@ def verify_doctor_email_otp(req: DoctorEmailOTPVerifyRequest, db: Session = Depe
     clean_email = req.email.lower().strip()
     clean_code = req.code.strip()
 
+    stored_name = get_stored_email_otp_name(clean_email)
+
     valid = verify_email_otp(clean_email, clean_code)
     if not valid:
         raise HTTPException(
@@ -599,17 +601,28 @@ def verify_doctor_email_otp(req: DoctorEmailOTPVerifyRequest, db: Session = Depe
             detail="Invalid or expired verification code. Please request a new code."
         )
 
+    # Determine doctor display name from user input (req.name or OTP request name)
+    provided_name = (req.name.strip() if getattr(req, "name", None) and req.name.strip() else None) or (stored_name.strip() if stored_name and stored_name.strip() else None)
+    if provided_name:
+        effective_name = provided_name if provided_name.startswith("Dr.") else f"Dr. {provided_name}"
+    else:
+        effective_name = None
+
     # Find or provision doctor record
     doctor = None
     try:
         doctor = db.query(User).filter(User.email == clean_email).first()
         if not doctor:
-            # Deriving clean name from email if new
-            username = clean_email.split("@")[0].replace(".", " ").title()
+            # Use provided name if available, otherwise fallback to clean email username
+            if effective_name:
+                doc_name = effective_name
+            else:
+                username = clean_email.split("@")[0].replace(".", " ").title()
+                doc_name = f"Dr. {username}"
             doctor = User(
                 email=clean_email,
                 hashed_password=get_password_hash(f"EmailOTPVerified_{clean_email}"),
-                name=f"Dr. {username}",
+                name=doc_name,
                 specialty=None,
                 clinic_name=None,
                 reg_number=None,
@@ -621,6 +634,14 @@ def verify_doctor_email_otp(req: DoctorEmailOTPVerifyRequest, db: Session = Depe
             db.add(doctor)
             db.commit()
             db.refresh(doctor)
+        elif doctor and effective_name:
+            # If doctor already exists in DB but was auto-assigned the email prefix as name, update to entered name
+            email_user = clean_email.split("@")[0].replace(".", " ").lower()
+            current_clean = (doctor.name or "").replace("Dr.", "").strip().lower()
+            if not doctor.name or current_clean == email_user:
+                doctor.name = effective_name
+                db.commit()
+                db.refresh(doctor)
     except Exception as e:
         logger.warning(f"Doctor lookup/creation notice: {e}")
         try:
@@ -1074,7 +1095,7 @@ def verify_patient_email_otp(req: PatientEmailOTPVerifyRequest, db: Session = De
     # Find or provision patient record
     email_hash = compute_phone_hash(clean_email)
     derived_name = clean_email.split("@")[0].replace(".", " ").title()
-    effective_name = stored_name or derived_name
+    effective_name = (req.name.strip() if getattr(req, "name", None) and req.name.strip() else None) or stored_name or derived_name
     patient = None
     try:
         if hasattr(Patient, "email"):

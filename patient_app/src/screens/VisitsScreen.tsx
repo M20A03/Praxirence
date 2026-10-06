@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Modal,
   BackHandler,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
@@ -287,6 +288,21 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
     }
   };
 
+  const handleDownloadPdf = async (visit: Visit) => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const url = mobileApi.getPrescriptionPdfUrl(visit.id);
+      const supported = await Linking.canOpenURL(url).catch(() => true);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Prescription Link', `Prescription URL: ${url}`);
+      }
+    } catch (err: any) {
+      Alert.alert('Notice', 'Unable to download prescription PDF: ' + (err?.message || 'Network error'));
+    }
+  };
+
   const handleShareSummary = async (visit: Visit) => {
     const summaryText =
       visit.patient_summary ||
@@ -500,14 +516,24 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
                     <Ionicons name="chatbubble-ellipses" size={17} color={Colors.primaryDark} />
                     <Text style={styles.explanationTitle}>What Your Doctor Explained</Text>
                   </View>
-                  <TouchableOpacity
-                    style={styles.shareButton}
-                    onPress={() => handleShareSummary(visit)}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="share-social-outline" size={15} color={Colors.primaryDark} />
-                    <Text style={styles.shareButtonText}>Share</Text>
-                  </TouchableOpacity>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <TouchableOpacity
+                      style={styles.pdfBadgeButton}
+                      onPress={() => handleDownloadPdf(visit)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="document-text" size={14} color="#FFFFFF" />
+                      <Text style={styles.pdfBadgeButtonText}>PDF</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.shareButton}
+                      onPress={() => handleShareSummary(visit)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="share-social-outline" size={15} color={Colors.primaryDark} />
+                      <Text style={styles.shareButtonText}>Share</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 <Text style={styles.explanationBody}>{summaryText}</Text>
@@ -692,6 +718,22 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
                   ))}
                 </View>
               )}
+
+              {/* Official Tamper-Evident Prescription PDF Download Button */}
+              <TouchableOpacity
+                style={styles.downloadPdfBannerBtn}
+                onPress={() => handleDownloadPdf(visit)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.downloadPdfIconCircle}>
+                  <Ionicons name="document-text" size={18} color="#0D9488" />
+                </View>
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={styles.downloadPdfTitle}>Download Prescription (PDF)</Text>
+                  <Text style={styles.downloadPdfSubtitle}>ABDM Certified • Tamper-Evident Digital Seal</Text>
+                </View>
+                <Ionicons name="download-outline" size={18} color="#FFFFFF" />
+              </TouchableOpacity>
 
               {/* Scheduled Appointment Cancellation Action */}
               {['scheduled', 'draft', 'booked', 'waiting'].includes(visit.status) && (
@@ -1056,6 +1098,53 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.bold,
     fontSize: FontSize.sm,
     color: Colors.text,
+  },
+  pdfBadgeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#0D9488',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  pdfBadgeButtonText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 11,
+    color: '#FFFFFF',
+  },
+  downloadPdfBannerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0D9488',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginTop: 14,
+    shadowColor: '#0D9488',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  downloadPdfIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  downloadPdfTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: 13,
+    color: '#FFFFFF',
+  },
+  downloadPdfSubtitle: {
+    fontFamily: FontFamily.regular,
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.85)',
+    marginTop: 1,
   },
   shareButton: {
     flexDirection: 'row',

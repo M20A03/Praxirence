@@ -10,6 +10,7 @@ import {
   Modal,
   ActivityIndicator,
   Alert,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../../theme';
@@ -63,6 +64,20 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
       loadPatients();
     } else if (text.trim().length >= 2) {
       loadPatients(text.trim());
+    }
+  };
+
+  const handleDownloadPdf = async (visit: Visit) => {
+    try {
+      const url = mobileApi.getPrescriptionPdfUrl(visit.id);
+      const supported = await Linking.canOpenURL(url).catch(() => true);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Prescription Link', `Prescription URL: ${url}`);
+      }
+    } catch (err: any) {
+      Alert.alert('Notice', 'Unable to download prescription PDF: ' + (err?.message || 'Network error'));
     }
   };
 
@@ -390,6 +405,17 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
                         <Text style={styles.adviceContent}>{visit.doctor_advice}</Text>
                       </View>
                     ) : null}
+
+                    {/* Official Prescription PDF Action Button */}
+                    <TouchableOpacity
+                      style={styles.downloadPdfBtn}
+                      onPress={() => handleDownloadPdf(visit)}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="document-text" size={16} color="#FFFFFF" />
+                      <Text style={styles.downloadPdfBtnText}>Download Prescription (PDF)</Text>
+                      <Ionicons name="download-outline" size={16} color="#FFFFFF" style={{ marginLeft: 'auto' }} />
+                    </TouchableOpacity>
                   </View>
                 ))}
               </ScrollView>
@@ -914,6 +940,21 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     color: Colors.textPrimary,
     lineHeight: 18,
+  },
+  downloadPdfBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0284C7',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginTop: 12,
+    gap: 8,
+  },
+  downloadPdfBtnText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 12,
+    color: '#FFFFFF',
   },
   newConsultFromHistoryBtn: {
     flexDirection: 'row',

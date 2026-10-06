@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Modal } from 'react-native';
 import {
   View,
   Text,
@@ -38,10 +40,9 @@ export default function DoctorCopilotScreen({
   // Integrated Multi-Drug Safety Tray
   const [showMedTray, setShowMedTray] = useState(false);
   const [medInput, setMedInput] = useState('');
-  const [medList, setMedList] = useState<string[]>([
-    'Clarithromycin 500mg',
-    'Atorvastatin 40mg',
-  ]);
+  const [medList, setMedList] = useState<string[]>([]);
+  const [copilotHistory, setCopilotHistory] = useState<Array<{ id: string; query: string; reply: string; timestamp: string }>>([]);
+  const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
   const [renalStatus, setRenalStatus] = useState<string>('Normal');
 
   // Active Patient Grounding
@@ -51,7 +52,46 @@ export default function DoctorCopilotScreen({
 
   useEffect(() => {
     loadPatients();
+    loadCopilotHistory();
   }, []);
+
+  const loadCopilotHistory = async () => {
+    try {
+      const data = await AsyncStorage.getItem('@praxirence_doctor_copilot_history');
+      if (data) setCopilotHistory(JSON.parse(data));
+    } catch (_) {}
+  };
+
+  const saveCopilotHistory = async (q: string, rep: string) => {
+    try {
+      const dateStr = new Date().toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      });
+      const newItem = {
+        id: `hist_${Date.now()}`,
+        query: q,
+        reply: rep,
+        timestamp: dateStr,
+      };
+      setCopilotHistory((prev) => {
+        const updated = [newItem, ...prev.slice(0, 49)];
+        AsyncStorage.setItem('@praxirence_doctor_copilot_history', JSON.stringify(updated)).catch(() => {});
+        return updated;
+      });
+    } catch (_) {}
+  };
+
+  const handleClearCopilotHistory = async () => {
+    try {
+      await AsyncStorage.removeItem('@praxirence_doctor_copilot_history');
+      setCopilotHistory([]);
+    } catch (_) {}
+  };
 
   const loadPatients = async () => {
     try {
@@ -113,6 +153,7 @@ export default function DoctorCopilotScreen({
 
       if (res.reply) {
         setCopilotReply(res.reply);
+        saveCopilotHistory(finalQuery, res.reply);
         if (res.ddi_alert && !ddiAlert) {
           setDdiAlert(res.ddi_alert);
         }
@@ -212,9 +253,19 @@ ${copilotReply}`,
               CDSS • DDI Safety Shield • Indian Formulary
             </Text>
           </View>
-          <View style={styles.badgeBox}>
-            <View style={styles.badgeDot} />
-            <Text style={styles.badgeText}>Active</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <TouchableOpacity
+              style={styles.copilotHistoryBtn}
+              onPress={() => setShowHistoryModal(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="time-outline" size={14} color="#0284C7" />
+              <Text style={styles.copilotHistoryBtnText}>History</Text>
+            </TouchableOpacity>
+            <View style={styles.badgeBox}>
+              <View style={styles.badgeDot} />
+              <Text style={styles.badgeText}>Active</Text>
+            </View>
           </View>
         </View>
 
@@ -530,6 +581,73 @@ ${copilotReply}`,
           </View>
         )}
       </ScrollView>
+      {/* Doctor Copilot Clinical Query History Modal */}
+      <Modal
+        visible={showHistoryModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowHistoryModal(false)}
+      >
+        <View style={styles.historyModalOverlay}>
+          <View style={styles.historyModalCard}>
+            <View style={styles.historyModalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="time" size={20} color="#0284C7" />
+                <Text style={styles.historyModalTitle}>Clinical Query History</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowHistoryModal(false)} style={{ padding: 4 }}>
+                <Ionicons name="close-circle" size={22} color="#94A3B8" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={true}>
+              {copilotHistory.length === 0 ? (
+                <View style={styles.emptyHistoryBox}>
+                  <Ionicons name="medical-outline" size={38} color="#CBD5E1" style={{ marginBottom: 8 }} />
+                  <Text style={styles.emptyHistoryText}>No past clinical cases searched yet.</Text>
+                  <Text style={styles.emptyHistorySub}>Searched cases and drug interaction screens will appear here with date and time.</Text>
+                </View>
+              ) : (
+                copilotHistory.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.historyItemCard}
+                    onPress={() => {
+                      setShowHistoryModal(false);
+                      setQuery(item.query);
+                      setCopilotReply(item.reply);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.historyItemTimeRow}>
+                      <Ionicons name="calendar-outline" size={12} color="#0284C7" style={{ marginRight: 4 }} />
+                      <Text style={styles.historyItemTimestamp}>{item.timestamp}</Text>
+                      <View style={styles.reAskPill}>
+                        <Text style={styles.reAskPillText}>Inspect Case</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.historyItemQuery}>{item.query}</Text>
+                    {item.reply ? (
+                      <Text style={styles.historyItemReply} numberOfLines={2}>
+                        {item.reply}
+                      </Text>
+                    ) : null}
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+
+            {copilotHistory.length > 0 && (
+              <View style={styles.historyModalFooter}>
+                <TouchableOpacity style={styles.clearHistoryBtn} onPress={handleClearCopilotHistory}>
+                  <Ionicons name="trash-outline" size={14} color="#DC2626" style={{ marginRight: 4 }} />
+                  <Text style={styles.clearHistoryBtnText}>Clear History</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -1002,5 +1120,132 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#94A3B8',
     textAlign: 'center',
+  },
+
+  copilotHistoryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(2, 132, 199, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(2, 132, 199, 0.25)',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 14,
+    gap: 4,
+  },
+  copilotHistoryBtnText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 11,
+    color: '#0284C7',
+  },
+  historyModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  historyModalCard: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  historyModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    marginBottom: 10,
+  },
+  historyModalTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: 16,
+    color: Colors.text,
+  },
+  historyItemCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  historyItemTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  historyItemTimestamp: {
+    fontFamily: FontFamily.medium,
+    fontSize: 11,
+    color: '#0284C7',
+    flex: 1,
+  },
+  reAskPill: {
+    backgroundColor: 'rgba(2, 132, 199, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  reAskPillText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 10,
+    color: '#0284C7',
+  },
+  historyItemQuery: {
+    fontFamily: FontFamily.bold,
+    fontSize: 13,
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  historyItemReply: {
+    fontFamily: FontFamily.regular,
+    fontSize: 11.5,
+    color: Colors.textSecondary,
+    lineHeight: 16,
+  },
+  emptyHistoryBox: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 16,
+  },
+  emptyHistoryText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 14,
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  emptyHistorySub: {
+    fontFamily: FontFamily.regular,
+    fontSize: 12,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  historyModalFooter: {
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    alignItems: 'flex-end',
+  },
+  clearHistoryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  clearHistoryBtnText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 12,
+    color: '#DC2626',
   },
 });

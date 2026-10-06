@@ -11,6 +11,10 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional, Tuple, Dict, Any
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from fastapi.responses import FileResponse
+import os
+import tempfile
+from app.services.pdf_prescription_service import PDFPrescriptionService
 from sqlalchemy.orm import Session
 from sqlalchemy import case, func
 from app.services.realtime_service import realtime_manager
@@ -1400,6 +1404,81 @@ def recall_patient(
         "token": token_disp,
         "message": f"Patient with token {token_disp} recalled to active queue."
     }
+
+
+@router.get("/{visit_id}/prescription/pdf")
+@router.get("/{visit_id}/pdf")
+def get_visit_prescription_pdf(
+    visit_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Generates and downloads the official ABDM tamper-evident clinical prescription PDF
+    using ReportLab and cryptographic verification QR seal.
+    """
+    visit = db.query(Visit).filter(Visit.id == visit_id).first()
+    if not visit:
+        raise HTTPException(status_code=404, detail="Visit not found")
+
+    patient = visit.patient
+    doctor = visit.doctor
+
+    patient_name = patient.name if patient else "Patient"
+    patient_age = getattr(patient, "age", 30) or 30
+    patient_gender = getattr(patient, "gender", "Not Specified") or "Not Specified"
+
+    raw_doc_name = doctor.name if doctor else "Attending Clinician"
+    clean_doc = raw_doc_name.replace("Dr. ", "").replace("Dr.", "").strip()
+    doctor_name = f"Dr. {clean_doc}"
+
+    diagnosis = visit.diagnosis or visit.chief_complaint or "General Clinical Consultation"
+
+    raw_medicines = visit.medicines or []
+    medicines = []
+    for m in raw_medicines:
+        if isinstance(m, dict):
+            dur = m.get("duration_days")
+            dur_str = f"{dur} days" if dur else m.get("duration", "5 days")
+            medicines.append({
+                "name": m.get("name", "Medication"),
+                "dosage": m.get("dosage", "As advised"),
+                "frequency": m.get("frequency", "OD"),
+                "duration": dur_str,
+                "instructions": m.get("instructions", "After food")
+            })
+
+    # Prepare temp output directory
+    pdf_dir = os.path.join(tempfile.gettempdir(), "praxirence_prescriptions")
+    os.makedirs(pdf_dir, exist_ok=True)
+    pdf_filename = f"Prescription_{visit_id[:8]}.pdf"
+    pdf_path = os.path.join(pdf_dir, pdf_filename)
+
+    try:
+        PDFPrescriptionService.generate_prescription_pdf(
+            patient_name=patient_name,
+            patient_age=patient_age,
+            patient_gender=patient_gender,
+            doctor_name=doctor_name,
+            diagnosis=diagnosis,
+            medicines=medicines,
+            output_path=pdf_path
+        )
+    except Exception as e:
+        logging.error(f"Failed to generate prescription PDF: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+
+    clean_patient_slug = "".join(c for c in patient_name if c.isalnum() or c == "_") or "Patient"
+    download_filename = f"Prescription_{clean_patient_slug}_{visit_id[:8]}.pdf"
+
+    return FileResponse(
+        pdf_path,
+        media_type="application/pdf",
+        filename=download_filename,
+        headers={
+            "Content-Disposition": f'attachment; filename="{download_filename}"',
+            "Access-Control-Expose-Headers": "Content-Disposition"
+        }
+    )
 
 
 @router.get("/{visit_id}/verify")

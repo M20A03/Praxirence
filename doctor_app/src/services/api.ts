@@ -252,16 +252,18 @@ export const mobileApi = {
     return await res.json();
   },
 
-  async verifyDoctorEmailOtp(email: string, code: string): Promise<{ access_token: string; role: 'doctor'; user: DoctorUser }> {
+  async verifyDoctorEmailOtp(email: string, code: string, name?: string): Promise<{ access_token: string; role: 'doctor'; user: DoctorUser }> {
     const cleanEmail = email.toLowerCase().trim();
     const cleanCode = code.trim();
     if (!cleanCode) {
       throw new Error('Please enter the 6-digit verification code.');
     }
+    const payload: any = { email: cleanEmail, code: cleanCode };
+    if (name && name.trim()) payload.name = name.trim();
     const res = await resilientFetch(`${getEffectiveApiUrl()}/auth/doctor/email-otp/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: cleanEmail, code: cleanCode }),
+      body: JSON.stringify(payload),
     }, 0);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -1084,6 +1086,10 @@ export const mobileApi = {
   },
 
   // ==================== PATIENT CLINICAL OPERATIONS ====================
+
+  getPrescriptionPdfUrl(visitId: string): string {
+    return `${getEffectiveApiUrl()}/visits/${visitId}/prescription/pdf`;
+  },
 
   async getVisits(patientId: string): Promise<Visit[]> {
     const cacheKey = `praxirence_cache_visits_${patientId}`;

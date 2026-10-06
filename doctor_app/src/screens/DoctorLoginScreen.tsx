@@ -89,7 +89,13 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
       setPendingDoctor(user);
       const clean10 = rawDigits.length === 10 ? rawDigits : (rawDigits.length === 12 && rawDigits.startsWith('91') ? rawDigits.slice(2) : '');
       setOnboardPhone(clean10);
-      setOnboardDoctorName(user.name || (doctorName ? (doctorName.startsWith('Dr.') ? doctorName : `Dr. ${doctorName}`) : ''));
+      const enteredName = doctorName.trim();
+      const formattedEntered = enteredName ? (enteredName.startsWith('Dr.') ? enteredName : `Dr. ${enteredName}`) : '';
+      const emailUserPart = (user.email || email || '').split('@')[0].replace(/\./g, ' ').toLowerCase();
+      const userClean = (user.name || '').replace(/^(Dr\.?\s*)/i, '').trim().toLowerCase();
+      const isAutoFromEmail = userClean === emailUserPart;
+      const resolvedName = formattedEntered || (!isAutoFromEmail && user.name ? user.name : '') || '';
+      setOnboardDoctorName(resolvedName);
       setOnboardSpecialty(user.specialty || '');
       setOnboardClinic(user.clinic_name || '');
       setOnboardRegNo(user.reg_number || '');
@@ -179,7 +185,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
     setError(null);
     setLoading(true);
     try {
-      const res = await mobileApi.verifyDoctorEmailOtp(email.trim(), emailOtpCode.trim());
+      const res = await mobileApi.verifyDoctorEmailOtp(email.trim(), emailOtpCode.trim(), doctorName.trim());
       await handleAuthSuccess(res.user);
     } catch (err: any) {
       const msg = err?.message || '';
@@ -232,7 +238,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
           )}
 
           <View>
-            <Text style={styles.label}>Physician Name (Optional)</Text>
+            <Text style={styles.label}>Physician Full Name</Text>
             <View style={styles.inputContainer}>
               <Ionicons name="person" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
               <TextInput
@@ -360,7 +366,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
               </View>
 
               <Text style={styles.modalSubtitle}>
-                A valid Indian mobile number (+91) is compulsory for clinical security and verification. Other details are optional and can be filled now or updated anytime in Settings.
+                A valid Indian mobile number (+91) is compulsory for clinical security and verification. You can fill your profile details now or update anytime in Settings.
               </Text>
 
               {/* Compulsory Indian Mobile Number */}
@@ -387,7 +393,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
               </View>
 
               {/* Optional Clinician Name */}
-              <Text style={styles.label}>Clinician Full Name (Optional)</Text>
+              <Text style={styles.label}>Clinician Full Name</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="person-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                 <TextInput
@@ -400,7 +406,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
               </View>
 
               {/* Optional Registration Number */}
-              <Text style={styles.label}>Medical Registration Number (Optional)</Text>
+              <Text style={styles.label}>Medical Registration Number</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="id-card-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                 <TextInput
@@ -413,7 +419,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
               </View>
 
               {/* Optional Clinic / Hospital Name */}
-              <Text style={styles.label}>Clinic / Hospital Name (Optional)</Text>
+              <Text style={styles.label}>Clinic / Hospital Name</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="business-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                 <TextInput
@@ -426,7 +432,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
               </View>
 
               {/* Optional Specialty */}
-              <Text style={styles.label}>Specialty & Qualifications (Optional)</Text>
+              <Text style={styles.label}>Specialty & Qualifications</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="fitness-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                 <TextInput

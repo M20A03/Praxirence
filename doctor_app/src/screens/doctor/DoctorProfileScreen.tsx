@@ -66,11 +66,6 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
   const [isLive, setIsLive] = useState<boolean>(true);
   const [checking, setChecking] = useState<boolean>(false);
   const [biometricEnabled, setBiometricEnabled] = useState<boolean>(false);
-  const [hasPin, setHasPin] = useState<boolean>(false);
-  const [showPinModal, setShowPinModal] = useState<boolean>(false);
-  const [pinInput, setPinInput] = useState<string>('');
-  const [confirmPinInput, setConfirmPinInput] = useState<string>('');
-  const [pinError, setPinError] = useState<string>('');
   const [availableDays, setAvailableDays] = useState<string[]>(
     doctor.available_days || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   );
@@ -115,56 +110,8 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
   useEffect(() => {
     checkHealth();
     loadBiometricSetting();
-    loadPinStatus();
   }, []);
 
-  const loadPinStatus = async () => {
-    try {
-      const p = await AsyncStorage.getItem('@praxirence_app_pin');
-      setHasPin(!!p);
-    } catch (_) {}
-  };
-
-  const handleSavePin = async () => {
-    if (pinInput.length !== 4 || !/^\d{4}$/.test(pinInput)) {
-      setPinError('PIN must be exactly 4 digits (0-9).');
-      return;
-    }
-    if (pinInput !== confirmPinInput) {
-      setPinError('PINs do not match. Please re-enter.');
-      return;
-    }
-    try {
-      await AsyncStorage.setItem('@praxirence_app_pin', pinInput);
-      setHasPin(true);
-      setShowPinModal(false);
-      setPinInput('');
-      setConfirmPinInput('');
-      setPinError('');
-      Alert.alert('Security PIN Set', 'Your 4-digit PIN is active. It can be used to unlock the workspace if biometrics fail.');
-    } catch (e: any) {
-      setPinError('Failed to save PIN: ' + (e?.message || 'Error'));
-    }
-  };
-
-  const handleRemovePin = async () => {
-    Alert.alert(
-      'Remove 4-Digit PIN',
-      'Are you sure you want to remove the 4-digit security PIN?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            await AsyncStorage.removeItem('@praxirence_app_pin');
-            setHasPin(false);
-            Alert.alert('PIN Removed', '4-digit backup PIN has been removed.');
-          },
-        },
-      ]
-    );
-  };
 
   const toggleDay = (day: string) => {
     if (availableDays.includes(day)) {
@@ -295,46 +242,45 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
 
         if (!hasHardware || !isEnrolled) {
           Alert.alert(
-            'Biometrics Unavailable',
-            'Your device does not have fingerprint or face authentication enrolled in system settings.'
+            "Device Lock Required",
+            "Please configure a screen lock (Fingerprint, Face ID, PIN, or Pattern) in your phone settings first."
           );
           return;
         }
 
         const res = await LocalAuthentication.authenticateAsync({
-          promptMessage: 'Verify Biometric to Enable Doctor App Lock',
-          cancelLabel: 'Cancel',
-          fallbackLabel: 'Use Device Passcode',
+          promptMessage: "Authenticate with Phone Lock to Enable Doctor Workspace Security",
+          cancelLabel: "Cancel",
+          fallbackLabel: "Use Phone PIN / Pattern",
           disableDeviceFallback: false,
         });
 
         if (res.success) {
           setBiometricEnabled(true);
-          await AsyncStorage.setItem('praxirence_biometric_enabled', 'true');
-          Alert.alert('Lock Enabled', 'Biometric protection is now active for doctor consultations.');
+          await AsyncStorage.setItem("praxirence_biometric_enabled", "true");
+          Alert.alert("Phone Lock Enabled", "Your clinician workspace is now secured with your phone lock.");
         }
       } catch (err: any) {
-        Alert.alert('Notice', 'Biometric setup: ' + err.message);
+        Alert.alert("Notice", "Lock setup: " + (err?.message || "Failed"));
       }
     } else {
       try {
         const res = await LocalAuthentication.authenticateAsync({
-          promptMessage: 'Verify Biometric to Disable App Lock',
-          cancelLabel: 'Cancel',
-          fallbackLabel: 'Use Device Passcode',
+          promptMessage: "Authenticate to Disable Doctor Workspace Lock",
+          cancelLabel: "Cancel",
+          fallbackLabel: "Use Phone PIN / Pattern",
           disableDeviceFallback: false,
         });
         if (res.success) {
           setBiometricEnabled(false);
-          await AsyncStorage.setItem('praxirence_biometric_enabled', 'false');
-          Alert.alert('Lock Disabled', 'Biometric protection has been turned off.');
+          await AsyncStorage.setItem("praxirence_biometric_enabled", "false");
+          Alert.alert("Lock Disabled", "Workspace protection has been turned off.");
         }
       } catch (err: any) {
-        Alert.alert('Notice', 'Authentication error: ' + err.message);
+        Alert.alert("Notice", "Authentication error: " + (err?.message || "Failed"));
       }
     }
   };
-
   const checkHealth = async () => {
     setChecking(true);
     try {
@@ -412,32 +358,6 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
     } finally {
       setSavingLocation(false);
     }
-  };
-
-  const handleCheckForUpdates = async () => {
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch (_) {}
-
-    const websiteUpdateUrl = 'https://www.praxirence.com/download?app=doctor';
-
-    Alert.alert(
-      'Clinician Suite Updates',
-      'Praxirence Doctor Suite updates are securely distributed to verified medical practitioners. Would you like to check the portal in your browser?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Open Portal',
-          onPress: async () => {
-            try {
-              await Linking.openURL(websiteUpdateUrl);
-            } catch (_) {
-              Alert.alert('Notice', 'Please visit https://www.praxirence.com/download in your browser.');
-            }
-          },
-        },
-      ]
-    );
   };
 
   const handleLogoutPress = () => {
@@ -918,9 +838,9 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, paddingRight: 8 }}>
             <Ionicons name="finger-print-outline" size={22} color="#0284C7" />
             <View style={{ flex: 1 }}>
-              <Text style={styles.securityHeading}>Biometric Fingerprint / Face ID</Text>
+              <Text style={styles.securityHeading}>Phone Screen Lock & Biometrics</Text>
               <Text style={styles.securityDesc}>
-                Require biometric authentication before opening clinician workspace.
+                Require your phone's fingerprint, Face ID, or system lock PIN/Pattern to open clinician workspace.
               </Text>
             </View>
           </View>
@@ -932,42 +852,6 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           />
         </View>
 
-        {/* 4-Digit Security PIN Option */}
-        <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#F1F5F9' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View style={{ flex: 1, paddingRight: 12 }}>
-              <Text style={styles.securityHeading}>4-Digit Security PIN</Text>
-              <Text style={styles.securityDesc}>
-                {hasPin ? 'Active as backup / assistant unlock method.' : 'Set a 4-digit PIN if biometric fails or is shared.'}
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={{
-                backgroundColor: hasPin ? '#F1F5F9' : 'rgba(2, 132, 199, 0.1)',
-                borderWidth: 1,
-                borderColor: hasPin ? '#CBD5E1' : '#0284C7',
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 8,
-              }}
-              onPress={() => {
-                setPinInput('');
-                setConfirmPinInput('');
-                setPinError('');
-                setShowPinModal(true);
-              }}
-            >
-              <Text style={{ fontSize: 12, fontFamily: FontFamily.bold, color: hasPin ? Colors.text : '#0284C7' }}>
-                {hasPin ? 'Change PIN' : 'Set PIN'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-          {hasPin && (
-            <TouchableOpacity onPress={handleRemovePin} style={{ marginTop: 6, alignSelf: 'flex-start' }}>
-              <Text style={{ fontSize: 11, color: '#DC2626', fontFamily: FontFamily.medium }}>Remove PIN</Text>
-            </TouchableOpacity>
-          )}
-        </View>
       </View>
 
       {/* Hospital Clinical System Status */}
@@ -1006,48 +890,12 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
         </View>
       </View>
 
-      {/* App Version & Direct Update Card */}
-      <View style={styles.sectionCard}>
-        <View style={styles.telemetryHeader}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-            <Ionicons name="cloud-download-outline" size={18} color="#0284C7" />
-            <Text style={styles.sectionTitle}>App Version & Updates</Text>
-          </View>
-          <View style={{ backgroundColor: '#F0F9FF', borderWidth: 1, borderColor: '#BAE6FD', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 }}>
-            <Text style={{ fontFamily: FontFamily.bold, fontWeight: '700', fontSize: 11, color: '#0284C7' }}>v2.1 Production</Text>
-          </View>
-        </View>
-
-        <Text style={{ fontSize: 12, color: Colors.textSecondary, marginBottom: 12, lineHeight: 17, fontFamily: FontFamily.regular }}>
-          Keep your clinician suite updated with the latest DDI safety rules, drug formulary databases, and ABDM FHIR integrations.
-        </Text>
-
-        <TouchableOpacity
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: '#0284C7',
-            paddingVertical: 11,
-            borderRadius: 10,
-            gap: 6,
-          }}
-          onPress={handleCheckForUpdates}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="arrow-down-circle-outline" size={18} color="#FFFFFF" />
-          <Text style={{ color: '#FFFFFF', fontFamily: FontFamily.bold, fontWeight: '700', fontSize: 13 }}>Check for Updates</Text>
-          <Ionicons name="open-outline" size={14} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-
       {/* Sign Out Button */}
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogoutPress}>
         <Ionicons name="log-out-outline" size={18} color="#ef4444" />
         <Text style={styles.logoutBtnText}>Sign Out of Clinician Workspace</Text>
       </TouchableOpacity>
 
-      <Text style={styles.versionText}>Praxirence Clinician Suite v1.0.0 (Build 2026.09)</Text>
 
       {/* Modal: Edit Clinician Qualifications & Degrees */}
       <Modal
@@ -1382,112 +1230,6 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
         </View>
       </Modal>
 
-      {/* 4-Digit Security PIN Modal */}
-      <Modal
-        visible={showPinModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowPinModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { maxWidth: 360 }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(2, 132, 199, 0.12)', alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="key-outline" size={22} color="#0284C7" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontFamily: FontFamily.bold, fontSize: 16, color: Colors.text }}>
-                  {hasPin ? 'Change 4-Digit PIN' : 'Set 4-Digit PIN'}
-                </Text>
-                <Text style={{ fontFamily: FontFamily.regular, fontSize: 11, color: Colors.textSecondary }}>
-                  Clinician workspace backup PIN
-                </Text>
-              </View>
-            </View>
-
-            {pinError ? (
-              <View style={{ backgroundColor: '#FEF2F2', padding: 8, borderRadius: 6, marginBottom: 10, borderWidth: 1, borderColor: '#FCA5A5' }}>
-                <Text style={{ color: '#DC2626', fontSize: 12, fontFamily: FontFamily.medium }}>{pinError}</Text>
-              </View>
-            ) : null}
-
-            <Text style={{ fontFamily: FontFamily.semiBold, fontSize: 12, color: Colors.textSecondary, marginBottom: 4, marginTop: 6 }}>
-              Enter 4-Digit PIN
-            </Text>
-            <TextInput
-              style={{
-                backgroundColor: '#F8FAFC',
-                borderRadius: 8,
-                borderWidth: 1,
-                borderColor: '#CBD5E1',
-                paddingHorizontal: 12,
-                paddingVertical: 10,
-                textAlign: 'center',
-                fontSize: 22,
-                letterSpacing: 8,
-                fontFamily: FontFamily.bold,
-                fontWeight: '700',
-                color: Colors.text,
-              }}
-              value={pinInput}
-              onChangeText={(t) => {
-                setPinInput(t.replace(/[^0-9]/g, '').slice(0, 4));
-                setPinError('');
-              }}
-              keyboardType="number-pad"
-              maxLength={4}
-              secureTextEntry={true}
-              placeholder="••••"
-              placeholderTextColor="#94A3B8"
-            />
-
-            <Text style={{ fontFamily: FontFamily.semiBold, fontSize: 12, color: Colors.textSecondary, marginBottom: 4, marginTop: 12 }}>
-              Confirm 4-Digit PIN
-            </Text>
-            <TextInput
-              style={{
-                backgroundColor: '#F8FAFC',
-                borderRadius: 8,
-                borderWidth: 1,
-                borderColor: '#CBD5E1',
-                paddingHorizontal: 12,
-                paddingVertical: 10,
-                textAlign: 'center',
-                fontSize: 22,
-                letterSpacing: 8,
-                fontFamily: FontFamily.bold,
-                fontWeight: '700',
-                color: Colors.text,
-              }}
-              value={confirmPinInput}
-              onChangeText={(t) => {
-                setConfirmPinInput(t.replace(/[^0-9]/g, '').slice(0, 4));
-                setPinError('');
-              }}
-              keyboardType="number-pad"
-              maxLength={4}
-              secureTextEntry={true}
-              placeholder="••••"
-              placeholderTextColor="#94A3B8"
-            />
-
-            <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
-              <TouchableOpacity
-                style={{ flex: 1, paddingVertical: 12, borderRadius: 8, backgroundColor: '#F1F5F9', alignItems: 'center' }}
-                onPress={() => setShowPinModal(false)}
-              >
-                <Text style={{ fontFamily: FontFamily.semiBold, color: Colors.textSecondary, fontSize: 13 }}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{ flex: 1, paddingVertical: 12, borderRadius: 8, backgroundColor: '#0284C7', alignItems: 'center' }}
-                onPress={handleSavePin}
-              >
-                <Text style={{ fontFamily: FontFamily.bold, color: '#FFFFFF', fontSize: 13 }}>Save PIN</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </ScrollView>
   );
 };

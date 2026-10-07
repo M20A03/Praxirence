@@ -52,9 +52,6 @@ function DoctorAppContent() {
   // Biometric App Lock Gatekeeper
   const [isBiometricLocked, setIsBiometricLocked] = useState<boolean>(false);
   const [authenticatingBiometric, setAuthenticatingBiometric] = useState<boolean>(false);
-  const [pinUnlockInput, setPinUnlockInput] = useState<string>('');
-  const [pinUnlockError, setPinUnlockError] = useState<string>('');
-  const [storedPin, setStoredPin] = useState<string | null>(null);
   const appState = useRef<AppStateStatus>(AppState.currentState);
 
   // Pre-selected consultation context
@@ -64,10 +61,8 @@ function DoctorAppContent() {
 
   const checkAndPromptBiometric = async () => {
     try {
-      const enabled = await AsyncStorage.getItem('praxirence_biometric_enabled');
-      const pin = await AsyncStorage.getItem('@praxirence_app_pin');
-      setStoredPin(pin);
-      if (enabled === 'true' || !!pin) {
+      const enabled = await AsyncStorage.getItem("praxirence_biometric_enabled");
+      if (enabled === "true") {
         setIsBiometricLocked(true);
         performBiometricUnlock();
       } else {
@@ -77,7 +72,6 @@ function DoctorAppContent() {
       setIsBiometricLocked(false);
     }
   };
-
   const performBiometricUnlock = async () => {
     try {
       setAuthenticatingBiometric(true);
@@ -90,7 +84,7 @@ function DoctorAppContent() {
       const res = await LocalAuthentication.authenticateAsync({
         promptMessage: 'Unlock Praxirence Doctor Workspace',
         cancelLabel: 'Cancel',
-        fallbackLabel: 'Use Device Passcode',
+        fallbackLabel: 'Use Phone PIN / Pattern',
         disableDeviceFallback: false,
       });
       if (res.success) {
@@ -259,14 +253,14 @@ function DoctorAppContent() {
     return (
       <SafeAreaProvider>
         <SafeAreaView style={styles.lockContainer}>
-          <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
+          <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
           <View style={styles.lockContent}>
             <View style={styles.lockIconBox}>
-              <Ionicons name="finger-print" size={54} color="#38BDF8" />
+              <Ionicons name="finger-print" size={48} color={Colors.primary} />
             </View>
             <Text style={styles.lockTitle}>Workspace Locked</Text>
             <Text style={styles.lockSubtitle}>
-              Biometric verification is active. Authenticate to access patient consultation records and OPD queues.
+              Authenticate using your phone's fingerprint, Face ID, or system lock PIN/Pattern to access patient consultation records and OPD queues.
             </Text>
             <TouchableOpacity
               style={styles.unlockBtn}
@@ -279,49 +273,13 @@ function DoctorAppContent() {
               ) : (
                 <>
                   <Ionicons name="scan-outline" size={20} color="#FFFFFF" />
-                  <Text style={styles.unlockBtnText}>Unlock with Fingerprint / Face ID</Text>
+                  <Text style={styles.unlockBtnText}>Unlock with Phone Biometrics / PIN</Text>
                 </>
               )}
             </TouchableOpacity>
 
-            {/* 4-Digit Security PIN Option */}
-            <View style={styles.pinLockBox}>
-              <Text style={styles.pinLockHeading}>Or Enter 4-Digit Security PIN</Text>
-              <TextInput
-                style={styles.pinLockInput}
-                value={pinUnlockInput}
-                onChangeText={(val) => {
-                  const clean = val.replace(/[^0-9]/g, '').slice(0, 4);
-                  setPinUnlockInput(clean);
-                  setPinUnlockError('');
-                  if (clean.length === 4) {
-                    setTimeout(() => {
-                      AsyncStorage.getItem('@praxirence_app_pin').then((p) => {
-                        if (!p || clean === p) {
-                          setIsBiometricLocked(false);
-                          setPinUnlockInput('');
-                          setPinUnlockError('');
-                        } else {
-                          setPinUnlockError('Incorrect PIN. Please try again.');
-                          setPinUnlockInput('');
-                        }
-                      });
-                    }, 50);
-                  }
-                }}
-                keyboardType="number-pad"
-                maxLength={4}
-                secureTextEntry={true}
-                placeholder="••••"
-                placeholderTextColor="rgba(186, 230, 253, 0.6)"
-              />
-              {pinUnlockError ? (
-                <Text style={styles.pinLockError}>{pinUnlockError}</Text>
-              ) : null}
-            </View>
-
             <TouchableOpacity style={styles.lockSignOutBtn} onPress={handleLogout} activeOpacity={0.7}>
-              <Ionicons name="log-out-outline" size={16} color="#94A3B8" />
+              <Ionicons name="log-out-outline" size={16} color="#64748B" />
               <Text style={styles.lockSignOutText}>Sign Out</Text>
             </TouchableOpacity>
           </View>
@@ -560,99 +518,75 @@ const styles = StyleSheet.create({
   },
   lockContainer: {
     flex: 1,
-    backgroundColor: '#0F172A',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#F8FAFC",
+    justifyContent: "center",
+    alignItems: "center",
   },
   lockContent: {
-    width: '85%',
-    alignItems: 'center',
-    padding: 24,
+    width: "88%",
+    maxWidth: 400,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    alignItems: "center",
+    padding: 28,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 4,
   },
   lockIconBox: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: "#F0F9FF",
     borderWidth: 1.5,
-    borderColor: 'rgba(56, 189, 248, 0.35)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
+    borderColor: "#BAE6FD",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
   },
   lockTitle: {
     fontFamily: FontFamily.bold,
     fontSize: FontSize.xxl,
-    color: '#F8FAFC',
-    marginBottom: 10,
-    textAlign: 'center',
+    color: "#0F172A",
+    marginBottom: 8,
+    textAlign: "center",
   },
   lockSubtitle: {
     fontFamily: FontFamily.regular,
     fontSize: FontSize.sm,
-    color: '#94A3B8',
-    textAlign: 'center',
+    color: "#475569",
+    textAlign: "center",
     lineHeight: 22,
-    marginBottom: 32,
+    marginBottom: 28,
   },
   unlockBtn: {
     backgroundColor: Colors.primary,
-    borderRadius: 14,
+    borderRadius: 12,
     paddingVertical: 14,
-    paddingHorizontal: 28,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
-    width: '100%',
+    width: "100%",
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 3,
   },
   unlockBtnText: {
     fontFamily: FontFamily.bold,
     fontSize: FontSize.md,
-    color: '#FFFFFF',
-  },
-  pinLockBox: {
-    width: '100%',
-    marginTop: 20,
-    alignItems: 'center',
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(56, 189, 248, 0.25)',
-  },
-  pinLockHeading: {
-    fontFamily: FontFamily.medium,
-    fontSize: 13,
-    color: '#BAE6FD',
-    marginBottom: 8,
-  },
-  pinLockInput: {
-    width: 160,
-    backgroundColor: 'rgba(56, 189, 248, 0.15)',
-    borderWidth: 1.5,
-    borderColor: '#38BDF8',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    textAlign: 'center',
-    fontSize: 24,
-    letterSpacing: 10,
-    fontFamily: FontFamily.bold,
-    color: '#FFFFFF',
-  },
-  pinLockError: {
-    color: '#F87171',
-    fontFamily: FontFamily.medium,
-    fontSize: 12,
-    marginTop: 6,
+    color: "#FFFFFF",
   },
   lockSignOutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     marginTop: 20,
     paddingVertical: 10,
@@ -660,6 +594,6 @@ const styles = StyleSheet.create({
   lockSignOutText: {
     fontFamily: FontFamily.medium,
     fontSize: FontSize.sm,
-    color: '#94A3B8',
+    color: "#64748B",
   },
 });

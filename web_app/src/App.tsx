@@ -24,8 +24,11 @@ const MainWebsite: React.FC = () => {
 
   const isDownload =
     currentPath.startsWith('/download') ||
+    currentPath.startsWith('/patient') ||
     window.location.search.includes('download') ||
-    window.location.hash === '#download';
+    window.location.search.includes('patient') ||
+    window.location.hash === '#download' ||
+    window.location.hash === '#patient';
 
   if (isDownload) {
     return <DownloadPage />;

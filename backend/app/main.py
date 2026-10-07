@@ -1,3 +1,4 @@
+import os
 """
 Praxirence FastAPI Backend Application Entrypoint
 Integrates Whisper LoRA ASR, Mistral QLoRA Care-Plan LLM, and
@@ -302,7 +303,7 @@ app.add_middleware(
 # Phase 1: WAF, Anti-Bot & DDoS Rate Limiting Middleware
 # ------------------------------------------------------------------------------
 import re
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 
 _STARTUP_TIME = time.time()
 _rate_limit_records: dict[str, list[float]] = {}
@@ -519,3 +520,28 @@ def trigger_migration():
             "error": str(e)
         }
 
+
+# ------------------------------------------------------------------------------
+# Official Patient Mobile APK Direct Download Endpoint
+# ------------------------------------------------------------------------------
+@app.get("/downloads/Praxirence-Patient.apk")
+async def download_patient_apk():
+    """Serves the verified production Praxirence Patient App APK directly."""
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    apk_candidates = [
+        os.path.join(base_dir, "Praxirence-APKs", "Praxirence-Patient.apk"),
+        os.path.join(base_dir, "web_app", "public", "downloads", "Praxirence-Patient.apk"),
+        os.path.join(base_dir, "patient_app", "android", "app", "build", "outputs", "apk", "release", "app-release.apk"),
+    ]
+    for candidate in apk_candidates:
+        if os.path.isfile(candidate) and os.path.getsize(candidate) > 1000000:
+            return FileResponse(
+                candidate,
+                media_type="application/vnd.android.package-archive",
+                filename="Praxirence-Patient.apk",
+                headers={
+                    "Content-Disposition": "attachment; filename=Praxirence-Patient.apk",
+                    "Cache-Control": "public, max-age=3600"
+                }
+            )
+    raise HTTPException(status_code=404, detail="Patient APK binary not found on server.")

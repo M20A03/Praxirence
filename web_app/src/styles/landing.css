@@ -888,3 +888,298 @@ html, body {
     padding-bottom: calc(75px + env(safe-area-inset-bottom, 0px));
   }
 }
+
+
+/* ==============================================================================
+   IMPECCABLE CLINICAL RULEBOOK: DOWNLOAD & PORTAL STYLING
+   ============================================================================== */
+
+.download-page-root {
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  background-color: var(--landing-bg);
+  color: var(--landing-text-main);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.download-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--landing-border);
+  padding: 12px 20px;
+}
+
+.download-header-inner {
+  max-width: 1024px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.download-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--landing-border);
+  background: #ffffff;
+  color: var(--landing-text-main);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.download-back-btn:hover {
+  background: var(--landing-bg-card-hover);
+  border-color: #cbd5e1;
+}
+
+.download-main-content {
+  flex: 1;
+  max-width: 860px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 40px 20px 80px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.download-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background: rgba(13, 148, 136, 0.08);
+  border: 1px solid rgba(13, 148, 136, 0.25);
+  color: #0f766e;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.download-heading {
+  font-size: 2.35rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--landing-text-main);
+  text-align: center;
+  margin: 0 0 12px 0;
+  line-height: 1.2;
+}
+
+.download-lead {
+  font-size: 1.05rem;
+  color: var(--landing-text-muted);
+  text-align: center;
+  max-width: 580px;
+  margin: 0 0 32px 0;
+  line-height: 1.5;
+}
+
+.download-primary-card {
+  width: 100%;
+  max-width: 540px;
+  background: #ffffff;
+  border: 1px solid var(--landing-border);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.02);
+  margin-bottom: 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.download-app-identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.download-app-icon-box {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.15) 0%, rgba(2, 132, 199, 0.15) 100%);
+  border: 1px solid rgba(13, 148, 136, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.15);
+  flex-shrink: 0;
+}
+
+.download-app-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--landing-text-main);
+  margin: 0 0 4px 0;
+}
+
+.download-app-sub {
+  font-size: 0.85rem;
+  color: var(--landing-text-muted);
+  margin: 0 0 8px 0;
+}
+
+.download-tags-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.download-tag-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(13, 148, 136, 0.1);
+  color: #0f766e;
+  border: 1px solid rgba(13, 148, 136, 0.2);
+}
+
+.download-cta-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 14px 24px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 8px 20px rgba(13, 148, 136, 0.35);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.download-cta-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(13, 148, 136, 0.45);
+}
+
+.download-cta-btn:active {
+  transform: translateY(0);
+}
+
+.download-checksum-box {
+  margin-top: 20px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.download-steps-container {
+  width: 100%;
+  max-width: 760px;
+  margin-bottom: 36px;
+}
+
+.download-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.download-step-card {
+  background: #ffffff;
+  border: 1px solid var(--landing-border);
+  border-radius: 14px;
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.download-step-number {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(13, 148, 136, 0.1);
+  border: 1px solid rgba(13, 148, 136, 0.25);
+  color: #0f766e;
+  font-weight: 800;
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.download-step-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--landing-text-main);
+  margin: 0 0 6px 0;
+}
+
+.download-step-desc {
+  font-size: 0.82rem;
+  color: var(--landing-text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.download-trust-strip {
+  width: 100%;
+  max-width: 680px;
+  border-top: 1px solid var(--landing-border);
+  padding-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  font-size: 0.82rem;
+  color: var(--landing-text-muted);
+}
+
+.download-trust-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .download-heading {
+    font-size: 1.7rem;
+  }
+  .download-primary-card {
+    padding: 20px 16px;
+    border-radius: 16px;
+  }
+  .download-steps-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .download-main-content {
+    padding: 24px 16px 60px 16px;
+  }
+}

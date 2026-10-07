@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Menu, X, Smartphone, Layers, HelpCircle, Mail } from 'lucide-react';
+import { ShieldCheck, Menu, X, Smartphone, Layers, HelpCircle, Mail, Download } from 'lucide-react';
 
 export const LandingNavbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -11,7 +11,7 @@ export const LandingNavbar: React.FC = () => {
       <div className="landing-nav-inner">
         {/* Brand Logo & Regulatory Badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <a href="#" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
             <div style={{
               width: '36px',
               height: '36px',
@@ -47,18 +47,53 @@ export const LandingNavbar: React.FC = () => {
           <a href="#contact" className="nav-link">Contact</a>
         </nav>
 
-        {/* Action CTA */}
+        {/* Action CTAs */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <a
-            href="#contact"
-            className="btn-primary navbar-cta-btn"
-            style={{ padding: '7px 16px', fontSize: '0.825rem', borderRadius: '10px' }}
+            href="/download"
+            className="navbar-cta-btn"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 14px',
+              fontSize: '0.825rem',
+              fontWeight: 700,
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)',
+              color: '#ffffff',
+              textDecoration: 'none',
+              boxShadow: '0 2px 8px rgba(13, 148, 136, 0.25)',
+              minHeight: '44px'
+            }}
           >
-            <Mail size={14} />
-            <span>Contact Us</span>
+            <Download size={15} strokeWidth={2.5} />
+            <span>Download Patient App</span>
           </a>
 
-          {/* Mobile Hamburger Toggle */}
+          <a
+            href="#contact"
+            className="navbar-cta-btn"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 14px',
+              fontSize: '0.825rem',
+              fontWeight: 600,
+              borderRadius: '10px',
+              border: '1px solid #cbd5e1',
+              background: '#ffffff',
+              color: '#0f172a',
+              textDecoration: 'none',
+              minHeight: '44px'
+            }}
+          >
+            <Mail size={14} color="#64748b" />
+            <span>Contact</span>
+          </a>
+
+          {/* Mobile Hamburger Toggle (Min 44x44px Touch Target) */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="mobile-menu-btn"
@@ -66,8 +101,9 @@ export const LandingNavbar: React.FC = () => {
             style={{
               background: '#f1f5f9',
               border: '1px solid #cbd5e1',
-              borderRadius: '8px',
-              padding: '6px',
+              borderRadius: '10px',
+              width: '44px',
+              height: '44px',
               cursor: 'pointer',
               color: '#0f172a',
               display: 'none',
@@ -75,7 +111,7 @@ export const LandingNavbar: React.FC = () => {
               justifyContent: 'center'
             }}
           >
-            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
       </div>
@@ -89,41 +125,67 @@ export const LandingNavbar: React.FC = () => {
           boxShadow: '0 12px 24px -6px rgba(15, 23, 42, 0.1)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '14px'
+          gap: '12px'
         }}>
+          {/* Prominent Patient App Download Action */}
+          <a
+            href="/download"
+            onClick={closeMenu}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)',
+              color: '#ffffff',
+              padding: '14px',
+              borderRadius: '12px',
+              fontWeight: 700,
+              fontSize: '0.95rem',
+              textDecoration: 'none',
+              boxShadow: '0 4px 12px rgba(13, 148, 136, 0.3)',
+              minHeight: '48px'
+            }}
+          >
+            <Download size={18} strokeWidth={2.5} />
+            <span>Download Patient App (v2.1 APK)</span>
+          </a>
+
+          <div style={{ height: '1px', background: '#e2e8f0', margin: '4px 0' }} />
+
           <a
             href="#apps"
             onClick={closeMenu}
-            style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#0f172a', textDecoration: 'none', fontWeight: 600, fontSize: '0.95rem' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#0f172a', textDecoration: 'none', fontWeight: 600, fontSize: '0.95rem', minHeight: '44px' }}
           >
-            <Smartphone size={16} color="#0284c7" />
-            <span>Doctor & Patient Mobile Apps</span>
+            <Smartphone size={18} color="#0284c7" />
+            <span>Explore Mobile Platforms</span>
           </a>
 
           <a
             href="#architecture"
             onClick={closeMenu}
-            style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#0f172a', textDecoration: 'none', fontWeight: 600, fontSize: '0.95rem' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#0f172a', textDecoration: 'none', fontWeight: 600, fontSize: '0.95rem', minHeight: '44px' }}
           >
-            <Layers size={16} color="#059669" />
+            <Layers size={18} color="#059669" />
             <span>Clinical Architecture & Privacy</span>
           </a>
 
           <a
             href="#technology"
             onClick={closeMenu}
-            style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#0f172a', textDecoration: 'none', fontWeight: 600, fontSize: '0.95rem' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#0f172a', textDecoration: 'none', fontWeight: 600, fontSize: '0.95rem', minHeight: '44px' }}
           >
-            <ShieldCheck size={16} color="#0284c7" />
-            <span>Trust, Security & Privacy</span>
+            <ShieldCheck size={18} color="#0284c7" />
+            <span>Security & Compliance</span>
           </a>
 
           <a
             href="#faq"
             onClick={closeMenu}
-            style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#0f172a', textDecoration: 'none', fontWeight: 600, fontSize: '0.95rem' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#0f172a', textDecoration: 'none', fontWeight: 600, fontSize: '0.95rem', minHeight: '44px' }}
           >
-            <HelpCircle size={16} color="#64748b" />
+            <HelpCircle size={18} color="#64748b" />
             <span>Frequently Asked Questions</span>
           </a>
 
@@ -132,10 +194,22 @@ export const LandingNavbar: React.FC = () => {
           <a
             href="#contact"
             onClick={closeMenu}
-            className="btn-primary"
-            style={{ justifyContent: 'center', padding: '10px' }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              padding: '12px',
+              borderRadius: '10px',
+              border: '1px solid #cbd5e1',
+              color: '#0f172a',
+              textDecoration: 'none',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              minHeight: '44px'
+            }}
           >
-            <Mail size={15} />
+            <Mail size={16} color="#64748b" />
             <span>Get in Touch with Praxirence</span>
           </a>
         </div>

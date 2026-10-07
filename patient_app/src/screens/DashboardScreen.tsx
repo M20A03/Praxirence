@@ -665,7 +665,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Ionicons
-                name={user.consent_status ? "shield-checkmark" : "warning"}
+                name={user.consent_status ? "shield-checkmark" : "shield-outline"}
                 size={13}
                 color={user.consent_status ? Colors.primaryDark : Colors.amber}
               />

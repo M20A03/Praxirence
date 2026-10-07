@@ -509,23 +509,23 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
       const patName = selectedPatient.name || 'Patient';
       const patPhone = selectedPatient.phone || '';
       Alert.alert(
-        'Patient Data Consent Inactive (DPDP Act 2023)',
-        `Patient ${patName} has turned OFF data consent in their Praxirence app.\n\nUnder Indian DPDP Act 2023 privacy regulations, automated care plans and prescriptions cannot be dispatched to patients without active consent.\n\nPlease contact the patient${patPhone ? ` at ${patPhone}` : ''} to turn ON the consent toggle in their Praxirence app so you can send them their care plan.`,
+        'Clinical Protocol: Patient Consent Required',
+        `Patient ${patName} has not enabled cloud consent in their Praxirence app.\n\nUnder Indian DPDP Act 2023 clinical governance, digital care plans and prescriptions cannot be transmitted until the patient authorizes electronic health records.\n\nPlease contact the patient${patPhone ? ` at ${patPhone}` : ''} to enable "Consent & Data Privacy" in their app profile.`,
         [
           { text: 'Cancel', style: 'cancel' },
           ...(patPhone
             ? [{
-                text: 'Call Patient',
+                text: 'Contact Patient',
                 onPress: () => Linking.openURL(`tel:${patPhone}`),
               }]
             : []),
           {
-            text: 'Save Draft Locally',
+            text: 'Save to Offline Vault',
             style: 'default',
             onPress: () => {
               Alert.alert(
-                'Draft Preserved',
-                'Consultation draft safely preserved in your offline vault. Once the patient re-enables consent, you can dispatch it.'
+                'Preserved in Vault',
+                'Consultation record safely preserved in clinician offline vault. You can transmit it once patient authorization is active.'
               );
               onConsultationSaved();
             },
@@ -733,40 +733,64 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
                 </View>
                 {!isConsentActive && (
                   <View style={{
-                    marginTop: 8,
-                    padding: 10,
-                    borderRadius: 10,
-                    backgroundColor: 'rgba(217, 119, 6, 0.08)',
+                    marginTop: 10,
+                    padding: 12,
+                    borderRadius: 12,
+                    backgroundColor: '#FFFFFF',
                     borderWidth: 1,
-                    borderColor: 'rgba(217, 119, 6, 0.3)',
+                    borderColor: '#E2E8F0',
+                    borderLeftWidth: 4,
+                    borderLeftColor: '#0284C7',
+                    shadowColor: '#0F172A',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.04,
+                    shadowRadius: 6,
+                    elevation: 2,
                     flexDirection: 'row',
                     alignItems: 'center',
-                    gap: 10
+                    gap: 12
                   }}>
-                    <Ionicons name="warning" size={20} color="#D97706" />
+                    <View style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 10,
+                      backgroundColor: '#F0F9FF',
+                      borderWidth: 1,
+                      borderColor: '#BAE6FD',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <Ionicons name="shield-outline" size={18} color="#0284C7" />
+                    </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#B45309' }}>
-                        Patient Consent Inactive (DPDP Act)
+                      <Text style={{ fontSize: 10, fontWeight: '800', color: '#0369A1', letterSpacing: 0.5, textTransform: 'uppercase' }}>
+                        DPDP Act 2023 Protocol
                       </Text>
-                      <Text style={{ fontSize: 11, color: '#92400E', marginTop: 2 }}>
-                        This user has turned OFF data consent in their app. Contact them to turn it ON so you can dispatch their care plan.
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#0F172A', marginTop: 1 }}>
+                        Patient Authorization Required
+                      </Text>
+                      <Text style={{ fontSize: 11, color: '#475569', marginTop: 2, lineHeight: 15 }}>
+                        Patient digital consent is currently paused. Please request authorization to dispatch electronic care plan.
                       </Text>
                     </View>
                     {currentSelectedPat?.phone ? (
                       <TouchableOpacity
                         style={{
-                          backgroundColor: '#D97706',
-                          paddingHorizontal: 10,
-                          paddingVertical: 6,
+                          backgroundColor: '#F8FAFC',
+                          borderWidth: 1,
+                          borderColor: '#CBD5E1',
+                          paddingHorizontal: 12,
+                          paddingVertical: 8,
                           borderRadius: 8,
                           flexDirection: 'row',
                           alignItems: 'center',
-                          gap: 4
+                          gap: 6
                         }}
                         onPress={() => Linking.openURL(`tel:${currentSelectedPat.phone}`)}
+                        activeOpacity={0.7}
                       >
-                        <Ionicons name="call" size={12} color="#FFFFFF" />
-                        <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>Call</Text>
+                        <Ionicons name="call-outline" size={13} color="#0284C7" />
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: '#0F172A' }}>Contact</Text>
                       </TouchableOpacity>
                     ) : null}
                   </View>

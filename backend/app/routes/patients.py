@@ -23,6 +23,9 @@ from app.schemas.patient import (
     DoctorVerifyLinkCodeRequest, PendingDoctorAuthorizationItem
 )
 import random
+import os
+import tempfile
+from fastapi.responses import FileResponse
 from app.schemas.visit import VisitResponse
 from app.schemas.consent import (
     ConsentUpdateRequest,
@@ -1224,3 +1227,67 @@ def update_patient_profile(
 
 
 
+
+@router.get("/{patient_id}/records/pdf")
+def get_patient_health_records_pdf(
+    patient_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Generates and downloads a comprehensive medical history & health records summary PDF
+    for the patient under DPDP Act 2023 data portability rights.
+    """
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    visits = db.query(Visit).filter(Visit.patient_id == patient_id).order_by(Visit.created_at.desc()).all()
+    visits_data = []
+    for v in visits:
+        doctor = v.doctor
+        doc_name = doctor.name if doctor else "Doctor"
+        clean_doc = doc_name.replace("Dr. ", "").replace("Dr.", "").strip()
+        raw_meds = v.medicines or []
+        meds = []
+        for m in raw_meds:
+            if isinstance(m, dict):
+                meds.append({
+                    "name": m.get("name", "Medicine"),
+                    "dosage": m.get("dosage", "1 dose"),
+                    "frequency": m.get("frequency", "OD"),
+                    "instructions": m.get("instructions", "After food")
+                })
+        visits_data.append({
+            "doctor_name": clean_doc,
+            "date": v.created_at.strftime("%d %b %Y") if v.created_at else "Recent",
+            "diagnosis": v.diagnosis or "Clinical Consultation",
+            "patient_summary": v.patient_summary or "",
+            "doctor_advice": v.doctor_advice or "",
+            "medicines": meds
+        })
+
+    pdf_dir = os.path.join(tempfile.gettempdir(), "praxirence_health_records")
+    os.makedirs(pdf_dir, exist_ok=True)
+    pdf_filename = f"Health_Records_{patient_id[:8]}.pdf"
+    pdf_path = os.path.join(pdf_dir, pdf_filename)
+
+    from app.services.pdf_prescription_service import PDFPrescriptionService
+    PDFPrescriptionService.generate_health_records_pdf(
+        patient_name=patient.name or "Patient",
+        patient_phone=patient.phone or "",
+        patient_uhid=getattr(patient, "uhid", None),
+        visits=visits_data,
+        output_path=pdf_path
+    )
+
+    clean_name = "".join(c for c in (patient.name or "Patient") if c.isalnum() or c == "_")
+    download_filename = f"Health_Records_{clean_name}.pdf"
+    return FileResponse(
+        pdf_path,
+        media_type="application/pdf",
+        filename=download_filename,
+        headers={
+            "Content-Disposition": f'attachment; filename="{download_filename}"',
+            "Access-Control-Expose-Headers": "Content-Disposition"
+        }
+    )

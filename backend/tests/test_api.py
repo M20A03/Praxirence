@@ -465,3 +465,24 @@ def test_patient_email_otp_flow():
     assert data["user"]["name"] == "Aarav Sharma"
 
 
+
+
+def test_patient_health_records_pdf_download():
+    login_res = client.post(
+        "/auth/doctor/login",
+        json={"email": "testdoc@praxirence.com", "password": "DocPass123!"}
+    )
+    token = login_res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    p_res = client.post(
+        "/patients",
+        headers=headers,
+        json={"name": "Kavita Rao", "phone": "+919876543299", "dob": "1990-05-15"}
+    )
+    patient_id = p_res.json()["id"]
+
+    pdf_res = client.get(f"/patients/{patient_id}/records/pdf")
+    assert pdf_res.status_code == 200
+    assert "application/pdf" in pdf_res.headers.get("content-type")
+    assert len(pdf_res.content) > 1000

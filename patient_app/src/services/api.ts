@@ -743,6 +743,10 @@ export const mobileApi = {
     return `${getEffectiveApiUrl()}/visits/${visitId}/prescription/pdf`;
   },
 
+  getPatientRecordsPdfUrl(patientId: string): string {
+    return `${getEffectiveApiUrl()}/patients/${patientId}/records/pdf`;
+  },
+
   async getVisits(patientId: string): Promise<Visit[]> {
     const cacheKey = `praxirence_cache_visits_${patientId}`;
     try {

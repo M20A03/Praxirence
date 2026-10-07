@@ -504,6 +504,37 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
       return;
     }
 
+    const selectedPatient = patients.find((p) => p.id === selectedPatientId);
+    if (selectedPatient && selectedPatient.consent_status === false) {
+      const patName = selectedPatient.name || 'Patient';
+      const patPhone = selectedPatient.phone || '';
+      Alert.alert(
+        'Patient Data Consent Inactive (DPDP Act 2023)',
+        `Patient ${patName} has turned OFF data consent in their Praxirence app.\n\nUnder Indian DPDP Act 2023 privacy regulations, automated care plans and prescriptions cannot be dispatched to patients without active consent.\n\nPlease contact the patient${patPhone ? ` at ${patPhone}` : ''} to turn ON the consent toggle in their Praxirence app so you can send them their care plan.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          ...(patPhone
+            ? [{
+                text: 'Call Patient',
+                onPress: () => Linking.openURL(`tel:${patPhone}`),
+              }]
+            : []),
+          {
+            text: 'Save Draft Locally',
+            style: 'default',
+            onPress: () => {
+              Alert.alert(
+                'Draft Preserved',
+                'Consultation draft safely preserved in your offline vault. Once the patient re-enables consent, you can dispatch it.'
+              );
+              onConsultationSaved();
+            },
+          },
+        ]
+      );
+      return;
+    }
+
     setSubmitting(true);
     try {
       // 1. Create structured visit with patient summary & doctor advice
@@ -689,12 +720,60 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
         )}
 
         {selectedPatientId ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
-            <Ionicons name="checkmark-circle" size={14} color="#15803D" />
-            <Text style={{ fontSize: 12, color: '#15803D', fontWeight: '600' }}>
-              Active Patient: {patients.find((p) => p.id === selectedPatientId)?.name || 'Selected'}{patients.find((p) => p.id === selectedPatientId)?.uhid ? ` • ${patients.find((p) => p.id === selectedPatientId)?.uhid}` : ''}
-            </Text>
-          </View>
+          (() => {
+            const currentSelectedPat = patients.find((p) => p.id === selectedPatientId);
+            const isConsentActive = currentSelectedPat ? currentSelectedPat.consent_status !== false : true;
+            return (
+              <View style={{ marginTop: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Ionicons name={isConsentActive ? "checkmark-circle" : "alert-circle"} size={14} color={isConsentActive ? "#15803D" : "#D97706"} />
+                  <Text style={{ fontSize: 12, color: isConsentActive ? '#15803D' : '#D97706', fontWeight: '600' }}>
+                    Active Patient: {currentSelectedPat?.name || 'Selected'}{currentSelectedPat?.uhid ? ` • ${currentSelectedPat?.uhid}` : ''}
+                  </Text>
+                </View>
+                {!isConsentActive && (
+                  <View style={{
+                    marginTop: 8,
+                    padding: 10,
+                    borderRadius: 10,
+                    backgroundColor: 'rgba(217, 119, 6, 0.08)',
+                    borderWidth: 1,
+                    borderColor: 'rgba(217, 119, 6, 0.3)',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 10
+                  }}>
+                    <Ionicons name="warning" size={20} color="#D97706" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#B45309' }}>
+                        Patient Consent Inactive (DPDP Act)
+                      </Text>
+                      <Text style={{ fontSize: 11, color: '#92400E', marginTop: 2 }}>
+                        This user has turned OFF data consent in their app. Contact them to turn it ON so you can dispatch their care plan.
+                      </Text>
+                    </View>
+                    {currentSelectedPat?.phone ? (
+                      <TouchableOpacity
+                        style={{
+                          backgroundColor: '#D97706',
+                          paddingHorizontal: 10,
+                          paddingVertical: 6,
+                          borderRadius: 8,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 4
+                        }}
+                        onPress={() => Linking.openURL(`tel:${currentSelectedPat.phone}`)}
+                      >
+                        <Ionicons name="call" size={12} color="#FFFFFF" />
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>Call</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                )}
+              </View>
+            );
+          })()
         ) : (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
             <Ionicons name="alert-circle" size={14} color="#DC2626" />

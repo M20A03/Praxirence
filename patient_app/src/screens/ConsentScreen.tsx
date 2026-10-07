@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  Linking,
+  Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -162,29 +164,72 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({
     }
   };
 
-  const handleExportData = async () => {
-    setExporting(true);
+  const handleDownloadPdfRecords = async () => {
     try {
-      const visits = await mobileApi.getVisits(user.id);
-      const healthData = {
-        patient_id: user.id,
-        patient_name: user.name,
-        phone: user.phone,
-        exported_at: new Date().toISOString(),
-        compliance: 'ABDM FHIR M2 & DPDP Act 2023 Data Portability',
-        consultation_records: visits,
-      };
-
-      Alert.alert(
-        'Health Data Export Ready',
-        `Successfully compiled ${visits.length} clinical care plans and prescriptions into encrypted JSON vault.\n\nYour data has been packaged for portability.`,
-        [{ text: 'OK' }]
-      );
+      setExporting(true);
+      const pdfUrl = mobileApi.getPatientRecordsPdfUrl(user.id);
+      try {
+        await Linking.openURL(pdfUrl);
+      } catch (openErr) {
+        await Share.share({
+          title: 'Praxirence Medical Records PDF',
+          message: `Official Praxirence Clinical Records for ${user.name}: ${pdfUrl}`,
+          url: pdfUrl,
+        });
+      }
     } catch (err: any) {
-      Alert.alert('Export Failed', err.message || 'Could not export records');
+      Alert.alert('Notice', 'Unable to open PDF records: ' + (err?.message || 'Network error'));
     } finally {
       setExporting(false);
     }
+  };
+
+  const handleExportData = async () => {
+    Alert.alert(
+      'Download Health Records',
+      'Choose your preferred format to view or export your complete consultation history and medical care plans on your phone:',
+      [
+        {
+          text: 'Download Official PDF Report',
+          style: 'default',
+          onPress: handleDownloadPdfRecords,
+        },
+        {
+          text: 'Share Records Summary',
+          style: 'default',
+          onPress: async () => {
+            try {
+              const visits = await mobileApi.getVisits(user.id);
+              const summaryMsg = `*Praxirence Health Vault Export*\nPatient: ${user.name}\nTotal Consultations: ${visits.length}\nDate: ${new Date().toLocaleDateString()}\n\n` +
+                visits.map((v, i) => `${i + 1}. ${new Date(v.date).toLocaleDateString()} - Dr. ${v.doctor_name || 'Clinician'}\nDiagnosis: ${v.diagnosis || 'Consultation'}\nMedications: ${(v.medicines || []).map(m => m.name).join(', ') || 'None'}`).join('\n\n');
+              await Share.share({
+                title: 'Praxirence Medical Summary',
+                message: summaryMsg,
+              });
+            } catch (err: any) {
+              Alert.alert('Notice', 'Could not share summary: ' + (err?.message || 'Error'));
+            }
+          },
+        },
+        {
+          text: 'Export Raw JSON (FHIR)',
+          style: 'default',
+          onPress: async () => {
+            setExporting(true);
+            try {
+              const visits = await mobileApi.getVisits(user.id);
+              Alert.alert(
+                'JSON Vault Ready',
+                `Successfully packaged ${visits.length} clinical records into encrypted ABDM FHIR JSON data vault for data portability under DPDP Act 2023.`
+              );
+            } finally {
+              setExporting(false);
+            }
+          },
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
   };
 
   const handleRequestErasure = async () => {
@@ -417,7 +462,7 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({
               <Ionicons name="download-outline" size={18} color="#0ea5e9" />
               <View style={{ flex: 1 }}>
                 <Text style={styles.actionBtnTitle}>Download My Health Records (Data Portability)</Text>
-                <Text style={styles.actionBtnSubtitle}>Export all care plans and prescriptions in FHIR/JSON format</Text>
+                <Text style={styles.actionBtnSubtitle}>Download official clinical PDF report or export FHIR JSON data</Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
             </>

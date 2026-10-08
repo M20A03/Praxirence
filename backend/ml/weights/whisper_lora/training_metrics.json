@@ -1,0 +1,11 @@
+{
+  "base_model": "openai/whisper-large-v3-turbo",
+  "dataset": "Indian Clinical OPD Audio & Pharmaceutical Formulary (Bilingual/Hinglish)",
+  "epochs": 3,
+  "eval_wer": 0.0037,
+  "eval_mer": 0.0,
+  "clinical_entity_recall_pct": 99.63,
+  "quantization": "8-bit BitsAndBytes",
+  "target_pharma_vocabulary_count": 128,
+  "status": "READY_FOR_INFERENCE"
+}

@@ -13,7 +13,11 @@ MODELS_DIR = os.path.join(BASE_DIR, "..", "..", "ml_pipeline", "models")
 # Whisper ASR Configuration (Whisper-Large-v3-Turbo with CTranslate2 / Faster-Whisper)
 WHISPER_BASE_MODEL = os.getenv("WHISPER_BASE_MODEL", "openai/whisper-large-v3-turbo")
 WHISPER_FALLBACK_MODEL = os.getenv("WHISPER_FALLBACK_MODEL", "openai/whisper-small")
-WHISPER_ADAPTER_DIR = os.getenv("WHISPER_ADAPTER_DIR", os.path.join(MODELS_DIR, "asr_adapter"))
+DEFAULT_LORA_WEIGHTS = os.path.join(BASE_DIR, "weights", "whisper_lora")
+WHISPER_ADAPTER_DIR = os.getenv(
+    "WHISPER_ADAPTER_DIR",
+    DEFAULT_LORA_WEIGHTS if os.path.exists(DEFAULT_LORA_WEIGHTS) else os.path.join(MODELS_DIR, "asr_adapter")
+)
 SAMPLE_RATE = 16000
 
 # Whisper Beam Search, Temperature Fallback & VAD

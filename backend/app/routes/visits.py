@@ -4,6 +4,7 @@ Handles speech-to-text with Whisper LoRA, care plan extraction with Mistral QLoR
 doctor editing, approval, and background WhatsApp delivery via Celery.
 """
 
+import asyncio
 import logging
 import json
 import hashlib
@@ -275,16 +276,17 @@ async def upload_consultation_audio(
     saved_path, filename = await storage_service.save_upload_audio(audio_file)
 
     try:
-        # Step 1: Transcribe with in-house local ASR model (Zero external API)
+        # Step 1: Non-Blocking Async Transcribe with in-house local ASR model
         try:
-            transcription = ai_service.transcribe_audio(saved_path, language=language)
+            transcription = await asyncio.to_thread(ai_service.transcribe_audio, saved_path, language=language)
         except Exception as t_err:
             logger.warning(f"Audio transcription notice ({t_err}), trying model_loader.")
-            transcription = model_loader.transcribe(saved_path, language=language)
+            transcription = await asyncio.to_thread(model_loader.transcribe, saved_path, language=language)
 
-        # Step 2: Extract Care Plan with 7B LLM / Resilient Clinical Parser
-        care_plan = model_loader.extract_care_plan(transcription)
-        summarized = ai_service.summarize_consultation_for_patient(
+        # Step 2: Non-Blocking Care Plan Extraction with Clinical LLM / Parser
+        care_plan = await asyncio.to_thread(model_loader.extract_care_plan, transcription)
+        summarized = await asyncio.to_thread(
+            ai_service.summarize_consultation_for_patient,
             conversation=transcription,
             patient_name=patient.name,
             doctor_name=current_doctor.name

@@ -36,6 +36,7 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
   const [isPaused, setIsPaused] = useState(false);
   const [durationSec, setDurationSec] = useState(0);
   const [processing, setProcessing] = useState(false);
+  const [processingStep, setProcessingStep] = useState(1);
   const [lastAudioUri, setLastAudioUri] = useState<string | null>(null);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -99,22 +100,13 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
               clearInterval(timerRef.current);
               timerRef.current = null;
             }
-            setIsRecording(false);
-            isRecordingRef.current = false;
-            await recordingRef.current.stopAndUnloadAsync();
-            const uri = recordingRef.current.getURI();
-            setRecording(null);
-            recordingRef.current = null;
-            if (uri) {
-              setLastAudioUri(uri);
-              setBackgroundPaused(true);
-              await AsyncStorage.setItem(
-                `praxirence_offline_audio_${patientId}`,
-                JSON.stringify({ uri, patientId, patientName, doctorName, date: new Date().toISOString() })
-              );
-            }
+            // Gracefully pause without terminating the active recording session
+            await recordingRef.current.pauseAsync();
+            setIsPaused(true);
+            isPausedRef.current = true;
+            setBackgroundPaused(true);
           } catch (e) {
-            console.warn('Background audio draft cache notice:', e);
+            console.warn('Background audio pause notice:', e);
           }
         }
       }
@@ -243,8 +235,26 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
         },
       };
 
+      const onRecordingStatusUpdate = (status: Audio.RecordingStatus) => {
+        if (status.canRecord && status.isRecording && typeof status.metering === 'number') {
+          const db = status.metering; // Typically -160 dB to 0 dB (-60 dB to -10 dB for speech)
+          const normalized = Math.max(0.1, Math.min(1.0, (db + 60) / 50));
+          barAnims.forEach((anim, idx) => {
+            const factor = 0.5 + 0.5 * Math.sin(idx * 0.8 + Date.now() / 180);
+            const targetHeight = Math.max(5, Math.min(30, normalized * 30 * factor));
+            Animated.timing(anim, {
+              toValue: targetHeight,
+              duration: 140,
+              useNativeDriver: false,
+            }).start();
+          });
+        }
+      };
+
       const { recording: newRecording } = await Audio.Recording.createAsync(
-        speechRecordingOptions
+        speechRecordingOptions,
+        onRecordingStatusUpdate,
+        150
       );
 
       setRecording(newRecording);
@@ -357,8 +367,12 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
 
   const processAudio = async (uri: string) => {
     setProcessing(true);
+    setProcessingStep(1);
     setUploadFailed(false);
     setBackgroundPaused(false);
+    const stepInterval = setInterval(() => {
+      setProcessingStep(prev => (prev < 3 ? prev + 1 : prev));
+    }, 2800);
     try {
       const result = await mobileApi.uploadConsultationAudio({
         patientId,
@@ -391,6 +405,7 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
         'Audio recording was preserved locally in the offline queue. Tap "Retry Upload (Draft Saved)" when connection stabilizes.'
       );
     } finally {
+      clearInterval(stepInterval);
       setProcessing(false);
     }
   };
@@ -585,9 +600,18 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
       {processing && (
         <View style={styles.processingBox}>
           <ActivityIndicator size="small" color="#0284C7" />
-          <Text style={styles.processingText}>
-            Whisper ASR transcribing speech & extracting care plan...
-          </Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.processingText}>
+              {processingStep === 1
+                ? '[1/3] Securing Audio & HIPAA Shredding...'
+                : processingStep === 2
+                ? '[2/3] Transcribing Dialogue & Verifying Formulary...'
+                : '[3/3] Extracting Medications & Care Plan...'}
+            </Text>
+            <Text style={{ fontSize: 10, color: '#0369A1', marginTop: 2 }}>
+              Indian Formulary Phonetic Booster Active
+            </Text>
+          </View>
         </View>
       )}
 

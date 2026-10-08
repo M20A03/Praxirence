@@ -981,7 +981,7 @@ export const mobileApi = {
     } as any);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s timeout for long 8+ min audio
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 300s (5-min) resilient timeout for long 8-15 min audio
 
     try {
       const headers = getHeaders();

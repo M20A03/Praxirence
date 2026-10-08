@@ -135,10 +135,85 @@ def build_whisper_clinical_prompt(db: Any = None) -> str:
     return prompt_str
 
 
-def normalize_indian_clinical_terms(transcript: str) -> str:
+import difflib
+
+# Common words to exclude from fuzzy medicine matching
+_NON_MEDICINE_WORDS = {
+    "doctor", "patient", "hospital", "clinic", "tablet", "tablets", "capsule", "capsules",
+    "syrup", "injection", "morning", "afternoon", "evening", "night", "after", "before",
+    "breakfast", "lunch", "dinner", "namaste", "sahab", "fever", "cough", "chest", "pain",
+    "pressure", "normal", "review", "intake", "water", "daily", "twice", "thrice", "taking",
+    "prescribing", "continue", "stopped", "symptoms", "trouble", "feeling", "walking", "gentle",
+    "emergency", "advise", "advised", "please", "sitting", "minutes", "seconds", "hours", "along", "around", "about", "always", "already", "taking", "having", "eating", "giving", "tablet", "water"
+}
+
+def fuzzy_correct_medicine_names(transcript: str, db: Any = None) -> str:
     """
-    Applies phonetic Whisper mishearing substitutions loaded from backend/data/phonetic_fixes.json
-    converting common Indian speech patterns into clean clinical formulations.
+    Phonetic & Levenshtein Error Correction:
+    If a clinician or patient mispronounces a brand or generic drug name slightly,
+    or Whisper mishears an Indian pharmaceutical term (e.g., 'augmetin', 'telmisartin',
+    'pantacid', 'metoprolal', 'sorbitrat', 'ecospren'), this automatically corrects it
+    against the verified Indian Formulary catalog.
+    """
+    if not transcript or len(transcript.strip()) < 3:
+        return transcript
+
+    active_formulary = get_active_formulary(db)
+    if not active_formulary:
+        return transcript
+
+    # Build unique canonical list of brand & generic names
+    canonical_names = set()
+    for item in active_formulary:
+        b = item.get("brand", "").split()[0].strip()
+        g = item.get("generic", "").split()[0].strip()
+        if len(b) >= 4:
+            canonical_names.add(b)
+        if len(g) >= 4:
+            canonical_names.add(g)
+
+    if not canonical_names:
+        return transcript
+
+    canonical_list = list(canonical_names)
+    lookup_map = {name.lower(): name for name in canonical_list}
+
+    # Tokenize and inspect candidate words
+    words = transcript.split()
+    corrected_words = []
+
+    for word in words:
+        clean_w = re.sub(r'[^a-zA-Z0-9-]', '', word).strip()
+        lower_w = clean_w.lower()
+
+        # Skip small words or standard clinical dialogue words
+        if len(clean_w) < 5 or lower_w in _NON_MEDICINE_WORDS or lower_w.isdigit():
+            corrected_words.append(word)
+            continue
+
+        # If already exactly matches a canonical drug name
+        if lower_w in lookup_map:
+            corrected_words.append(word.replace(clean_w, lookup_map[lower_w]))
+            continue
+
+        # Check fuzzy similarity against Indian Formulary
+        matches = difflib.get_close_matches(clean_w.capitalize(), canonical_list, n=1, cutoff=0.82)
+        if matches:
+            best_match = matches[0]
+            # Replace target while preserving punctuation
+            corrected_token = word.replace(clean_w, best_match)
+            corrected_words.append(corrected_token)
+        else:
+            corrected_words.append(word)
+
+    return ' '.join(corrected_words)
+
+
+def normalize_indian_clinical_terms(transcript: str, db: Any = None) -> str:
+    """
+    Two-Tier Clinical Normalization:
+    Tier 1: Regular expression dialect & phrasing substitutions (from phonetic_fixes.json)
+    Tier 2: Fuzzy phonetic auto-correction against verified Indian Formulary
     """
     if not transcript:
         return ""
@@ -152,5 +227,11 @@ def normalize_indian_clinical_terms(transcript: str) -> str:
                 text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
             except Exception:
                 pass
+
+    # Tier 2: Fuzzy Phonetic Formulary Alignment
+    try:
+        text = fuzzy_correct_medicine_names(text, db=db)
+    except Exception as fz_err:
+        logger.debug(f"Fuzzy phonetic correction notice: {fz_err}")
 
     return text

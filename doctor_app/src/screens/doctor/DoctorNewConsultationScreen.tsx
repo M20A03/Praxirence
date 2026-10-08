@@ -402,6 +402,14 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
   };
 
   const handleAudioProcessed = (result: ConsultationSummarizeResult) => {
+    if (result.conversation === '[AUDIO_SILENT_OR_INAUDIBLE]' || result.patient_summary?.includes('AUDIO_SILENT_OR_INAUDIBLE')) {
+      Alert.alert(
+        'Inaudible or Silent Audio Detected',
+        'The recorded audio was below the clinical voice decibel threshold or silent. Please check your device microphone and re-record the consultation.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
     if (result.conversation) setConversationText(result.conversation);
     if (result.diagnosis) setDiagnosis(result.diagnosis);
     if (result.patient_summary) setPatientSummary(result.patient_summary);
@@ -1260,6 +1268,10 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
                   </View>
                   <View style={styles.medTag}>
                     <Text style={styles.medTagText}>{med.frequency}</Text>
+                  </View>
+                  <View style={[styles.medTag, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0', flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+                    <Ionicons name="checkmark-circle-outline" size={11} color="#059669" />
+                    <Text style={[styles.medTagText, { color: '#059669', fontWeight: '600' }]}>Formulary Verified</Text>
                   </View>
                   {med.duration_days ? (
                     <View style={styles.medTag}>

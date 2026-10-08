@@ -275,6 +275,17 @@ class ModelLoader:
         Guarantees response in < 1 second and gracefully falls back to template
         if the model output is malformed JSON.
         """
+        if "[AUDIO_SILENT_OR_INAUDIBLE]" in transcript:
+            return {
+                "status": "AUDIO_SILENT_OR_INAUDIBLE",
+                "diagnosis": "Inaudible Audio",
+                "patient_summary": "Recorded audio was silent or below minimum clinical voice decibel threshold.",
+                "doctor_advice": "Check device microphone and re-record consultation.",
+                "medicines": [],
+                "reminders": [],
+                "warning_signs": [],
+                "amber_alerts": ["Audio inaudible or silent; re-recording required."]
+            }
         raw_output = None
 
         if self.llm_model and self.llm_tokenizer:
@@ -597,8 +608,12 @@ class ModelLoader:
         # Helper to extract regex duration, dosage, and isolated drug context
         def get_drug_context(drug_aliases: list, text: str) -> str:
             clauses = re.split(r"[.\n,;]|(?:\baur\b)|(?:\band\b)|(?:\bplus\b)|(?:\bsaath me\b)", text, flags=re.I)
-            matched = [c.strip() for c in clauses if any(re.search(rf"\b{re.escape(alias)}\b", c, re.I) for alias in drug_aliases)]
-            return " ".join(matched) if matched else text
+            matched = [
+                c.strip() for c in clauses 
+                if any(re.search(rf"\b{re.escape(alias)}\b", c, re.I) for alias in drug_aliases)
+                and not re.search(r"\b(?:brother|sister|mother|father|uncle|aunt|previously|earlier|pahle|purana|allergic|allergy)\b", c, re.I)
+            ]
+            return " ".join(matched) if matched else ""
 
         def parse_duration(text: str, default: int = 5) -> int:
             m = re.search(r"(\d+)\s*(?:days?|din|days|mahina|months?|weeks?|hafte)", text, re.I)
@@ -852,17 +867,19 @@ class ModelLoader:
             reminders.append({"medicine_name": "Telmisartan", "dosage": dose, "time": "08:30", "frequency": "daily", "instructions": f"Take Telmisartan ({dose}) after breakfast."})
 
         if "amlo" in med_search_text or "amlodipine" in med_search_text or "amlong" in med_search_text:
-            dose = parse_dosage("amlodipine", med_search_text, "5mg")
-            medicines.append({
-                "name": "Amlodipine",
-                "dosage": dose,
-                "frequency": "Once daily in morning (1-0-0)",
-                "instructions": "Take after breakfast for blood pressure control.",
-                "duration_days": 30,
-                "meal_relation": "after_meal",
-                "is_sos": False,
-            })
-            reminders.append({"medicine_name": "Amlodipine", "dosage": dose, "time": "08:30", "frequency": "daily", "instructions": f"Take Amlodipine ({dose}) after breakfast."})
+            ctx_amlo = get_drug_context(["amlo", "amlodipine", "amlong"], med_search_text)
+            if ctx_amlo:
+                dose = parse_dosage("amlodipine", ctx_amlo, "5mg")
+                medicines.append({
+                    "name": "Amlodipine",
+                    "dosage": dose,
+                    "frequency": "Once daily in morning (1-0-0)",
+                    "instructions": "Take after breakfast for blood pressure control.",
+                    "duration_days": 30,
+                    "meal_relation": "after_meal",
+                    "is_sos": False,
+                })
+                reminders.append({"medicine_name": "Amlodipine", "dosage": dose, "time": "08:30", "frequency": "daily", "instructions": f"Take Amlodipine ({dose}) after breakfast."})
 
         if "metformin" in med_search_text or "glycomet" in med_search_text:
             dose = parse_dosage("metformin", med_search_text, "500mg") if "metformin" in med_search_text else parse_dosage("glycomet", med_search_text, "500mg")

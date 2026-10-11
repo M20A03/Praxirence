@@ -515,82 +515,95 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
         </View>
       )}
 
-      {/* Consultation Language Hint Selector */}
-      {!isRecording && (
-        <View style={styles.langSelectorContainer}>
-          <Text style={styles.langSelectorLabel}>Consultation Language:</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.langScroll}>
-            {[
-              { code: 'hi', label: 'Hinglish / हिन्दी' },
-              { code: 'en', label: 'English' },
-              { code: 'kn', label: 'ಕನ್ನಡ' },
-              { code: 'te', label: 'తెలుగు' },
-              { code: 'ta', label: 'தமிழ்' },
-            ].map((item) => (
-              <TouchableOpacity
-                key={item.code}
-                style={[styles.langChip, selectedLanguage === item.code && styles.langChipActive]}
-                onPress={() => setSelectedLanguage(item.code as any)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.langChipText, selectedLanguage === item.code && styles.langChipTextActive]}>
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
+
 
       {/* Main Action Controls */}
       <View style={styles.controlsRow}>
         {!isRecording ? (
           <TouchableOpacity
-            style={styles.micButton}
+            style={{
+              backgroundColor: '#0284C7',
+              borderRadius: 14,
+              paddingVertical: 14,
+              paddingHorizontal: 18,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              width: '100%',
+              shadowColor: '#0284C7',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.25,
+              shadowRadius: 8,
+              elevation: 4,
+            }}
             onPress={startRecording}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
             disabled={processing}
           >
-            <Animated.View
-              style={[
-                styles.micCircle,
-                { transform: [{ scale: pulseAnim }] },
-              ]}
-            >
-              <Ionicons name="mic" size={28} color="#FFFFFF" />
-            </Animated.View>
-            <Text style={styles.micButtonText}>Start Voice Recording</Text>
+            <View style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Ionicons name="mic" size={24} color="#FFFFFF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 16, fontWeight: '800', color: '#FFFFFF', letterSpacing: -0.2 }}>
+                Start Consultation Recording
+              </Text>
+              <Text style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.85)', marginTop: 2 }}>
+                Ambient AI Scribe • Auto-Extracts Medications & Instructions
+              </Text>
+            </View>
           </TouchableOpacity>
         ) : (
-          <View style={styles.recordingCluster}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: '100%' }}>
             {/* Discard Button */}
             <TouchableOpacity
-              style={styles.clusterDiscardBtn}
+              style={{
+                backgroundColor: '#FEE2E2',
+                borderRadius: 12,
+                paddingVertical: 12,
+                paddingHorizontal: 14,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+              }}
               onPress={discardRecording}
               activeOpacity={0.7}
             >
-              <Ionicons name="trash-outline" size={18} color="#DC2626" />
-              <Text style={styles.clusterDiscardText}>Discard</Text>
+              <Ionicons name="trash-outline" size={16} color="#DC2626" />
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#DC2626' }}>Discard</Text>
             </TouchableOpacity>
 
-            {/* Pause / Resume Button */}
+            {/* End & Auto-Generate Care Plan Hero Button */}
             <TouchableOpacity
-              style={[styles.clusterPauseBtn, isPaused && styles.clusterResumeBtn]}
-              onPress={isPaused ? resumeRecording : pauseRecording}
-              activeOpacity={0.7}
-            >
-              <Ionicons name={isPaused ? "play" : "pause"} size={18} color="#FFFFFF" />
-              <Text style={styles.clusterActionText}>{isPaused ? "Resume" : "Pause"}</Text>
-            </TouchableOpacity>
-
-            {/* Finish & AI Extract Button */}
-            <TouchableOpacity
-              style={styles.clusterFinishBtn}
+              style={{
+                flex: 1,
+                backgroundColor: '#10B981',
+                borderRadius: 12,
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                shadowColor: '#10B981',
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.25,
+                shadowRadius: 6,
+                elevation: 3,
+              }}
               onPress={stopRecording}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
               <Ionicons name="sparkles" size={18} color="#FFFFFF" />
-              <Text style={styles.clusterActionText}>Finish & Extract</Text>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: '#FFFFFF' }}>
+                End & Generate Care Plan
+              </Text>
             </TouchableOpacity>
           </View>
         )}

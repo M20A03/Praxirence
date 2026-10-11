@@ -102,6 +102,19 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const [submittingCheckin, setSubmittingCheckin] = useState<boolean>(false);
   const [checkinSubmittedSuccess, setCheckinSubmittedSuccess] = useState<string | null>(null);
 
+  // Real-time In-App DPDP Consent Request Modal
+  const [pendingConsentRequest, setPendingConsentRequest] = useState<any>(null);
+  const [respondingConsent, setRespondingConsent] = useState<boolean>(false);
+
+  // Quick Daily Health & Vitals Check-in Modal
+  const [showQuickCheckinModal, setShowQuickCheckinModal] = useState<boolean>(false);
+  const [checkinFeeling, setCheckinFeeling] = useState<'better' | 'same' | 'worse'>('same');
+  const [checkinSymptomsText, setCheckinSymptomsText] = useState<string>('');
+  const [checkinPainScoreVal, setCheckinPainScoreVal] = useState<number>(0);
+  const [checkinBPVal, setCheckinBPVal] = useState<string>('');
+  const [checkinSugarVal, setCheckinSugarVal] = useState<string>('');
+  const [submittingVitalsCheckin, setSubmittingVitalsCheckin] = useState<boolean>(false);
+
   // Optional Doctor Experience Review State (Minimum 10 words, completely optional for patient reference)
   const [pendingReviews, setPendingReviews] = useState<any[]>([]);
   const [reviewRating, setReviewRating] = useState<number>(5);
@@ -375,6 +388,70 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     } catch (e) {}
   };
 
+  // Polling for live doctor authorization request (DPDP Act 2023)
+  useEffect(() => {
+    if (!user || !user.id) return;
+    const checkPendingAuth = async () => {
+      try {
+        const res = await mobileApi.getPendingAuthorization(user.id);
+        if (res && res.has_pending && res.request) {
+          setPendingConsentRequest(res.request);
+        } else {
+          setPendingConsentRequest(null);
+        }
+      } catch {}
+    };
+
+    checkPendingAuth();
+    const interval = setInterval(checkPendingAuth, 2500);
+    return () => clearInterval(interval);
+  }, [user?.id]);
+
+  const handleRespondLiveConsent = async (action: 'GRANT' | 'DECLINE') => {
+    setRespondingConsent(true);
+    try {
+      await mobileApi.respondLiveAuthorization(user.id, action);
+      if (action === 'GRANT') {
+        try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
+        Alert.alert(
+          'Authorization Granted',
+          'Digital consent shared securely with your doctor. They can now generate your electronic care plan.'
+        );
+      }
+      setPendingConsentRequest(null);
+    } catch (err: any) {
+      Alert.alert('Notice', err?.message || 'Authorization recorded.');
+      setPendingConsentRequest(null);
+    } finally {
+      setRespondingConsent(false);
+    }
+  };
+
+  const handleSubmitVitalsCheckin = async () => {
+    setSubmittingVitalsCheckin(true);
+    try {
+      await mobileApi.submitVitalsCheckin(user.id, {
+        feeling: checkinFeeling,
+        symptoms: checkinSymptomsText,
+        pain_score: checkinPainScoreVal,
+        blood_pressure: checkinBPVal,
+        blood_sugar: checkinSugarVal,
+      });
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
+      Alert.alert(
+        'Check-in Synced',
+        'Your daily health status and vitals have been uploaded directly to your doctor’s live terminal.'
+      );
+      setShowQuickCheckinModal(false);
+      setCheckinSymptomsText('');
+    } catch (err: any) {
+      Alert.alert('Notice', err?.message || 'Check-in recorded.');
+      setShowQuickCheckinModal(false);
+    } finally {
+      setSubmittingVitalsCheckin(false);
+    }
+  };
+
   const loadDashboardData = async () => {
     const cacheKey = `praxirence_careplan_${user.id}`;
     try {
@@ -639,6 +716,36 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         />
       }
     >
+      {/* Quick Health Status & Vitals Check-in Card */}
+      <TouchableOpacity
+        style={{
+          marginHorizontal: 16,
+          marginTop: 10,
+          marginBottom: 6,
+          backgroundColor: '#F0F9FF',
+          borderWidth: 1,
+          borderColor: '#BAE6FD',
+          borderRadius: 14,
+          padding: 12,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+        onPress={() => setShowQuickCheckinModal(true)}
+        activeOpacity={0.8}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#0284C7', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="pulse" size={18} color="#FFFFFF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: '#0369A1' }}>Daily Health & Vitals Check-in</Text>
+            <Text style={{ fontSize: 11, color: '#475569', marginTop: 1 }}>Tap to record symptoms, pain score & sync to doctor</Text>
+          </View>
+        </View>
+        <Ionicons name="chevron-forward" size={16} color="#0284C7" />
+      </TouchableOpacity>
+
       {/* Brand Logo Top Header */}
       <View style={styles.topBrandBar}>
         <View style={{ flexShrink: 1 }}>
@@ -1319,6 +1426,279 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               {rescheduling ? '...' : t('confirmRescheduleBtn')}
             </Text>
           </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+
+    {/* Live DPDP In-App Consent Authorization Modal Popup */}
+    <Modal
+      visible={!!pendingConsentRequest}
+      transparent
+      animationType="fade"
+    >
+      <View style={{
+        flex: 1,
+        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+      }}>
+        <View style={{
+          width: '100%',
+          maxWidth: 400,
+          backgroundColor: '#FFFFFF',
+          borderRadius: 20,
+          padding: 24,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.25,
+          shadowRadius: 16,
+          elevation: 10,
+        }}>
+          <View style={{
+            width: 52,
+            height: 52,
+            borderRadius: 26,
+            backgroundColor: '#F0FDF4',
+            borderWidth: 1.5,
+            borderColor: '#86EFAC',
+            alignItems: 'center',
+            justifyContent: 'center',
+            alignSelf: 'center',
+            marginBottom: 16,
+          }}>
+            <Ionicons name="shield-checkmark" size={28} color="#15803D" />
+          </View>
+
+          <Text style={{
+            fontSize: 11,
+            fontWeight: '800',
+            color: '#0369A1',
+            textAlign: 'center',
+            letterSpacing: 0.5,
+            textTransform: 'uppercase',
+            marginBottom: 4,
+          }}>
+            DPDP Act 2023 • Digital Authorization
+          </Text>
+
+          <Text style={{
+            fontSize: 18,
+            fontWeight: '800',
+            color: '#0F172A',
+            textAlign: 'center',
+            marginBottom: 10,
+          }}>
+            Doctor Authorization Request
+          </Text>
+
+          <Text style={{
+            fontSize: 13,
+            color: '#475569',
+            textAlign: 'center',
+            lineHeight: 19,
+            marginBottom: 20,
+          }}>
+            <Text style={{ fontWeight: '700', color: '#0F172A' }}>
+              {pendingConsentRequest?.doctor_name || 'Your Clinician'}
+            </Text>{' '}
+            is requesting your digital authorization to prepare and share your electronic care plan and prescription.
+          </Text>
+
+          <View style={{ gap: 10 }}>
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#10B981',
+                borderRadius: 12,
+                paddingVertical: 13,
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'row',
+                gap: 8,
+              }}
+              onPress={() => handleRespondLiveConsent('GRANT')}
+              disabled={respondingConsent}
+              activeOpacity={0.85}
+            >
+              {respondingConsent ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" />
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: '#FFFFFF' }}>
+                    Grant Authorization
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#F1F5F9',
+                borderRadius: 12,
+                paddingVertical: 11,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onPress={() => handleRespondLiveConsent('DECLINE')}
+              disabled={respondingConsent}
+              activeOpacity={0.7}
+            >
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#64748B' }}>
+                Decline
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+
+    {/* Quick Daily Health & Vitals Check-in Modal */}
+    <Modal
+      visible={showQuickCheckinModal}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setShowQuickCheckinModal(false)}
+    >
+      <View style={{
+        flex: 1,
+        backgroundColor: 'rgba(15, 23, 42, 0.6)',
+        justifyContent: 'flex-end',
+      }}>
+        <View style={{
+          backgroundColor: '#FFFFFF',
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          padding: 22,
+          maxHeight: '90%',
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="pulse" size={20} color="#0284C7" />
+              <Text style={{ fontSize: 17, fontWeight: '800', color: '#0F172A' }}>Daily Health & Vitals Check-in</Text>
+            </View>
+            <TouchableOpacity onPress={() => setShowQuickCheckinModal(false)}>
+              <Ionicons name="close-circle" size={24} color="#94A3B8" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#334155', marginBottom: 8 }}>How are you feeling today?</Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+              {[
+                { key: 'better', label: 'Better 🟢', bg: '#DCFCE7', text: '#15803D' },
+                { key: 'same', label: 'Same 🟡', bg: '#FEF9C3', text: '#854D0E' },
+                { key: 'worse', label: 'Worse 🔴', bg: '#FEE2E2', text: '#B91C1C' },
+              ].map((item) => (
+                <TouchableOpacity
+                  key={item.key}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 10,
+                    borderRadius: 10,
+                    backgroundColor: checkinFeeling === item.key ? item.bg : '#F8FAFC',
+                    borderWidth: checkinFeeling === item.key ? 2 : 1,
+                    borderColor: checkinFeeling === item.key ? item.text : '#E2E8F0',
+                    alignItems: 'center',
+                  }}
+                  onPress={() => setCheckinFeeling(item.key as any)}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: item.text }}>{item.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#334155', marginBottom: 8 }}>Pain Level (0 = None, 10 = Severe): {checkinPainScoreVal}/10</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                <TouchableOpacity
+                  key={num}
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: checkinPainScoreVal === num ? '#0284C7' : '#F1F5F9',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  onPress={() => setCheckinPainScoreVal(num)}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: checkinPainScoreVal === num ? '#FFFFFF' : '#334155' }}>
+                    {num}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#334155', marginBottom: 6 }}>Current Symptoms or Notes</Text>
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: '#CBD5E1',
+                borderRadius: 10,
+                padding: 10,
+                fontSize: 13,
+                color: '#0F172A',
+                minHeight: 60,
+                textAlignVertical: 'top',
+                marginBottom: 14,
+              }}
+              placeholder="e.g. Mild headache subsided after morning tablet, feeling energetic..."
+              placeholderTextColor="#94A3B8"
+              multiline
+              value={checkinSymptomsText}
+              onChangeText={setCheckinSymptomsText}
+            />
+
+            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#475569', marginBottom: 4 }}>Blood Pressure (optional)</Text>
+                <TextInput
+                  style={{ borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 8, padding: 8, fontSize: 12, color: '#0F172A' }}
+                  placeholder="e.g. 120/80"
+                  placeholderTextColor="#94A3B8"
+                  value={checkinBPVal}
+                  onChangeText={setCheckinBPVal}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#475569', marginBottom: 4 }}>Blood Sugar (optional)</Text>
+                <TextInput
+                  style={{ borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 8, padding: 8, fontSize: 12, color: '#0F172A' }}
+                  placeholder="e.g. 110 mg/dL"
+                  placeholderTextColor="#94A3B8"
+                  value={checkinSugarVal}
+                  onChangeText={setCheckinSugarVal}
+                />
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#0284C7',
+                borderRadius: 12,
+                paddingVertical: 13,
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'row',
+                gap: 8,
+              }}
+              onPress={handleSubmitVitalsCheckin}
+              disabled={submittingVitalsCheckin}
+              activeOpacity={0.85}
+            >
+              {submittingVitalsCheckin ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <Ionicons name="cloud-upload" size={18} color="#FFFFFF" />
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: '#FFFFFF' }}>
+                    Submit & Sync to Doctor Terminal
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </ScrollView>
         </View>
       </View>
     </Modal>

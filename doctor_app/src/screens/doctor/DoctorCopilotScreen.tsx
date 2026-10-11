@@ -40,6 +40,7 @@ export default function DoctorCopilotScreen({
 
   // Integrated Multi-Drug Safety Tray
   const [showMedTray, setShowMedTray] = useState(false);
+  const [showPresets, setShowPresets] = useState(false);
   const [medInput, setMedInput] = useState('');
   const [medList, setMedList] = useState<string[]>([]);
   const [copilotHistory, setCopilotHistory] = useState<Array<{ id: string; query: string; reply: string; timestamp: string }>>([]);
@@ -350,26 +351,42 @@ ${copilotReply}`,
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        {/* Quick Consultation Presets */}
-        <Text style={styles.sectionLabel}>CLINICAL CAPABILITY PRESETS</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
-          {QUICK_PROMPTS.map((item, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={styles.chip}
-              onPress={() => {
-                setQuery(item.query);
-                if (item.tray) {
-                  setShowMedTray(true);
-                }
-                handleAskCopilot(item.query);
-              }}
-            >
-              <Ionicons name={item.icon} size={14} color="#0284C7" style={{ marginRight: 6 }} />
-              <Text style={styles.chipText}>{item.title}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        {/* Quick Sample Prompts (Collapsible to prevent cognitive clutter) */}
+        <TouchableOpacity
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6, marginHorizontal: 4, marginBottom: 6 }}
+          onPress={() => setShowPresets(!showPresets)}
+          activeOpacity={0.7}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name="bulb-outline" size={13} color="#0284C7" />
+            <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B', letterSpacing: 0.5, textTransform: 'uppercase' }}>
+              Quick Clinical Suggestions
+            </Text>
+          </View>
+          <Text style={{ fontSize: 11, color: '#0284C7', fontWeight: '600' }}>
+            {showPresets ? 'Hide ▲' : 'Show Suggestions ▼'}
+          </Text>
+        </TouchableOpacity>
+        {showPresets && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.chipRow, { marginBottom: 12 }]}>
+            {QUICK_PROMPTS.map((item, idx) => (
+              <TouchableOpacity
+                key={idx}
+                style={styles.chip}
+                onPress={() => {
+                  setQuery(item.query);
+                  if (item.tray) {
+                    setShowMedTray(true);
+                  }
+                  handleAskCopilot(item.query);
+                }}
+              >
+                <Ionicons name={item.icon} size={14} color="#0284C7" style={{ marginRight: 6 }} />
+                <Text style={styles.chipText}>{item.title}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
 
         {/* Main Unified Input Card */}
         <View style={styles.inputCard}>

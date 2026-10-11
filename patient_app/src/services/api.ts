@@ -513,16 +513,18 @@ export const mobileApi = {
       setAuthToken(token);
       setActiveRoleState(role);
 
-      // Verify token with backend /auth/me
+      // Verify token with backend /auth/me with strict 2.0s network timeout
       try {
-        const res = await resilientFetch(`${getEffectiveApiUrl()}/auth/me`, {
+        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000));
+        const netPromise = resilientFetch(`${getEffectiveApiUrl()}/auth/me`, {
           headers: {
             'Accept': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-        }, 1);
+        }, 0);
+        const res: any = await Promise.race([netPromise, timeoutPromise]);
 
-        if (res.ok) {
+        if (res && res.ok) {
           const verified = await res.json();
           await SecureStorage.setItem('praxirence_user', JSON.stringify(verified.user));
           return { role: verified.role, user: verified.user };
@@ -1370,6 +1372,51 @@ export const mobileApi = {
   async saveVitals(patientId: string, vitals: VitalsRecord): Promise<void> {
     const key = `praxirence_vitals_${patientId}`;
     await AsyncStorage.setItem(key, JSON.stringify(vitals));
+  },
+
+  // ==================== LIVE IN-APP CONSENT & VITALS CHECK-IN ====================
+
+  async getPendingAuthorization(patientId: string): Promise<{ has_pending: boolean; request: any }> {
+    try {
+      const res = await resilientFetch(`${getEffectiveApiUrl()}/patients/${patientId}/pending-authorization`);
+      if (!res.ok) return { has_pending: false, request: null };
+      return await res.json();
+    } catch {
+      return { has_pending: false, request: null };
+    }
+  },
+
+  async respondLiveAuthorization(patientId: string, action: 'GRANT' | 'DECLINE'): Promise<{ success: boolean; consent_status: boolean; message: string }> {
+    const res = await resilientFetch(`${getEffectiveApiUrl()}/patients/${patientId}/respond-live-authorization`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action }),
+    }, 0);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to submit authorization response');
+    }
+    return await res.json();
+  },
+
+  async submitVitalsCheckin(patientId: string, data: {
+    feeling: string;
+    symptoms: string;
+    pain_score: number;
+    blood_pressure?: string;
+    blood_sugar?: string;
+    notes?: string;
+  }): Promise<{ success: boolean; message: string; record: any }> {
+    const res = await resilientFetch(`${getEffectiveApiUrl()}/patients/${patientId}/vitals-checkin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }, 0);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to submit health check-in');
+    }
+    return await res.json();
   },
 };
 

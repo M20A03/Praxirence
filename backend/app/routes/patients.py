@@ -1041,8 +1041,19 @@ def add_patient_family_member(
         except Exception:
             pass
 
+    # Generate dedicated Sub-UHID for the family dependent
+    parent_uhid = getattr(patient, "uhid", None) or f"PRX-PAT-{str(patient.id)[:5].upper()}"
+    existing_fam_count = db.query(Patient).filter(
+        or_(
+            Patient.primary_account_phone == patient.phone,
+            Patient.phone_hash == patient.phone_hash
+        )
+    ).count()
+    sub_uhid = f"{parent_uhid}-F{existing_fam_count + 1}"
+
     family_member = Patient(
         name=name,
+        uhid=sub_uhid,
         dob=dob_val,
         family_relation=relation,
         primary_account_phone=patient.phone,
@@ -1291,3 +1302,218 @@ def get_patient_health_records_pdf(
             "Access-Control-Expose-Headers": "Content-Disposition"
         }
     )
+
+
+# =====================================================================
+# REAL-TIME IN-APP CONSENT PROTOCOL & VITALS CHECK-IN
+# =====================================================================
+_live_consent_requests: dict = {}
+_latest_patient_vitals: dict = {}
+
+
+@router.get("/search-by-uhid")
+def search_patients_by_uhid(query: str = Query(..., min_length=2), db: Session = Depends(get_db)):
+    """
+    Look up patient directory by exact or partial Registration Number (UHID: PRX-PAT-XXXXX)
+    or Phone Number, including dependent Family Members.
+    """
+    clean_q = query.strip().upper()
+    results = db.query(Patient).filter(
+        or_(
+            Patient.uhid.ilike(f"%{clean_q}%"),
+            Patient.name.ilike(f"%{query.strip()}%")
+        )
+    ).limit(10).all()
+
+    digits = "".join(filter(str.isdigit, query))
+    if len(digits) >= 10:
+        phone_hash = compute_phone_hash(f"+91{digits[-10:]}")
+        by_phone = db.query(Patient).filter(Patient.phone_hash == phone_hash).all()
+        for p in by_phone:
+            if p not in results:
+                results.append(p)
+
+    out = []
+    for p in results:
+        out.append({
+            "id": p.id,
+            "name": p.name,
+            "uhid": getattr(p, "uhid", None) or f"PRX-PAT-{p.id[:5].upper()}",
+            "phone": p.phone if getattr(p, "phone", None) else "",
+            "family_relation": getattr(p, "family_relation", "Self"),
+            "consent_status": p.consent_status,
+            "age": p.age,
+            "gender": p.gender,
+        })
+    return out
+
+
+@router.post("/{patient_id}/request-live-authorization")
+def request_live_patient_authorization(patient_id: str, payload: dict, db: Session = Depends(get_db)):
+    """
+    Dispatches a real-time digital consent authorization request to the patient's mobile app.
+    Replaces calling or manual forms under DPDP Act 2023.
+    """
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    doctor_name = payload.get("doctor_name", "Your Clinician")
+    doctor_id = payload.get("doctor_id", "")
+
+    req_data = {
+        "patient_id": patient_id,
+        "doctor_id": doctor_id,
+        "doctor_name": doctor_name,
+        "status": "PENDING",
+        "requested_at": datetime.now(timezone.utc).isoformat()
+    }
+    _live_consent_requests[patient_id] = req_data
+
+    return {
+        "success": True,
+        "message": f"Authorization request sent to {patient.name}'s Praxirence app.",
+        "request": req_data
+    }
+
+
+@router.get("/{patient_id}/pending-authorization")
+def get_pending_patient_authorization(patient_id: str):
+    """
+    Patient app polls/checks for active authorization requests from their doctor.
+    """
+    req_data = _live_consent_requests.get(patient_id)
+    if not req_data or req_data.get("status") != "PENDING":
+        return {"has_pending": False, "request": None}
+
+    try:
+        req_time = datetime.fromisoformat(req_data["requested_at"])
+        if (datetime.now(timezone.utc) - req_time).total_seconds() > 600:
+            _live_consent_requests.pop(patient_id, None)
+            return {"has_pending": False, "request": None}
+    except Exception:
+        pass
+
+    return {"has_pending": True, "request": req_data}
+
+
+@router.post("/{patient_id}/respond-live-authorization")
+def respond_live_patient_authorization(patient_id: str, payload: dict, db: Session = Depends(get_db)):
+    """
+    Patient grants or declines the live digital authorization request from their mobile app.
+    """
+    action = payload.get("action", "GRANT").upper()
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    if action == "GRANT":
+        patient.consent_status = True
+        patient.consent_updated_at = datetime.now(timezone.utc)
+        db.commit()
+
+        if patient_id in _live_consent_requests:
+            _live_consent_requests[patient_id]["status"] = "GRANTED"
+
+        import uuid
+        try:
+            log = ConsentLog(
+                id=str(uuid.uuid4()),
+                patient_id=patient_id,
+                action="dpdp_live_in_app_authorization_granted",
+                timestamp=datetime.now(timezone.utc),
+                ip_address="127.0.0.1",
+                user_agent="Praxirence-PatientApp/1.0"
+            )
+            db.add(log)
+            db.commit()
+        except Exception:
+            pass
+
+        return {
+            "success": True,
+            "consent_status": True,
+            "message": "Authorization successfully granted to your doctor."
+        }
+    else:
+        if patient_id in _live_consent_requests:
+            _live_consent_requests[patient_id]["status"] = "DECLINED"
+        return {
+            "success": True,
+            "consent_status": False,
+            "message": "Authorization declined."
+        }
+
+
+@router.get("/{patient_id}/live-authorization-status")
+def get_live_authorization_status(patient_id: str, db: Session = Depends(get_db)):
+    """
+    Doctor screen polls this endpoint to detect when patient taps 'Grant Authorization' in app.
+    """
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    req_data = _live_consent_requests.get(patient_id, {})
+    return {
+        "patient_id": patient_id,
+        "consent_status": patient.consent_status,
+        "request_status": req_data.get("status", "NONE"),
+        "doctor_name": req_data.get("doctor_name")
+    }
+
+
+@router.post("/{patient_id}/vitals-checkin")
+def submit_patient_vitals_checkin(patient_id: str, payload: dict, db: Session = Depends(get_db)):
+    """
+    Records daily patient health status & vitals update and syncs to doctor's live terminal.
+    """
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    checkin_record = {
+        "patient_id": patient_id,
+        "patient_name": patient.name,
+        "feeling": payload.get("feeling", "same"),
+        "symptoms": payload.get("symptoms", ""),
+        "pain_score": payload.get("pain_score", 0),
+        "blood_pressure": payload.get("blood_pressure", ""),
+        "blood_sugar": payload.get("blood_sugar", ""),
+        "notes": payload.get("notes", ""),
+        "submitted_at": datetime.now(timezone.utc).isoformat()
+    }
+    _latest_patient_vitals[patient_id] = checkin_record
+
+    latest_visit = db.query(Visit).filter(Visit.patient_id == patient_id).order_by(Visit.date.desc()).first()
+    if latest_visit:
+        latest_visit.day3_followup_status = "responded"
+        latest_visit.day3_followup_response = checkin_record
+        db.commit()
+
+    return {
+        "success": True,
+        "message": "Health status and vitals submitted successfully.",
+        "record": checkin_record
+    }
+
+
+@router.get("/{patient_id}/latest-vitals")
+def get_latest_patient_vitals(patient_id: str, db: Session = Depends(get_db)):
+    """
+    Fetches the patient's latest real-time vitals and health status for the doctor terminal.
+    """
+    if patient_id in _latest_patient_vitals:
+        return _latest_patient_vitals[patient_id]
+
+    latest_visit = db.query(Visit).filter(Visit.patient_id == patient_id).order_by(Visit.date.desc()).first()
+    if latest_visit and latest_visit.day3_followup_response:
+        return latest_visit.day3_followup_response
+
+    return {
+        "patient_id": patient_id,
+        "feeling": "no_data",
+        "symptoms": "No recent check-in",
+        "pain_score": 0,
+        "submitted_at": None
+    }

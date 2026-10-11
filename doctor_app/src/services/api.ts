@@ -467,16 +467,18 @@ export const mobileApi = {
       setAuthToken(token);
       setActiveRoleState(role);
 
-      // Verify token with backend /auth/me
+      // Verify token with backend /auth/me with strict 2.0s network timeout
       try {
-        const res = await resilientFetch(`${getEffectiveApiUrl()}/auth/me`, {
+        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000));
+        const netPromise = resilientFetch(`${getEffectiveApiUrl()}/auth/me`, {
           headers: {
             'Accept': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-        }, 1);
+        }, 0);
+        const res: any = await Promise.race([netPromise, timeoutPromise]);
 
-        if (res.ok) {
+        if (res && res.ok) {
           const verified = await res.json();
           await SecureStorage.setItem('praxirence_user', JSON.stringify(verified.user));
           return { role: verified.role, user: verified.user };
@@ -1459,6 +1461,51 @@ export const mobileApi = {
       throw new Error(err.detail || 'DDI safety check service temporarily unavailable.');
     }
     return await res.json();
+  },
+
+  // ==================== LIVE IN-APP CONSENT & UHID DIRECTORY ====================
+
+  async searchPatientsByUhid(query: string): Promise<any[]> {
+    try {
+      const res = await resilientFetch(`${getEffectiveApiUrl()}/patients/search-by-uhid?query=${encodeURIComponent(query)}`);
+      if (!res.ok) return [];
+      return await res.json();
+    } catch {
+      return [];
+    }
+  },
+
+  async requestLiveAuthorization(patientId: string, doctorId: string, doctorName: string): Promise<any> {
+    const res = await resilientFetch(`${getEffectiveApiUrl()}/patients/${patientId}/request-live-authorization`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ doctor_id: doctorId, doctor_name: doctorName }),
+    }, 0);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to dispatch live authorization request');
+    }
+    return await res.json();
+  },
+
+  async getLiveAuthorizationStatus(patientId: string): Promise<{ consent_status: boolean; request_status: string }> {
+    try {
+      const res = await resilientFetch(`${getEffectiveApiUrl()}/patients/${patientId}/live-authorization-status`);
+      if (!res.ok) return { consent_status: false, request_status: 'NONE' };
+      return await res.json();
+    } catch {
+      return { consent_status: false, request_status: 'NONE' };
+    }
+  },
+
+  async getLatestPatientVitals(patientId: string): Promise<any> {
+    try {
+      const res = await resilientFetch(`${getEffectiveApiUrl()}/patients/${patientId}/latest-vitals`);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
   },
 };
 

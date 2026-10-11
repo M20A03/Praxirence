@@ -131,8 +131,19 @@ function PatientAppContent() {
 
         const notifType = data?.type || '';
         if (
+          notifType === 'CHECKIN' ||
+          notifType === 'checkin' ||
+          notifType === 'VITALS_UPDATE' ||
+          notifType === 'medicine_reminder'
+        ) {
+          // Deep link directly to Quick Health & Vitals Check-in or Personalized Chatbot
+          if (data?.redirect === 'chat') {
+            navigationRef.navigate('Assistant', { initialQuery: data?.message || 'I want to update my health status.' });
+          } else {
+            navigationRef.navigate('Today');
+          }
+        } else if (
           notifType === 'NEW_PRESCRIPTION' ||
-          notifType === 'medicine_reminder' ||
           notifType === 'vault' ||
           notifType === 'CARE_PLAN'
         ) {

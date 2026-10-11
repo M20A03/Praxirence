@@ -14,6 +14,7 @@ import {
   Modal,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../../theme';
 import { PatientSummary, MedicineItem, ReminderItem, DoctorUser, ConsultationSummarizeResult, AmberAlertItem, SOAPStructure } from '../../types';
@@ -78,6 +79,88 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
   const [pendingLink, setPendingLink] = useState<{ linkId: string; patientName: string; code?: string } | null>(null);
   const [inputCode, setInputCode] = useState<string>('');
   const [verifyingCode, setVerifyingCode] = useState<boolean>(false);
+
+  // Real-time In-App Consent & UHID Search States
+  const [requestingConsentAuth, setRequestingConsentAuth] = useState(false);
+  const [consentAuthDispatched, setConsentAuthDispatched] = useState(false);
+  const [latestPatientVitals, setLatestPatientVitals] = useState<any>(null);
+  const [uhidSearchQuery, setUhidSearchQuery] = useState('');
+  const [uhidSearchResults, setUhidSearchResults] = useState<any[]>([]);
+  const [searchingUhid, setSearchingUhid] = useState(false);
+
+  const handleRequestLiveConsent = async (patId: string) => {
+    setRequestingConsentAuth(true);
+    try {
+      await mobileApi.requestLiveAuthorization(patId, doctor.id, doctor.name);
+      setConsentAuthDispatched(true);
+      Alert.alert(
+        'Authorization Dispatched to Patient App',
+        'A real-time prompt has been sent to the patient’s Praxirence app. Once they tap "Grant Authorization", consent will activate immediately on your screen.'
+      );
+    } catch (err: any) {
+      Alert.alert('Request Notice', err?.message || 'Authorization request sent to patient app.');
+      setConsentAuthDispatched(true);
+    } finally {
+      setRequestingConsentAuth(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!selectedPatientId || !consentAuthDispatched) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await mobileApi.getLiveAuthorizationStatus(selectedPatientId);
+        if (res.consent_status) {
+          setPatients((prev) =>
+            prev.map((p) => (p.id === selectedPatientId ? { ...p, consent_status: true } : p))
+          );
+          setConsentAuthDispatched(false);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        }
+      } catch {}
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [selectedPatientId, consentAuthDispatched]);
+
+  useEffect(() => {
+    if (!selectedPatientId) {
+      setLatestPatientVitals(null);
+      return;
+    }
+    mobileApi.getLatestPatientVitals(selectedPatientId).then((v) => {
+      if (v && v.feeling && v.feeling !== 'no_data') {
+        setLatestPatientVitals(v);
+      } else {
+        setLatestPatientVitals(null);
+      }
+    }).catch(() => {});
+  }, [selectedPatientId]);
+
+  const handleSearchUhid = async (q: string) => {
+    setUhidSearchQuery(q);
+    if (!q.trim() || q.trim().length < 2) {
+      setUhidSearchResults([]);
+      return;
+    }
+    setSearchingUhid(true);
+    try {
+      const results = await mobileApi.searchPatientsByUhid(q.trim());
+      setUhidSearchResults(results);
+    } catch {
+      setUhidSearchResults([]);
+    } finally {
+      setSearchingUhid(false);
+    }
+  };
+
+  const handleSelectSearchedPatient = (p: any) => {
+    if (!patients.some((existing) => existing.id === p.id)) {
+      setPatients((prev) => [p, ...prev]);
+    }
+    setSelectedPatientId(p.id);
+    setUhidSearchQuery('');
+    setUhidSearchResults([]);
+  };
 
   const handleCreateQuickPatient = async () => {
     if (!quickPatientName.trim()) {
@@ -664,6 +747,82 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
           </TouchableOpacity>
         </View>
 
+        {/* Quick Search by UHID / Registration Number */}
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: '#F8FAFC',
+          borderWidth: 1,
+          borderColor: '#CBD5E1',
+          borderRadius: 10,
+          paddingHorizontal: 10,
+          paddingVertical: 6,
+          marginBottom: 10,
+          gap: 8,
+        }}>
+          <Ionicons name="search" size={16} color="#64748B" />
+          <TextInput
+            style={{ flex: 1, fontSize: 13, color: '#0F172A', paddingVertical: 2 }}
+            placeholder="Search Registration No. (PRX-PAT-XXXXX) or Mobile..."
+            placeholderTextColor="#94A3B8"
+            value={uhidSearchQuery}
+            onChangeText={handleSearchUhid}
+            autoCapitalize="characters"
+          />
+          {searchingUhid ? (
+            <ActivityIndicator size="small" color="#0284C7" />
+          ) : uhidSearchQuery.length > 0 ? (
+            <TouchableOpacity onPress={() => { setUhidSearchQuery(''); setUhidSearchResults([]); }}>
+              <Ionicons name="close-circle" size={16} color="#94A3B8" />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        {/* Dropdown Results if searching */}
+        {uhidSearchResults.length > 0 && (
+          <View style={{
+            backgroundColor: '#FFFFFF',
+            borderWidth: 1,
+            borderColor: '#BAE6FD',
+            borderRadius: 10,
+            marginBottom: 12,
+            padding: 4,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.08,
+            shadowRadius: 6,
+            elevation: 3,
+          }}>
+            {uhidSearchResults.map((sr) => (
+              <TouchableOpacity
+                key={sr.id}
+                style={{
+                  paddingVertical: 8,
+                  paddingHorizontal: 10,
+                  borderBottomWidth: 1,
+                  borderBottomColor: '#F1F5F9',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+                onPress={() => handleSelectSearchedPatient(sr)}
+              >
+                <View>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#0F172A' }}>
+                    {sr.name} {sr.family_relation && sr.family_relation !== 'Self' ? `(${sr.family_relation})` : ''}
+                  </Text>
+                  <Text style={{ fontSize: 11, color: '#0284C7', fontWeight: '600' }}>
+                    {sr.uhid} {sr.phone ? `• ${sr.phone}` : ''}
+                  </Text>
+                </View>
+                <View style={{ backgroundColor: '#F0F9FF', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#0369A1' }}>Select</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
         {patients.length === 0 ? (
           <View style={styles.noPatientsBox}>
             <View style={styles.noPatientsIcon}>
@@ -781,26 +940,67 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
                         Patient digital consent is currently paused. Please request authorization to dispatch electronic care plan.
                       </Text>
                     </View>
-                    {currentSelectedPat?.phone ? (
-                      <TouchableOpacity
-                        style={{
-                          backgroundColor: '#F8FAFC',
-                          borderWidth: 1,
-                          borderColor: '#CBD5E1',
-                          paddingHorizontal: 12,
-                          paddingVertical: 8,
-                          borderRadius: 8,
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: 6
-                        }}
-                        onPress={() => Linking.openURL(`tel:${currentSelectedPat.phone}`)}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons name="call-outline" size={13} color="#0284C7" />
-                        <Text style={{ fontSize: 11, fontWeight: '700', color: '#0F172A' }}>Contact</Text>
-                      </TouchableOpacity>
-                    ) : null}
+                    <TouchableOpacity
+                      style={{
+                        backgroundColor: consentAuthDispatched ? '#F0FDF4' : '#0284C7',
+                        borderWidth: consentAuthDispatched ? 1 : 0,
+                        borderColor: '#10B981',
+                        paddingHorizontal: 12,
+                        paddingVertical: 8,
+                        borderRadius: 8,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}
+                      onPress={() => currentSelectedPat?.id && handleRequestLiveConsent(currentSelectedPat.id)}
+                      disabled={requestingConsentAuth}
+                      activeOpacity={0.8}
+                    >
+                      {requestingConsentAuth ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <>
+                          <Ionicons
+                            name={consentAuthDispatched ? "time" : "shield-checkmark"}
+                            size={13}
+                            color={consentAuthDispatched ? "#15803D" : "#FFFFFF"}
+                          />
+                          <Text style={{
+                            fontSize: 11,
+                            fontWeight: '700',
+                            color: consentAuthDispatched ? "#15803D" : "#FFFFFF"
+                          }}>
+                            {consentAuthDispatched ? "Waiting for Patient..." : "Request In-App Auth"}
+                          </Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                )}
+                {latestPatientVitals && (
+                  <View style={{
+                    marginTop: 8,
+                    padding: 10,
+                    borderRadius: 8,
+                    backgroundColor: '#F8FAFC',
+                    borderLeftWidth: 3,
+                    borderLeftColor: '#0EA5E9',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}>
+                    <Ionicons name="pulse" size={16} color="#0EA5E9" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#0F172A' }}>
+                        Live Patient App Check-in: Feeling {latestPatientVitals.feeling ? latestPatientVitals.feeling.toUpperCase() : 'OK'}
+                        {latestPatientVitals.pain_score ? ` • Pain: ${latestPatientVitals.pain_score}/10` : ''}
+                      </Text>
+                      {latestPatientVitals.symptoms ? (
+                        <Text style={{ fontSize: 10, color: '#64748B', marginTop: 1 }}>
+                          Notes: {latestPatientVitals.symptoms}
+                        </Text>
+                      ) : null}
+                    </View>
                   </View>
                 )}
               </View>

@@ -592,14 +592,14 @@ async def patient_chat_assistant(
             }
         }
 
-        models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash"]
+        models_to_try = ["gemini-flash-latest", "gemini-2.0-flash", "gemini-1.5-flash"]
         for model_name in models_to_try:
             if llm_reply:
                 break
             gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
             try:
                 async with httpx.AsyncClient(timeout=15.0) as client:
-                    res = await client.post(gemini_url, json=payload)
+                    res = await client.post(gemini_url, json=payload, headers={"X-goog-api-key": gemini_key, "Content-Type": "application/json"})
                     if res.status_code == 200:
                         data = res.json()
                         candidates = data.get("candidates", [])

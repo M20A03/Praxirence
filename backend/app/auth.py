@@ -46,7 +46,8 @@ from app.services.email_service import (
     store_email_otp,
     verify_email_otp,
     get_stored_email_otp_name,
-    check_otp_rate_limit
+    check_otp_rate_limit,
+    get_recent_email_otp
 )
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -570,6 +571,15 @@ def request_doctor_email_otp(req: DoctorEmailOTPRequest, background_tasks: Backg
             detail="Too many verification requests for this email. Please wait 10 minutes before requesting another code."
         )
 
+    # Check if a code was already dispatched recently to prevent duplicate sends
+    recent_code = get_recent_email_otp(clean_email, cooldown_seconds=15)
+    if recent_code:
+        return {
+            "success": True,
+            "email": clean_email,
+            "message": f"Verification code sent to {clean_email}. Please check your inbox and spam folder (valid for 10 minutes)."
+        }
+
     code = generate_email_otp()
     store_email_otp(clean_email, code, name=req.name, ttl_minutes=10)
 
@@ -1064,6 +1074,15 @@ def request_patient_email_otp(req: PatientEmailOTPRequest, background_tasks: Bac
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Too many verification requests for this email. Please wait 10 minutes before requesting another code."
         )
+
+    # Check if a code was already dispatched recently to prevent duplicate sends
+    recent_code = get_recent_email_otp(clean_email, cooldown_seconds=15)
+    if recent_code:
+        return {
+            "success": True,
+            "email": clean_email,
+            "message": f"Verification code sent to {clean_email}. Please check your inbox and spam folder (valid for 10 minutes)."
+        }
 
     code = generate_email_otp()
     store_email_otp(clean_email, code, name=req.name, ttl_minutes=10)

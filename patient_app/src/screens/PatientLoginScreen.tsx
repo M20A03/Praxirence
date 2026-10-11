@@ -66,6 +66,7 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
   const [error, setError] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const isRequestingOtpRef = useRef(false);
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -159,12 +160,14 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
 
   // Request Email OTP
   const handleRequestEmailOtp = async () => {
+    if (isRequestingOtpRef.current || loading || resendCooldown > 0) return;
     if (!email.trim() || !email.includes('@')) {
       setError('Please enter a valid email address.');
       return;
     }
     setError(null);
     setLoading(true);
+    isRequestingOtpRef.current = true;
     try {
       const res = await mobileApi.requestPatientEmailOtp(email.trim(), patientName.trim());
       setEmailOtpSent(true);
@@ -181,6 +184,9 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
       }
     } finally {
       setLoading(false);
+      setTimeout(() => {
+        isRequestingOtpRef.current = false;
+      }, 1200);
     }
   };
 

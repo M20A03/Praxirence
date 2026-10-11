@@ -15,9 +15,10 @@ from app.core.config import settings
 
 logger = logging.getLogger("praxirence.email")
 
-# In-memory OTP storage for email verification: {email: {"code": "123456", "expires_at": datetime}}
+# In-memory OTP storage for email verification: {email: {"code": "123456", "created_at": datetime, "expires_at": datetime}}
 _email_otp_cache: Dict[str, Dict] = {}
 _rate_limit_cache: Dict[str, list] = {}
+_last_dispatch_times: Dict[str, float] = {}
 
 
 def check_otp_rate_limit(identifier: str, max_requests: int = 3, window_seconds: int = 600) -> bool:
@@ -51,8 +52,24 @@ def store_email_otp(email: str, code: str, name: Optional[str] = None, ttl_minut
     _email_otp_cache[clean_email] = {
         "code": code,
         "name": name,
+        "created_at": datetime.now(timezone.utc),
         "expires_at": datetime.now(timezone.utc) + timedelta(minutes=ttl_minutes)
     }
+
+
+def get_recent_email_otp(email: str, cooldown_seconds: int = 15) -> Optional[str]:
+    """
+    Returns active OTP code if created within cooldown_seconds to prevent duplicate sends
+    from double-clicking or rapid client retries.
+    """
+    clean_email = email.lower().strip()
+    record = _email_otp_cache.get(clean_email)
+    if not record:
+        return None
+    created_at = record.get("created_at")
+    if created_at and (datetime.now(timezone.utc) - created_at).total_seconds() < cooldown_seconds:
+        return record.get("code")
+    return None
 
 
 def get_stored_email_otp_name(email: str) -> Optional[str]:
@@ -114,17 +131,17 @@ class EmailService:
 
         # 1. Google Apps Script Webhook (Port 443 HTTPS - Zero-Domain required, sends to ANY recipient from user's Gmail)
         if self.gmail_webhook_url:
+            payload = {
+                "to": recipient_email,
+                "subject": subject,
+                "html": html_content,
+                "text": plain_text
+            }
+            # Dispatch exactly ONCE with adequate 10s timeout (Google Apps Script takes 2-4s to send mail)
             try:
-                payload = {
-                    "to": recipient_email,
-                    "subject": subject,
-                    "html": html_content,
-                    "text": plain_text
-                }
-                webhook_sent = False
+                import httpx
                 try:
-                    import httpx
-                    with httpx.Client(follow_redirects=True, timeout=3.5) as client:
+                    with httpx.Client(follow_redirects=True, timeout=10.0) as client:
                         resp = client.post(
                             self.gmail_webhook_url,
                             json=payload,
@@ -133,10 +150,12 @@ class EmailService:
                         if resp.status_code in (200, 201, 302):
                             logger.info(f"Dispatched email to {recipient_email} via Google Apps Script Webhook (httpx {resp.status_code})")
                             return True, "Google Apps Script Webhook"
+                        logger.warning(f"Google Apps Script Webhook returned HTTP {resp.status_code} for {recipient_email}")
                 except Exception as ex_httpx:
-                    logger.debug(f"httpx webhook attempt: {ex_httpx}")
-
-                if not webhook_sent:
+                    logger.warning(f"Google Apps Script Webhook dispatch notice (httpx): {ex_httpx}")
+                    last_error = f"Google Webhook httpx error: {ex_httpx}"
+            except ImportError:
+                try:
                     req = urllib.request.Request(
                         self.gmail_webhook_url,
                         data=json.dumps(payload).encode("utf-8"),
@@ -145,13 +164,13 @@ class EmailService:
                             "User-Agent": "Mozilla/5.0 (compatible; PraxirenceCloud/2.0; +https://praxirence.com)"
                         }
                     )
-                    with urllib.request.urlopen(req, timeout=3.5) as resp:
+                    with urllib.request.urlopen(req, timeout=10.0) as resp:
                         if resp.status in (200, 201, 302):
-                            logger.info(f"Dispatched email to {recipient_email} via Google Apps Script Webhook (urllib)")
+                            logger.info(f"Dispatched email to {recipient_email} via Google Apps Script Webhook (urllib {resp.status})")
                             return True, "Google Apps Script Webhook"
-            except Exception as e:
-                logger.warning(f"Google Apps Script Webhook dispatch notice: {e}")
-                last_error = f"Google Webhook error: {e}"
+                except Exception as ex_urllib:
+                    logger.warning(f"Google Apps Script Webhook dispatch notice (urllib): {ex_urllib}")
+                    last_error = f"Google Webhook urllib error: {ex_urllib}"
 
         # 2. Resend HTTPS REST API (Port 443)
         if self.resend_api_key:
@@ -295,6 +314,14 @@ class EmailService:
         """
         Sends an official verification email with 6-digit OTP code to a clinician.
         """
+        import time
+        clean_email = recipient_email.lower().strip()
+        now = time.time()
+        last_time = _last_dispatch_times.get(clean_email, 0)
+        if now - last_time < 10.0:
+            logger.info(f"Deduplicating doctor verification email to {clean_email} (already sent {now - last_time:.1f}s ago)")
+            return True
+        _last_dispatch_times[clean_email] = now
         name_display = recipient_name if recipient_name else "Doctor"
         if not name_display.startswith("Dr.") and "Doctor" not in name_display:
             name_display = f"Dr. {name_display}"
@@ -385,6 +412,15 @@ class EmailService:
         """
         Sends an official verification email with 6-digit OTP code to a patient.
         """
+        import time
+        clean_email = recipient_email.lower().strip()
+        now = time.time()
+        last_time = _last_dispatch_times.get(clean_email, 0)
+        if now - last_time < 10.0:
+            logger.info(f"Deduplicating patient verification email to {clean_email} (already sent {now - last_time:.1f}s ago)")
+            return True, "Deduplicated (cooldown active)"
+        _last_dispatch_times[clean_email] = now
+
         name_display = recipient_name if recipient_name else "Patient"
         subject = f"Praxirence: Your Verification Code is {otp_code}"
 

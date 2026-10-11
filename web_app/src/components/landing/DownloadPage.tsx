@@ -6,7 +6,7 @@ export const DownloadPage: React.FC = () => {
   const [countdown, setCountdown] = useState<number | null>(null);
 
   const patientApkUrl = '/downloads/Praxirence-Patient.apk';
-  const patientApkSha256 = '11f140cb4fbbcf9bfec522267309065bf37f2a0a3491313bc72d2bd53ec51b02';
+  const patientApkSha256 = '13d74d93f354b8657b174fcf7010d19b20f8881eb8e9c60169697ddae836e2c5';
 
   const triggerDownload = () => {
     setDownloadStarted(true);

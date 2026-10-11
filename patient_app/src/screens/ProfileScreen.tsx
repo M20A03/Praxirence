@@ -65,7 +65,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       try {
         const p1 = await AsyncStorage.getItem('@praxirence_patient_biometrics');
         const p2 = await AsyncStorage.getItem('praxirence_biometric_enabled');
-        setBiometricEnabled(p1 === 'true' || p2 === 'true');
+        // Always default to OFF (false) on new installs or downloads.
+        // Only enabled if explicitly turned ON by the patient in settings.
+        setBiometricEnabled(p1 === 'true' && p2 === 'true');
       } catch (_) {}
     };
     loadBiometricStatus();

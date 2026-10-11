@@ -100,13 +100,18 @@ export const NotificationService = {
       const latestVisit = visits && visits.length > 0 ? visits[0] : null;
       if (!latestVisit) return 0;
 
+      const customTimes = await this.getCustomMedicationTimes();
+
       // 1. Process explicit reminder items if provided by doctor
       if (latestVisit.reminders && latestVisit.reminders.length > 0) {
         for (const rem of latestVisit.reminders) {
+          const medKeyClean = (rem.medicine_name || '').toLowerCase().trim();
+          const customTime = customTimes[medKeyClean];
+          const effectiveTime = customTime || rem.time;
           let hour = 8;
           let minute = 30;
-          if (rem.time && rem.time.includes(':')) {
-            const parts = (rem.time || '').split(':');
+          if (effectiveTime && effectiveTime.includes(':')) {
+            const parts = effectiveTime.split(':');
             const parsedHour = parseInt(parts[0], 10);
             const parsedMin = parseInt(parts[1], 10);
             hour = !isNaN(parsedHour) ? parsedHour : 8;
@@ -142,25 +147,37 @@ export const NotificationService = {
       } else if (latestVisit.medicines && latestVisit.medicines.length > 0) {
         // 2. Parse medicines and frequency patterns
         for (const med of latestVisit.medicines) {
-          const freq = (med.frequency || '').toLowerCase();
+          const medKeyClean = (med.name || '').toLowerCase().trim();
+          const customTime = customTimes[medKeyClean];
           const slots: { slot: string; hour: number; minute: number }[] = [];
 
-          if (freq.includes('1-1-1') || freq.includes('tds') || freq.includes('three')) {
-            slots.push({ slot: 'Morning', hour: 8, minute: 30 });
-            slots.push({ slot: 'Afternoon', hour: 13, minute: 30 });
-            slots.push({ slot: 'Night', hour: 20, minute: 30 });
-          } else if (freq.includes('1-0-1') || freq.includes('bd') || freq.includes('twice') || freq.includes('morning & night')) {
-            slots.push({ slot: 'Morning', hour: 8, minute: 30 });
-            slots.push({ slot: 'Night', hour: 20, minute: 30 });
-          } else if (freq.includes('1-0-0') || freq.includes('od') || freq.includes('morning') || freq.includes('once')) {
-            slots.push({ slot: 'Morning', hour: 8, minute: 30 });
-          } else if (freq.includes('0-0-1') || freq.includes('night') || freq.includes('bedtime') || freq.includes('hs')) {
-            slots.push({ slot: 'Night', hour: 20, minute: 30 });
-          } else if (freq.includes('0-1-0') || freq.includes('afternoon')) {
-            slots.push({ slot: 'Afternoon', hour: 13, minute: 30 });
+          if (customTime && customTime.includes(':')) {
+            const parts = customTime.split(':');
+            const parsedHour = parseInt(parts[0], 10);
+            const parsedMin = parseInt(parts[1], 10);
+            const h = !isNaN(parsedHour) ? parsedHour : 8;
+            const m = !isNaN(parsedMin) ? parsedMin : 30;
+            const ampmSlot = h < 12 ? 'Morning' : (h < 17 ? 'Afternoon' : 'Night');
+            slots.push({ slot: ampmSlot, hour: h, minute: m });
           } else {
-            slots.push({ slot: 'Morning', hour: 8, minute: 30 });
-            slots.push({ slot: 'Night', hour: 20, minute: 30 });
+            const freq = (med.frequency || '').toLowerCase();
+            if (freq.includes('1-1-1') || freq.includes('tds') || freq.includes('three')) {
+              slots.push({ slot: 'Morning', hour: 8, minute: 30 });
+              slots.push({ slot: 'Afternoon', hour: 13, minute: 30 });
+              slots.push({ slot: 'Night', hour: 20, minute: 30 });
+            } else if (freq.includes('1-0-1') || freq.includes('bd') || freq.includes('twice') || freq.includes('morning & night')) {
+              slots.push({ slot: 'Morning', hour: 8, minute: 30 });
+              slots.push({ slot: 'Night', hour: 20, minute: 30 });
+            } else if (freq.includes('1-0-0') || freq.includes('od') || freq.includes('morning') || freq.includes('once')) {
+              slots.push({ slot: 'Morning', hour: 8, minute: 30 });
+            } else if (freq.includes('0-0-1') || freq.includes('night') || freq.includes('bedtime') || freq.includes('hs')) {
+              slots.push({ slot: 'Night', hour: 20, minute: 30 });
+            } else if (freq.includes('0-1-0') || freq.includes('afternoon')) {
+              slots.push({ slot: 'Afternoon', hour: 13, minute: 30 });
+            } else {
+              slots.push({ slot: 'Morning', hour: 8, minute: 30 });
+              slots.push({ slot: 'Night', hour: 20, minute: 30 });
+            }
           }
 
           for (const s of slots) {
@@ -258,6 +275,44 @@ export const NotificationService = {
     } catch (err) {
       console.warn('Failed to schedule care plan reminders:', err);
       return 0;
+    }
+  },
+
+  /**
+   * Get user-customized medication reminder times from storage
+   */
+  async getCustomMedicationTimes(): Promise<Record<string, string>> {
+    try {
+      const data = await AsyncStorage.getItem('@praxirence_custom_med_times');
+      return data ? JSON.parse(data) : {};
+    } catch {
+      return {};
+    }
+  },
+
+  /**
+   * Persist user-customized reminder time for a medicine (e.g. "08:00", "14:30")
+   */
+  async setCustomMedicationTime(medName: string, timeStr: string): Promise<void> {
+    try {
+      const times = await this.getCustomMedicationTimes();
+      times[medName.toLowerCase().trim()] = timeStr;
+      await AsyncStorage.setItem('@praxirence_custom_med_times', JSON.stringify(times));
+    } catch (e) {
+      console.warn('Could not save custom medication reminder time:', e);
+    }
+  },
+
+  /**
+   * Reset custom reminder time for a medicine
+   */
+  async removeCustomMedicationTime(medName: string): Promise<void> {
+    try {
+      const times = await this.getCustomMedicationTimes();
+      delete times[medName.toLowerCase().trim()];
+      await AsyncStorage.setItem('@praxirence_custom_med_times', JSON.stringify(times));
+    } catch (e) {
+      console.warn('Could not remove custom reminder time:', e);
     }
   },
 

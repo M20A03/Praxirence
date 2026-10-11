@@ -187,7 +187,7 @@ def fuzzy_correct_medicine_names(transcript: str, db: Any = None) -> str:
         lower_w = clean_w.lower()
 
         # Skip small words or standard clinical dialogue words
-        if len(clean_w) < 5 or lower_w in _NON_MEDICINE_WORDS or lower_w.isdigit():
+        if len(clean_w) < 4 or lower_w in _NON_MEDICINE_WORDS or lower_w.isdigit():
             corrected_words.append(word)
             continue
 
@@ -196,10 +196,11 @@ def fuzzy_correct_medicine_names(transcript: str, db: Any = None) -> str:
             corrected_words.append(word.replace(clean_w, lookup_map[lower_w]))
             continue
 
-        # Check fuzzy similarity against Indian Formulary
-        matches = difflib.get_close_matches(clean_w.capitalize(), canonical_list, n=1, cutoff=0.82)
+        # Check fuzzy phonetic similarity against Indian Formulary
+        lower_candidates = [name.lower() for name in canonical_list]
+        matches = difflib.get_close_matches(lower_w, lower_candidates, n=1, cutoff=0.70)
         if matches:
-            best_match = matches[0]
+            best_match = lookup_map[matches[0]]
             # Replace target while preserving punctuation
             corrected_token = word.replace(clean_w, best_match)
             corrected_words.append(corrected_token)

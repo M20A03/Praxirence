@@ -363,9 +363,12 @@ ${copilotReply}`,
               Quick Clinical Suggestions
             </Text>
           </View>
-          <Text style={{ fontSize: 11, color: '#0284C7', fontWeight: '600' }}>
-            {showPresets ? 'Hide ▲' : 'Show Suggestions ▼'}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Text style={{ fontSize: 11, color: '#0284C7', fontWeight: '600' }}>
+              {showPresets ? 'Hide' : 'Show Suggestions'}
+            </Text>
+            <Ionicons name={showPresets ? 'chevron-up' : 'chevron-down'} size={13} color='#0284C7' />
+          </View>
         </TouchableOpacity>
         {showPresets && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.chipRow, { marginBottom: 12 }]}>

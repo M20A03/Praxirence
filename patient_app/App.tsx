@@ -58,7 +58,8 @@ function PatientAppContent() {
     try {
       const p1 = await AsyncStorage.getItem('@praxirence_patient_biometrics');
       const p2 = await AsyncStorage.getItem('praxirence_biometric_enabled');
-      if (p1 === 'true' || p2 === 'true') {
+      // Must be explicitly enabled by user action in both keys, otherwise always default to unlocked/off
+      if (p1 === 'true' && p2 === 'true') {
         setIsBiometricLocked(true);
       } else {
         setIsBiometricLocked(false);

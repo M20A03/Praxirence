@@ -106,6 +106,13 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const [pendingConsentRequest, setPendingConsentRequest] = useState<any>(null);
   const [respondingConsent, setRespondingConsent] = useState<boolean>(false);
 
+  // Custom Medication Reminder Time Selector
+  const [customMedTimes, setCustomMedTimes] = useState<Record<string, string>>({});
+  const [editingMedTimeName, setEditingMedTimeName] = useState<string | null>(null);
+  const [pickerHour, setPickerHour] = useState<number>(8);
+  const [pickerMinute, setPickerMinute] = useState<number>(30);
+  const [pickerAmPm, setPickerAmPm] = useState<'AM' | 'PM'>('AM');
+
   // Quick Daily Health & Vitals Check-in Modal
   const [showQuickCheckinModal, setShowQuickCheckinModal] = useState<boolean>(false);
   const [checkinFeeling, setCheckinFeeling] = useState<'better' | 'same' | 'worse'>('same');
@@ -425,6 +432,67 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     } finally {
       setRespondingConsent(false);
     }
+  };
+
+  const loadCustomMedTimes = async () => {
+    try {
+      const times = await NotificationService.getCustomMedicationTimes();
+      setCustomMedTimes(times);
+    } catch (_) {}
+  };
+
+  useEffect(() => {
+    loadCustomMedTimes();
+  }, []);
+
+  const handleOpenTimePicker = (medName: string) => {
+    setEditingMedTimeName(medName);
+    const existing = customMedTimes[medName.toLowerCase().trim()];
+    if (existing && existing.includes(':')) {
+      const parts = existing.split(':');
+      let h = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      if (!isNaN(h)) {
+        if (h >= 12) {
+          setPickerAmPm('PM');
+          setPickerHour(h === 12 ? 12 : h - 12);
+        } else {
+          setPickerAmPm('AM');
+          setPickerHour(h === 0 ? 12 : h);
+        }
+      }
+      if (!isNaN(m)) setPickerMinute(m);
+    } else {
+      setPickerHour(8);
+      setPickerMinute(30);
+      setPickerAmPm('AM');
+    }
+  };
+
+  const handleSaveCustomTime = async () => {
+    if (!editingMedTimeName) return;
+    let h24 = pickerHour % 12;
+    if (pickerAmPm === 'PM') h24 += 12;
+    const hh = h24.toString().padStart(2, '0');
+    const mm = pickerMinute.toString().padStart(2, '0');
+    const timeStr = `${hh}:${mm}`;
+
+    await NotificationService.setCustomMedicationTime(editingMedTimeName, timeStr);
+    const updated = await NotificationService.getCustomMedicationTimes();
+    setCustomMedTimes(updated);
+
+    if (visits && visits.length > 0) {
+      await NotificationService.scheduleCarePlanReminders(visits);
+    }
+
+    const dispTime = `${pickerHour.toString().padStart(2, "0")}:${mm} ${pickerAmPm}`;
+    const targetMed = editingMedTimeName;
+    setEditingMedTimeName(null);
+    try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
+    Alert.alert(
+      'Reminder Updated',
+      
+    );
   };
 
   const handleSubmitVitalsCheckin = async () => {
@@ -1586,9 +1654,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             <Text style={{ fontSize: 13, fontWeight: '700', color: '#334155', marginBottom: 8 }}>How are you feeling today?</Text>
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
               {[
-                { key: 'better', label: 'Better 🟢', bg: '#DCFCE7', text: '#15803D' },
-                { key: 'same', label: 'Same 🟡', bg: '#FEF9C3', text: '#854D0E' },
-                { key: 'worse', label: 'Worse 🔴', bg: '#FEE2E2', text: '#B91C1C' },
+                { key: 'better', label: 'Better', bg: '#DCFCE7', text: '#15803D', dot: '#16A34A' },
+                { key: 'same', label: 'Same', bg: '#FEF9C3', text: '#854D0E', dot: '#CA8A04' },
+                { key: 'worse', label: 'Worse', bg: '#FEE2E2', text: '#B91C1C', dot: '#DC2626' },
               ].map((item) => (
                 <TouchableOpacity
                   key={item.key}
@@ -1600,9 +1668,13 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                     borderWidth: checkinFeeling === item.key ? 2 : 1,
                     borderColor: checkinFeeling === item.key ? item.text : '#E2E8F0',
                     alignItems: 'center',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    gap: 6,
                   }}
                   onPress={() => setCheckinFeeling(item.key as any)}
                 >
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: item.dot }} />
                   <Text style={{ fontSize: 13, fontWeight: '700', color: item.text }}>{item.label}</Text>
                 </TouchableOpacity>
               ))}
@@ -1699,6 +1771,123 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               )}
             </TouchableOpacity>
           </ScrollView>
+        </View>
+      </View>
+    </Modal>
+    {/* Custom Medication Reminder Time Selector Modal */}
+    <Modal visible={editingMedTimeName !== null} transparent animationType="fade">
+      <View style={{ flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.65)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+        <View style={{ width: '100%', maxWidth: 360, backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 16, elevation: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#E0F2FE', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="notifications" size={18} color="#0284C7" />
+              </View>
+              <View>
+                <Text style={{ fontSize: 15, fontWeight: '800', color: '#0F172A' }}>Medication Reminder</Text>
+                <Text style={{ fontSize: 12, color: '#64748B' }}>{editingMedTimeName}</Text>
+              </View>
+            </View>
+            <TouchableOpacity onPress={() => setEditingMedTimeName(null)} style={{ padding: 4 }}>
+              <Ionicons name="close" size={20} color="#64748B" />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={{ fontSize: 12, color: '#475569', marginBottom: 14 }}>
+            Set the exact time you want to receive daily medication alarm notifications:
+          </Text>
+
+          {/* Quick Presets */}
+          <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B', textTransform: 'uppercase', marginBottom: 6 }}>Quick Presets</Text>
+          <View style={{ flexDirection: 'row', gap: 6, marginBottom: 16 }}>
+            {[
+              { label: '8:00 AM', h: 8, m: 0, ap: 'AM' },
+              { label: '1:30 PM', h: 1, m: 30, ap: 'PM' },
+              { label: '8:30 PM', h: 8, m: 30, ap: 'PM' },
+            ].map((preset, pidx) => (
+              <TouchableOpacity
+                key={pidx}
+                style={{
+                  flex: 1,
+                  paddingVertical: 7,
+                  borderRadius: 8,
+                  backgroundColor: '#F1F5F9',
+                  alignItems: 'center',
+                }}
+                onPress={() => {
+                  setPickerHour(preset.h);
+                  setPickerMinute(preset.m);
+                  setPickerAmPm(preset.ap as any);
+                }}
+              >
+                <Text style={{ fontSize: 11, fontWeight: '700', color: '#0369A1' }}>{preset.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Time Picker Controls */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 12, backgroundColor: '#F8FAFC', borderRadius: 12, marginBottom: 16 }}>
+            {/* Hour Picker */}
+            <View style={{ alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => setPickerHour((h) => (h >= 12 ? 1 : h + 1))} style={{ padding: 4 }}>
+                <Ionicons name="chevron-up" size={18} color="#0284C7" />
+              </TouchableOpacity>
+              <Text style={{ fontSize: 24, fontWeight: '800', color: '#0F172A', minWidth: 36, textAlign: 'center' }}>
+                {pickerHour.toString().padStart(2, '0')}
+              </Text>
+              <TouchableOpacity onPress={() => setPickerHour((h) => (h <= 1 ? 12 : h - 1))} style={{ padding: 4 }}>
+                <Ionicons name="chevron-down" size={18} color="#0284C7" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 24, fontWeight: '800', color: '#64748B' }}>:</Text>
+
+            {/* Minute Picker */}
+            <View style={{ alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => setPickerMinute((m) => (m >= 45 ? 0 : m + 15))} style={{ padding: 4 }}>
+                <Ionicons name="chevron-up" size={18} color="#0284C7" />
+              </TouchableOpacity>
+              <Text style={{ fontSize: 24, fontWeight: '800', color: '#0F172A', minWidth: 36, textAlign: 'center' }}>
+                {pickerMinute.toString().padStart(2, '0')}
+              </Text>
+              <TouchableOpacity onPress={() => setPickerMinute((m) => (m <= 0 ? 45 : m - 15))} style={{ padding: 4 }}>
+                <Ionicons name="chevron-down" size={18} color="#0284C7" />
+              </TouchableOpacity>
+            </View>
+
+            {/* AM / PM Toggle */}
+            <View style={{ flexDirection: 'row', backgroundColor: '#E2E8F0', borderRadius: 8, padding: 3, marginLeft: 10 }}>
+              <TouchableOpacity
+                style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: pickerAmPm === 'AM' ? '#0284C7' : 'transparent' }}
+                onPress={() => setPickerAmPm('AM')}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '800', color: pickerAmPm === 'AM' ? '#FFFFFF' : '#475569' }}>AM</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: pickerAmPm === 'PM' ? '#0284C7' : 'transparent' }}
+                onPress={() => setPickerAmPm('PM')}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '800', color: pickerAmPm === 'PM' ? '#FFFFFF' : '#475569' }}>PM</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Action Buttons */}
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <TouchableOpacity
+              style={{ flex: 1, paddingVertical: 12, borderRadius: 10, backgroundColor: '#F1F5F9', alignItems: 'center' }}
+              onPress={() => setEditingMedTimeName(null)}
+            >
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#475569' }}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ flex: 1.6, paddingVertical: 12, borderRadius: 10, backgroundColor: '#0284C7', alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}
+              onPress={handleSaveCustomTime}
+            >
+              <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
+              <Text style={{ fontSize: 13, fontWeight: '800', color: '#FFFFFF' }}>Save Time</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>

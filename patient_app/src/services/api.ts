@@ -39,7 +39,7 @@ export const getEffectiveApiUrl = (): string => {
   if (customApiUrl) return customApiUrl;
   
   const envUrl = process.env.EXPO_PUBLIC_API_URL;
-  if (envUrl && envUrl.startsWith('http') && !envUrl.includes('localhost') && !envUrl.includes('10.0.2.2') && !envUrl.includes('10.51.113.76')) {
+  if (envUrl && envUrl.startsWith('http') && !envUrl.includes('localhost') && !envUrl.includes('10.0.2.2') ) {
     return envUrl;
   }
 

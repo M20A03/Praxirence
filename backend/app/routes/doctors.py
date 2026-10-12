@@ -32,6 +32,7 @@ class DoctorScheduleUpdate(BaseModel):
     working_hours_start: Optional[str] = Field(None, description='e.g. "09:00"')
     working_hours_end: Optional[str] = Field(None, description='e.g. "18:00"')
     slot_duration_mins: Optional[int] = Field(None, description="Duration in minutes e.g. 30")
+    max_daily_patients: Optional[int] = Field(None, ge=1, le=100, description="Daily patient consultation capacity limit")
     unavailable_dates: Optional[List[str]] = Field(None, description='Dates on leave e.g. ["2026-09-25"]')
     clinic_address: Optional[str] = None
     city: Optional[str] = None
@@ -202,6 +203,7 @@ def list_doctors(
             "working_hours_start": getattr(d, "working_hours_start", "09:00") or "09:00",
             "working_hours_end": getattr(d, "working_hours_end", "18:00") or "18:00",
             "slot_duration_mins": getattr(d, "slot_duration_mins", 30) or 30,
+            "max_daily_patients": getattr(d, "max_daily_patients", 20) or 20,
             "unavailable_dates": unavail_dates,
             "consultation_fee": getattr(d, "consultation_fee", 500) or 500,
             "is_available_today": is_available_today,
@@ -220,6 +222,7 @@ def list_doctors(
 
 
 @router.get("/{doctor_id}/availability")
+@router.get("/{doctor_id}/available-slots")
 def get_doctor_availability(
     doctor_id: str,
     date: Optional[str] = Query(None, description="Date in YYYY-MM-DD format"),
@@ -305,13 +308,19 @@ def get_doctor_availability(
         .all()
     )
     booked_slots = {v.time_slot.strip() for v in booked_visits if v.time_slot}
+    max_capacity = getattr(doctor, "max_daily_patients", 20) or 20
+    booked_count = len(booked_visits)
+    is_capacity_reached = (booked_count >= max_capacity) if max_capacity > 0 else False
 
     slot_items = []
     for s in combined_slots:
         is_blocked = s.strip() in custom_blocked
         is_booked = s.strip() in booked_slots
-        is_open = (not is_booked) and (not is_blocked)
-        reason_str = "blocked by doctor" if is_blocked else ("booked" if is_booked else "open")
+        is_open = (not is_booked) and (not is_blocked) and (not is_capacity_reached)
+        if is_capacity_reached and not is_booked and not is_blocked:
+            reason_str = f"doctor patient capacity reached ({max_capacity} max)"
+        else:
+            reason_str = "blocked by doctor" if is_blocked else ("booked" if is_booked else "open")
         slot_items.append({
             "time": s,
             "available": is_open,
@@ -333,7 +342,11 @@ def get_doctor_availability(
         },
         "slots": slot_items,
         "total_slots": len(slot_items),
-        "available_slots_count": sum(1 for s in slot_items if s["available"])
+        "available_slots_count": sum(1 for s in slot_items if s["available"]),
+        "max_daily_patients": max_capacity,
+        "booked_patients_count": booked_count,
+        "is_capacity_reached": is_capacity_reached,
+        "capacity_remaining": max(0, max_capacity - booked_count) if max_capacity > 0 else 999,
     }
 
 
@@ -362,6 +375,8 @@ def update_doctor_schedule_me(
         doctor.working_hours_end = payload.working_hours_end
     if payload.slot_duration_mins is not None:
         doctor.slot_duration_mins = payload.slot_duration_mins
+    if payload.max_daily_patients is not None:
+        doctor.max_daily_patients = payload.max_daily_patients
     if payload.unavailable_dates is not None:
         doctor.unavailable_dates = payload.unavailable_dates
     if payload.clinic_address is not None:

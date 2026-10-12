@@ -339,3 +339,72 @@ def test_walk_in_encounter_and_fcm_token():
     assert w_data["triage"] == "Priority"
     assert w_data["status"] == "Waiting in Clinic"
 
+
+
+def test_doctor_patient_capacity_limit():
+    """
+    Verify:
+    1. Doctor can configure max_daily_patients capacity limit (e.g. 2).
+    2. Booking past capacity raises 400 Bad Request (Capacity Reached).
+    3. Available slots endpoint marks all slots unavailable with is_capacity_reached=True.
+    """
+    setup_module()
+    db = get_test_db()
+    doctor = db.query(User).first()
+    patient = db.query(Patient).first()
+    assert doctor is not None
+    assert patient is not None
+    doc_id = str(doctor.id)
+    pat_id = str(patient.id)
+    db.close()
+
+    target_date = "2026-11-20"
+
+    # 1. Configure Doctor daily capacity limit to 2 patients
+    update_res = client.put(f"/doctors/me/schedule?doctor_id={doc_id}", json={
+        "max_daily_patients": 2,
+        "working_hours_start": "09:00",
+        "working_hours_end": "12:00",
+        "slot_duration_mins": 30,
+        "available_days": ["Mon", "Tue", "Wed", "Thu", "Fri"]
+    })
+    assert update_res.status_code == 200
+
+    # 2. Book appointment 1 on target_date at 09:00 AM -> 200 OK
+    book1 = client.post("/visits/book-slot", json={
+        "patient_id": pat_id,
+        "doctor_id": doc_id,
+        "appointment_date": target_date,
+        "time_slot": "09:00 AM",
+        "chief_complaint": "Capacity Test Patient 1"
+    })
+    assert book1.status_code == 200
+
+    # 3. Book appointment 2 on target_date at 09:30 AM -> 200 OK
+    book2 = client.post("/visits/book-slot", json={
+        "patient_id": pat_id,
+        "doctor_id": doc_id,
+        "appointment_date": target_date,
+        "time_slot": "09:30 AM",
+        "chief_complaint": "Capacity Test Patient 2"
+    })
+    assert book2.status_code == 200
+
+    # 4. Attempt to book appointment 3 (exceeding limit of 2) -> 400 Bad Request
+    book3 = client.post("/visits/book-slot", json={
+        "patient_id": pat_id,
+        "doctor_id": doc_id,
+        "appointment_date": target_date,
+        "time_slot": "10:00 AM",
+        "chief_complaint": "Capacity Test Patient 3"
+    })
+    assert book3.status_code == 400
+    assert "maximum daily consultation capacity" in book3.json()["detail"]
+
+    # 5. Slots endpoint should report is_capacity_reached = True and 0 available slots
+    slots_res = client.get(f"/doctors/{doc_id}/available-slots?date={target_date}")
+    assert slots_res.status_code == 200
+    slots_data = slots_res.json()
+    assert slots_data["is_capacity_reached"] is True
+    assert slots_data["available_slots_count"] == 0
+    assert slots_data["max_daily_patients"] == 2

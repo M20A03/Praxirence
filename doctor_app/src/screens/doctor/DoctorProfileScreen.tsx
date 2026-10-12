@@ -74,6 +74,9 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
   const [unavailableDates, setUnavailableDates] = useState<string[]>(
     doctor.unavailable_dates || []
   );
+  const [maxDailyPatients, setMaxDailyPatients] = useState<number>(
+    doctor.max_daily_patients || 20
+  );
   const [savingSchedule, setSavingSchedule] = useState<boolean>(false);
 
   // Flexible Hours & Interactive Leave Calendar States
@@ -214,6 +217,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           working_hours_start: startTime,
           working_hours_end: endTime,
           unavailable_dates: unavailableDates,
+          max_daily_patients: maxDailyPatients,
           clinic_address: doctor.clinic_address,
           city: doctor.city,
         },
@@ -622,6 +626,43 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
             </View>
             <Ionicons name="chevron-down" size={14} color="#64748B" />
           </TouchableOpacity>
+        </View>
+
+        {/* Maximum Daily Patient Capacity Limit */}
+        <View style={{ marginTop: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+            <Text style={styles.subHeadingLabel}>Daily Patient Capacity Limit</Text>
+            <View style={{ backgroundColor: '#F0FDFA', borderWidth: 1, borderColor: '#CCFBF1', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#0F766E' }}>{maxDailyPatients} Patients / Day</Text>
+            </View>
+          </View>
+          <Text style={{ fontSize: 11, color: '#64748B', marginBottom: 10 }}>
+            Maximum patients you will consult in a single day. Bookings automatically pause once reached.
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+            {[10, 15, 20, 30, 40, 50].map((limitVal) => {
+              const isSelected = maxDailyPatients === limitVal;
+              return (
+                <TouchableOpacity
+                  key={limitVal}
+                  style={[
+                    styles.dayPill,
+                    { minWidth: 48, paddingHorizontal: 12 },
+                    isSelected && styles.dayPillActive,
+                  ]}
+                  onPress={() => {
+                    try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (_) {}
+                    setMaxDailyPatients(limitVal);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.dayPillText, isSelected && styles.dayPillTextActive]}>
+                    {limitVal}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
         {/* Leave / Out of Office Section with Interactive Monthly Calendar */}

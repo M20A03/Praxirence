@@ -96,12 +96,20 @@ def search_patients(
     current_doctor = Depends(get_current_doctor)
 ):
     """
-    Search patients:
-    - If query is provided, searches across Name, Phone, ID, and UHID.
-    - If query is empty, returns all accessible clinic patients, prioritizing patients
-      linked with this doctor (via authorized link or visits), followed by newly registered patients.
-    Ensures every patient has a human-readable UHID and shows in 'Select a Patient'.
+    Search doctor's active patient roster:
+    - Strictly HIPAA & DPDP Act 2023 compliant: A doctor can ONLY view patients
+      who have authorized them or who have consulted with this specific doctor.
+    - Prevents arbitrary browsing or misuse of unlinked clinic patients.
+    - If query is provided, searches within the doctor's authorized patients.
+    - If query is empty, returns the doctor's authorized/consulted patients.
     """
+    visit_patient_ids = [row[0] for row in db.query(Visit.patient_id).filter(Visit.doctor_id == current_doctor.id).distinct().all()]
+    link_patient_ids = [row[0] for row in db.query(DoctorPatientLink.patient_id).filter(DoctorPatientLink.doctor_id == current_doctor.id, DoctorPatientLink.status == "authorized").distinct().all()]
+    doctor_patient_ids = list(set(visit_patient_ids + link_patient_ids))
+
+    if not doctor_patient_ids:
+        return []
+
     clean_q = query.strip() if query else ""
     if clean_q:
         phone_hashes = [compute_phone_hash(clean_q)]
@@ -119,6 +127,7 @@ def search_patients(
         patients = (
             db.query(Patient)
             .filter(
+                Patient.id.in_(doctor_patient_ids),
                 or_(
                     Patient.name.ilike(f"%{clean_q}%"),
                     Patient.phone_hash.in_(phone_hashes),
@@ -132,51 +141,22 @@ def search_patients(
             .limit(limit)
             .all()
         )
-        res = []
-        for p in patients:
-            if not p.uhid:
-                p.uhid = generate_uhid(db)
-                db.commit()
-            res.append(serialize_patient_response(p, current_doctor.id, db))
-        return res
     else:
-        # Default view:
-        # 1. Patients who have had visits with this doctor OR are authorized
-        visit_patient_ids = [row[0] for row in db.query(Visit.patient_id).filter(Visit.doctor_id == current_doctor.id).distinct().all()]
-        link_patient_ids = [row[0] for row in db.query(DoctorPatientLink.patient_id).filter(DoctorPatientLink.doctor_id == current_doctor.id, DoctorPatientLink.status == "authorized").distinct().all()]
-        doctor_patient_ids = list(set(visit_patient_ids + link_patient_ids))
+        patients = (
+            db.query(Patient)
+            .filter(Patient.id.in_(doctor_patient_ids))
+            .order_by(Patient.created_at.desc())
+            .limit(limit)
+            .all()
+        )
 
-        doc_patients = []
-        if doctor_patient_ids:
-            doc_patients = (
-                db.query(Patient)
-                .filter(Patient.id.in_(doctor_patient_ids))
-                .order_by(Patient.created_at.desc())
-                .limit(limit)
-                .all()
-            )
-
-        # 2. General clinic directory patients
-        remaining_slots = max(0, limit - len(doc_patients))
-        other_patients = []
-        if remaining_slots > 0:
-            filter_clause = Patient.id.not_in(doctor_patient_ids) if doctor_patient_ids else True
-            other_patients = (
-                db.query(Patient)
-                .filter(filter_clause)
-                .order_by(Patient.created_at.desc())
-                .limit(remaining_slots)
-                .all()
-            )
-
-        all_patients = doc_patients + other_patients
-        res = []
-        for p in all_patients:
-            if not p.uhid:
-                p.uhid = generate_uhid(db)
-                db.commit()
-            res.append(serialize_patient_response(p, current_doctor.id, db))
-        return res
+    res = []
+    for p in patients:
+        if not p.uhid:
+            p.uhid = generate_uhid(db)
+            db.commit()
+        res.append(serialize_patient_response(p, current_doctor.id, db))
+    return res
 
 
 @router.post("", response_model=PatientResponse, status_code=status.HTTP_201_CREATED)
@@ -527,6 +507,70 @@ def get_my_patient_portal(
     }
 
 
+# =====================================================================
+# REAL-TIME IN-APP CONSENT PROTOCOL & VITALS CHECK-IN
+# =====================================================================
+_live_consent_requests: dict = {}
+_latest_patient_vitals: dict = {}
+
+
+@router.get("/search-by-uhid")
+def search_patients_by_uhid(
+    query: str = Query(..., min_length=2),
+    db: Session = Depends(get_db),
+    current_doctor = Depends(get_current_doctor)
+):
+    """
+    Look up patient directory by exact or partial Registration Number (UHID: PRX-PAT-XXXXX)
+    or 10-digit Phone Number, including dependent Family Members.
+    Arbitrary name substring browsing is disabled to preserve HIPAA and DPDP patient privacy.
+    """
+    clean_q = query.strip().upper()
+    results = []
+
+    # 1. Match by Registration Number / UHID
+    if len(clean_q) >= 3:
+        uhid_matches = db.query(Patient).filter(Patient.uhid.ilike(f"%{clean_q}%")).limit(10).all()
+        results.extend(uhid_matches)
+
+    # 2. Match by 10-digit Phone Number
+    digits = "".join(filter(str.isdigit, query))
+    if len(digits) >= 10:
+        phone_hash = compute_phone_hash(f"+91{digits[-10:]}")
+        by_phone = db.query(Patient).filter(Patient.phone_hash == phone_hash).all()
+        for p in by_phone:
+            if p not in results:
+                results.append(p)
+
+    out = []
+    for p in results:
+        link = db.query(DoctorPatientLink).filter(
+            DoctorPatientLink.doctor_id == current_doctor.id,
+            DoctorPatientLink.patient_id == p.id
+        ).first()
+        has_visit = db.query(Visit).filter(
+            Visit.doctor_id == current_doctor.id,
+            Visit.patient_id == p.id
+        ).first() is not None
+
+        auth_status = "authorized" if (has_visit or (link and link.status == "authorized")) else (link.status if link else "unauthorized")
+
+        out.append({
+            "id": p.id,
+            "name": p.name,
+            "uhid": getattr(p, "uhid", None) or f"PRX-PAT-{p.id[:5].upper()}",
+            "phone": p.phone if getattr(p, "phone", None) else "",
+            "family_relation": getattr(p, "family_relation", "Self"),
+            "consent_status": p.consent_status,
+            "authorization_status": auth_status,
+            "link_id": link.id if link else None,
+            "confirmation_code": link.confirmation_code if link else None,
+            "age": p.age,
+            "gender": p.gender,
+        })
+    return out
+
+
 @router.get("/{patient_id}", response_model=PatientResponse)
 def get_patient(
     patient_id: str,
@@ -545,10 +589,20 @@ def get_patient(
             DoctorPatientLink.doctor_id == current_user.id,
             DoctorPatientLink.patient_id == patient.id
         ).first()
+        has_visit = db.query(Visit).filter(
+            Visit.doctor_id == current_user.id,
+            Visit.patient_id == patient.id
+        ).first() is not None
+
         if link and link.status in ("pending", "rejected"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Access denied: Doctor-patient link status is '{link.status}'. Patient authorization required."
+            )
+        if not (link and link.status == "authorized") and not has_visit:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You are not authorized to view this patient's records. Patient authorization required."
             )
 
     return serialize_patient_response(patient, doc_id, db)
@@ -570,10 +624,20 @@ def get_patient_visits(
             DoctorPatientLink.doctor_id == current_user.id,
             DoctorPatientLink.patient_id == patient.id
         ).first()
+        has_visit = db.query(Visit).filter(
+            Visit.doctor_id == current_user.id,
+            Visit.patient_id == patient.id
+        ).first() is not None
+
         if link and link.status in ("pending", "rejected"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Access denied: Doctor-patient link status is '{link.status}'. Patient authorization required."
+            )
+        if not (link and link.status == "authorized") and not has_visit:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You are not authorized to view this patient's medical records. Patient authorization required."
             )
 
     visits = db.query(Visit).filter(Visit.patient_id == patient_id).order_by(Visit.date.desc()).all()
@@ -743,12 +807,19 @@ def get_upcoming_patient_schedule(
         Visit.status == "completed"
     ).count()
 
+    max_daily_patients = getattr(current_doctor, "max_daily_patients", 20) or 20
+    is_capacity_reached = (len(schedule) >= max_daily_patients) if max_daily_patients > 0 else False
+    remaining_capacity = max(0, max_daily_patients - len(schedule)) if max_daily_patients > 0 else 999
+
     return {
         "date": datetime.now(timezone.utc).strftime("%A, %d %B %Y"),
         "doctor_name": current_doctor.name or "Dr. Physician",
         "total_scheduled": len(schedule),
         "in_waiting": sum(1 for s in schedule if "Waiting" in s["status"]),
         "completed": completed_count,
+        "max_daily_patients": max_daily_patients,
+        "is_capacity_reached": is_capacity_reached,
+        "remaining_capacity": remaining_capacity,
         "queue": schedule
     }
 
@@ -1304,48 +1375,7 @@ def get_patient_health_records_pdf(
     )
 
 
-# =====================================================================
-# REAL-TIME IN-APP CONSENT PROTOCOL & VITALS CHECK-IN
-# =====================================================================
-_live_consent_requests: dict = {}
-_latest_patient_vitals: dict = {}
 
-
-@router.get("/search-by-uhid")
-def search_patients_by_uhid(query: str = Query(..., min_length=2), db: Session = Depends(get_db)):
-    """
-    Look up patient directory by exact or partial Registration Number (UHID: PRX-PAT-XXXXX)
-    or Phone Number, including dependent Family Members.
-    """
-    clean_q = query.strip().upper()
-    results = db.query(Patient).filter(
-        or_(
-            Patient.uhid.ilike(f"%{clean_q}%"),
-            Patient.name.ilike(f"%{query.strip()}%")
-        )
-    ).limit(10).all()
-
-    digits = "".join(filter(str.isdigit, query))
-    if len(digits) >= 10:
-        phone_hash = compute_phone_hash(f"+91{digits[-10:]}")
-        by_phone = db.query(Patient).filter(Patient.phone_hash == phone_hash).all()
-        for p in by_phone:
-            if p not in results:
-                results.append(p)
-
-    out = []
-    for p in results:
-        out.append({
-            "id": p.id,
-            "name": p.name,
-            "uhid": getattr(p, "uhid", None) or f"PRX-PAT-{p.id[:5].upper()}",
-            "phone": p.phone if getattr(p, "phone", None) else "",
-            "family_relation": getattr(p, "family_relation", "Self"),
-            "consent_status": p.consent_status,
-            "age": p.age,
-            "gender": p.gender,
-        })
-    return out
 
 
 @router.post("/{patient_id}/request-live-authorization")
@@ -1410,6 +1440,27 @@ def respond_live_patient_authorization(patient_id: str, payload: dict, db: Sessi
     if action == "GRANT":
         patient.consent_status = True
         patient.consent_updated_at = datetime.now(timezone.utc)
+
+        # Automatically link and authorize attending doctor upon patient grant
+        req_data = _live_consent_requests.get(patient_id, {})
+        doc_id = req_data.get("doctor_id")
+        if doc_id:
+            link = db.query(DoctorPatientLink).filter(
+                DoctorPatientLink.doctor_id == doc_id,
+                DoctorPatientLink.patient_id == patient_id
+            ).first()
+            if link:
+                link.status = "authorized"
+                link.authorized_at = datetime.now(timezone.utc)
+            else:
+                link = DoctorPatientLink(
+                    doctor_id=doc_id,
+                    patient_id=patient_id,
+                    status="authorized",
+                    authorized_at=datetime.now(timezone.utc)
+                )
+                db.add(link)
+
         db.commit()
 
         if patient_id in _live_consent_requests:

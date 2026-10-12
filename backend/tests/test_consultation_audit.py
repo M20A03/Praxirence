@@ -232,3 +232,70 @@ def test_consultation_lifecycle_clean_vault_and_pdf():
     assert pdf_res.headers["content-type"] == "application/pdf"
     assert len(pdf_res.content) > 1000, "PDF content must be valid non-empty document"
 
+
+
+def test_doctor_patient_isolation_zero_trust():
+    """
+    Enforces HIPAA & DPDP Act 2023 Doctor-Patient Isolation:
+    - Doctor A registers Patient A.
+    - Doctor B registers Patient B.
+    - Doctor A calling /patients MUST ONLY see Patient A (NEVER Patient B).
+    - Doctor B calling /patients MUST ONLY see Patient B (NEVER Patient A).
+    - Doctor A searching for Patient B in /patients returns 0 results.
+    - Doctor A trying to access Patient B's visits returns 403 Forbidden.
+    - Doctor A searching by Patient B's exact UHID sees authorization_status='unauthorized'.
+    """
+    doc_a_id, doc_b_id = setup_test_users()
+    headers_a = get_auth_headers(doc_a_id)
+    headers_b = get_auth_headers(doc_b_id)
+
+    # 1. Doctor A registers Patient A
+    res_a = client.post(
+        "/patients/",
+        json={"name": "Patient Alpha", "phone": "+919876511111", "dob": "1991-01-01"},
+        headers=headers_a
+    )
+    assert res_a.status_code == 201
+    pat_a = res_a.json()
+    pat_a_id = pat_a["id"]
+    pat_a_uhid = pat_a["uhid"]
+
+    # 2. Doctor B registers Patient B
+    res_b = client.post(
+        "/patients/",
+        json={"name": "Patient Beta", "phone": "+919876522222", "dob": "1992-02-02"},
+        headers=headers_b
+    )
+    assert res_b.status_code == 201
+    pat_b = res_b.json()
+    pat_b_id = pat_b["id"]
+    pat_b_uhid = pat_b["uhid"]
+
+    # 3. Doctor A retrieves their patient directory
+    dir_a = client.get("/patients", headers=headers_a).json()
+    dir_a_ids = [p["id"] for p in dir_a]
+    assert pat_a_id in dir_a_ids, "Doctor A must see their own patient"
+    assert pat_b_id not in dir_a_ids, "Doctor A must NEVER see Doctor B's patient in general directory!"
+
+    # 4. Doctor B retrieves their patient directory
+    dir_b = client.get("/patients", headers=headers_b).json()
+    dir_b_ids = [p["id"] for p in dir_b]
+    assert pat_b_id in dir_b_ids, "Doctor B must see their own patient"
+    assert pat_a_id not in dir_b_ids, "Doctor B must NEVER see Doctor A's patient in general directory!"
+
+    # 5. Doctor A searches for Doctor B's patient by name in directory -> 0 results
+    search_unauth = client.get("/patients?query=Beta", headers=headers_a).json()
+    assert len(search_unauth) == 0, "Unlinked patients must not appear in search results"
+
+    # 6. Doctor A tries to access Doctor B's patient visits -> 403 Forbidden
+    visits_unauth = client.get(f"/patients/{pat_b_id}/visits", headers=headers_a)
+    assert visits_unauth.status_code == 403
+    assert "Patient authorization required" in visits_unauth.json()["detail"]
+
+    # 7. Doctor A searches by exact UHID -> returned with authorization_status='unauthorized'
+    uhid_res = client.get(f"/patients/search-by-uhid?query={pat_b_uhid}", headers=headers_a)
+    assert uhid_res.status_code == 200
+    uhid_matches = uhid_res.json()
+    assert len(uhid_matches) >= 1
+    matched = next(m for m in uhid_matches if m["id"] == pat_b_id)
+    assert matched["authorization_status"] == "unauthorized"

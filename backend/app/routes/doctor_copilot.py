@@ -21,6 +21,7 @@ from app.models.user import User
 from app.models.patient import Patient
 from app.models.visit import Visit
 from app.models.medicine import Medicine
+from app.models.doctor_patient_link import DoctorPatientLink
 from sqlalchemy import or_, func
 from app.routes.deps import get_current_doctor
 from app.services.pharmacology_service import pharmacology_service
@@ -624,13 +625,24 @@ async def ask_doctor_copilot(
     if req.patient_id:
         patient = db.query(Patient).filter(Patient.id == req.patient_id).first()
         if patient:
-            patient_grounding.append(f"PATIENT NAME: {patient.name}, DOB: {patient.dob}")
-            recent_visits = db.query(Visit).filter(Visit.patient_id == patient.id).order_by(Visit.created_at.desc()).limit(3).all()
-            if recent_visits:
-                patient_grounding.append("PREVIOUS RECENT VISITS:")
-                for v in recent_visits:
-                    v_date = v.created_at.strftime("%Y-%m-%d") if v.created_at else "Recent"
-                    patient_grounding.append(f"- Date {v_date}: Diagnosis: {v.diagnosis or 'Consultation'}. Medicines: {v.medicines}")
+            link = db.query(DoctorPatientLink).filter(
+                DoctorPatientLink.doctor_id == current_doctor.id,
+                DoctorPatientLink.patient_id == patient.id,
+                DoctorPatientLink.status == "authorized"
+            ).first()
+            has_visit = db.query(Visit).filter(
+                Visit.doctor_id == current_doctor.id,
+                Visit.patient_id == patient.id
+            ).first() is not None
+
+            if link or has_visit:
+                patient_grounding.append(f"PATIENT NAME: {patient.name}, DOB: {patient.dob}")
+                recent_visits = db.query(Visit).filter(Visit.patient_id == patient.id).order_by(Visit.created_at.desc()).limit(3).all()
+                if recent_visits:
+                    patient_grounding.append("PREVIOUS RECENT VISITS:")
+                    for v in recent_visits:
+                        v_date = v.created_at.strftime("%Y-%m-%d") if v.created_at else "Recent"
+                        patient_grounding.append(f"- Date {v_date}: Diagnosis: {v.diagnosis or 'Consultation'}. Medicines: {v.medicines}")
 
     if req.context:
         ctx = req.context

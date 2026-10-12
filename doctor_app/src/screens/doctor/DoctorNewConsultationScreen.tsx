@@ -763,7 +763,7 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
           <Ionicons name="search" size={16} color="#64748B" />
           <TextInput
             style={{ flex: 1, fontSize: 13, color: '#0F172A', paddingVertical: 2 }}
-            placeholder="Search Registration No. (PRX-PAT-XXXXX) or Mobile..."
+            placeholder="Enter Registration No. (PRX-PAT-XXXXX) or 10-digit Mobile..."
             placeholderTextColor="#94A3B8"
             value={uhidSearchQuery}
             onChangeText={handleSearchUhid}
@@ -829,9 +829,9 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
               <Ionicons name="people-outline" size={24} color="#0284C7" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.noPatientsTitle}>No Patients in Directory</Text>
+              <Text style={styles.noPatientsTitle}>No Authorized Patients in Roster</Text>
               <Text style={styles.noPatientsSubtitle}>
-                Add a patient to begin clinical voice consultation.
+                Add a new patient or enter their Registration No. (UHID) above to begin consultation.
               </Text>
             </View>
             <TouchableOpacity

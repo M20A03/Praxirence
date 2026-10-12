@@ -699,6 +699,58 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
         </View>
       </View>
 
+      {/* Live Daily Patient Capacity Status Tracker */}
+      {scheduleData ? (
+        (() => {
+          const limit = scheduleData.max_daily_patients || 20;
+          const currentCount = scheduleData.queue ? scheduleData.queue.length : 0;
+          const isFull = currentCount >= limit;
+          const pct = Math.min(100, Math.round((currentCount / limit) * 100));
+          return (
+            <View style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: 12,
+              padding: 12,
+              marginBottom: 12,
+              borderWidth: 1,
+              borderColor: isFull ? '#FCA5A5' : '#E2E8F0',
+              borderLeftWidth: 4,
+              borderLeftColor: isFull ? '#EF4444' : '#0D9488',
+              shadowColor: '#0F172A',
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.04,
+              shadowRadius: 4,
+              elevation: 1,
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Ionicons name="people" size={15} color={isFull ? '#DC2626' : '#0D9488'} />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#0F172A' }}>
+                    Daily Consultation Capacity
+                  </Text>
+                </View>
+                <View style={{
+                  backgroundColor: isFull ? '#FEF2F2' : '#F0FDFA',
+                  borderWidth: 1,
+                  borderColor: isFull ? '#FECACA' : '#CCFBF1',
+                  paddingHorizontal: 8,
+                  paddingVertical: 2,
+                  borderRadius: 12,
+                }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: isFull ? '#B91C1C' : '#0F766E' }}>
+                    {currentCount} / {limit} Patients {isFull ? '(FULL)' : `(${Math.max(0, limit - currentCount)} left)`}
+                  </Text>
+                </View>
+              </View>
+              {/* Progress bar track */}
+              <View style={{ height: 6, backgroundColor: '#F1F5F9', borderRadius: 3, overflow: 'hidden' }}>
+                <View style={{ height: '100%', width: `${pct}%`, backgroundColor: isFull ? '#EF4444' : pct > 75 ? '#F59E0B' : '#0D9488', borderRadius: 3 }} />
+              </View>
+            </View>
+          );
+        })()
+      ) : null}
+
       {/* Loading Indicator */}
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>

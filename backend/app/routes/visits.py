@@ -943,6 +943,24 @@ def book_appointment_slot(
             detail=f"Dr. {doctor.name} is on leave / unavailable on {payload.appointment_date}. Please choose another date."
         )
 
+    # 4b. Enforce Doctor Daily Patient Capacity Limit
+    max_capacity = getattr(doctor, "max_daily_patients", 20) or 20
+    if max_capacity > 0:
+        day_booked_count = (
+            db.query(Visit)
+            .filter(
+                Visit.doctor_id == doctor.id,
+                Visit.appointment_date == payload.appointment_date,
+                Visit.status.in_(["scheduled", "draft", "approved", "completed", "in_progress"])
+            )
+            .count()
+        )
+        if day_booked_count >= max_capacity:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Dr. {doctor.name} has reached the maximum daily consultation capacity ({max_capacity} patients) for {payload.appointment_date}. Please choose another date or contact the clinic."
+            )
+
     # 5. Check if slot is already booked (Double booking prevention)
     clean_slot = payload.time_slot.strip()
     existing_booking = (

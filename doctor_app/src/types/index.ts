@@ -24,6 +24,7 @@ export interface DoctorUser {
   working_hours_start?: string;
   working_hours_end?: string;
   slot_duration_mins?: number;
+  max_daily_patients?: number;
   unavailable_dates?: string[];
   consultation_fee?: number;
   is_available_today?: boolean;
@@ -36,6 +37,7 @@ export interface DoctorScheduleConfig {
   working_hours_start: string;
   working_hours_end: string;
   slot_duration_mins: number;
+  max_daily_patients?: number;
   unavailable_dates: string[];
   clinic_address?: string;
   city?: string;
@@ -228,6 +230,9 @@ export interface UpcomingScheduleResponse {
   total_scheduled: number;
   in_waiting: number;
   completed?: number;
+  max_daily_patients?: number;
+  is_capacity_reached?: boolean;
+  remaining_capacity?: number;
   queue: UpcomingScheduleItem[];
 }
 

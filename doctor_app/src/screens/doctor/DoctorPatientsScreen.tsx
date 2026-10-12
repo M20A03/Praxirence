@@ -181,7 +181,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
         <View style={styles.headerTop}>
           <View style={{ flex: 1, marginRight: 10 }}>
             <Text style={styles.title} numberOfLines={1}>Patient Directory & Care Plans</Text>
-            <Text style={styles.subtitle}>{patients.length} registered patient medical vaults</Text>
+            <Text style={styles.subtitle}>{patients.length} authorized patients in your clinical roster</Text>
           </View>
           <TouchableOpacity
             style={styles.addBtn}
@@ -231,8 +231,8 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
         ) : patients.length === 0 ? (
           <EmptyState
             icon="people-outline"
-            title="No Patients Found"
-            description="No matching patient records found in your directory. Register your first patient to begin."
+            title="No Authorized Patients"
+            description="You only have access to patients who have authorized you or consulted with you. To consult an existing patient, search by their Registration No. (UHID) or registered mobile number in New Consultation."
             actionLabel="Register New Patient"
             onAction={() => setModalVisible(true)}
           />

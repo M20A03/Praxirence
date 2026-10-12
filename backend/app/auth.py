@@ -78,7 +78,6 @@ def get_auth_directory(db: Session = Depends(get_db)):
     """
     try:
         doctors = db.query(User).all()
-        patients = db.query(Patient).all()
 
         today_iso = datetime.now().strftime("%Y-%m-%d")
         today_day = datetime.now().strftime("%a")
@@ -118,24 +117,12 @@ def get_auth_directory(db: Session = Depends(get_db)):
                 "role": "doctor"
             })
 
-        patient_list = []
-        for p in patients:
-            phone_display = getattr(p, "phone", "") or ""
-            if not getattr(p, "uhid", None):
-                p.uhid = generate_uhid(db)
-                db.commit()
-            patient_list.append({
-                "id": str(p.id),
-                "uhid": p.uhid,
-                "name": p.name or "Patient",
-                "phone": phone_display,
-                "consent_status": bool(p.consent_status),
-                "role": "patient"
-            })
-
+        # DPDP Act 2023 & Zero-Trust Patient Isolation:
+        # Patient identities are protected health information (PHI) and must NEVER be
+        # broadcasted in an open auth directory. Clinicians only access patients via authorized links.
         return DirectoryResponse(
             doctors=doctor_list,
-            patients=patient_list
+            patients=[]
         )
     except Exception as e:
         logger.error(f"Error in /auth/directory: {e}", exc_info=True)

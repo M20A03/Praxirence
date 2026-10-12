@@ -566,10 +566,8 @@ export const mobileApi = {
       if (!res.ok) throw new Error('Failed to load patient directory');
       return await res.json();
     } catch (err) {
-      console.warn('Error loading patients:', err);
-      // Fallback to directory
-      const dir = await this.getDirectory();
-      return dir.patients || [];
+      console.warn('Error loading doctor authorized patients:', err);
+      return [];
     }
   },
 

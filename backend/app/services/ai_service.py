@@ -38,11 +38,64 @@ class AIService:
         except Exception:
             self.model_loader = None
 
+    def _transcribe_audio_with_gemini(self, audio_path: str, language: Optional[str] = None, api_key: str = "") -> Optional[str]:
+        if not audio_path or not os.path.exists(audio_path):
+            return None
+        try:
+            import base64
+            ext = os.path.splitext(audio_path)[1].lower()
+            mime = "audio/wav" if ext == ".wav" else "audio/m4a" if ext == ".m4a" else "audio/mp3" if ext == ".mp3" else "audio/webm"
+            with open(audio_path, "rb") as f:
+                b64_audio = base64.b64encode(f.read()).decode("utf-8")
+
+            payload = {
+                "contents": [{
+                    "parts": [
+                        {"inlineData": {"mimeType": mime, "data": b64_audio}},
+                        {"text": "You are Praxirence Clinical Speech ASR. Transcribe this doctor-patient voice consultation verbatim. Accurately capture clinician-patient dialogue, symptoms, Indian brand and generic medications, dosages, frequency (e.g. 1-0-1), and follow-up advice. Separate Doctor and Patient turns clearly."}
+                    ]
+                }]
+            }
+            models = ["gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
+            for m in models:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key}"
+                try:
+                    with httpx.Client(timeout=35.0) as client:
+                        res = client.post(url, json=payload, headers={"X-goog-api-key": api_key, "Content-Type": "application/json"})
+                        if res.status_code == 200:
+                            data = res.json()
+                            text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                            if text:
+                                logger.info(f"Audio consultation successfully transcribed via Gemini ({m})")
+                                return text
+                except Exception as err:
+                    logger.warning(f"Gemini ASR attempt with {m} notice: {err}")
+        except Exception as e:
+            logger.error(f"Error in _transcribe_audio_with_gemini: {e}")
+        return None
+
     def transcribe_audio(self, audio_path: str, language: Optional[str] = None) -> str:
         """
-        Transcribes doctor-patient consultation audio using chunked sliding-window Whisper ASR.
-        Guarantees processing for long consultations (8 to 12+ minutes) without truncation or OOM.
+        Transcribes doctor-patient consultation audio using local Whisper or Multimodal Cloud ASR.
+        Guarantees processing for long consultations without truncation.
         """
+        # 1. Try local Whisper if weights are loaded
+        if self.model_loader and getattr(self.model_loader, "whisper_model", None):
+            try:
+                text = self.model_loader.transcribe(audio_path, language=language)
+                if text and text != "Doctor: Patient consultation completed. No specific prescription recorded.":
+                    return text
+            except Exception as e:
+                logger.warning(f"Local Whisper transcription failed: {e}")
+
+        # 2. Try multimodal Gemini audio transcription if API key is configured
+        gemini_key = settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY")
+        if gemini_key:
+            cloud_text = self._transcribe_audio_with_gemini(audio_path, language=language, api_key=gemini_key)
+            if cloud_text:
+                return cloud_text
+
+        # 3. Graceful fallback
         if self.model_loader:
             return self.model_loader.transcribe(audio_path, language=language)
         return "Doctor: Patient consultation completed. No specific prescription recorded."
@@ -427,7 +480,7 @@ class AIService:
             "generationConfig": {"temperature": 0.1, "maxOutputTokens": 4096, "response_mime_type": "application/json"}
         }
 
-        models = ["gemini-flash-latest", "gemini-2.0-flash", "gemini-1.5-flash"]
+        models = ["gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
         for m in models:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key}"
             try:

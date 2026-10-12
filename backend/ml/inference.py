@@ -266,6 +266,18 @@ class ModelLoader:
             except Exception:
                 pass
 
+        # Cloud Multimodal ASR Fallback if local Whisper weights are absent
+        try:
+            from app.core.config import settings
+            from app.services.ai_service import ai_service
+            gemini_key = settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY")
+            if gemini_key:
+                cloud_text = ai_service._transcribe_audio_with_gemini(audio_path, language=language, api_key=gemini_key)
+                if cloud_text:
+                    return cloud_text
+        except Exception as e:
+            logger.warning(f"Cloud ASR failover notice: {e}")
+
         # Clean consultation fallback when audio transcription has no audible words
         return "Doctor: Patient consultation completed. No specific prescription recorded."
 

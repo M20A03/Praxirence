@@ -310,6 +310,10 @@ async def upload_consultation_audio(
             doctor_advice=summarized.get("doctor_advice")
         )
 
+        final_diagnosis = summarized.get("diagnosis") or care_plan.get("diagnosis", "Clinical Assessment")
+        final_medicines = summarized.get("medicines") or care_plan.get("medicines", [])
+        final_reminders = summarized.get("reminders") or care_plan.get("reminders", [])
+
         # Create draft visit
         visit = Visit(
             patient_id=patient.id,
@@ -317,9 +321,9 @@ async def upload_consultation_audio(
             audio_file_path=stored_path,
             keep_recording=retained_recording,
             raw_transcription=stored_transcription,
-            diagnosis=care_plan.get("diagnosis", "Clinical Assessment"),
-            medicines=care_plan.get("medicines", []),
-            reminders=care_plan.get("reminders", []),
+            diagnosis=final_diagnosis,
+            medicines=final_medicines,
+            reminders=final_reminders,
             status="draft"
         )
         db.add(visit)

@@ -56,7 +56,7 @@ Always cross-check:
 ### STEP 3: MANDATORY STRUCTURED OUTPUT FORMAT
 Your output MUST adhere strictly to the following 5 sections:
 
-#### 1. PRIMARY IMPRESSION & DIFFERENTIAL DIAGNOSIS (DDx)
+1. PRIMARY IMPRESSION & DIFFERENTIAL DIAGNOSIS (DDx)
 - Primary Working Diagnosis: [Name + ICD-10 code if applicable]
 - Differential Candidates:
   * 1. [Diagnosis A] — Supporting clinical rationale
@@ -64,24 +64,24 @@ Your output MUST adhere strictly to the following 5 sections:
   * 3. [Diagnosis C] — Supporting clinical rationale
 - Must-Not-Miss Red Flags: [High-acuity life threats to rule out immediately]
 
-#### 2. SUGGESTED DIAGNOSTIC & INVESTIGATION WORKUP
+2. SUGGESTED DIAGNOSTIC & INVESTIGATION WORKUP
 - Immediate / Bedside: [e.g., 12-lead ECG, Capillary Glucose, POCUS]
 - Confirmatory Laboratory Tests: [Specific blood, urine, or biomarker panels]
 - Diagnostic Imaging: [X-ray, USG, Contrast CT, or MRI indications]
 
-#### 3. EVIDENCE-BASED TREATMENT & PHARMACOTHERAPY
+3. EVIDENCE-BASED TREATMENT & PHARMACOTHERAPY
 - First-Line Medications:
   * [Generic Drug Name] | [Dosage & Route] | [Frequency (OD/BD/TDS)] | [Duration]
   * [Clinical justification and food timing instructions]
 - Alternative Options: [Substitutes for allergies, intolerance, or pregnancy]
 - Supportive / Non-Pharmacological Care: [Hydration, diet, respiratory care, positioning]
 
-#### 4. PHARMACOVIGILANCE & SAFETY DOUBLE-CHECKS
+4. PHARMACOVIGILANCE & SAFETY DOUBLE-CHECKS
 - Drug-Drug Interactions (DDIs): [Interactions between proposed drugs and patient's current medications]
 - Organ Clearance Titration: [Renal eGFR cut-offs or hepatic precautions]
 - Boxed Warnings / Contraindications: [Specific warnings relevant to this profile]
 
-#### 5. CLINICAL MONITORING & FOLLOW-UP TIMELINE
+5. CLINICAL MONITORING & FOLLOW-UP TIMELINE
 - Day 3 / Day 7 Re-evaluation: [Key parameters and biomarkers to re-check]
 - Escalation / Hospitalization Triggers: [Clear vitals and symptom thresholds requiring immediate ICU / specialist referral]
 """
@@ -97,29 +97,29 @@ Maintain a crisp, authoritative medical tone with zero fluff, zero patient-facin
 ### MANDATORY STRUCTURED OUTPUT FORMAT:
 Your response MUST strictly adhere to the following 5 clinical sections:
 
-#### 1. CLINICAL PHARMACOLOGY & FORMULARY IDENTITY
+1. CLINICAL PHARMACOLOGY & FORMULARY IDENTITY
 - Generic Salt & Pharmacological Class: [Official generic molecule, pharmacological mechanism of action, and therapeutic class]
 - Available Dosage Forms & Strengths: [Tablets, capsules, syrups, IV/IM infusions commonly prescribed in India]
 - Approved Primary Indications: [Clinical indications per CDSCO, WHO, and ICMR guidelines]
 - Indian Commercial Brands & Formulary Status: [Leading Indian brands, manufacturer context, and Schedule classification (OTC / Schedule H / H1 / X)]
 
-#### 2. EVIDENCE-BASED DOSING & ADMINISTRATION REGIMEN
+2. EVIDENCE-BASED DOSING & ADMINISTRATION REGIMEN
 - Standard Adult Dosing: [Recommended dose, frequency (OD/BD/TDS), route, and maximum 24-hour safe ceiling]
 - Pediatric Dosing: [Weight-based mg/kg/dose if applicable, or clear pediatric precautions/contraindications]
 - Food & Meal Timing Directive: [Empty stomach / with food / before meals, specific dietary restrictions or gastroprotection needs]
 - Standard Duration: [Usual course duration for acute vs chronic indications]
 
-#### 3. ORGAN CLEARANCE & DOSE TITRATION
+3. ORGAN CLEARANCE & DOSE TITRATION
 - Renal Impairment (eGFR Cut-offs): [Specific titration guidelines for normal, moderate (eGFR 30-50), severe (eGFR < 30), or dialysis]
 - Hepatic Impairment: [Child-Pugh A/B/C precautions, dose reduction, or absolute hepatic contraindications]
 - Geriatric / Vulnerable Populations: [Starting dose adjustments and physiological considerations in elderly patients]
 
-#### 4. PHARMACOVIGILANCE, BOXED WARNINGS & CONTRAINDICATIONS
+4. PHARMACOVIGILANCE, BOXED WARNINGS & CONTRAINDICATIONS
 - Absolute & Relative Contraindications: [Conditions where this drug must NEVER be prescribed]
 - Boxed Warnings & Toxicity Thresholds: [Major toxicities, acute overdose threshold, and specific clinical antidote if known]
 - High-Risk Drug-Drug Interactions (DDIs): [Top interacting drug classes and mechanistic clinical risks]
 
-#### 5. AFFORDABLE GENERIC ALTERNATIVES (PMBJP JAN AUSHADHI)
+5. AFFORDABLE GENERIC ALTERNATIVES (PMBJP JAN AUSHADHI)
 - Pradhan Mantri Jan Aushadhi Availability: [Equivalent generic formulation available under PMBJP and cost advantage (~60-90% savings vs brands)]
 - Clinical Substitution Directive: [Prescribing guidance for bioequivalent generic substitution in OPD/IPD practice]
 """
@@ -394,19 +394,19 @@ def generate_fallback_pharmacology_response(drug: Dict[str, Any], query: str, db
     g_lower = generic.lower()
 
     if "paracetamol" in g_lower or "acetaminophen" in g_lower:
-        return f"""#### 1. CLINICAL PHARMACOLOGY & FORMULARY IDENTITY
+        return f"""1. CLINICAL PHARMACOLOGY & FORMULARY IDENTITY
 - Generic Salt & Pharmacological Class: Paracetamol / Acetaminophen (Analgesic & Antipyretic; central COX-2/COX-3 inhibition with hypothalamic thermoregulatory resetting).
 - Available Dosage Forms & Strengths: Tablets (500mg, 650mg), Oral Suspension (120mg/5ml, 250mg/5ml), IV Infusion (1000mg/100ml), Suppositories (125mg, 250mg).
 - Approved Primary Indications: Mild-to-moderate pyrexia, tension headache, musculoskeletal pain, post-immunization fever, and multimodal postoperative analgesia.
 - Indian Commercial Brands & Formulary Status: {brands_str} | Status: OTC / Schedule H for high-dose formulations.
 
-#### 2. EVIDENCE-BASED DOSING & ADMINISTRATION REGIMEN
+2. EVIDENCE-BASED DOSING & ADMINISTRATION REGIMEN
 - Standard Adult Dosing: 500mg - 650mg PO every 4 to 6 hours PRN. Maximum safe ceiling: 4000mg in 24 hours (limit to 2000-3000mg/day in elderly, chronic alcohol use, or weight < 50kg).
 - Pediatric Dosing: 10 - 15 mg/kg/dose PO every 4 to 6 hours. Maximum daily pediatric limit: 60 mg/kg/day (do not exceed 5 doses in 24 hours).
 - Food & Meal Timing Directive: Can be taken with or without food. Faster onset when taken on an empty stomach with a full glass of water. If mild gastric sensitivity occurs, administer after meals.
 - Standard Duration: Shortest duration consistent with symptom resolution (typically 3 to 5 days).
 
-#### 3. ORGAN CLEARANCE & DOSE TITRATION
+3. ORGAN CLEARANCE & DOSE TITRATION
 - Renal Impairment (eGFR Cut-offs):
   * eGFR > 50 mL/min: Standard dosing interval (Q4H).
   * eGFR 10 - 50 mL/min: Lengthen dosing interval to Q6H.
@@ -414,123 +414,123 @@ def generate_fallback_pharmacology_response(drug: Dict[str, Any], query: str, db
 - Hepatic Impairment: Dose-dependent hepatotoxicity. Strictly limit to 2000mg/day in mild-to-moderate stable hepatic impairment. Absolute contraindication in severe acute active hepatic necrosis.
 - Geriatric / Vulnerable Populations: Lower daily maximum recommended (3000mg/day) to prevent accidental accumulation.
 
-#### 4. PHARMACOVIGILANCE, BOXED WARNINGS & CONTRAINDICATIONS
+4. PHARMACOVIGILANCE, BOXED WARNINGS & CONTRAINDICATIONS
 - Absolute & Relative Contraindications: Known severe hypersensitivity, acute decompensated liver failure, active end-stage hepatic cirrhosis.
 - Boxed Warnings & Toxicity Thresholds: Acute ingestion >150 mg/kg (or >7.5g in adults) can cause fatal centrilobular hepatic necrosis. Specific Antidote: IV N-Acetylcysteine (NAC) administered within 8-10 hours of toxic ingestion.
 - High-Risk Drug-Drug Interactions (DDIs): Chronic alcohol or Isoniazid markedly potentiates hepatotoxic NAPQI metabolite formation; regular daily doses >2g may enhance Warfarin anticoagulation (monitor INR).
 
-#### 5. AFFORDABLE GENERIC ALTERNATIVES (PMBJP JAN AUSHADHI)
+5. AFFORDABLE GENERIC ALTERNATIVES (PMBJP JAN AUSHADHI)
 - Pradhan Mantri Jan Aushadhi Availability: {jan_aushadhi} — High bioequivalence, costing ~₹1.00 - ₹1.50 per strip vs ₹30-45 for branded equivalents.
 - Clinical Substitution Directive: Recommend PMBJP Paracetamol 650mg tablets for cost-sensitive patients requiring acute antipyretic or analgesic therapy."""
 
     elif "pantoprazole" in g_lower:
-        return f"""#### 1. CLINICAL PHARMACOLOGY & FORMULARY IDENTITY
+        return f"""1. CLINICAL PHARMACOLOGY & FORMULARY IDENTITY
 - Generic Salt & Pharmacological Class: Pantoprazole Sodium (Proton Pump Inhibitor / Acid Suppressive; irreversible covalent inhibition of H+/K+-ATPase in gastric parietal cells).
 - Available Dosage Forms & Strengths: Enteric-coated tablets (20mg, 40mg), IV Lyophilized Injection (40mg vial).
 - Approved Primary Indications: GERD, erosive esophagitis, duodenal/gastric ulcer disease, NSAID-induced gastroprotection, Zollinger-Ellison syndrome, H. pylori eradication.
 - Indian Commercial Brands & Formulary Status: {brands_str} | Status: Schedule H Prescription Medicine.
 
-#### 2. EVIDENCE-BASED DOSING & ADMINISTRATION REGIMEN
+2. EVIDENCE-BASED DOSING & ADMINISTRATION REGIMEN
 - Standard Adult Dosing: 40mg PO OD. For severe erosive esophagitis or bleeding peptic ulcer step-down: 40mg PO BD. Zollinger-Ellison: 80mg to 160mg daily.
 - Pediatric Dosing: ≥5 years (>40kg): 40mg PO OD for up to 8 weeks. Safety not established in infants < 1 year.
 - Food & Meal Timing Directive: Strictly take ON AN EMPTY STOMACH 30 to 60 minutes BEFORE morning breakfast with water. Do not crush, chew, or split enteric-coated tablets.
 - Standard Duration: 4 to 8 weeks for erosive esophagitis and peptic ulcers; reassess for step-down therapy.
 
-#### 3. ORGAN CLEARANCE & DOSE TITRATION
+3. ORGAN CLEARANCE & DOSE TITRATION
 - Renal Impairment (eGFR Cut-offs): No dosage adjustment required in renal impairment or hemodialysis.
 - Hepatic Impairment: Severe hepatic impairment (Child-Pugh C): Maximum 20mg daily or 40mg every other day with serial LFT monitoring.
 - Geriatric Considerations: Safe in elderly; no routine age-related dose reduction needed.
 
-#### 4. PHARMACOVIGILANCE, BOXED WARNINGS & CONTRAINDICATIONS
+4. PHARMACOVIGILANCE, BOXED WARNINGS & CONTRAINDICATIONS
 - Absolute & Relative Contraindications: Hypersensitivity to substituted benzimidazoles. Co-administration with rilpivirine-containing regimens.
 - Boxed Warnings & Chronic Risks: Prolonged therapy (>1 year) linked with hypomagnesemia, Vitamin B12 malabsorption, increased osteoporotic fracture risk, and Clostridioides difficile colitis.
 - High-Risk Drug-Drug Interactions (DDIs): Minimal CYP2C19 interaction compared to omeprazole (safe with Clopidogrel); significantly impairs absorption of pH-dependent drugs (Ketoconazole, Iron salts, Atazanavir).
 
-#### 5. AFFORDABLE GENERIC ALTERNATIVES (PMBJP JAN AUSHADHI)
+5. AFFORDABLE GENERIC ALTERNATIVES (PMBJP JAN AUSHADHI)
 - Pradhan Mantri Jan Aushadhi Availability: {jan_aushadhi} — Available across PMBJP Kendras for ~₹12 - ₹15 per strip of 10 tablets.
 - Clinical Substitution Directive: First-line substitution in OPD practice for cost-effective gastroprotection and acid-peptic management."""
 
     elif "azithromycin" in g_lower:
-        return f"""#### 1. CLINICAL PHARMACOLOGY & FORMULARY IDENTITY
+        return f"""1. CLINICAL PHARMACOLOGY & FORMULARY IDENTITY
 - Generic Salt & Pharmacological Class: Azithromycin Dihydrate (Macrolide / Azalide Antibiotic; reversibly binds 50S ribosomal subunit, inhibiting bacterial protein synthesis).
 - Available Dosage Forms & Strengths: Tablets (250mg, 500mg), Oral Suspension (100mg/5ml, 200mg/5ml), IV Infusion (500mg vial).
 - Approved Primary Indications: Community-acquired pneumonia (CAP), acute bacterial exacerbation of COPD, acute bacterial sinusitis, tonsillopharyngitis, chlamydial urethritis.
 - Indian Commercial Brands & Formulary Status: {brands_str} | Status: Schedule H1 Antibiotic (Prescription Only).
 
-#### 2. EVIDENCE-BASED DOSING & ADMINISTRATION REGIMEN
+2. EVIDENCE-BASED DOSING & ADMINISTRATION REGIMEN
 - Standard Adult Dosing: 500mg PO OD once daily for 3 consecutive days (or 500mg on Day 1 followed by 250mg OD on Days 2-5). Uncomplicated genital chlamydia: 1g single oral dose.
 - Pediatric Dosing: 10 mg/kg/day PO OD for 3 days (or 10 mg/kg Day 1, followed by 5 mg/kg Days 2-5).
 - Food & Meal Timing Directive: Take once daily at the same time. Tablets may be taken with or without food (taking with light food reduces GI cramping). Suspension should ideally be taken 1 hour before or 2 hours after food.
 - Standard Duration: 3 to 5 days. High tissue half-life (~68 hours) provides extended post-antibiotic effect.
 
-#### 3. ORGAN CLEARANCE & DOSE TITRATION
+3. ORGAN CLEARANCE & DOSE TITRATION
 - Renal Impairment (eGFR Cut-offs): No adjustment necessary in mild-to-moderate renal impairment (eGFR 10-80 mL/min). Exercise clinical caution if eGFR < 10 mL/min.
 - Hepatic Impairment: Primarily eliminated via biliary excretion. Use with extreme caution in biliary obstruction or moderate-to-severe hepatic impairment.
 - Contraindications: History of cholestatic jaundice or hepatic dysfunction associated with previous azithromycin use.
 
-#### 4. PHARMACOVIGILANCE, BOXED WARNINGS & CONTRAINDICATIONS
+4. PHARMACOVIGILANCE, BOXED WARNINGS & CONTRAINDICATIONS
 - Absolute & Relative Contraindications: Documented macrolide allergy, congenital long QT syndrome, concurrent use of QT-prolonging drugs.
 - Boxed Warnings: Risk of QT prolongation, Torsades de Pointes, and fatal cardiac arrhythmias, especially in elderly or hypokalemic patients.
 - High-Risk Drug-Drug Interactions (DDIs): Co-administration with Ondansetron, Amiodarone, or Fluoroquinolones significantly elevates arrhythmia risk; avoid co-administration with ergot alkaloids.
 
-#### 5. AFFORDABLE GENERIC ALTERNATIVES (PMBJP JAN AUSHADHI)
+5. AFFORDABLE GENERIC ALTERNATIVES (PMBJP JAN AUSHADHI)
 - Pradhan Mantri Jan Aushadhi Availability: {jan_aushadhi} — Available at PMBJP stores for ~₹40 - ₹45 per strip of 3 tablets (saving >60%).
 - Clinical Substitution Directive: Direct bioequivalent generic alternative in acute respiratory and soft tissue bacterial infections."""
 
     elif "metformin" in g_lower:
-        return f"""#### 1. CLINICAL PHARMACOLOGY & FORMULARY IDENTITY
+        return f"""1. CLINICAL PHARMACOLOGY & FORMULARY IDENTITY
 - Generic Salt & Pharmacological Class: Metformin Hydrochloride (Biguanide Antihyperglycemic; activates hepatic AMPK, decreases gluconeogenesis, enhances peripheral insulin sensitivity).
 - Available Dosage Forms & Strengths: Immediate Release Tablets (500mg, 850mg, 1000mg), Extended Release (SR/ER 500mg, 1000mg).
 - Approved Primary Indications: First-line pharmacotherapy for Type 2 Diabetes Mellitus, prediabetes, and polycystic ovarian syndrome (PCOS).
 - Indian Commercial Brands & Formulary Status: {brands_str} | Status: Schedule H Prescription Medicine.
 
-#### 2. EVIDENCE-BASED DOSING & ADMINISTRATION REGIMEN
+2. EVIDENCE-BASED DOSING & ADMINISTRATION REGIMEN
 - Standard Adult Dosing: Initial: 500mg PO BD or 850mg PO OD with meals. Titrate weekly by 500mg increments up to 1000mg PO BD (Maximum safe daily ceiling: 2000-2550 mg/day).
 - Pediatric Dosing (T2DM in children ≥10 years): Initial 500mg PO OD with food; titrate to maximum 2000mg/day in divided doses.
 - Food & Meal Timing Directive: Strictly take WITH or IMMEDIATELY AFTER meals to minimize common gastrointestinal adverse effects (nausea, flatulence, diarrhea).
 - Standard Duration: Long-term chronic metabolic maintenance.
 
-#### 3. ORGAN CLEARANCE & DOSE TITRATION
+3. ORGAN CLEARANCE & DOSE TITRATION
 - Renal Impairment (KDIGO Guidelines):
   * eGFR ≥ 45 mL/min/1.73m²: No dose adjustment needed; monitor eGFR annually.
   * eGFR 30 - 44 mL/min/1.73m²: Maximum dose 1000mg/day (reduce by 50%); do not initiate new therapy.
   * eGFR < 30 mL/min/1.73m²: Strictly CONTRAINDICATED due to high risk of fatal Lactic Acidosis.
 - Hepatic Impairment: Avoid in severe liver disease or acute alcohol intoxication (impaired lactate clearance).
 
-#### 4. PHARMACOVIGILANCE, BOXED WARNINGS & CONTRAINDICATIONS
+4. PHARMACOVIGILANCE, BOXED WARNINGS & CONTRAINDICATIONS
 - Absolute & Relative Contraindications: eGFR < 30 mL/min, acute metabolic acidosis, severe hypoxemic states (decompensated heart failure, sepsis).
 - Boxed Warnings: Metformin-Associated Lactic Acidosis (MALA) — Rare but 50% mortality. Discontinue 48 hours prior to iodinated radiocontrast procedures in patients with eGFR < 60.
 - High-Risk Drug-Drug Interactions (DDIs): Cationic drugs (Cimetidine, Dolutegravir) compete for renal OCT2 transporters and increase metformin levels. Monitor Vitamin B12 levels annually.
 
-#### 5. AFFORDABLE GENERIC ALTERNATIVES (PMBJP JAN AUSHADHI)
+5. AFFORDABLE GENERIC ALTERNATIVES (PMBJP JAN AUSHADHI)
 - Pradhan Mantri Jan Aushadhi Availability: {jan_aushadhi} — Available nationwide for ~₹8 - ₹12 per strip of 10 tablets.
 - Clinical Substitution Directive: Recommended first-line oral antidiabetic substitution for high therapeutic adherence and cost control."""
 
     else:
         # Dynamic generic monograph generated from DB formulary attributes
-        return f"""#### 1. CLINICAL PHARMACOLOGY & FORMULARY IDENTITY
+        return f"""1. CLINICAL PHARMACOLOGY & FORMULARY IDENTITY
 - Generic Salt & Pharmacological Class: {generic} ({schedule}; verified in Indian National Formulary & CDSCO formulary).
 - Formulation & Standard Strength: {dosage_form} | Strength: {strength}.
 - Primary Clinical Indication: Indicated for therapeutic management within its pharmacotherapeutic class as directed by clinical guidelines.
 - Indian Commercial Brands & Formulary Status: {brands_str} | Schedule: {schedule}.
 
-#### 2. EVIDENCE-BASED DOSING & ADMINISTRATION REGIMEN
+2. EVIDENCE-BASED DOSING & ADMINISTRATION REGIMEN
 - Standard Adult Dosing: Recommended therapeutic dose as per strength ({strength}) aligned with clinical severity and attending physician judgment.
 - Pediatric Considerations: Dosage must be individually calculated on a mg/kg basis or referred to pediatric formulary guidelines.
 - Food & Meal Timing Directive: {meal_inst} (Relation: {food_rel.replace('_', ' ').title()}). Take with water as prescribed.
 - Prescribing Caution: Ensure complete course adherence; do not prematurely discontinue or double up on missed doses.
 
-#### 3. ORGAN CLEARANCE & DOSE TITRATION
+3. ORGAN CLEARANCE & DOSE TITRATION
 - Renal Impairment: Baseline renal panel (eGFR, serum creatinine) recommended prior to initiation. Titrate dose in moderate-to-severe renal failure.
 - Hepatic Impairment: Exercise clinical vigilance in patients with baseline transaminitis or chronic liver disease.
 - Geriatric Patients: Start at the lower end of the dosing range and titrate cautiously based on clinical response.
 
-#### 4. PHARMACOVIGILANCE, BOXED WARNINGS & CONTRAINDICATIONS
+4. PHARMACOVIGILANCE, BOXED WARNINGS & CONTRAINDICATIONS
 - Contraindications: Known severe hypersensitivity to active substance or excipients, severe end-stage organ dysfunction unless specifically cleared.
 - Pharmacovigilance: Monitor for common adverse drug reactions, idiosyncratic drug eruptions, or acute gastrointestinal intolerance.
 - High-Risk Drug-Drug Interactions (DDIs): Cross-check with patient's active medication list to avoid antagonistic effects, competitive CYP450 metabolism, or synergistic toxicities.
 
-#### 5. AFFORDABLE GENERIC ALTERNATIVES (PMBJP JAN AUSHADHI)
+5. AFFORDABLE GENERIC ALTERNATIVES (PMBJP JAN AUSHADHI)
 - Pradhan Mantri Jan Aushadhi Availability: {jan_aushadhi}.
 - Clinical Substitution Directive: Verified bioequivalent generic substitution supported for affordable, uninterrupted patient healthcare access."""
 
@@ -578,7 +578,7 @@ def generate_fallback_clinical_response(query: str, context: Optional[PatientCon
         rx1 = "Targeted symptomatic relief aligned with objective clinical signs. Avoid empirical multi-antimicrobial polypharmacy."
         safety = "Screen for pre-existing hepatic and renal impairment before initiating new therapeutic regimens."
 
-    return f"""#### 1. PRIMARY IMPRESSION & DIFFERENTIAL DIAGNOSIS (DDx)
+    return f"""1. PRIMARY IMPRESSION & DIFFERENTIAL DIAGNOSIS (DDx)
 - Primary Working Diagnosis: {dx}
 - Differential Candidates:
   * 1. {d1}
@@ -586,21 +586,21 @@ def generate_fallback_clinical_response(query: str, context: Optional[PatientCon
   * 3. {d3}
 - Must-Not-Miss Red Flags: {red_flags}
 
-#### 2. SUGGESTED DIAGNOSTIC & INVESTIGATION WORKUP
+2. SUGGESTED DIAGNOSTIC & INVESTIGATION WORKUP
 - Immediate / Bedside: {bedside}
 - Confirmatory Laboratory Tests: {labs}
 - Diagnostic Imaging: As indicated by clinical stability and organ-specific presentation.
 
-#### 3. EVIDENCE-BASED TREATMENT & PHARMACOTHERAPY
+3. EVIDENCE-BASED TREATMENT & PHARMACOTHERAPY
 - First-Line Medications:
 {rx1}
 - Supportive / Non-Pharmacological Care: Maintain strict hydration, monitor vitals Q4H, and ensure therapeutic adherence.
 
-#### 4. PHARMACOVIGILANCE & SAFETY DOUBLE-CHECKS
+4. PHARMACOVIGILANCE & SAFETY DOUBLE-CHECKS
 - Clinical Safety Notes: {safety}
 - Organ Clearance: Titrate dosages based on baseline eGFR and LFT status.
 
-#### 5. CLINICAL MONITORING & FOLLOW-UP TIMELINE
+5. CLINICAL MONITORING & FOLLOW-UP TIMELINE
 - Day 3 / Day 7 Re-evaluation: Re-assess symptom resolution and repeat inflammatory/metabolic biomarkers if symptomatic.
 - Escalation Triggers: Immediate hospital transfer if red-flag danger thresholds are breached."""
 

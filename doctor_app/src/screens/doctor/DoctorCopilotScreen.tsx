@@ -600,7 +600,34 @@ ${copilotReply}`,
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.replyBody}>{copilotReply}</Text>
+            {copilotReply.split(/\r?\n/).map((line, lIdx) => {
+              const cleanLine = line.replace(/^[#]+\s*/, '').trim();
+              if (!cleanLine) {
+                return <View key={lIdx} style={{ height: 6 }} />;
+              }
+              const isSectionHeader = /^\d+\.\s+[A-Z\s&(),/-]+$/.test(cleanLine) || (/^[A-Z\s&(),/-]{6,}:?$/.test(cleanLine) && !cleanLine.startsWith('-'));
+              if (isSectionHeader) {
+                return (
+                  <View key={lIdx} style={{ marginTop: lIdx === 0 ? 2 : 12, marginBottom: 4, borderBottomWidth: 1, borderBottomColor: '#E2E8F0', paddingBottom: 3 }}>
+                    <Text style={{ fontFamily: FontFamily.bold, fontSize: 13, color: '#0369A1', letterSpacing: 0.3, fontWeight: '700' }}>
+                      {cleanLine}
+                    </Text>
+                  </View>
+                );
+              }
+              const isBullet = cleanLine.startsWith('- ') || cleanLine.startsWith('• ');
+              return (
+                <Text
+                  key={lIdx}
+                  style={[
+                    styles.replyBody,
+                    isBullet && { paddingLeft: 4, color: '#334155', marginVertical: 1 }
+                  ]}
+                >
+                  {cleanLine}
+                </Text>
+              );
+            })}
 
             <View style={styles.replyFooter}>
               <Text style={styles.guidelineFooterText}>

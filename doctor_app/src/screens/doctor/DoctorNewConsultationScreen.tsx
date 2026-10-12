@@ -1018,9 +1018,9 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
 
       {/* 2. Doctor-Patient Conversation Dialogue */}
       <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>2. Doctor-Patient Conversation</Text>
-          <Text style={styles.badgeText}>Real-Time Clinical ASR / Dialogue</Text>
+        <View style={[styles.sectionHeader, { flexWrap: 'wrap', gap: 6 }]}>
+          <Text style={[styles.sectionTitle, { flexShrink: 0 }]}>2. Doctor-Patient Conversation</Text>
+          <Text style={styles.badgeText}>Real-Time ASR</Text>
         </View>
         <Text style={styles.helperText}>
           Record or enter what was discussed. AI will extract medications and write a clear, patient-friendly explanation.

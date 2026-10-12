@@ -64,12 +64,20 @@ class PDFPrescriptionService:
         elements.append(Spacer(1, 8))
 
         # 2. Doctor & Patient Info Table
+        cell_style = ParagraphStyle(
+            "InfoTableCell",
+            parent=styles["Normal"],
+            fontSize=9,
+            textColor=colors.HexColor("#0F172A"),
+            leading=12
+        )
         uhid_text = f" • UHID: {patient_uhid}" if patient_uhid else ""
-        info_data = [
+        raw_info = [
             [f"<b>Doctor:</b> {doctor_name}", f"<b>Date:</b> {datetime.now().strftime('%d %b %Y')}"],
             [f"<b>Patient:</b> {patient_name} ({patient_age}y, {patient_gender}){uhid_text}", f"<b>UHID:</b> {patient_uhid or 'Auto-assigned'}"],
             [f"<b>Clinical Diagnosis:</b> {diagnosis}", f"<b>Status:</b> Consent Active (ABDM Verified)"]
         ]
+        info_data = [[Paragraph(cell, cell_style) for cell in row] for row in raw_info]
         info_table = Table(info_data, colWidths=[300, 240])
         info_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#F8FAFC")),
@@ -189,11 +197,19 @@ class PDFPrescriptionService:
         # 2. Patient Demographics & Meta
         uhid_val = patient_uhid or "Auto-assigned"
         phone_disp = patient_phone or "Registered Mobile"
-        patient_meta = [
+        vault_cell_style = ParagraphStyle(
+            "VaultTableCell",
+            parent=styles["Normal"],
+            fontSize=9,
+            textColor=colors.HexColor("#0F172A"),
+            leading=12
+        )
+        raw_patient_meta = [
             [f"<b>Patient Name:</b> {patient_name}", f"<b>Generated On:</b> {datetime.now().strftime('%d %b %Y, %H:%M')}"],
             [f"<b>UHID:</b> {uhid_val}", f"<b>Registered Phone:</b> {phone_disp}"],
             [f"<b>Total Consultations:</b> {len(visits)}", f"<b>Data Governance:</b> Consent Verified (DPDP Compliant)"]
         ]
+        patient_meta = [[Paragraph(cell, vault_cell_style) for cell in row] for row in raw_patient_meta]
         meta_table = Table(patient_meta, colWidths=[270, 270])
         meta_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#F8FAFC")),
@@ -220,10 +236,11 @@ class PDFPrescriptionService:
                 doc_adv = v.get("doctor_advice") or "Routine follow-up as advised."
                 meds = v.get("medicines") or []
 
-                visit_header_data = [
+                raw_visit_header = [
                     [f"<b>#{idx}. Date:</b> {v_date}", f"<b>Doctor:</b> Dr. {doc_name}"],
                     [f"<b>Diagnosis:</b> {diag}", "<b>Status:</b> Clinician Verified"]
                 ]
+                visit_header_data = [[Paragraph(cell, vault_cell_style) for cell in row] for row in raw_visit_header]
                 v_table = Table(visit_header_data, colWidths=[270, 270])
                 v_table.setStyle(TableStyle([
                     ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#F1F5F9")),

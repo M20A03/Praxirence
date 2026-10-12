@@ -555,11 +555,11 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
 
       {/* Practice Schedule & Availability Card */}
       <View style={styles.sectionCard}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-          <Text style={styles.sectionTitle}>Practice Schedule & Leave Calendar</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
+          <Text style={[styles.sectionTitle, { flexShrink: 0 }]}>Practice Schedule & Leave</Text>
           <View style={styles.liveSyncBadge}>
             <Ionicons name="cloud-done-outline" size={12} color="#059669" />
-            <Text style={styles.liveSyncText}>Live Cloud Sync</Text>
+            <Text style={styles.liveSyncText}>Cloud Sync</Text>
           </View>
         </View>
         <Text style={styles.scheduleSubtitle}>
@@ -626,20 +626,20 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
 
         {/* Leave / Out of Office Section with Interactive Monthly Calendar */}
         <View style={styles.leaveSectionBox}>
-          <View style={styles.leaveHeaderRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <View style={[styles.leaveHeaderRow, { flexWrap: 'wrap', gap: 6 }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
               <Ionicons name="calendar-outline" size={16} color="#0D9488" />
-              <Text style={styles.leaveSectionTitle}>Clinician Availability & Leave Calendar</Text>
+              <Text style={styles.leaveSectionTitle}>Clinician Availability Calendar</Text>
             </View>
             {unavailableDates.length === 0 ? (
               <View style={styles.statusBadgePill}>
                 <Ionicons name="checkmark-circle" size={13} color="#059669" />
-                <Text style={styles.statusBadgeText}>Practicing as normal</Text>
+                <Text style={styles.statusBadgeText}>Practicing</Text>
               </View>
             ) : (
               <View style={[styles.statusBadgePill, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
                 <Ionicons name="alert-circle" size={13} color="#DC2626" />
-                <Text style={[styles.statusBadgeText, { color: '#B91C1C' }]}>{unavailableDates.length} Leave Active</Text>
+                <Text style={[styles.statusBadgeText, { color: '#B91C1C' }]}>{unavailableDates.length} On Leave</Text>
               </View>
             )}
           </View>

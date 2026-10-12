@@ -309,19 +309,18 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
     >
       {/* Top Clinical Header with Brand Logo and Chatbot Emblem */}
       <View style={styles.topHeader}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Image source={require('../../assets/features/chatbot.png')} style={{ width: 34, height: 34 }} resizeMode="contain" />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, minWidth: 100 }}>
           <BrandLogoMobile variant="header" size="sm" subtitleText={t('aiAssistantTitle')} />
         </View>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 }}>
           {/* Query History Pill */}
           <TouchableOpacity
             style={styles.historyPill}
             onPress={() => setShowHistoryModal(true)}
             activeOpacity={0.7}
           >
-            <Ionicons name="reader-outline" size={13} color="#0D9488" style={{ marginRight: 4 }} />
+            <Ionicons name="time-outline" size={12} color="#0D9488" style={{ marginRight: 2 }} />
             <Text style={styles.historyPillText}>History</Text>
           </TouchableOpacity>
 
@@ -331,7 +330,7 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
             onPress={handlePromptClearChat}
             activeOpacity={0.7}
           >
-            <Ionicons name="trash-outline" size={13} color="#EF4444" style={{ marginRight: 4 }} />
+            <Ionicons name="trash-outline" size={12} color="#EF4444" style={{ marginRight: 2 }} />
             <Text style={styles.clearPillText}>Clear</Text>
           </TouchableOpacity>
 
@@ -340,7 +339,7 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
             style={styles.languagePill}
             onPress={() => setShowLanguagePicker(!showLanguagePicker)}
           >
-            <Ionicons name="globe-outline" size={13} color={Colors.primary} style={{ marginRight: 4 }} />
+            <Ionicons name="globe-outline" size={12} color={Colors.primary} style={{ marginRight: 2 }} />
             <Text style={styles.languagePillText}>{selectedLanguage}</Text>
           </TouchableOpacity>
         </View>
@@ -668,8 +667,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
@@ -680,28 +679,30 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(239, 68, 68, 0.08)',
     borderWidth: 1,
     borderColor: 'rgba(239, 68, 68, 0.25)',
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   clearPillText: {
     fontFamily: FontFamily.bold,
     fontWeight: '700',
-    fontSize: FontSize.caption,
+    fontSize: 10,
     color: '#EF4444',
   },
   languagePill: {
     backgroundColor: 'rgba(13, 148, 136, 0.1)',
     borderWidth: 1,
     borderColor: 'rgba(13, 148, 136, 0.25)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   languagePillText: {
     fontFamily: FontFamily.bold,
     fontWeight: '700',
-    fontSize: FontSize.caption,
+    fontSize: 10,
     color: Colors.primaryDark,
   },
   languageDropdown: {
@@ -1100,16 +1101,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(13, 148, 136, 0.08)',
     borderWidth: 1,
     borderColor: 'rgba(13, 148, 136, 0.25)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
   },
   historyPillText: {
     fontFamily: FontFamily.bold,
     fontWeight: '700',
-    fontSize: FontSize.caption,
+    fontSize: 10,
     color: '#0D9488',
   },
   historyModalOverlay: {

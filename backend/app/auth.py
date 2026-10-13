@@ -4,6 +4,7 @@ Handles Unified Doctor and Patient WhatsApp/SMS OTP, Email/Password, KYC Registr
 """
 
 import logging
+import time
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
@@ -1074,12 +1075,15 @@ def logout_user(
 
     return {"success": True, "message": "Session terminated and token revoked successfully."}
 
+_staff_pin_failed_attempts: dict[str, list[float]] = {}
+
 @router.post("/staff/login", response_model=TokenResponse)
 def staff_login(req: StaffLoginRequest, db: Session = Depends(get_db)):
     """
     Dedicated Receptionist / Front-Desk Staff Authentication.
     Validates staff PIN against the attending doctor's clinic configuration.
-    Issues a scoped JWT token with role="receptionist" for front-desk queue management.
+    Enforces brute-force lockout (max 5 failed attempts per 15 min window)
+    and strictly validates doctor role without arbitrary fallbacks.
     """
     raw_ident = req.doctor_identifier.strip()
     clean_digits = "".join(filter(str.isdigit, raw_ident))
@@ -1094,23 +1098,68 @@ def staff_login(req: StaffLoginRequest, db: Session = Depends(get_db)):
         doctor = db.query(User).filter(User.id == raw_ident).first()
     if not doctor and len(raw_ident) >= 3:
         doctor = db.query(User).filter(User.reg_number.ilike(raw_ident)).first()
-    if not doctor:
-        # Fallback to first doctor if in single-doctor clinic testing
-        doctor = db.query(User).first()
 
     if not doctor:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Clinic / Doctor not found for identifier '{raw_ident}'."
+            detail=f"No active doctor clinic found matching identifier '{raw_ident}'."
         )
 
-    expected_pin = getattr(doctor, "staff_pin", None) or "1234"
-    provided_pin = req.staff_pin.strip()
-    if provided_pin != expected_pin:
+    # 1. Rate-Limiting & Anti-Brute Force Protection
+    now = time.time()
+    doctor_key = str(doctor.id)
+    recent_failures = [t for t in _staff_pin_failed_attempts.get(doctor_key, []) if now - t < 900.0]
+    _staff_pin_failed_attempts[doctor_key] = recent_failures
+
+    if len(recent_failures) >= 5:
+        remaining_lockout = int(900 - (now - recent_failures[0]))
+        remaining_mins = max(1, (remaining_lockout + 59) // 60)
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect Staff PIN. Please obtain the 4-digit PIN from the attending doctor."
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many incorrect PIN attempts. Front-desk login locked for {remaining_mins} min to protect clinic security. Please ask Dr. {doctor.name} to verify or update the Clinic PIN in their app."
         )
+
+    # 2. Verify Doctor has enabled Clinic PIN
+    expected_pin = getattr(doctor, "staff_pin", None)
+    if not expected_pin or not str(expected_pin).strip():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Front-desk login has not been enabled by the doctor. The attending doctor must set a Clinic PIN in their app profile first."
+        )
+
+    # 3. Verify Staff PIN
+    provided_pin = req.staff_pin.strip()
+    if provided_pin != str(expected_pin).strip():
+        recent_failures.append(now)
+        _staff_pin_failed_attempts[doctor_key] = recent_failures
+        attempts_left = max(0, 5 - len(recent_failures))
+
+        try:
+            audit = AuditLog(
+                actor_id=str(doctor.id),
+                actor_role="anonymous_staff",
+                action="staff_login_failed",
+                resource="front_desk",
+                details={"doctor_id": str(doctor.id), "attempts_left": attempts_left}
+            )
+            db.add(audit)
+            db.commit()
+        except Exception:
+            db.rollback()
+
+        if attempts_left == 0:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Incorrect Staff PIN. 5 failed attempts reached: front-desk login is now locked for 15 minutes."
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Incorrect Staff PIN. {attempts_left} attempt(s) remaining before 15-minute security lockout."
+            )
+
+    # Correct PIN authenticated: clear failed attempts
+    _staff_pin_failed_attempts.pop(doctor_key, None)
 
     token = create_access_token(
         subject=str(doctor.id),
@@ -1150,3 +1199,4 @@ def staff_login(req: StaffLoginRequest, db: Session = Depends(get_db)):
             "role": "receptionist"
         }
     )
+

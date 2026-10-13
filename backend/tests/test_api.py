@@ -662,3 +662,54 @@ def test_doctor_online_quota_and_manual_confirmation():
     )
     assert book3_res.status_code == 400
     assert "online booking limit" in book3_res.json()["detail"].lower()
+
+
+
+def test_staff_pin_brute_force_lockout_and_strict_auth():
+    from app.auth import _staff_pin_failed_attempts
+    _staff_pin_failed_attempts.clear()
+
+    # 1. Random non-existent doctor identifier -> 404 Not Found (zero fallback!)
+    bad_id_res = client.post(
+        "/auth/staff/login",
+        json={"doctor_identifier": "random_fake_doctor@praxirence.com", "staff_pin": "1234"}
+    )
+    assert bad_id_res.status_code == 404
+    assert "No active doctor clinic found" in bad_id_res.json()["detail"]
+
+    # 2. Login doctor to verify active email
+    login_res = client.post(
+        "/auth/doctor/login",
+        json={"email": "testdoc@praxirence.com", "password": "DocPass123!"}
+    )
+    assert login_res.status_code == 200
+    doc_email = login_res.json()["user"]["email"]
+
+    # 3. Enter wrong PIN 4 times -> 401 with remaining attempts
+    for i in range(1, 5):
+        wrong_res = client.post(
+            "/auth/staff/login",
+            json={"doctor_identifier": doc_email, "staff_pin": f"888{i}"}
+        )
+        assert wrong_res.status_code == 401
+        assert "Incorrect Staff PIN" in wrong_res.json()["detail"]
+        assert f"{5 - i} attempt(s) remaining" in wrong_res.json()["detail"]
+
+    # 4. 5th wrong attempt triggers 429 Too Many Requests (Lockout)
+    lockout_res = client.post(
+        "/auth/staff/login",
+        json={"doctor_identifier": doc_email, "staff_pin": "0000"}
+    )
+    assert lockout_res.status_code == 429
+    assert "locked for 15 minutes" in lockout_res.json()["detail"].lower() or "locked" in lockout_res.json()["detail"].lower()
+
+    # 5. Even with the correct PIN, login is BLOCKED while lockout is active
+    locked_try_res = client.post(
+        "/auth/staff/login",
+        json={"doctor_identifier": doc_email, "staff_pin": "1234"}
+    )
+    assert locked_try_res.status_code == 429
+    assert "locked" in locked_try_res.json()["detail"].lower()
+
+    # Clean up state
+    _staff_pin_failed_attempts.clear()

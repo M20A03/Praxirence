@@ -83,18 +83,18 @@ def test_create_and_search_patient():
 
 
 def test_patient_otp_flow_and_consent():
-    from app.services.fast2sms_service import _otp_cache
-    # 1. Request OTP
-    otp_req = client.post("/auth/otp/request", json={"phone": "+15558889900"})
+    from app.services.email_service import _email_otp_cache
+    # 1. Request Email OTP
+    pat_email = "patient.consent@praxirence.com"
+    otp_req = client.post("/auth/patient/email-otp/request", json={"email": pat_email, "name": "Consent Patient"})
     assert otp_req.status_code == 200
 
-    digits = "".join(c for c in "+15558889900" if c.isdigit())[-10:]
-    code = _otp_cache[digits]["code"]
+    code = _email_otp_cache[pat_email]["code"]
 
-    # 2. Verify OTP with real cryptographically generated code
+    # 2. Verify Email OTP with real cryptographically generated code
     otp_ver = client.post(
-        "/auth/otp/verify",
-        json={"phone": "+15558889900", "code": code}
+        "/auth/patient/email-otp/verify",
+        json={"email": pat_email, "code": code}
     )
     assert otp_ver.status_code == 200
     token_data = otp_ver.json()
@@ -281,47 +281,30 @@ def test_auth_directory_and_me():
     assert me_data["role"] == "doctor"
 
 
-def test_doctor_whatsapp_otp():
-    # 1. Doctor WhatsApp OTP Request
+def test_doctor_email_otp_auto_provisioning():
+    # 1. Doctor Email OTP Request
+    from app.services.email_service import _email_otp_cache
+    email = "dr.workflow@apollohospital.org"
     otp_req = client.post(
-        "/auth/doctor/otp/request",
-        json={"phone": "+919876543210", "channel": "whatsapp"}
+        "/auth/doctor/email-otp/request",
+        json={"email": email, "name": "Dr. Workflow"}
     )
     assert otp_req.status_code == 200
     data = otp_req.json()
     assert data["success"] is True
-    assert data["channel"] == "whatsapp"
 
-    from app.services.fast2sms_service import _otp_cache
-    code1 = _otp_cache["9876543210"]["code"]
+    code1 = _email_otp_cache[email]["code"]
 
-    # 2. Doctor WhatsApp OTP Verify
+    # 2. Doctor Email OTP Verify
     otp_verify = client.post(
-        "/auth/doctor/otp/verify",
-        json={"phone": "+919876543210", "code": code1}
+        "/auth/doctor/email-otp/verify",
+        json={"email": email, "code": code1}
     )
     assert otp_verify.status_code == 200
     v_data = otp_verify.json()
     assert v_data["role"] == "doctor"
     assert "access_token" in v_data
     assert v_data["user"]["name"] is not None
-
-    # 3. New doctor phone WhatsApp OTP request & verify (auto-provisioning)
-    new_phone = "+919899887766"
-    new_req = client.post(
-        "/auth/doctor/otp/request",
-        json={"phone": new_phone, "channel": "whatsapp"}
-    )
-    assert new_req.status_code == 200
-    code2 = _otp_cache["9899887766"]["code"]
-    new_verify = client.post(
-        "/auth/doctor/otp/verify",
-        json={"phone": new_phone, "code": code2}
-    )
-    assert new_verify.status_code == 200
-    nv_data = new_verify.json()
-    assert nv_data["role"] == "doctor"
-    assert "access_token" in nv_data
 
 
 def test_summarize_consultation():
@@ -369,10 +352,11 @@ def test_visit_with_patient_summary_and_portal():
     headers = {"Authorization": f"Bearer {token}"}
 
     # 2. Create patient
+    portal_pat_email = "suresh.patel@praxirence.com"
     p_res = client.post(
         "/patients",
         headers=headers,
-        json={"name": "Suresh Patel", "phone": "+919988776655", "dob": "1985-11-20"}
+        json={"name": "Suresh Patel", "email": portal_pat_email, "phone": "+919988776655", "dob": "1985-11-20"}
     )
     assert p_res.status_code == 201
     patient_id = p_res.json()["id"]
@@ -423,11 +407,11 @@ def test_visit_with_patient_summary_and_portal():
     assert visits[0]["patient_summary"] == summary_text
     assert visits[0]["doctor_advice"] == advice_text
 
-    # 5. Patient OTP login & check portal
-    from app.services.fast2sms_service import _otp_cache
-    client.post("/auth/otp/request", json={"phone": "+919988776655"})
-    p_code = _otp_cache["9988776655"]["code"]
-    p_login = client.post("/auth/otp/verify", json={"phone": "+919988776655", "code": p_code})
+    # 5. Patient Email OTP login & check portal
+    from app.services.email_service import _email_otp_cache
+    client.post("/auth/patient/email-otp/request", json={"email": portal_pat_email, "name": "Suresh Patel"})
+    p_code = _email_otp_cache[portal_pat_email]["code"]
+    p_login = client.post("/auth/patient/email-otp/verify", json={"email": portal_pat_email, "code": p_code})
     p_token = p_login.json()["access_token"]
     p_headers = {"Authorization": f"Bearer {p_token}"}
 

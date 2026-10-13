@@ -41,6 +41,8 @@ class AIService:
     def _transcribe_audio_with_gemini(self, audio_path: str, language: Optional[str] = None, api_key: str = "") -> Optional[str]:
         if not audio_path or not os.path.exists(audio_path):
             return None
+        if not api_key or not api_key.startswith("AIzaSy"):
+            return None
         try:
             import base64
             ext = os.path.splitext(audio_path)[1].lower()
@@ -434,6 +436,8 @@ class AIService:
         Executes Gemini 2.5 / 2.0 Flash structured JSON extraction for clinical care plans.
         Guarded by < 800ms cloud latency heartbeat check.
         """
+        if not api_key or not api_key.startswith("AIzaSy"):
+            return None
         if not ClinicalConnectivityHeartbeat.check_cloud_availability(max_latency_ms=800.0):
             logger.info("Cloud latency > 800ms or offline. Skipping cloud tier to trigger immediate edge failover.")
             return None

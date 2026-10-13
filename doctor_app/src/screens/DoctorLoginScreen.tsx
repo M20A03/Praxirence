@@ -58,10 +58,6 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
   const [onboardSpecialty, setOnboardSpecialty] = useState('');
 
   // Doctor Auth Method: 'phone' (Default Indian Mobile) or 'email' (Hospital Email)
-  const [doctorAuthMethod, setDoctorAuthMethod] = useState<'phone' | 'email'>('phone');
-  const [doctorPhone, setDoctorPhone] = useState('');
-  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
-  const [phoneOtpCode, setPhoneOtpCode] = useState('');
 
   // Email OTP States
   const [email, setEmail] = useState('');
@@ -192,63 +188,6 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
     }
   };
 
-  // Phone OTP Request
-  const handleRequestPhoneOtp = async () => {
-    const digits = doctorPhone.replace(/\D/g, '');
-    if (digits.length !== 10 || !/^[6-9]/.test(digits)) {
-      setError("Please enter a valid 10-digit Indian mobile number (+91) starting with 6, 7, 8, or 9.");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
-      return;
-    }
-    setError(null);
-    setLoading(true);
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-      const res = await mobileApi.requestDoctorOtp(`+91${digits}`, 'sms');
-      setPhoneOtpSent(true);
-      setResendCooldown(60);
-      if (res?.otp_code) {
-        setPhoneOtpCode(res.otp_code);
-        Alert.alert(
-          "Clinical Access Code",
-          `Verification code: ${res.otp_code}\n\n(Auto-filled for instant verification)`
-        );
-      } else {
-        setPhoneOtpCode('');
-      }
-      setSuccessNotice(res?.message || `Access code sent to +91 ${digits}.`);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    } catch (err: any) {
-      setError(err?.message || "Failed to dispatch verification code. Please try again.");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Phone OTP Verify
-  const handleVerifyPhoneOtp = async () => {
-    if (!phoneOtpCode.trim()) {
-      setError("Please enter the 6-digit access code received on your phone.");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
-      return;
-    }
-    setError(null);
-    setLoading(true);
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-      const digits = doctorPhone.replace(/\D/g, '');
-      const res = await mobileApi.verifyDoctorOtp(`+91${digits}`, phoneOtpCode.trim());
-      await handleAuthSuccess(res.user);
-    } catch (err: any) {
-      setError(err?.message || "Invalid or expired access code. Please request a new code.");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Email OTP Request
   const handleRequestEmailOtp = async () => {
     if (!email.trim() || !email.includes('@')) {
       setError('Please enter a valid medical email address.');
@@ -455,141 +394,6 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
             </View>
           ) : (
             <View>
-              {/* Doctor Auth Method Sub-Selector */}
-              <View style={styles.authMethodPillRow}>
-                <TouchableOpacity
-                  style={[styles.authMethodPill, doctorAuthMethod === 'phone' && styles.authMethodPillActive]}
-                  onPress={() => { setDoctorAuthMethod('phone'); setError(null); }}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="call"
-                    size={13}
-                    color={doctorAuthMethod === 'phone' ? '#0284C7' : Colors.textSecondary}
-                  />
-                  <Text style={[styles.authMethodPillText, doctorAuthMethod === 'phone' && styles.authMethodPillTextActive]}>
-                    Mobile Phone OTP
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.authMethodPill, doctorAuthMethod === 'email' && styles.authMethodPillActive]}
-                  onPress={() => { setDoctorAuthMethod('email'); setError(null); }}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="mail"
-                    size={13}
-                    color={doctorAuthMethod === 'email' ? '#0284C7' : Colors.textSecondary}
-                  />
-                  <Text style={[styles.authMethodPillText, doctorAuthMethod === 'email' && styles.authMethodPillTextActive]}>
-                    Medical Email
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {doctorAuthMethod === 'phone' ? (
-                <View>
-                  <Text style={styles.label}>Clinician Mobile Number</Text>
-                  <View style={[styles.inputContainer, { paddingLeft: 0, paddingRight: 8 }]}>
-                    <View style={styles.phonePrefixPill}>
-                      <View style={styles.inBadge}>
-                        <Text style={styles.inBadgeText}>IN</Text>
-                      </View>
-                      <Text style={styles.phonePrefixText}>+91</Text>
-                    </View>
-                    <TextInput
-                      style={[styles.input, { flex: 1, paddingLeft: 10 }]}
-                      placeholder="10-digit mobile number"
-                      placeholderTextColor={Colors.textSecondary}
-                      value={doctorPhone}
-                      onChangeText={(val) => setDoctorPhone(val.replace(/\D/g, '').slice(0, 10))}
-                      keyboardType="number-pad"
-                      maxLength={10}
-                      editable={!loading && !phoneOtpSent}
-                    />
-                  </View>
-
-                  {!phoneOtpSent ? (
-                    <TouchableOpacity
-                      style={[styles.primaryBtn, loading && { opacity: 0.8 }, { marginTop: 14 }]}
-                      activeOpacity={0.7}
-                      onPress={handleRequestPhoneOtp}
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <ActivityIndicator color="#ffffff" />
-                      ) : (
-                        <>
-                          <Ionicons name="send" size={17} color="#ffffff" />
-                          <Text style={styles.primaryBtnText}>Send Mobile Verification Code</Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-                  ) : (
-                    <View style={{ marginTop: 12 }}>
-                      <Text style={styles.label}>SMS / WhatsApp Access Code</Text>
-                      <View style={styles.inputContainer}>
-                        <Ionicons name="key" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-                        <TextInput
-                          style={[styles.input, { letterSpacing: 6, fontWeight: '700' }]}
-                          placeholder="• • • • • •"
-                          placeholderTextColor={Colors.textSecondary}
-                          value={phoneOtpCode}
-                          onChangeText={setPhoneOtpCode}
-                          keyboardType="number-pad"
-                          maxLength={6}
-                          editable={!loading}
-                        />
-                      </View>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, marginBottom: 12 }}>
-                        <Ionicons name="shield-checkmark-outline" size={13} color="#059669" />
-                        <Text style={{ fontSize: 12, color: Colors.textSecondary, flex: 1 }}>
-                          Access code sent to +91 {doctorPhone}. Valid for 10 minutes.
-                        </Text>
-                      </View>
-
-                      <TouchableOpacity
-                        style={[styles.primaryBtn, loading && { opacity: 0.8 }]}
-                        activeOpacity={0.7}
-                        onPress={handleVerifyPhoneOtp}
-                        disabled={loading}
-                      >
-                        {loading ? (
-                          <ActivityIndicator color="#ffffff" />
-                        ) : (
-                          <>
-                            <Ionicons name="checkmark-done" size={18} color="#ffffff" />
-                            <Text style={styles.primaryBtnText}>Verify Code & Sign In</Text>
-                          </>
-                        )}
-                      </TouchableOpacity>
-
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-                        <TouchableOpacity
-                          style={styles.resendBtn}
-                          activeOpacity={0.7}
-                          onPress={handleRequestPhoneOtp}
-                          disabled={loading || resendCooldown > 0}
-                        >
-                          <Text style={[styles.resendText, resendCooldown > 0 && { color: Colors.textMuted }]}>
-                            {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Didn't receive code? Resend"}
-                          </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                          activeOpacity={0.7}
-                          onPress={() => { setPhoneOtpSent(false); setPhoneOtpCode(''); setError(null); }}
-                          style={{ paddingVertical: 8 }}
-                        >
-                          <Text style={styles.resendText}>Change number</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  )}
-                </View>
-              ) : (
-                <View>
                   <Text style={styles.label}>Physician Full Name</Text>
                   <View style={styles.inputContainer}>
                     <Ionicons name="person" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
@@ -695,8 +499,6 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                       </View>
                     </View>
                   )}
-                </View>
-              )}
             </View>
           )}
         </View>

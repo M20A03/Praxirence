@@ -274,6 +274,8 @@ def create_patient(
         consent_status=False,
         uhid=patient_uhid
     )
+    if getattr(req, "email", None) and req.email.strip():
+        patient.email = req.email.strip().lower()
     patient.phone = clean_phone
     db.add(patient)
     db.commit()

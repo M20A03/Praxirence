@@ -185,31 +185,7 @@ export const mobileApi = {
     return { registered: false, role: null, name: null, message: '' };
   },
 
-  async requestDoctorOtp(phone: string, channel: 'sms' = 'sms'): Promise<{ success: boolean; message: string; demo_code?: string; otp_code?: string }> {
-    const res = await resilientFetch(`${getEffectiveApiUrl()}/auth/doctor/otp/request`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, channel }),
-    }, 0);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Failed to dispatch Doctor verification code');
-    }
-    return res.json();
-  },
 
-  async requestPatientOtp(phone: string, channel: 'sms' = 'sms'): Promise<{ success: boolean; message: string; demo_code?: string; otp_code?: string }> {
-    const res = await resilientFetch(`${getEffectiveApiUrl()}/auth/otp/request`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, channel }),
-    }, 0);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Failed to dispatch Patient verification code');
-    }
-    return res.json();
-  },
 
   async loginDoctorGoogle(params: { email: string; name: string; google_id?: string }): Promise<{ access_token: string; role: 'doctor'; user: DoctorUser }> {
     const cleanEmail = params.email.toLowerCase().trim();
@@ -371,36 +347,8 @@ export const mobileApi = {
     return { access_token: data.access_token, role: 'patient', user: data.user, verified: true };
   },
 
-  async verifyDoctorOtp(phone: string, code: string): Promise<{ access_token: string; user: DoctorUser }> {
-    const res = await resilientFetch(`${getEffectiveApiUrl()}/auth/doctor/otp/verify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, code }),
-    }, 0);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Invalid doctor access code');
-    }
-    const data = await res.json();
-    await this.saveSession('doctor', data.access_token, data.user);
-    return data;
-  },
 
 
-  async verifyPatientOtp(phone: string, code: string): Promise<{ access_token: string; user: PatientUser }> {
-    const res = await resilientFetch(`${getEffectiveApiUrl()}/auth/otp/verify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, code }),
-    }, 0);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Invalid patient OTP code');
-    }
-    const data = await res.json();
-    await this.saveSession('patient', data.access_token, data.user);
-    return data;
-  },
 
   async registerPatient(params: {
     name: string;

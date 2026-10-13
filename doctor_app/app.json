@@ -27,7 +27,9 @@
         "POST_NOTIFICATIONS",
         "INTERNET",
         "ACCESS_NETWORK_STATE",
-        "WAKE_LOCK"
+        "WAKE_LOCK",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_MICROPHONE"
       ]
     },
     "web": {

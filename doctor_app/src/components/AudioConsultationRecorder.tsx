@@ -89,25 +89,18 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
     restoreOfflineDraft();
   }, [patientId]);
 
-  // Gracefully pause and preserve audio draft when app transitions to background or is minimized
-  // Prevents abrupt recording termination or corrupt audio files
+  // Seamless background recording persistence
+  // Keeps active recording running smoothly when doctor switches apps, reviews lab reports, or screen dims
   useEffect(() => {
     const subscription = AppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
       if (nextAppState.match(/inactive|background/) && isRecordingRef.current) {
-        if (recordingRef.current) {
-          try {
-            if (timerRef.current) {
-              clearInterval(timerRef.current);
-              timerRef.current = null;
-            }
-            // Gracefully pause without terminating the active recording session
-            await recordingRef.current.pauseAsync();
-            setIsPaused(true);
-            isPausedRef.current = true;
-            setBackgroundPaused(true);
-          } catch (e) {
-            console.warn('Background audio pause notice:', e);
-          }
+        // Expo-AV audio mode has staysActiveInBackground: true
+        // Keep recording without dropping patient or clinician dialogue
+      } else if (nextAppState === 'active' && isRecordingRef.current && !isPausedRef.current) {
+        if (!timerRef.current) {
+          timerRef.current = setInterval(() => {
+            setDurationSec((prev) => prev + 1);
+          }, 1000);
         }
       }
     });

@@ -108,7 +108,26 @@ async function resilientFetch(url: string, options: RequestInit = {}, retries = 
     const respTimestamp = res.headers.get('x-response-timestamp') || res.headers.get('date');
     NetworkSecurity.validateResponseFreshness(respTimestamp);
 
-    if (res.status === 401 && authToken && !url.includes('/auth/')) {
+    if (res.status === 401 && !url.includes('/auth/')) {
+      // Seamless silent recovery: verify if valid token exists in secure storage before evicting
+      try {
+        const storedToken = await SecureStorage.getItem('praxirence_token');
+        if (storedToken && storedToken !== authToken && storedToken.length > 20) {
+          console.info('Recovering authentication session from SecureStore...');
+          setAuthToken(storedToken);
+          const recoveredHeaders = getHeaders();
+          const retryRes = await fetch(url, {
+            ...options,
+            headers: { ...options.headers, ...recoveredHeaders },
+            signal: controller.signal,
+          });
+          if (retryRes.status !== 401) {
+            return retryRes;
+          }
+        }
+      } catch (recoverErr) {
+        console.warn('Session recovery notice:', recoverErr);
+      }
       console.warn('Session expired (401). Evicting hardware-secured token.');
       setAuthToken(null);
       SecureStorage.deleteItem('praxirence_token').catch(() => {});

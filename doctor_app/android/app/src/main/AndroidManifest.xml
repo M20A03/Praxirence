@@ -9,6 +9,8 @@
   <uses-permission android:name="android.permission.USE_FINGERPRINT"/>
 
   <uses-permission android:name="android.permission.WAKE_LOCK"/>
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/>
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
   <!-- Remove dangerous/overlay and obsolete vendor permissions that trigger Play Protect / Antivirus / Oppo Security warnings -->

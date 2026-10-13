@@ -130,7 +130,6 @@ def search_patients(
             .filter(
                 Patient.id.in_(doctor_patient_ids),
                 or_(
-                    Patient.name.ilike(f"%{clean_q}%"),
                     Patient.phone_hash.in_(phone_hashes),
                     Patient.id.ilike(f"%{clean_q}%"),
                     Patient.id == clean_q,

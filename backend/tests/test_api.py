@@ -51,12 +51,17 @@ def test_create_and_search_patient():
     assert patient_data["phone"] == "+15554443322"
     patient_id = patient_data["id"]
 
-    # Search patient
-    search_res = client.get("/patients?query=Alice", headers=headers)
+    # Search patient by UHID (Patient Unique ID) - searching by ambiguous name is disabled to prevent record collision
+    search_res = client.get(f"/patients?query={patient_data['uhid']}", headers=headers)
     assert search_res.status_code == 200
     results = search_res.json()
     assert len(results) >= 1
     assert results[0]["name"] == "Alice Wonderland"
+
+    # Searching by name returns empty to protect against duplicate names
+    name_search = client.get("/patients?query=Alice", headers=headers)
+    assert name_search.status_code == 200
+    assert len(name_search.json()) == 0
 
     # Create patient with NO phone (phone is completely optional)
     create_no_phone = client.post(
@@ -71,8 +76,8 @@ def test_create_and_search_patient():
     assert bob_data["uhid"] is not None
     assert bob_data["authorization_status"] == "authorized"
 
-    # Search Bob by name
-    search_bob = client.get("/patients?query=Bob", headers=headers)
+    # Search Bob by Unique ID
+    search_bob = client.get(f"/patients?query={bob_data['uhid']}", headers=headers)
     assert search_bob.status_code == 200
     assert any(p["name"] == "Bob Without Phone" for p in search_bob.json())
 

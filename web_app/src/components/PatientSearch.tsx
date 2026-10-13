@@ -112,7 +112,7 @@ export const PatientSearch: React.FC<PatientSearchProps> = ({
             <input
               type="text"
               className="input-field"
-              placeholder="Search patient by name or phone (e.g. John, +1555...)"
+              placeholder="Search by Patient Unique ID or Phone Number..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);

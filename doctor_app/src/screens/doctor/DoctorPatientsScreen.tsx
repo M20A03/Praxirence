@@ -197,7 +197,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
           <Ionicons name="search" size={16} color={Colors.textSecondary} style={{ marginRight: 6 }} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search by name, phone, or Unique ID (UHID)..."
+            placeholder="Search by Patient Unique ID or Mobile Number..."
             placeholderTextColor={Colors.textSecondary}
             value={searchQuery}
             onChangeText={handleSearch}

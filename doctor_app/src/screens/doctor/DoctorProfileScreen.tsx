@@ -1080,7 +1080,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
               <Text style={styles.inputLabel}>Mobile Phone Number (Indian +91)</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 12 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#E2E8F0', paddingHorizontal: 10, paddingVertical: 10, borderTopLeftRadius: 7, borderBottomLeftRadius: 7, gap: 4 }}>
-                  <Text style={{ fontSize: 14 }}>🇮🇳</Text>
+                  <Text style={styles.inBadgeText}>IN</Text>
                   <Text style={{ fontSize: 14, fontWeight: '700', color: '#0F172A' }}>+91</Text>
                 </View>
                 <TextInput
@@ -2249,6 +2249,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
     marginBottom: 12,
+  },
+  inBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#0284C7',
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   staffCredentialsBox: {
     backgroundColor: '#F8FAFC',

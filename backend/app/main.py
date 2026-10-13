@@ -83,6 +83,7 @@ def auto_migrate_schema():
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS max_daily_patients INTEGER DEFAULT 20;",
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS unavailable_dates JSONB DEFAULT '[]';",
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS consultation_fee INTEGER DEFAULT 500;",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS staff_pin VARCHAR(20) DEFAULT '1234';",
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS custom_slots JSONB DEFAULT '{}';",
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS current_delay_mins INTEGER DEFAULT 0;",
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS delay_updated_at TIMESTAMP;",
@@ -149,6 +150,7 @@ def auto_migrate_schema():
                     "unavailable_dates": "ALTER TABLE users ADD COLUMN unavailable_dates JSON DEFAULT '[]'",
                     "custom_slots": "ALTER TABLE users ADD COLUMN custom_slots JSON DEFAULT '{}'",
                     "consultation_fee": "ALTER TABLE users ADD COLUMN consultation_fee INTEGER DEFAULT 500",
+                    "staff_pin": "ALTER TABLE users ADD COLUMN staff_pin VARCHAR(20) DEFAULT '1234';",
                     "current_delay_mins": "ALTER TABLE users ADD COLUMN current_delay_mins INTEGER DEFAULT 0",
                     "delay_updated_at": "ALTER TABLE users ADD COLUMN delay_updated_at TIMESTAMP",
                 }

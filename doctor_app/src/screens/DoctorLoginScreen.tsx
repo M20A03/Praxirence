@@ -57,6 +57,12 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
   const [onboardClinic, setOnboardClinic] = useState('');
   const [onboardSpecialty, setOnboardSpecialty] = useState('');
 
+  // Doctor Auth Method: 'phone' (Default Indian Mobile) or 'email' (Hospital Email)
+  const [doctorAuthMethod, setDoctorAuthMethod] = useState<'phone' | 'email'>('phone');
+  const [doctorPhone, setDoctorPhone] = useState('');
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+  const [phoneOtpCode, setPhoneOtpCode] = useState('');
+
   // Email OTP States
   const [email, setEmail] = useState('');
   const [doctorName, setDoctorName] = useState('');
@@ -181,6 +187,54 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
       onAuthenticated(updated);
     } catch (err: any) {
       Alert.alert('Setup Error', err?.message || 'Failed to save doctor details. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Phone OTP Request
+  const handleRequestPhoneOtp = async () => {
+    const digits = doctorPhone.replace(/\D/g, '');
+    if (digits.length !== 10 || !/^[6-9]/.test(digits)) {
+      setError("Please enter a valid 10-digit Indian mobile number (+91) starting with 6, 7, 8, or 9.");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      const res = await mobileApi.requestDoctorOtp(`+91${digits}`, 'sms');
+      setPhoneOtpSent(true);
+      setPhoneOtpCode('');
+      setResendCooldown(60);
+      setSuccessNotice(res?.message || `Access code sent to +91 ${digits}.`);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    } catch (err: any) {
+      setError(err?.message || "Failed to dispatch verification code. Please try again.");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Phone OTP Verify
+  const handleVerifyPhoneOtp = async () => {
+    if (!phoneOtpCode.trim()) {
+      setError("Please enter the 6-digit access code received on your phone.");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      const digits = doctorPhone.replace(/\D/g, '');
+      const res = await mobileApi.verifyDoctorOtp(`+91${digits}`, phoneOtpCode.trim());
+      await handleAuthSuccess(res.user);
+    } catch (err: any) {
+      setError(err?.message || "Invalid or expired access code. Please request a new code.");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
     } finally {
       setLoading(false);
     }
@@ -376,7 +430,10 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                 ) : (
                   <>
                     <Ionicons name="enter-outline" size={18} color="#ffffff" />
-                    <Text style={styles.primaryBtnText}>Open Front-Desk OPD Desk →</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={styles.primaryBtnText}>Open Front-Desk OPD Desk</Text>
+                    <Ionicons name="arrow-forward" size={17} color="#ffffff" />
+                  </View>
                   </>
                 )}
               </TouchableOpacity>
@@ -390,112 +447,249 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
             </View>
           ) : (
             <View>
-              <Text style={styles.label}>Physician Full Name</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="person" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-              <TextInput
-                style={styles.input}
-                placeholder="Dr. Full Name"
-                placeholderTextColor={Colors.textSecondary}
-                value={doctorName}
-                onChangeText={setDoctorName}
-                editable={!loading && !emailOtpSent}
-              />
-            </View>
-
-            <Text style={styles.label}>Institutional Medical Email</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="mail" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-              <TextInput
-                style={styles.input}
-                placeholder="doctor@hospital.org"
-                placeholderTextColor={Colors.textSecondary}
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                editable={!loading && !emailOtpSent}
-              />
-            </View>
-
-            {!emailOtpSent ? (
-              <TouchableOpacity
-                style={[styles.primaryBtn, loading && { opacity: 0.8 }]}
-                activeOpacity={0.7}
-                onPress={handleRequestEmailOtp}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <>
-                    <Ionicons name="send" size={18} color="#ffffff" />
-                    <Text style={styles.primaryBtnText}>Send Verification Code</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            ) : (
-              <View style={{ marginTop: 12 }}>
-                <Text style={styles.label}>Email Verification Code</Text>
-                <View style={styles.inputContainer}>
-                  <Ionicons name="key" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
-                  <TextInput
-                    style={[styles.input, { letterSpacing: 6, fontWeight: '700' }]}
-                    placeholder="• • • • • •"
-                    placeholderTextColor={Colors.textSecondary}
-                    value={emailOtpCode}
-                    onChangeText={setEmailOtpCode}
-                    keyboardType="number-pad"
-                    maxLength={6}
-                    editable={!loading}
-                  />
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, marginBottom: 12 }}>
-                  <Ionicons name="mail-outline" size={13} color={Colors.textSecondary} />
-                  <Text style={{ fontSize: 12, color: Colors.textSecondary, flex: 1 }}>
-                    Please check your Inbox and Spam/Junk folder. Code expires in 10 minutes.
-                  </Text>
-                </View>
-
+              {/* Doctor Auth Method Sub-Selector */}
+              <View style={styles.authMethodPillRow}>
                 <TouchableOpacity
-                  style={[styles.primaryBtn, loading && { opacity: 0.8 }]}
+                  style={[styles.authMethodPill, doctorAuthMethod === 'phone' && styles.authMethodPillActive]}
+                  onPress={() => { setDoctorAuthMethod('phone'); setError(null); }}
                   activeOpacity={0.7}
-                  onPress={handleVerifyEmailOtp}
-                  disabled={loading}
                 >
-                  {loading ? (
-                    <ActivityIndicator color="#ffffff" />
-                  ) : (
-                    <>
-                      <Ionicons name="checkmark-done" size={18} color="#ffffff" />
-                      <Text style={styles.primaryBtnText}>Verify Code & Sign In</Text>
-                    </>
-                  )}
+                  <Ionicons
+                    name="call"
+                    size={13}
+                    color={doctorAuthMethod === 'phone' ? '#0284C7' : Colors.textSecondary}
+                  />
+                  <Text style={[styles.authMethodPillText, doctorAuthMethod === 'phone' && styles.authMethodPillTextActive]}>
+                    Mobile Phone OTP
+                  </Text>
                 </TouchableOpacity>
 
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-                  <TouchableOpacity
-                    style={styles.resendBtn}
-                    activeOpacity={0.7}
-                    onPress={handleRequestEmailOtp}
-                    disabled={loading || resendCooldown > 0}
-                  >
-                    <Text style={[styles.resendText, resendCooldown > 0 && { color: Colors.textMuted }]}>
-                      {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Didn't receive code? Resend"}
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => { setEmailOtpSent(false); setEmailOtpCode(''); setError(null); }}
-                    style={{ paddingVertical: 8 }}
-                  >
-                    <Text style={styles.resendText}>Change email</Text>
-                  </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                  style={[styles.authMethodPill, doctorAuthMethod === 'email' && styles.authMethodPillActive]}
+                  onPress={() => { setDoctorAuthMethod('email'); setError(null); }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="mail"
+                    size={13}
+                    color={doctorAuthMethod === 'email' ? '#0284C7' : Colors.textSecondary}
+                  />
+                  <Text style={[styles.authMethodPillText, doctorAuthMethod === 'email' && styles.authMethodPillTextActive]}>
+                    Medical Email
+                  </Text>
+                </TouchableOpacity>
               </View>
-            )}
-          </View>
+
+              {doctorAuthMethod === 'phone' ? (
+                <View>
+                  <Text style={styles.label}>Clinician Mobile Number</Text>
+                  <View style={[styles.inputContainer, { paddingLeft: 0, paddingRight: 8 }]}>
+                    <View style={styles.phonePrefixPill}>
+                      <View style={styles.inBadge}>
+                        <Text style={styles.inBadgeText}>IN</Text>
+                      </View>
+                      <Text style={styles.phonePrefixText}>+91</Text>
+                    </View>
+                    <TextInput
+                      style={[styles.input, { flex: 1, paddingLeft: 10 }]}
+                      placeholder="10-digit mobile number"
+                      placeholderTextColor={Colors.textSecondary}
+                      value={doctorPhone}
+                      onChangeText={(val) => setDoctorPhone(val.replace(/\D/g, '').slice(0, 10))}
+                      keyboardType="number-pad"
+                      maxLength={10}
+                      editable={!loading && !phoneOtpSent}
+                    />
+                  </View>
+
+                  {!phoneOtpSent ? (
+                    <TouchableOpacity
+                      style={[styles.primaryBtn, loading && { opacity: 0.8 }, { marginTop: 14 }]}
+                      activeOpacity={0.7}
+                      onPress={handleRequestPhoneOtp}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <ActivityIndicator color="#ffffff" />
+                      ) : (
+                        <>
+                          <Ionicons name="send" size={17} color="#ffffff" />
+                          <Text style={styles.primaryBtnText}>Send Mobile Verification Code</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={{ marginTop: 12 }}>
+                      <Text style={styles.label}>SMS / WhatsApp Access Code</Text>
+                      <View style={styles.inputContainer}>
+                        <Ionicons name="key" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                        <TextInput
+                          style={[styles.input, { letterSpacing: 6, fontWeight: '700' }]}
+                          placeholder="• • • • • •"
+                          placeholderTextColor={Colors.textSecondary}
+                          value={phoneOtpCode}
+                          onChangeText={setPhoneOtpCode}
+                          keyboardType="number-pad"
+                          maxLength={6}
+                          editable={!loading}
+                        />
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, marginBottom: 12 }}>
+                        <Ionicons name="shield-checkmark-outline" size={13} color="#059669" />
+                        <Text style={{ fontSize: 12, color: Colors.textSecondary, flex: 1 }}>
+                          Access code sent to +91 {doctorPhone}. Valid for 10 minutes.
+                        </Text>
+                      </View>
+
+                      <TouchableOpacity
+                        style={[styles.primaryBtn, loading && { opacity: 0.8 }]}
+                        activeOpacity={0.7}
+                        onPress={handleVerifyPhoneOtp}
+                        disabled={loading}
+                      >
+                        {loading ? (
+                          <ActivityIndicator color="#ffffff" />
+                        ) : (
+                          <>
+                            <Ionicons name="checkmark-done" size={18} color="#ffffff" />
+                            <Text style={styles.primaryBtnText}>Verify Code & Sign In</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+                        <TouchableOpacity
+                          style={styles.resendBtn}
+                          activeOpacity={0.7}
+                          onPress={handleRequestPhoneOtp}
+                          disabled={loading || resendCooldown > 0}
+                        >
+                          <Text style={[styles.resendText, resendCooldown > 0 && { color: Colors.textMuted }]}>
+                            {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Didn't receive code? Resend"}
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          activeOpacity={0.7}
+                          onPress={() => { setPhoneOtpSent(false); setPhoneOtpCode(''); setError(null); }}
+                          style={{ paddingVertical: 8 }}
+                        >
+                          <Text style={styles.resendText}>Change number</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              ) : (
+                <View>
+                  <Text style={styles.label}>Physician Full Name</Text>
+                  <View style={styles.inputContainer}>
+                    <Ionicons name="person" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Dr. Full Name"
+                      placeholderTextColor={Colors.textSecondary}
+                      value={doctorName}
+                      onChangeText={setDoctorName}
+                      editable={!loading && !emailOtpSent}
+                    />
+                  </View>
+
+                  <Text style={styles.label}>Institutional Medical Email</Text>
+                  <View style={styles.inputContainer}>
+                    <Ionicons name="mail" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="doctor@hospital.org"
+                      placeholderTextColor={Colors.textSecondary}
+                      value={email}
+                      onChangeText={setEmail}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                      editable={!loading && !emailOtpSent}
+                    />
+                  </View>
+
+                  {!emailOtpSent ? (
+                    <TouchableOpacity
+                      style={[styles.primaryBtn, loading && { opacity: 0.8 }, { marginTop: 14 }]}
+                      activeOpacity={0.7}
+                      onPress={handleRequestEmailOtp}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <ActivityIndicator color="#ffffff" />
+                      ) : (
+                        <>
+                          <Ionicons name="send" size={18} color="#ffffff" />
+                          <Text style={styles.primaryBtnText}>Send Verification Code</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={{ marginTop: 12 }}>
+                      <Text style={styles.label}>Email Verification Code</Text>
+                      <View style={styles.inputContainer}>
+                        <Ionicons name="key" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                        <TextInput
+                          style={[styles.input, { letterSpacing: 6, fontWeight: '700' }]}
+                          placeholder="• • • • • •"
+                          placeholderTextColor={Colors.textSecondary}
+                          value={emailOtpCode}
+                          onChangeText={setEmailOtpCode}
+                          keyboardType="number-pad"
+                          maxLength={6}
+                          editable={!loading}
+                        />
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, marginBottom: 12 }}>
+                        <Ionicons name="mail-outline" size={13} color={Colors.textSecondary} />
+                        <Text style={{ fontSize: 12, color: Colors.textSecondary, flex: 1 }}>
+                          Please check your Inbox and Spam/Junk folder. Code expires in 10 minutes.
+                        </Text>
+                      </View>
+
+                      <TouchableOpacity
+                        style={[styles.primaryBtn, loading && { opacity: 0.8 }]}
+                        activeOpacity={0.7}
+                        onPress={handleVerifyEmailOtp}
+                        disabled={loading}
+                      >
+                        {loading ? (
+                          <ActivityIndicator color="#ffffff" />
+                        ) : (
+                          <>
+                            <Ionicons name="checkmark-done" size={18} color="#ffffff" />
+                            <Text style={styles.primaryBtnText}>Verify Code & Sign In</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+                        <TouchableOpacity
+                          style={styles.resendBtn}
+                          activeOpacity={0.7}
+                          onPress={handleRequestEmailOtp}
+                          disabled={loading || resendCooldown > 0}
+                        >
+                          <Text style={[styles.resendText, resendCooldown > 0 && { color: Colors.textMuted }]}>
+                            {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Didn't receive code? Resend"}
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          activeOpacity={0.7}
+                          onPress={() => { setEmailOtpSent(false); setEmailOtpCode(''); setError(null); }}
+                          style={{ paddingVertical: 8 }}
+                        >
+                          <Text style={styles.resendText}>Change email</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
           )}
         </View>
 
@@ -531,7 +725,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
               </View>
               <View style={[styles.inputContainer, { paddingLeft: 0, paddingRight: 8 }]}>
                 <View style={styles.phonePrefixPill}>
-                  <Text style={styles.flagIcon}>🇮🇳</Text>
+                  <View style={styles.inBadge}><Text style={styles.inBadgeText}>IN</Text></View>
                   <Text style={styles.phonePrefixText}>+91</Text>
                 </View>
                 <TextInput
@@ -1064,6 +1258,52 @@ const styles = StyleSheet.create({
   presetBtnActive: {
     backgroundColor: Colors.primary,
     borderColor: Colors.primary,
+  },
+  authMethodPillRow: {
+    flexDirection: 'row',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    padding: 3,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 4,
+  },
+  authMethodPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 7,
+    borderRadius: 6,
+    gap: 5,
+  },
+  authMethodPillActive: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  authMethodPillText: {
+    fontSize: 11.5,
+    fontFamily: FontFamily.medium,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+  },
+  authMethodPillTextActive: {
+    color: '#0284C7',
+    fontWeight: '700',
+  },
+  inBadge: {
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  inBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#0284C7',
+    letterSpacing: 0.5,
   },
   tabSelector: {
     flexDirection: 'row',

@@ -469,7 +469,7 @@ export const ReceptionistDashboardScreen: React.FC<ReceptionistDashboardScreenPr
               <Text style={styles.inputLabel}>Mobile Phone (Optional)</Text>
               <View style={styles.phoneInputRow}>
                 <View style={styles.flagBox}>
-                  <Text style={{ fontSize: 14 }}>🇮🇳</Text>
+                  <Text style={styles.countryBadge}>IN</Text>
                   <Text style={styles.flagCode}>+91</Text>
                 </View>
                 <TextInput
@@ -533,7 +533,10 @@ export const ReceptionistDashboardScreen: React.FC<ReceptionistDashboardScreenPr
                 {creatingWalkIn ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.submitModalBtnText}>Issue Token & Add To Queue →</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    <Text style={styles.submitModalBtnText}>Issue Token & Add To Queue</Text>
+                    <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+                  </View>
                 )}
               </TouchableOpacity>
             </ScrollView>
@@ -918,6 +921,15 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 9,
     borderBottomLeftRadius: 9,
     gap: 4,
+  },
+  countryBadge: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#0284C7',
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   flagCode: {
     fontSize: 14,

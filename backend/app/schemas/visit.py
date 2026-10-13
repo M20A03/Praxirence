@@ -131,6 +131,8 @@ class BookSlotRequest(BaseModel):
     time_slot: str = Field(..., description="Time slot e.g. 10:30 AM")
     chief_complaint: Optional[str] = None
     booking_type: str = "in_person"
+    patient_name: Optional[str] = None
+    patient_phone: Optional[str] = None
 
 
 class BookSlotResponse(BaseModel):

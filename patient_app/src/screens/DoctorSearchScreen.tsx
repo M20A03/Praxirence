@@ -14,6 +14,7 @@ import {
   BackHandler,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
 import { DoctorUser, PatientUser, DoctorSlot, DoctorAvailabilityResponse } from '../types';
 import { mobileApi } from '../services/api';
@@ -260,9 +261,26 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
 
     setBookingInProgress(true);
     try {
+      let patientId = user?.id;
+      let patientName = user?.name;
+      let patientPhone = user?.phone;
+      if (!patientId || patientId === 'pat-default-01') {
+        try {
+          const stored = await AsyncStorage.getItem('praxirence_patient_profile');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed?.id) patientId = parsed.id;
+            if (parsed?.name && !patientName) patientName = parsed.name;
+            if (parsed?.phone && !patientPhone) patientPhone = parsed.phone;
+          }
+        } catch (_) {}
+      }
+
       const res = await mobileApi.bookAppointmentSlot({
         doctor_id: selectedDoctor.id,
-        patient_id: user.id || 'pat-default-01',
+        patient_id: patientId || 'pat-default-01',
+        patient_name: patientName,
+        patient_phone: patientPhone,
         appointment_date: selectedDate,
         time_slot: selectedSlot,
         chief_complaint: chiefComplaint || 'Clinical Consultation Assessment',

@@ -47,6 +47,9 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
   const [editDesignation, setEditDesignation] = useState<string>(doctor.designation || '');
   const [editExp, setEditExp] = useState<string>(doctor.experience_years ? String(doctor.experience_years) : '');
   const [editLanguages, setEditLanguages] = useState<string>((doctor.languages || []).join(', '));
+  const [editConsultationFee, setEditConsultationFee] = useState<string>(
+    doctor.consultation_fee ? String(doctor.consultation_fee) : '500'
+  );
   const [editPhone, setEditPhone] = useState<string>(
     doctor.phone ? doctor.phone.replace('+91', '').trim() : ''
   );
@@ -220,6 +223,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           max_daily_patients: maxDailyPatients,
           clinic_address: doctor.clinic_address,
           city: doctor.city,
+          consultation_fee: parseInt(editConsultationFee.replace(/\D/g, ''), 10) || 500,
         },
         doctor.id
       );
@@ -302,12 +306,14 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
     setSavingCredentials(true);
     try {
       const langs = (editLanguages || '').split(',').map((s) => s.trim()).filter(Boolean);
+      const feeNum = parseInt(editConsultationFee.replace(/\D/g, ''), 10);
       const payload: Partial<DoctorUser> = {
         degree: (editDegree || '').trim() || undefined,
         qualifications: (editQualifications || '').trim() || undefined,
         designation: (editDesignation || '').trim() || undefined,
         experience_years: (editExp || '').trim() || undefined,
         languages: langs.length > 0 ? langs : undefined,
+        consultation_fee: !isNaN(feeNum) && feeNum >= 0 ? feeNum : 500,
       };
       if (editPhone.trim()) {
         const phoneDigits = editPhone.replace(/\D/g, '');
@@ -548,6 +554,29 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
               setEditClinicAddress(profileDoctor.clinic_address || '');
               setEditClinicName(profileDoctor.clinic_name || '');
               setShowEditLocationModal(true);
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="pencil" size={13} color={Colors.primary} />
+            <Text style={styles.editLocBadgeText}>Edit</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.infoRow}>
+          <View style={styles.infoIconBox}>
+            <Ionicons name="cash-outline" size={18} color="#059669" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.infoLabel}>Consultation Fee</Text>
+            <Text style={[styles.infoValue, { color: '#059669', fontWeight: '700' }]}>
+              ₹{profileDoctor.consultation_fee || 500}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.editLocBadge}
+            onPress={() => {
+              setEditConsultationFee(String(profileDoctor.consultation_fee || 500));
+              setShowEditCredentialsModal(true);
             }}
             activeOpacity={0.7}
           >
@@ -1019,6 +1048,21 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
                 placeholder="e.g. English, Hindi"
                 placeholderTextColor="#94A3B8"
               />
+
+              <Text style={styles.inputLabel}>Consultation Fee (₹ INR)</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 12 }}>
+                <View style={{ backgroundColor: '#E2E8F0', paddingHorizontal: 12, paddingVertical: 10, borderTopLeftRadius: 7, borderBottomLeftRadius: 7 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#0F172A' }}>₹</Text>
+                </View>
+                <TextInput
+                  style={{ flex: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: '#0F172A' }}
+                  value={editConsultationFee}
+                  onChangeText={(v) => setEditConsultationFee(v.replace(/\D/g, ''))}
+                  placeholder="e.g. 500, 800, 1500"
+                  placeholderTextColor="#94A3B8"
+                  keyboardType="number-pad"
+                />
+              </View>
             </ScrollView>
 
             <TouchableOpacity

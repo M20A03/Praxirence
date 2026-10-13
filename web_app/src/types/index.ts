@@ -6,6 +6,7 @@ export interface DoctorUser {
   specialty?: string;
   clinic_name?: string;
   reg_number?: string;
+  consultation_fee?: number;
 }
 
 export interface PatientUser {

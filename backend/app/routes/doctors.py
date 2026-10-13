@@ -335,6 +335,7 @@ def get_doctor_availability(
         "date": target_date_str,
         "day_of_week": day_of_week,
         "is_available": True,
+        "consultation_fee": getattr(doctor, "consultation_fee", 500) or 500,
         "working_hours": {
             "start": start_time,
             "end": end_time,
@@ -809,6 +810,7 @@ class DoctorProfileUpdateRequest(BaseModel):
     reg_number: Optional[str] = None
     experience_years: Optional[str] = None
     languages: Optional[List[str]] = None
+    consultation_fee: Optional[int] = None
 
 
 @router.put("/{doctor_id}/profile")
@@ -851,6 +853,11 @@ def update_doctor_credentials(
         doctor.experience_years = payload.experience_years.strip()
     if payload.languages is not None:
         doctor.languages = payload.languages
+    if payload.consultation_fee is not None:
+        try:
+            doctor.consultation_fee = max(0, int(payload.consultation_fee))
+        except (ValueError, TypeError):
+            pass
 
     db.commit()
     db.refresh(doctor)
@@ -874,6 +881,7 @@ def update_doctor_credentials(
             "reg_number": doctor.reg_number,
             "experience_years": doctor.experience_years,
             "languages": doctor.languages,
+            "consultation_fee": getattr(doctor, "consultation_fee", 500) or 500,
             "role": "doctor"
         }
     }

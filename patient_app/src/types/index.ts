@@ -62,6 +62,8 @@ export interface BookAppointmentSlotRequest {
   time_slot: string; // e.g. "10:30 AM"
   chief_complaint?: string;
   booking_type?: 'in_person' | 'video' | 'chat';
+  patient_name?: string;
+  patient_phone?: string;
 }
 
 export interface BookAppointmentSlotResponse {

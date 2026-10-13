@@ -408,3 +408,67 @@ def test_doctor_patient_capacity_limit():
     assert slots_data["is_capacity_reached"] is True
     assert slots_data["available_slots_count"] == 0
     assert slots_data["max_daily_patients"] == 2
+
+
+def test_book_slot_unregistered_patient_autoprovisions():
+    """
+    Verifies that when a patient books a slot with a newly generated or unregistered ID,
+    the backend automatically resolves/provisions the record without 404 'Patient not found'.
+    """
+    setup_module()
+    db = get_test_db()
+    doc = db.query(User).first()
+    assert doc is not None
+    doc_id = str(doc.id)
+    db.close()
+
+    # Pass an unknown patient ID
+    unknown_id = "pat-unknown-test-999"
+    res = client.post("/visits/book-slot", json={
+        "doctor_id": doc_id,
+        "patient_id": unknown_id,
+        "patient_name": "Test Provisioned Patient",
+        "patient_phone": "+919876543210",
+        "appointment_date": "2026-11-23",
+        "time_slot": "11:00 AM",
+        "chief_complaint": "Acute headache"
+    })
+
+    assert res.status_code == 200, f"Expected 200 but got {res.status_code}: {res.text}"
+    data = res.json()
+    assert data["success"] is True
+    assert "PX-" in data["token_display"]
+    assert data["status"] == "scheduled"
+
+
+def test_doctor_custom_consultation_fee():
+    """
+    Verifies that a doctor can customize their consultation fee (e.g. 1200 INR),
+    which persists and reflects in doctor profile and directory endpoints.
+    """
+    setup_module()
+    db = get_test_db()
+    doc = db.query(User).first()
+    assert doc is not None
+    doc_id = str(doc.id)
+    db.close()
+
+    # 1. Update doctor profile with custom consultation fee
+    update_res = client.put(f"/doctors/{doc_id}/profile", json={
+        "consultation_fee": 1200
+    })
+    assert update_res.status_code == 200
+    doc_data = update_res.json()["doctor"]
+    assert doc_data["consultation_fee"] == 1200
+
+    # 2. Check doctor availability returns updated fee
+    avail_res = client.get(f"/doctors/{doc_id}/availability")
+    assert avail_res.status_code == 200
+    assert avail_res.json()["consultation_fee"] == 1200
+
+    # 3. Check directory listing returns updated fee
+    list_res = client.get("/doctors")
+    assert list_res.status_code == 200
+    matching_doc = next((d for d in list_res.json()["doctors"] if d["id"] == doc_id), None)
+    assert matching_doc is not None
+    assert matching_doc["consultation_fee"] == 1200

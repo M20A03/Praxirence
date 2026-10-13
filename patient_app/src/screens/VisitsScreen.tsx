@@ -614,11 +614,29 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
                   <Text style={styles.doctorName}>{cleanDoctorName(visit.doctor_name)}</Text>
                 </View>
                 <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                  {visit.status === 'scheduled' ? (
+                  {visit.status === 'pending_confirmation' ? (
+                    <View style={[styles.statusBadge, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Ionicons name="time" size={13} color="#D97706" />
+                        <Text style={[styles.statusText, { color: '#B45309' }]}>Awaiting Doctor Approval</Text>
+                      </View>
+                    </View>
+                  ) : visit.status === 'confirmed' || visit.status === 'scheduled' ? (
                     <View style={[styles.statusBadge, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Ionicons name="time" size={13} color="#2563EB" />
-                        <Text style={[styles.statusText, { color: '#1D4ED8' }]}>Slot Reserved</Text>
+                        <Ionicons name="checkmark-circle" size={13} color="#2563EB" />
+                        <Text style={[styles.statusText, { color: '#1D4ED8' }]}>
+                          Confirmed {visit.token_display ? `• ${visit.token_display}` : ''}
+                        </Text>
+                      </View>
+                    </View>
+                  ) : visit.status === 'rejected' ? (
+                    <View style={[styles.statusBadge, { backgroundColor: '#FEF2F2', borderColor: '#FECDD3' }]}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Ionicons name="close-circle" size={13} color="#DC2626" />
+                        <Text style={[styles.statusText, { color: '#B91C1C' }]}>
+                          Declined {visit.rejection_reason ? `(${visit.rejection_reason})` : ''}
+                        </Text>
                       </View>
                     </View>
                   ) : visit.status === 'cancelled' ? (
@@ -645,14 +663,25 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
                 </View>
               </View>
 
-              {['scheduled', 'waiting', 'booked', 'in_progress'].includes(visit.status) ? (
-                <View style={{ backgroundColor: '#F0F9FF', borderRadius: 8, padding: 14, marginTop: 12, borderWidth: 1, borderColor: '#BAE6FD' }}>
+              {['scheduled', 'confirmed', 'waiting', 'booked', 'in_progress', 'pending_confirmation'].includes(visit.status) ? (
+                <View style={{
+                  backgroundColor: visit.status === 'pending_confirmation' ? '#FFFBEB' : '#F0F9FF',
+                  borderRadius: 8,
+                  padding: 14,
+                  marginTop: 12,
+                  borderWidth: 1,
+                  borderColor: visit.status === 'pending_confirmation' ? '#FDE68A' : '#BAE6FD'
+                }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                    <Ionicons name="time-outline" size={18} color="#0284C7" />
-                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#0369A1' }}>Consultation Awaiting Clinician</Text>
+                    <Ionicons name="time-outline" size={18} color={visit.status === 'pending_confirmation' ? '#D97706' : '#0284C7'} />
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: visit.status === 'pending_confirmation' ? '#92400E' : '#0369A1' }}>
+                      {visit.status === 'pending_confirmation' ? 'Appointment Request Awaiting Approval' : 'Consultation Awaiting Clinician'}
+                    </Text>
                   </View>
-                  <Text style={{ fontSize: 13, color: '#075985', lineHeight: 18 }}>
-                    Your appointment is confirmed. Attending clinician {cleanDoctorName(visit.doctor_name)} has not yet conducted this consultation. Once concluded, your official diagnosis, prescriptions, and personalized home care guidance will appear here.
+                  <Text style={{ fontSize: 13, color: visit.status === 'pending_confirmation' ? '#78350F' : '#075985', lineHeight: 18 }}>
+                    {visit.status === 'pending_confirmation'
+                      ? `Your slot request with ${cleanDoctorName(visit.doctor_name)} for ${visit.appointment_date || 'today'} at ${visit.time_slot || ''} is awaiting doctor or front-desk confirmation. You will be assigned a queue token once approved.`
+                      : `Your appointment is confirmed. Attending clinician ${cleanDoctorName(visit.doctor_name)} has not yet conducted this consultation. Once concluded, your official diagnosis, prescriptions, and personalized home care guidance will appear here.`}
                   </Text>
                   {(Boolean(visit.time_slot) || Boolean(visit.token_display)) && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 }}>
@@ -767,7 +796,7 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
               )}
 
               {/* Scheduled Appointment Cancellation Action */}
-              {['scheduled', 'draft', 'booked', 'waiting'].includes(visit.status) && (
+              {['scheduled', 'confirmed', 'draft', 'booked', 'waiting', 'pending_confirmation'].includes(visit.status) && (
                 <View style={{ marginTop: 14, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#E2E8F0', flexDirection: 'row', justifyContent: 'flex-end' }}>
                   <TouchableOpacity
                     style={{

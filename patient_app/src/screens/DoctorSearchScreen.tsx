@@ -700,6 +700,16 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                     </Text>
                   </View>
                 </View>
+              ) : availability?.is_online_limit_reached ? (
+                <View style={[styles.leaveAlertCard, { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' }]}>
+                  <Ionicons name="close-circle" size={22} color="#DC2626" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.leaveAlertTitle, { color: '#991B1B' }]}>Online Booking Full / ऑनलाइन कोटा पूर्ण</Text>
+                    <Text style={[styles.leaveAlertDesc, { color: '#7F1D1D' }]}>
+                      Dr. {selectedDoctor?.name || 'Doctor'} has reached the maximum daily online consultation limit ({availability.daily_online_limit} patients) for this date. Walk-in tokens are available directly at the clinic front desk.
+                    </Text>
+                  </View>
+                </View>
               ) : (
                 <>
                   {/* STEP 2: TIME SLOTS GRID */}
@@ -708,6 +718,15 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                       <View style={styles.stepNumberBadge}><Text style={styles.stepNumberText}>2</Text></View>
                       <Text style={styles.stepTitle}>Select Time Slot / समय चुनें</Text>
                     </View>
+
+                    {availability?.daily_online_limit && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F0FDF4', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, marginBottom: 12, alignSelf: 'flex-start', borderWidth: 1, borderColor: '#DCFCE7' }}>
+                        <Ionicons name="checkmark-circle" size={13} color="#059669" />
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: '#166534' }}>
+                          {availability.online_slots_remaining} of {availability.daily_online_limit} online slots remaining today
+                        </Text>
+                      </View>
+                    )}
 
                     {/* Morning Slots */}
                     {morningSlots.length > 0 && (
@@ -861,10 +880,10 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
               <TouchableOpacity
                 style={[
                   styles.confirmBtn,
-                  (!selectedSlot || (availability && !availability.is_available) || bookingInProgress) && { opacity: 0.5 },
+                  (!selectedSlot || (availability && !availability.is_available) || availability?.is_online_limit_reached || bookingInProgress) && { opacity: 0.5 },
                 ]}
                 onPress={handleConfirmBooking}
-                disabled={!selectedSlot || (availability && !availability.is_available) || bookingInProgress}
+                disabled={!selectedSlot || (availability && !availability.is_available) || Boolean(availability?.is_online_limit_reached) || bookingInProgress}
                 activeOpacity={0.8}
               >
                 {bookingInProgress ? (
@@ -890,14 +909,29 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
       >
         <View style={styles.modalOverlay}>
           <View style={styles.successCard}>
-            <View style={styles.successIconCircle}>
-              <Ionicons name="checkmark-circle" size={44} color="#059669" />
-            </View>
+            {confirmedBookingData?.status === 'pending_confirmation' ? (
+              <>
+                <View style={[styles.successIconCircle, { backgroundColor: '#FEF3C7' }]}>
+                  <Ionicons name="time" size={44} color="#D97706" />
+                </View>
 
-            <Text style={styles.successTitle}>Appointment Confirmed</Text>
-            <Text style={styles.successSubtitle}>
-              Your consultation has been confirmed in the clinic schedule.
-            </Text>
+                <Text style={styles.successTitle}>Request Submitted</Text>
+                <Text style={styles.successSubtitle}>
+                  Awaiting confirmation from Dr. {confirmedBookingData?.doctor_name} or clinic front desk. You will receive an alert once approved.
+                </Text>
+              </>
+            ) : (
+              <>
+                <View style={styles.successIconCircle}>
+                  <Ionicons name="checkmark-circle" size={44} color="#059669" />
+                </View>
+
+                <Text style={styles.successTitle}>Appointment Confirmed</Text>
+                <Text style={styles.successSubtitle}>
+                  Your consultation has been confirmed in the clinic schedule.
+                </Text>
+              </>
+            )}
 
             {/* Live OPD Queue Token & Position Banner */}
             <View style={styles.tokenHighlightBox}>

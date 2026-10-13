@@ -18,6 +18,7 @@ import {
   UpcomingScheduleResponse,
   DoctorScheduleConfig,
   CallNextPatientResponse,
+  PendingAppointmentItem,
 } from '../types';
 
 let customApiUrl: string | null = null;
@@ -558,6 +559,61 @@ export const mobileApi = {
       console.warn('advanceQueue error:', e);
       throw e;
     }
+  },
+
+  async getPendingAppointments(): Promise<PendingAppointmentItem[]> {
+    try {
+      const res = await resilientFetch(`${getEffectiveApiUrl()}/appointments/pending`, {
+        headers: getHeaders(),
+      }, 1);
+      if (res.ok) {
+        const data = await res.json();
+        return data.pending_appointments || [];
+      }
+      return [];
+    } catch (e) {
+      console.warn('getPendingAppointments error:', e);
+      return [];
+    }
+  },
+
+  async confirmAppointment(visitId: string): Promise<any> {
+    const res = await resilientFetch(`${getEffectiveApiUrl()}/appointments/${visitId}/confirm`, {
+      method: 'POST',
+      headers: getHeaders(),
+    }, 0);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to confirm appointment');
+    }
+    return await res.json();
+  },
+
+  async rejectAppointment(visitId: string, reason?: string): Promise<any> {
+    const res = await resilientFetch(`${getEffectiveApiUrl()}/appointments/${visitId}/reject`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ rejection_reason: reason || 'Doctor unavailable' }),
+    }, 0);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to decline appointment');
+    }
+    return await res.json();
+  },
+
+  async updateBookingSettings(settings: { daily_online_limit?: number; require_manual_confirmation?: boolean }, doctorId?: string): Promise<any> {
+    const target = doctorId || 'me';
+    const res = await resilientFetch(`${getEffectiveApiUrl()}/doctors/${target}/booking-settings`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(settings),
+    }, 0);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to save booking settings');
+    }
+    return await res.json();
   },
 
   async recallPatient(visitId: string): Promise<any> {

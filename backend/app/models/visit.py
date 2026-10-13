@@ -33,8 +33,12 @@ class Visit(Base):
     chief_complaint = Column(Text, nullable=True)
     token_number = Column(Integer, nullable=True, index=True)         # Sequential OPD token per doctor per date (1, 2, 3...)
 
-    # Status: 'scheduled', 'in_progress', 'draft', 'approved', 'sent', 'completed', 'cancelled', 'skipped', 'deferred', 'reschedule_required'
+    # Status: 'pending_confirmation', 'confirmed', 'scheduled', 'in_progress', 'draft', 'approved', 'sent', 'completed', 'cancelled', 'skipped', 'deferred', 'rejected', 'reschedule_required'
     status = Column(String(50), default="draft", nullable=False, index=True)
+    confirmed_by_id = Column(String(36), nullable=True)
+    confirmed_by_role = Column(String(30), nullable=True)  # 'doctor' | 'receptionist'
+    confirmed_at = Column(DateTime, nullable=True)
+    rejection_reason = Column(Text, nullable=True)
     triage_level = Column(String(30), default="Routine", nullable=False)  # Routine, Priority, Urgent
     skip_count = Column(Integer, default=0, nullable=False)
     deferred_at = Column(DateTime, nullable=True)

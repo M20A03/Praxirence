@@ -31,6 +31,8 @@ export interface DoctorUser {
   current_delay_mins?: number;
   delay_updated_at?: string;
   staff_pin?: string;
+  daily_online_limit?: number;
+  require_manual_confirmation?: boolean;
 }
 
 export interface DoctorScheduleConfig {
@@ -241,10 +243,30 @@ export interface UpcomingScheduleResponse {
   total_scheduled: number;
   in_waiting: number;
   completed?: number;
+  pending_count?: number;
   max_daily_patients?: number;
   is_capacity_reached?: boolean;
   remaining_capacity?: number;
   queue: UpcomingScheduleItem[];
+}
+
+export interface PendingAppointmentItem {
+  id: string;
+  visit_id: string;
+  patient_id: string;
+  patient_name: string;
+  patient_phone?: string;
+  patient_uhid?: string;
+  patient_gender?: string;
+  patient_age?: number | string;
+  appointment_date: string;
+  time_slot: string;
+  chief_complaint?: string;
+  booking_type?: string;
+  token_display?: string;
+  token_number?: number;
+  status: string;
+  created_at?: string;
 }
 
 export interface CallNextPatientResponse {

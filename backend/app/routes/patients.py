@@ -769,7 +769,7 @@ def get_upcoming_patient_schedule(
         db.query(Visit)
         .filter(
             Visit.doctor_id == current_doctor.id,
-            Visit.status.in_(["scheduled", "in_progress", "draft", "approved", "deferred"])
+            Visit.status.in_(["scheduled", "confirmed", "in_progress", "draft", "approved", "deferred"])
         )
         .order_by(
             case((Visit.triage_level == "Urgent", 0), (Visit.triage_level == "Priority", 1), else_=2),
@@ -812,6 +812,11 @@ def get_upcoming_patient_schedule(
         Visit.status == "completed"
     ).count()
 
+    pending_count = db.query(Visit).filter(
+        Visit.doctor_id == current_doctor.id,
+        Visit.status == "pending_confirmation"
+    ).count()
+
     max_daily_patients = getattr(current_doctor, "max_daily_patients", 20) or 20
     is_capacity_reached = (len(schedule) >= max_daily_patients) if max_daily_patients > 0 else False
     remaining_capacity = max(0, max_daily_patients - len(schedule)) if max_daily_patients > 0 else 999
@@ -822,6 +827,7 @@ def get_upcoming_patient_schedule(
         "total_scheduled": len(schedule),
         "in_waiting": sum(1 for s in schedule if "Waiting" in s["status"]),
         "completed": completed_count,
+        "pending_count": pending_count,
         "max_daily_patients": max_daily_patients,
         "is_capacity_reached": is_capacity_reached,
         "remaining_capacity": remaining_capacity,

@@ -53,6 +53,11 @@ export interface DoctorAvailabilityResponse {
   slots: DoctorSlot[];
   total_slots: number;
   available_slots_count: number;
+  daily_online_limit?: number;
+  online_booked_count?: number;
+  online_slots_remaining?: number;
+  is_online_limit_reached?: boolean;
+  require_manual_confirmation?: boolean;
 }
 
 export interface BookAppointmentSlotRequest {
@@ -186,7 +191,8 @@ export interface Visit {
   raw_transcription?: string;
   medicines: MedicineItem[];
   reminders: ReminderItem[];
-  status: 'scheduled' | 'draft' | 'approved' | 'sent' | 'completed' | 'cancelled' | 'in_progress' | 'reschedule_required' | 'deferred' | 'skipped';
+  status: 'pending_confirmation' | 'confirmed' | 'scheduled' | 'draft' | 'approved' | 'sent' | 'completed' | 'cancelled' | 'in_progress' | 'reschedule_required' | 'deferred' | 'skipped' | 'rejected';
+  rejection_reason?: string;
   doctor_name?: string;
   specialty?: string;
   clinic_name?: string;

@@ -44,6 +44,8 @@ class DoctorScheduleUpdate(BaseModel):
     longitude: Optional[float] = None
     consultation_fee: Optional[int] = None
     staff_pin: Optional[str] = None
+    daily_online_limit: Optional[int] = None
+    require_manual_confirmation: Optional[bool] = None
 
 
 class LeaveToggleRequest(BaseModel):
@@ -315,12 +317,27 @@ def get_doctor_availability(
     booked_count = len(booked_visits)
     is_capacity_reached = (booked_count >= max_capacity) if max_capacity > 0 else False
 
+    online_limit = getattr(doctor, "daily_online_limit", 15) or 15
+    online_booked_count = (
+        db.query(Visit)
+        .filter(
+            Visit.doctor_id == doctor.id,
+            Visit.appointment_date == target_date_str,
+            Visit.status.in_(["scheduled", "draft", "approved", "completed", "in_progress", "pending_confirmation", "confirmed"])
+        )
+        .count()
+    )
+    is_online_limit_reached = (online_booked_count >= online_limit) if online_limit > 0 else False
+    online_slots_remaining = max(0, online_limit - online_booked_count) if online_limit > 0 else 999
+
     slot_items = []
     for s in combined_slots:
         is_blocked = s.strip() in custom_blocked
         is_booked = s.strip() in booked_slots
-        is_open = (not is_booked) and (not is_blocked) and (not is_capacity_reached)
-        if is_capacity_reached and not is_booked and not is_blocked:
+        is_open = (not is_booked) and (not is_blocked) and (not is_capacity_reached) and (not is_online_limit_reached)
+        if is_online_limit_reached and not is_booked and not is_blocked:
+            reason_str = f"online booking quota reached ({online_limit} max)"
+        elif is_capacity_reached and not is_booked and not is_blocked:
             reason_str = f"doctor patient capacity reached ({max_capacity} max)"
         else:
             reason_str = "blocked by doctor" if is_blocked else ("booked" if is_booked else "open")
@@ -351,6 +368,11 @@ def get_doctor_availability(
         "booked_patients_count": booked_count,
         "is_capacity_reached": is_capacity_reached,
         "capacity_remaining": max(0, max_capacity - booked_count) if max_capacity > 0 else 999,
+        "daily_online_limit": online_limit,
+        "online_booked_count": online_booked_count,
+        "online_slots_remaining": online_slots_remaining,
+        "is_online_limit_reached": is_online_limit_reached,
+        "require_manual_confirmation": bool(getattr(doctor, "require_manual_confirmation", 1)),
     }
 
 
@@ -932,6 +954,13 @@ def update_doctor_credentials(
             pass
     if payload.staff_pin is not None and payload.staff_pin.strip():
         doctor.staff_pin = payload.staff_pin.strip()
+    if payload.daily_online_limit is not None:
+        try:
+            doctor.daily_online_limit = max(1, min(100, int(payload.daily_online_limit)))
+        except (ValueError, TypeError):
+            pass
+    if payload.require_manual_confirmation is not None:
+        doctor.require_manual_confirmation = 1 if payload.require_manual_confirmation else 0
 
     db.commit()
     db.refresh(doctor)
@@ -957,6 +986,8 @@ def update_doctor_credentials(
             "languages": doctor.languages,
             "consultation_fee": getattr(doctor, "consultation_fee", 500) or 500,
             "staff_pin": getattr(doctor, "staff_pin", "1234") or "1234",
+            "daily_online_limit": getattr(doctor, "daily_online_limit", 15) or 15,
+            "require_manual_confirmation": bool(getattr(doctor, "require_manual_confirmation", 1)),
             "role": "doctor"
         }
     }
@@ -994,5 +1025,44 @@ def get_doctor_profile(
         "languages": doctor.languages,
         "consultation_fee": getattr(doctor, "consultation_fee", 500) or 500,
         "staff_pin": getattr(doctor, "staff_pin", "1234") or "1234",
+        "daily_online_limit": getattr(doctor, "daily_online_limit", 15) or 15,
+        "require_manual_confirmation": bool(getattr(doctor, "require_manual_confirmation", 1)),
         "role": "doctor"
+    }
+
+
+
+class BookingSettingsUpdateRequest(BaseModel):
+    daily_online_limit: Optional[int] = Field(None, ge=1, le=100)
+    require_manual_confirmation: Optional[bool] = None
+
+
+@router.put("/{doctor_id}/booking-settings")
+@router.put("/me/booking-settings")
+def update_doctor_booking_settings(
+    doctor_id: str = "me",
+    payload: BookingSettingsUpdateRequest = None,
+    db: Session = Depends(get_db),
+):
+    doctor = None
+    if doctor_id and doctor_id not in ("me", "current", "null", "undefined"):
+        doctor = db.query(User).filter(User.id == doctor_id).first()
+    if not doctor:
+        doctor = db.query(User).first()
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+
+    if payload:
+        if payload.daily_online_limit is not None:
+            doctor.daily_online_limit = max(1, min(100, payload.daily_online_limit))
+        if payload.require_manual_confirmation is not None:
+            doctor.require_manual_confirmation = 1 if payload.require_manual_confirmation else 0
+        db.commit()
+        db.refresh(doctor)
+
+    return {
+        "success": True,
+        "message": "Online appointment quota & confirmation settings saved successfully",
+        "daily_online_limit": getattr(doctor, "daily_online_limit", 15) or 15,
+        "require_manual_confirmation": bool(getattr(doctor, "require_manual_confirmation", 1))
     }

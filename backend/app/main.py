@@ -8,7 +8,7 @@ In-App Native Care Plan Synchronization (100% Local, Zero External APIs).
 import logging
 import time
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base, SessionLocal
@@ -84,6 +84,8 @@ def auto_migrate_schema():
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS unavailable_dates JSONB DEFAULT '[]';",
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS consultation_fee INTEGER DEFAULT 500;",
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS staff_pin VARCHAR(20) DEFAULT '1234';",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_online_limit INTEGER DEFAULT 15;",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS require_manual_confirmation INTEGER DEFAULT 1;",
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS custom_slots JSONB DEFAULT '{}';",
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS current_delay_mins INTEGER DEFAULT 0;",
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS delay_updated_at TIMESTAMP;",
@@ -106,6 +108,10 @@ def auto_migrate_schema():
                 "ALTER TABLE visits ADD COLUMN IF NOT EXISTS day7_followup_status VARCHAR(30) DEFAULT 'scheduled';",
                 "ALTER TABLE visits ADD COLUMN IF NOT EXISTS day7_followup_sent_at TIMESTAMP;",
                 "ALTER TABLE visits ADD COLUMN IF NOT EXISTS day7_followup_response JSONB;",
+                "ALTER TABLE visits ADD COLUMN IF NOT EXISTS confirmed_by_id VARCHAR(36);",
+                "ALTER TABLE visits ADD COLUMN IF NOT EXISTS confirmed_by_role VARCHAR(30);",
+                "ALTER TABLE visits ADD COLUMN IF NOT EXISTS confirmed_at TIMESTAMP;",
+                "ALTER TABLE visits ADD COLUMN IF NOT EXISTS rejection_reason TEXT;",
                 """
                 CREATE TABLE IF NOT EXISTS doctor_reviews (
                     id VARCHAR(36) PRIMARY KEY,
@@ -151,6 +157,8 @@ def auto_migrate_schema():
                     "custom_slots": "ALTER TABLE users ADD COLUMN custom_slots JSON DEFAULT '{}'",
                     "consultation_fee": "ALTER TABLE users ADD COLUMN consultation_fee INTEGER DEFAULT 500",
                     "staff_pin": "ALTER TABLE users ADD COLUMN staff_pin VARCHAR(20) DEFAULT '1234';",
+                    "daily_online_limit": "ALTER TABLE users ADD COLUMN daily_online_limit INTEGER DEFAULT 15",
+                    "require_manual_confirmation": "ALTER TABLE users ADD COLUMN require_manual_confirmation INTEGER DEFAULT 1",
                     "current_delay_mins": "ALTER TABLE users ADD COLUMN current_delay_mins INTEGER DEFAULT 0",
                     "delay_updated_at": "ALTER TABLE users ADD COLUMN delay_updated_at TIMESTAMP",
                 }
@@ -193,6 +201,10 @@ def auto_migrate_schema():
                     "day7_followup_status": "ALTER TABLE visits ADD COLUMN day7_followup_status VARCHAR(30) DEFAULT 'scheduled'",
                     "day7_followup_sent_at": "ALTER TABLE visits ADD COLUMN day7_followup_sent_at TIMESTAMP",
                     "day7_followup_response": "ALTER TABLE visits ADD COLUMN day7_followup_response JSON",
+                    "confirmed_by_id": "ALTER TABLE visits ADD COLUMN confirmed_by_id VARCHAR(36)",
+                    "confirmed_by_role": "ALTER TABLE visits ADD COLUMN confirmed_by_role VARCHAR(30)",
+                    "confirmed_at": "ALTER TABLE visits ADD COLUMN confirmed_at TIMESTAMP",
+                    "rejection_reason": "ALTER TABLE visits ADD COLUMN rejection_reason TEXT",
                 }
                 for col, ddl in visit_ddls.items():
                     if col not in visit_cols:
@@ -467,6 +479,14 @@ app.include_router(doctor_copilot.router, prefix="/api/v1")
 app.include_router(medicines.router)
 app.include_router(medicines.router, prefix="/api/v1")
 app.include_router(realtime.router)
+
+# Direct /appointments aliases
+appointments_alias_router = APIRouter(prefix="/appointments", tags=["Appointments"])
+appointments_alias_router.add_api_route("/pending", visits.get_pending_appointments, methods=["GET"])
+appointments_alias_router.add_api_route("/{visit_id}/confirm", visits.confirm_pending_appointment, methods=["POST"])
+appointments_alias_router.add_api_route("/{visit_id}/reject", visits.reject_pending_appointment, methods=["POST"])
+app.include_router(appointments_alias_router)
+app.include_router(appointments_alias_router, prefix="/api/v1")
 
 
 @app.get("/health")

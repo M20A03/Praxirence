@@ -67,6 +67,37 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
   const [showCityPicker, setShowCityPicker] = useState<boolean>(false);
   const [savingLocation, setSavingLocation] = useState<boolean>(false);
 
+  // Online Booking Quota & Manual Confirmation States
+  const [dailyOnlineLimit, setDailyOnlineLimit] = useState<number>(profileDoctor.daily_online_limit || 15);
+  const [requireManualConfirmation, setRequireManualConfirmation] = useState<boolean>(profileDoctor.require_manual_confirmation ?? true);
+  const [savingBookingControls, setSavingBookingControls] = useState<boolean>(false);
+
+  const handleSaveBookingControls = async () => {
+    setSavingBookingControls(true);
+    try {
+      await mobileApi.updateBookingSettings({
+        daily_online_limit: dailyOnlineLimit,
+        require_manual_confirmation: requireManualConfirmation,
+      }, profileDoctor.id);
+      setProfileDoctor(prev => ({
+        ...prev,
+        daily_online_limit: dailyOnlineLimit,
+        require_manual_confirmation: requireManualConfirmation,
+      }));
+      try {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } catch (_) {}
+      Alert.alert(
+        'Online Booking Controls Saved',
+        `Daily Online Quota: ${dailyOnlineLimit} patients/day.\nManual Confirmation: ${requireManualConfirmation ? 'Enabled (Awaiting Approval)' : 'Disabled (Instant Confirm)'}`
+      );
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Failed to save booking controls');
+    } finally {
+      setSavingBookingControls(false);
+    }
+  };
+
   // Front-Desk Staff PIN Management States
   const [staffPin, setStaffPin] = useState<string>(doctor.staff_pin || "1234");
   const [showStaffPin, setShowStaffPin] = useState<boolean>(false);
@@ -958,12 +989,100 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
 
       </View>
 
+      {/* OPD Online Quota & Confirmation Controls Card */}
+      <View style={styles.sectionCard}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="calendar-outline" size={20} color="#0284C7" />
+            <Text style={styles.sectionTitle}>Online Booking Quota & Approvals</Text>
+          </View>
+          <View style={{ backgroundColor: '#E0F2FE', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: '#0369A1' }}>OPD QUOTA</Text>
+          </View>
+        </View>
+
+        <Text style={styles.securityDesc}>
+          Set a daily cap on online appointments to protect your OPD from overbooking. Require manual confirmation so you or your front desk can review each booking before admitting.
+        </Text>
+
+        {/* Quota Cap Selector */}
+        <View style={{ marginTop: 12 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#334155' }}>Daily Online Cap</Text>
+            <View style={{ backgroundColor: '#F1F5F9', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#0284C7' }}>{dailyOnlineLimit} Patients / Day</Text>
+            </View>
+          </View>
+
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+            {[5, 10, 15, 20, 25, 30, 40].map((num) => {
+              const isActive = dailyOnlineLimit === num;
+              return (
+                <TouchableOpacity
+                  key={num}
+                  style={[
+                    styles.quotaChip,
+                    isActive && styles.quotaChipActive
+                  ]}
+                  onPress={() => {
+                    try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (_) {}
+                    setDailyOnlineLimit(num);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.quotaChipText, isActive && styles.quotaChipTextActive]}>
+                    {num} pts
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Require Manual Confirmation Toggle */}
+        <View style={styles.quotaToggleRow}>
+          <View style={{ flex: 1, marginRight: 12 }}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E293B' }}>Require Manual Confirmation</Text>
+            <Text style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>
+              {requireManualConfirmation
+                ? "New online bookings wait for your or front-desk approval."
+                : "New bookings are automatically confirmed and given tokens."}
+            </Text>
+          </View>
+          <Switch
+            value={requireManualConfirmation}
+            onValueChange={(val) => {
+              try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (_) {}
+              setRequireManualConfirmation(val);
+            }}
+            trackColor={{ false: '#CBD5E1', true: '#0284C7' }}
+            thumbColor="#FFFFFF"
+          />
+        </View>
+
+        <TouchableOpacity
+          style={styles.saveQuotaBtn}
+          onPress={handleSaveBookingControls}
+          disabled={savingBookingControls}
+          activeOpacity={0.85}
+        >
+          {savingBookingControls ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <>
+              <Ionicons name="checkmark-circle-outline" size={16} color="#FFFFFF" />
+              <Text style={styles.saveQuotaBtnText}>Save Online Booking Controls</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+
       {/* Front-Desk & Staff OPD Queue Card */}
       <View style={styles.sectionCard}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Ionicons name="people" size={20} color="#0284C7" />
-            <Text style={styles.sectionTitle}>Front-Desk & Staff Access</Text>
+            <Text style={styles.sectionTitle}>Front-Desk & Receptionist Access</Text>
           </View>
           <View style={{ backgroundColor: '#E0F2FE', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
             <Text style={{ fontSize: 11, fontWeight: '700', color: '#0369A1' }}>OPD DESK</Text>
@@ -971,7 +1090,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
         </View>
 
         <Text style={styles.securityDesc}>
-          Allow your clinic receptionist outside your cabin to register walk-in patients, manage queue tokens, and collect fees without exposing private medical recordings or clinical notes.
+          Allow your clinic receptionist outside your cabin to register walk-in patients, manage queue tokens, approve online appointments, and collect fees without exposing private medical recordings or clinical notes.
         </Text>
 
         <View style={styles.staffCredentialsBox}>
@@ -982,11 +1101,24 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           <View style={styles.staffCredRow}>
             <Text style={styles.staffCredLabel}>Staff Access PIN:</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={styles.staffPinCode}>{showStaffPin ? staffPin : '••••'}</Text>
+              <View style={styles.pinDisplayBadge}>
+                <Text style={styles.staffPinCode}>{showStaffPin ? staffPin : '••••'}</Text>
+              </View>
               <TouchableOpacity onPress={() => setShowStaffPin(!showStaffPin)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name={showStaffPin ? "eye-off-outline" : "eye-outline"} size={18} color="#64748B" />
+                <Ionicons name={showStaffPin ? "eye-off-outline" : "eye-outline"} size={20} color="#64748B" />
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+
+        {/* How Receptionist Signs In Info Banner */}
+        <View style={styles.receptionistHelpBox}>
+          <Ionicons name="information-circle" size={18} color="#0284C7" style={{ marginTop: 2 }} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.receptionistHelpTitle}>How Receptionist Logs In:</Text>
+            <Text style={styles.receptionistHelpStep}>1. On App Login, tap the "Front-Desk / Staff" tab.</Text>
+            <Text style={styles.receptionistHelpStep}>2. Enter Doctor Identifier: {profileDoctor.phone || profileDoctor.email || 'your email'}</Text>
+            <Text style={styles.receptionistHelpStep}>3. Enter Staff PIN: {staffPin}</Text>
           </View>
         </View>
 
@@ -2258,6 +2390,81 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
+  },
+  quotaChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  quotaChipActive: {
+    backgroundColor: '#0284C7',
+    borderColor: '#0284C7',
+  },
+  quotaChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  quotaChipTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  quotaToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 12,
+  },
+  saveQuotaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0284C7',
+    paddingVertical: 12,
+    borderRadius: 10,
+    gap: 8,
+  },
+  saveQuotaBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  pinDisplayBadge: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  receptionistHelpBox: {
+    flexDirection: 'row',
+    gap: 10,
+    backgroundColor: '#F0F9FF',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    marginTop: 10,
+  },
+  receptionistHelpTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0369A1',
+    marginBottom: 3,
+  },
+  receptionistHelpStep: {
+    fontSize: 11,
+    color: '#0284C7',
+    lineHeight: 16,
   },
   staffCredentialsBox: {
     backgroundColor: '#F8FAFC',

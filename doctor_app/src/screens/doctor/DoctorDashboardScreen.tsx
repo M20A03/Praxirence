@@ -15,7 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../../theme';
-import { DoctorUser, UpcomingScheduleItem, UpcomingScheduleResponse } from '../../types';
+import { DoctorUser, UpcomingScheduleItem, UpcomingScheduleResponse, PendingAppointmentItem } from '../../types';
 import { mobileApi } from '../../services/api';
 import { doctorRealtime } from '../../services/realtime';
 import { BrandLogoMobile } from '../../components/BrandLogoMobile';
@@ -37,6 +37,13 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [isLive, setIsLive] = useState<boolean>(true);
   const [latencyMs, setLatencyMs] = useState<number>(65);
+
+  // Online Appointment Approvals States
+  const [pendingAppointments, setPendingAppointments] = useState<PendingAppointmentItem[]>([]);
+  const [showPendingModal, setShowPendingModal] = useState<boolean>(false);
+  const [rejectingItem, setRejectingItem] = useState<PendingAppointmentItem | null>(null);
+  const [rejectReason, setRejectReason] = useState<string>('Doctor unavailable');
+  const [processingPendingId, setProcessingPendingId] = useState<string | null>(null);
 
   // Walk-in modal
   const [showWalkInModal, setShowWalkInModal] = useState<boolean>(false);
@@ -93,6 +100,17 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
       loadUpcomingScheduleSilently();
     });
 
+    const unsubPending = doctorRealtime.on('APPOINTMENT_PENDING', () => {
+      loadUpcomingScheduleSilently();
+      loadPendingAppointments();
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); } catch (_) {}
+    });
+
+    const unsubUpdated = doctorRealtime.on('APPOINTMENT_UPDATED', () => {
+      loadUpcomingScheduleSilently();
+      loadPendingAppointments();
+    });
+
     // 2. Background Polling Fallback (every 10s) if WebSocket disconnects
     const pollInterval = setInterval(() => {
       loadUpcomingScheduleSilently();
@@ -102,6 +120,8 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
       unsubQueue();
       unsubBooked();
       unsubPill();
+      unsubPending();
+      unsubUpdated();
       clearInterval(pollInterval);
     };
   }, [doctor?.id]);
@@ -115,6 +135,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
 
       const schedule = await mobileApi.getUpcomingSchedule();
       setScheduleData(schedule);
+      loadPendingAppointments();
     } catch (err) {
       console.warn('Clinical schedule load notice:', err);
     } finally {
@@ -129,8 +150,58 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
       if (schedule && schedule.queue) {
         setScheduleData(schedule);
       }
+      loadPendingAppointmentsSilently();
     } catch (err) {
       // Background poll notice
+    }
+  };
+
+  const loadPendingAppointments = async () => {
+    try {
+      const items = await mobileApi.getPendingAppointments();
+      setPendingAppointments(items);
+    } catch (_) {}
+  };
+
+  const loadPendingAppointmentsSilently = async () => {
+    try {
+      const items = await mobileApi.getPendingAppointments();
+      setPendingAppointments(items);
+    } catch (_) {}
+  };
+
+  const handleConfirmPending = async (item: PendingAppointmentItem) => {
+    setProcessingPendingId(item.id);
+    try {
+      const res = await mobileApi.confirmAppointment(item.id);
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
+      Alert.alert(
+        'Appointment Confirmed',
+        `Assigned Token: ${res.token_display || 'PX-XX'}\nPatient: ${item.patient_name}\nDate: ${item.appointment_date} at ${item.time_slot}\n\nPatient is now admitted into today's active queue.`
+      );
+      setPendingAppointments(prev => prev.filter(p => p.id !== item.id));
+      loadUpcomingSchedule();
+    } catch (err: any) {
+      Alert.alert('Confirmation Error', err?.message || 'Failed to confirm appointment');
+    } finally {
+      setProcessingPendingId(null);
+    }
+  };
+
+  const handleRejectPending = async () => {
+    if (!rejectingItem) return;
+    setProcessingPendingId(rejectingItem.id);
+    try {
+      await mobileApi.rejectAppointment(rejectingItem.id, rejectReason.trim() || 'Doctor unavailable');
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); } catch (_) {}
+      Alert.alert('Appointment Declined', `Declined appointment for ${rejectingItem.patient_name}. Patient notified.`);
+      setPendingAppointments(prev => prev.filter(p => p.id !== rejectingItem.id));
+      setRejectingItem(null);
+      loadUpcomingSchedule();
+    } catch (err: any) {
+      Alert.alert('Decline Error', err?.message || 'Failed to decline appointment');
+    } finally {
+      setProcessingPendingId(null);
     }
   };
 
@@ -751,6 +822,59 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
         })()
       ) : null}
 
+      {/* Pending Online Appointment Approval Banner */}
+      {pendingAppointments.length > 0 && (
+        <View style={{
+          backgroundColor: '#FFFBEB',
+          borderRadius: 12,
+          padding: 14,
+          marginBottom: 14,
+          borderWidth: 1,
+          borderColor: '#FDE68A',
+          borderLeftWidth: 4,
+          borderLeftColor: '#F59E0B',
+          shadowColor: '#B45309',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 4,
+          elevation: 2,
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="notifications" size={17} color="#D97706" />
+              <Text style={{ fontSize: 13, fontWeight: '800', color: '#92400E' }}>
+                ONLINE REQUESTS AWAITING APPROVAL ({pendingAppointments.length})
+              </Text>
+            </View>
+            <View style={{ backgroundColor: '#FEF3C7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#B45309' }}>ACTION NEEDED</Text>
+            </View>
+          </View>
+          <Text style={{ fontSize: 12, color: '#78350F', marginBottom: 10 }}>
+            {pendingAppointments.length} online booking{pendingAppointments.length > 1 ? 's' : ''} require your or front-desk confirmation before admission.
+          </Text>
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#D97706',
+              paddingVertical: 9,
+              paddingHorizontal: 14,
+              borderRadius: 8,
+              alignItems: 'center',
+              flexDirection: 'row',
+              justifyContent: 'center',
+              gap: 6,
+            }}
+            onPress={() => setShowPendingModal(true)}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="eye-outline" size={16} color="#FFFFFF" />
+            <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>
+              Review Online Requests ({pendingAppointments.length})
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Loading Indicator */}
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>
@@ -935,6 +1059,197 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
           <Ionicons name="chevron-forward" size={16} color="#ffffff" />
         </TouchableOpacity>
       </View>
+
+      {/* Modal: Review Pending Online Appointments */}
+      <Modal
+        visible={showPendingModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowPendingModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxHeight: '85%' }]}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="calendar" size={20} color="#D97706" />
+                <Text style={styles.modalTitle}>Pending Online Bookings ({pendingAppointments.length})</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowPendingModal(false)}>
+                <Ionicons name="close" size={22} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+              {pendingAppointments.length === 0 ? (
+                <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                  <Ionicons name="checkmark-done-circle-outline" size={48} color="#10B981" />
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#0F172A', marginTop: 10 }}>All Requests Handled</Text>
+                  <Text style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>No online bookings are currently awaiting approval.</Text>
+                </View>
+              ) : (
+                pendingAppointments.map((item) => {
+                  const isProcessing = processingPendingId === item.id;
+                  return (
+                    <View
+                      key={item.id}
+                      style={{
+                        backgroundColor: '#F8FAFC',
+                        borderRadius: 12,
+                        padding: 14,
+                        marginBottom: 12,
+                        borderWidth: 1,
+                        borderColor: '#E2E8F0',
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                        <View style={{ flex: 1, marginRight: 8 }}>
+                          <Text style={{ fontSize: 15, fontWeight: '700', color: '#0F172A' }}>{item.patient_name}</Text>
+                          <Text style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>
+                            {item.appointment_date} • {item.time_slot} {item.patient_phone ? `• ${item.patient_phone}` : ''}
+                          </Text>
+                        </View>
+                        <View style={{ backgroundColor: '#FEF3C7', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                          <Text style={{ fontSize: 10, fontWeight: '700', color: '#B45309' }}>AWAITING APPROVAL</Text>
+                        </View>
+                      </View>
+
+                      <View style={{ backgroundColor: '#FFFFFF', borderRadius: 8, padding: 8, marginBottom: 12, borderWidth: 1, borderColor: '#F1F5F9' }}>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: '#475569' }}>Chief Complaint:</Text>
+                        <Text style={{ fontSize: 12, color: '#1E293B', marginTop: 2 }}>{item.chief_complaint || 'General Consultation'}</Text>
+                      </View>
+
+                      {/* Action Buttons */}
+                      <View style={{ flexDirection: 'row', gap: 10 }}>
+                        <TouchableOpacity
+                          style={{
+                            flex: 1,
+                            backgroundColor: '#059669',
+                            paddingVertical: 10,
+                            borderRadius: 8,
+                            alignItems: 'center',
+                            flexDirection: 'row',
+                            justifyContent: 'center',
+                            gap: 6,
+                          }}
+                          onPress={() => handleConfirmPending(item)}
+                          disabled={isProcessing}
+                        >
+                          {isProcessing ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                          ) : (
+                            <>
+                              <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
+                              <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>Confirm & Token</Text>
+                            </>
+                          )}
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={{
+                            paddingHorizontal: 14,
+                            paddingVertical: 10,
+                            borderRadius: 8,
+                            alignItems: 'center',
+                            flexDirection: 'row',
+                            justifyContent: 'center',
+                            gap: 4,
+                            backgroundColor: '#FEF2F2',
+                            borderWidth: 1,
+                            borderColor: '#FECACA',
+                          }}
+                          onPress={() => setRejectingItem(item)}
+                          disabled={isProcessing}
+                        >
+                          <Ionicons name="close-circle-outline" size={16} color="#DC2626" />
+                          <Text style={{ color: '#DC2626', fontSize: 12, fontWeight: '700' }}>Decline</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal: Decline Reason Selection */}
+      <Modal
+        visible={!!rejectingItem}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setRejectingItem(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxWidth: 360 }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Decline Appointment</Text>
+              <TouchableOpacity onPress={() => setRejectingItem(null)}>
+                <Ionicons name="close" size={20} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 13, color: '#475569', marginBottom: 10 }}>
+              Select or enter reason for declining {rejectingItem?.patient_name}:
+            </Text>
+
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+              {['Doctor unavailable', 'Emergency surgery', 'Consultation slot full', 'Please visit as walk-in'].map((r) => {
+                const isSelected = rejectReason === r;
+                return (
+                  <TouchableOpacity
+                    key={r}
+                    style={{
+                      paddingHorizontal: 10,
+                      paddingVertical: 6,
+                      borderRadius: 6,
+                      backgroundColor: isSelected ? '#DC2626' : '#F1F5F9',
+                    }}
+                    onPress={() => setRejectReason(r)}
+                  >
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: isSelected ? '#FFFFFF' : '#334155' }}>{r}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: '#CBD5E1',
+                borderRadius: 8,
+                padding: 10,
+                fontSize: 13,
+                marginBottom: 14,
+                backgroundColor: '#F8FAFC',
+              }}
+              value={rejectReason}
+              onChangeText={setRejectReason}
+              placeholder="Custom reason..."
+            />
+
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity
+                style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: '#F1F5F9' }}
+                onPress={() => setRejectingItem(null)}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#64748B' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: '#DC2626' }}
+                onPress={handleRejectPending}
+                disabled={!!processingPendingId}
+              >
+                {processingPendingId ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFFFFF' }}>Confirm Decline</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Walk-In Modal */}
       <Modal visible={showWalkInModal} animationType="slide" transparent onRequestClose={() => setShowWalkInModal(false)}>

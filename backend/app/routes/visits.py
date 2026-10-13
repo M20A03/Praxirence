@@ -10,7 +10,7 @@ import json
 import hashlib
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Tuple, Dict, Any
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status, Request
 from app.services.replay_protection import verify_anti_replay_headers
 from fastapi.responses import FileResponse
@@ -1017,7 +1017,24 @@ def book_appointment_slot(
             detail=f"Dr. {doctor.name} is on leave / unavailable on {payload.appointment_date}. Please choose another date."
         )
 
-    # 4b. Enforce Doctor Daily Patient Capacity Limit
+    # 4b. Enforce Doctor Daily Online Quota Limit & Total Capacity
+    online_limit = getattr(doctor, "daily_online_limit", 15) or 15
+    if online_limit > 0:
+        online_booked_count = (
+            db.query(Visit)
+            .filter(
+                Visit.doctor_id == doctor.id,
+                Visit.appointment_date == payload.appointment_date,
+                Visit.status.in_(["scheduled", "draft", "approved", "completed", "in_progress", "pending_confirmation", "confirmed"])
+            )
+            .count()
+        )
+        if online_booked_count >= online_limit:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Dr. {doctor.name} has reached the maximum online booking limit ({online_limit} patients) for {payload.appointment_date}. Walk-in tokens are available directly at the clinic front desk."
+            )
+
     max_capacity = getattr(doctor, "max_daily_patients", 20) or 20
     if max_capacity > 0:
         day_booked_count = (
@@ -1025,7 +1042,7 @@ def book_appointment_slot(
             .filter(
                 Visit.doctor_id == doctor.id,
                 Visit.appointment_date == payload.appointment_date,
-                Visit.status.in_(["scheduled", "draft", "approved", "completed", "in_progress"])
+                Visit.status.in_(["scheduled", "draft", "approved", "completed", "in_progress", "pending_confirmation", "confirmed"])
             )
             .count()
         )
@@ -1043,7 +1060,7 @@ def book_appointment_slot(
             Visit.doctor_id == doctor.id,
             Visit.appointment_date == payload.appointment_date,
             Visit.time_slot == clean_slot,
-            Visit.status.in_(["scheduled", "draft", "approved", "completed"])
+            Visit.status.in_(["scheduled", "draft", "approved", "completed", "pending_confirmation", "confirmed"])
         )
         .first()
     )
@@ -1080,7 +1097,11 @@ def book_appointment_slot(
     slot_dur = getattr(doctor, "slot_duration_mins", 30) or 30
     estimated_wait_mins = patients_ahead * slot_dur
 
-    # 7. Create scheduled Visit with sequential token
+    # 7. Determine confirmation status based on doctor settings
+    require_manual = bool(getattr(doctor, "require_manual_confirmation", 1))
+    initial_status = "pending_confirmation" if require_manual else "confirmed"
+
+    # Create scheduled Visit with sequential token
     scheduled_visit = Visit(
         doctor_id=doctor.id,
         patient_id=patient.id,
@@ -1090,7 +1111,7 @@ def book_appointment_slot(
         booking_type=payload.booking_type or "in_person",
         chief_complaint=payload.chief_complaint or "Consultation Assessment",
         token_number=token_num,
-        status="scheduled",
+        status=initial_status,
         diagnosis=None,
         medicines=[],
         reminders=[]
@@ -1142,11 +1163,17 @@ def book_appointment_slot(
     except Exception as e:
         logger.warning(f"Realtime emit notice: {e}")
 
+    resp_msg = (
+        f"Appointment request received for Dr. {doctor.name} on {payload.appointment_date} at {clean_slot}. Awaiting clinic confirmation. Token: {token_display}"
+        if require_manual
+        else f"Consultation successfully scheduled with Dr. {doctor.name} for {payload.appointment_date} at {clean_slot}. Token: {token_display}"
+    )
+
     return BookSlotResponse(
         success=True,
         visit_id=scheduled_visit.id,
-        message=f"Consultation successfully scheduled with Dr. {doctor.name} for {payload.appointment_date} at {clean_slot}. Token: {token_display}",
-        status="scheduled",
+        message=resp_msg,
+        status=initial_status,
         token_number=token_num,
         token_display=token_display,
         patients_ahead=patients_ahead,
@@ -1168,7 +1195,8 @@ def book_appointment_slot(
             "token_display": token_display,
             "patients_ahead": patients_ahead,
             "estimated_wait_mins": estimated_wait_mins,
-            "status": "scheduled"
+            "status": initial_status,
+            "require_manual_confirmation": require_manual
         }
     )
 
@@ -1947,3 +1975,198 @@ def submit_patient_followup_response(
 
 
 
+
+
+# ==================== DOCTOR & RECEPTIONIST APPOINTMENT CONFIRMATION WORKFLOW ====================
+
+class RejectAppointmentRequest(BaseModel):
+    rejection_reason: Optional[str] = Field("Doctor unavailable", description="Reason for declining appointment")
+
+
+@router.get("/appointments/pending")
+def get_pending_appointments(
+    db: Session = Depends(get_db),
+    current_doctor = Depends(get_current_doctor)
+):
+    """
+    Returns all online appointment requests awaiting doctor or receptionist approval.
+    """
+    pending_visits = (
+        db.query(Visit)
+        .filter(
+            Visit.doctor_id == current_doctor.id,
+            Visit.status == "pending_confirmation"
+        )
+        .order_by(Visit.appointment_date.asc(), Visit.time_slot.asc(), Visit.created_at.asc())
+        .all()
+    )
+
+    results = []
+    for v in pending_visits:
+        p = v.patient
+        token_str = f"PX-{v.token_number:02d}" if v.token_number else "PX-01"
+        results.append({
+            "id": str(v.id),
+            "visit_id": str(v.id),
+            "patient_id": str(v.patient_id),
+            "patient_name": p.name if p else "Patient",
+            "patient_phone": p.phone if p else "",
+            "patient_uhid": getattr(p, "uhid", "") if p else "",
+            "patient_gender": getattr(p, "gender", "") if p else "",
+            "patient_age": getattr(p, "age", None) if p else None,
+            "appointment_date": v.appointment_date,
+            "time_slot": v.time_slot,
+            "chief_complaint": v.chief_complaint or "Consultation Assessment",
+            "booking_type": v.booking_type or "in_person",
+            "token_display": token_str,
+            "token_number": v.token_number or 1,
+            "status": v.status,
+            "created_at": v.created_at.isoformat() if v.created_at else None
+        })
+
+    return {
+        "success": True,
+        "count": len(results),
+        "pending_appointments": results
+    }
+
+
+@router.post("/appointments/{visit_id}/confirm")
+def confirm_pending_appointment(
+    visit_id: str,
+    db: Session = Depends(get_db),
+    current_doctor = Depends(get_current_doctor)
+):
+    """
+    Confirms an appointment request by Doctor or Receptionist.
+    Assigns sequential token and transitions status to 'confirmed'.
+    """
+    visit = db.query(Visit).filter(Visit.id == visit_id).first()
+    if not visit:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+
+    if str(visit.doctor_id) != str(current_doctor.id):
+        raise HTTPException(status_code=403, detail="Cannot confirm appointments for another clinician")
+
+    auth_role = getattr(current_doctor, "_auth_role", "doctor")
+    visit.status = "confirmed"
+    visit.confirmed_by_id = str(current_doctor.id)
+    visit.confirmed_by_role = auth_role
+    visit.confirmed_at = datetime.now(timezone.utc)
+
+    # Ensure valid sequential token
+    if not visit.token_number:
+        count = (
+            db.query(Visit)
+            .filter(
+                Visit.doctor_id == current_doctor.id,
+                Visit.appointment_date == visit.appointment_date,
+                Visit.status != "cancelled"
+            )
+            .count()
+        )
+        visit.token_number = count + 1
+
+    token_display = f"PX-{visit.token_number:02d}"
+
+    db.commit()
+    db.refresh(visit)
+
+    # Real-time WebSocket notify
+    try:
+        p_name = visit.patient.name if visit.patient else "Patient"
+        realtime_manager.emit_to_doctor_sync(
+            str(current_doctor.id),
+            "APPOINTMENT_UPDATED",
+            {
+                "visit_id": visit.id,
+                "status": "confirmed",
+                "token": token_display,
+                "patient_name": p_name,
+                "confirmed_by_role": auth_role
+            }
+        )
+        realtime_manager.emit_to_doctor_sync(
+            str(current_doctor.id),
+            "QUEUE_UPDATE",
+            {
+                "action": "confirmed",
+                "token": token_display,
+                "patient_name": p_name
+            }
+        )
+    except Exception as e:
+        logger.warning(f"Realtime emit notice: {e}")
+
+    return {
+        "success": True,
+        "message": f"Appointment confirmed for {visit.appointment_date} at {visit.time_slot}. Assigned Token: {token_display}",
+        "visit_id": str(visit.id),
+        "status": "confirmed",
+        "token_display": token_display,
+        "token_number": visit.token_number
+    }
+
+
+@router.post("/appointments/{visit_id}/reject")
+def reject_pending_appointment(
+    visit_id: str,
+    payload: Optional[RejectAppointmentRequest] = None,
+    db: Session = Depends(get_db),
+    current_doctor = Depends(get_current_doctor)
+):
+    """
+    Declines an appointment request by Doctor or Receptionist with a reason.
+    """
+    visit = db.query(Visit).filter(Visit.id == visit_id).first()
+    if not visit:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+
+    if str(visit.doctor_id) != str(current_doctor.id):
+        raise HTTPException(status_code=403, detail="Cannot decline appointments for another clinician")
+
+    auth_role = getattr(current_doctor, "_auth_role", "doctor")
+    reason = (payload.rejection_reason if payload and payload.rejection_reason else "Doctor unavailable").strip()
+
+    visit.status = "rejected"
+    visit.rejection_reason = reason
+    visit.confirmed_by_id = str(current_doctor.id)
+    visit.confirmed_by_role = auth_role
+    visit.confirmed_at = datetime.now(timezone.utc)
+
+    db.commit()
+    db.refresh(visit)
+
+    # Real-time notify
+    try:
+        p_name = visit.patient.name if visit.patient else "Patient"
+        realtime_manager.emit_to_doctor_sync(
+            str(current_doctor.id),
+            "APPOINTMENT_UPDATED",
+            {
+                "visit_id": visit.id,
+                "status": "rejected",
+                "rejection_reason": reason,
+                "patient_name": p_name,
+                "declined_by_role": auth_role
+            }
+        )
+        realtime_manager.emit_to_doctor_sync(
+            str(current_doctor.id),
+            "QUEUE_UPDATE",
+            {
+                "action": "rejected",
+                "visit_id": visit.id,
+                "patient_name": p_name
+            }
+        )
+    except Exception as e:
+        logger.warning(f"Realtime emit notice: {e}")
+
+    return {
+        "success": True,
+        "message": f"Appointment declined: {reason}",
+        "visit_id": str(visit.id),
+        "status": "rejected",
+        "rejection_reason": reason
+    }

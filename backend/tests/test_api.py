@@ -539,3 +539,126 @@ def test_staff_receptionist_login_and_privacy_guard():
     )
     assert upload_res.status_code == 403
     assert "front-desk" in upload_res.json()["detail"].lower() or "staff" in upload_res.json()["detail"].lower()
+
+
+
+def test_doctor_online_quota_and_manual_confirmation():
+    # 1. Login doctor
+    login_res = client.post(
+        "/auth/doctor/login",
+        json={"email": "testdoc@praxirence.com", "password": "DocPass123!"}
+    )
+    assert login_res.status_code == 200
+    doc_id = login_res.json()["user"]["id"]
+    doc_token = login_res.json()["access_token"]
+    doc_headers = {"Authorization": f"Bearer {doc_token}"}
+
+    # Staff login
+    staff_res = client.post(
+        "/auth/staff/login",
+        json={"doctor_identifier": "testdoc@praxirence.com", "staff_pin": "1234"}
+    )
+    assert staff_res.status_code == 200
+    staff_token = staff_res.json()["access_token"]
+    staff_headers = {"Authorization": f"Bearer {staff_token}"}
+
+    # 2. Update booking settings: set daily_online_limit=2, require_manual_confirmation=True
+    set_res = client.put(
+        f"/doctors/{doc_id}/booking-settings",
+        headers=doc_headers,
+        json={"daily_online_limit": 2, "require_manual_confirmation": True}
+    )
+    assert set_res.status_code == 200
+    assert set_res.json()["daily_online_limit"] == 2
+    assert set_res.json()["require_manual_confirmation"] is True
+
+    # 3. Create a patient to book appointments
+    pat_res = client.post(
+        "/patients",
+        headers=doc_headers,
+        json={"name": "Quota Test Patient", "phone": "+919876543210"}
+    )
+    pat_id = pat_res.json()["id"]
+
+    # 4. Book Appointment 1 (Should be 'pending_confirmation')
+    book1_res = client.post(
+        "/visits/book-slot",
+        json={
+            "doctor_id": doc_id,
+            "patient_id": pat_id,
+            "appointment_date": "2026-10-26",
+            "time_slot": "10:00 AM",
+            "chief_complaint": "Mild cough"
+        }
+    )
+    assert book1_res.status_code == 200
+    data1 = book1_res.json()
+    assert data1["status"] == "pending_confirmation"
+    visit1_id = data1["visit_id"]
+
+    # 5. Check pending list from doctor
+    pending_doc_res = client.get("/visits/appointments/pending", headers=doc_headers)
+    assert pending_doc_res.status_code == 200
+    pending_list = pending_doc_res.json()["pending_appointments"]
+    assert any(p["id"] == visit1_id for p in pending_list)
+
+    # 6. Check pending list from receptionist
+    pending_staff_res = client.get("/appointments/pending", headers=staff_headers)
+    assert pending_staff_res.status_code == 200
+    assert any(p["id"] == visit1_id for p in pending_staff_res.json()["pending_appointments"])
+
+    # 7. Receptionist confirms Appointment 1
+    confirm_res = client.post(f"/appointments/{visit1_id}/confirm", headers=staff_headers)
+    assert confirm_res.status_code == 200
+    assert confirm_res.json()["status"] == "confirmed"
+    assert "token_display" in confirm_res.json()
+
+    # 8. Book Appointment 2
+    book2_res = client.post(
+        "/visits/book-slot",
+        json={
+            "doctor_id": doc_id,
+            "patient_id": pat_id,
+            "appointment_date": "2026-10-26",
+            "time_slot": "10:30 AM",
+            "chief_complaint": "Routine checkup"
+        }
+    )
+    assert book2_res.status_code == 200
+    visit2_id = book2_res.json()["visit_id"]
+
+    # 9. Doctor rejects Appointment 2
+    reject_res = client.post(
+        f"/visits/appointments/{visit2_id}/reject",
+        headers=doc_headers,
+        json={"rejection_reason": "Doctor in emergency surgery"}
+    )
+    assert reject_res.status_code == 200
+    assert reject_res.json()["status"] == "rejected"
+
+    # 10. Book another appointment to reach capacity (since appointment 2 was rejected, re-book slot 2)
+    book2b_res = client.post(
+        "/visits/book-slot",
+        json={
+            "doctor_id": doc_id,
+            "patient_id": pat_id,
+            "appointment_date": "2026-10-26",
+            "time_slot": "11:00 AM",
+            "chief_complaint": "Second booked slot"
+        }
+    )
+    assert book2b_res.status_code == 200
+
+    # 11. Book Appointment 3 (Quota is 2, so this MUST fail with HTTP 400)
+    book3_res = client.post(
+        "/visits/book-slot",
+        json={
+            "doctor_id": doc_id,
+            "patient_id": pat_id,
+            "appointment_date": "2026-10-26",
+            "time_slot": "11:30 AM",
+            "chief_complaint": "Third slot attempt"
+        }
+    )
+    assert book3_res.status_code == 400
+    assert "online booking limit" in book3_res.json()["detail"].lower()

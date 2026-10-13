@@ -23,6 +23,7 @@ from app.schemas.patient import (
     DoctorVerifyLinkCodeRequest, PendingDoctorAuthorizationItem
 )
 import random
+import uuid
 import os
 import tempfile
 from fastapi.responses import FileResponse
@@ -172,10 +173,13 @@ def create_patient(
       a patient without patient confirmation!
     - If new patient: Creates patient profile with custom or auto-generated UHID and authorizes them.
     """
-    clean_phone = req.phone.strip()
-    phone_hash = compute_phone_hash(clean_phone)
+    has_phone = bool(req.phone and req.phone.strip())
+    clean_phone = req.phone.strip() if has_phone else f"+91-NO-PHONE-{uuid.uuid4().hex[:12]}"
 
-    existing = db.query(Patient).filter(Patient.phone_hash == phone_hash).first()
+    existing = None
+    if has_phone:
+        phone_hash = compute_phone_hash(clean_phone)
+        existing = db.query(Patient).filter(Patient.phone_hash == phone_hash).first()
     if existing:
         if not existing.uhid:
             existing.uhid = generate_uhid(db)

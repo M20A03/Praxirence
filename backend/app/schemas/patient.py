@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict
 
 class PatientCreate(BaseModel):
     name: str
-    phone: str
+    phone: Optional[str] = None
     dob: Optional[date] = None
     uhid: Optional[str] = None
 
@@ -21,7 +21,7 @@ class PatientResponse(BaseModel):
     id: str
     uhid: Optional[str] = None
     name: str
-    phone: str
+    phone: Optional[str] = None
     dob: Optional[date] = None
     consent_status: bool
     consent_updated_at: Optional[datetime] = None

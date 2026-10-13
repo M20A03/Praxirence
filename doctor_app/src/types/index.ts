@@ -59,7 +59,7 @@ export interface PatientSummary {
   id: string;
   uhid?: string;
   name: string;
-  phone: string;
+  phone?: string;
   consent_status: boolean;
   role: 'patient';
   created_at?: string;
@@ -213,7 +213,7 @@ export interface UpcomingScheduleItem {
   visit_id?: string;
   patient_id: string;
   patient_name: string;
-  patient_phone: string;
+  patient_phone?: string;
   time: string;
   appointment_date?: string;
   chief_complaint: string;

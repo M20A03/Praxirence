@@ -835,7 +835,7 @@ export const mobileApi = {
     }
   },
 
-  async createPatient(params: { name: string; phone: string; uhid?: string }): Promise<PatientSummary> {
+  async createPatient(params: { name: string; phone?: string; uhid?: string }): Promise<PatientSummary> {
     const res = await resilientFetch(`${getEffectiveApiUrl()}/patients`, {
       method: 'POST',
       headers: getHeaders(),

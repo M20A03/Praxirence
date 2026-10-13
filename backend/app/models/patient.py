@@ -55,10 +55,13 @@ class Patient(Base):
 
     @property
     def phone(self) -> str:
-        """Returns the decrypted plain text phone number"""
+        """Returns the decrypted plain text phone number, or empty string if internal placeholder"""
         if not self.phone_encrypted:
             return ""
-        return decrypt_phone(self.phone_encrypted)
+        val = decrypt_phone(self.phone_encrypted)
+        if val.startswith("+91-NO-PHONE"):
+            return ""
+        return val
 
     @phone.setter
     def phone(self, value: str):

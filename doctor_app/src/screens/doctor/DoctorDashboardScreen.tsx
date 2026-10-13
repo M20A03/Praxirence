@@ -167,7 +167,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
         token: assignedToken,
         patient_id: created.id,
         patient_name: created.name,
-        patient_phone: created.phone,
+        patient_phone: created.phone || '',
         time: walkInResult.time || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
         chief_complaint: walkInComplaint.trim() || 'Walk-in acute consultation',
         triage: (walkInResult.triage as any) || walkInTriage,
@@ -956,7 +956,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
               onChangeText={setWalkInName}
             />
 
-            <Text style={styles.inputLabel}>Mobile Phone Number (+91)</Text>
+            <Text style={styles.inputLabel}>Mobile Phone (Optional)</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 8, borderWidth: 1, borderColor: Colors.border, marginBottom: 16 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', paddingHorizontal: 10, paddingVertical: 12, borderTopLeftRadius: 7, borderBottomLeftRadius: 7, gap: 4, borderRightWidth: 1, borderRightColor: '#E2E8F0' }}>
                 <Text style={{ fontSize: 14 }}>🇮🇳</Text>
@@ -964,7 +964,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
               </View>
               <TextInput
                 style={{ flex: 1, paddingHorizontal: 12, paddingVertical: 12, fontSize: 15, color: Colors.text }}
-                placeholder="10-digit mobile number"
+                placeholder="10-digit mobile number (Optional)"
                 placeholderTextColor={Colors.textSecondary}
                 value={walkInPhone.replace('+91', '').trim()}
                 onChangeText={(val) => setWalkInPhone(`+91${val.replace(/\D/g, '').slice(0, 10)}`)}

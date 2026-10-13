@@ -58,6 +58,24 @@ def test_create_and_search_patient():
     assert len(results) >= 1
     assert results[0]["name"] == "Alice Wonderland"
 
+    # Create patient with NO phone (phone is completely optional)
+    create_no_phone = client.post(
+        "/patients",
+        headers=headers,
+        json={"name": "Bob Without Phone"}
+    )
+    assert create_no_phone.status_code == 201
+    bob_data = create_no_phone.json()
+    assert bob_data["name"] == "Bob Without Phone"
+    assert bob_data["phone"] == ""  # internal placeholder masked as empty string
+    assert bob_data["uhid"] is not None
+    assert bob_data["authorization_status"] == "authorized"
+
+    # Search Bob by name
+    search_bob = client.get("/patients?query=Bob", headers=headers)
+    assert search_bob.status_code == 200
+    assert any(p["name"] == "Bob Without Phone" for p in search_bob.json())
+
 
 def test_patient_otp_flow_and_consent():
     from app.services.fast2sms_service import _otp_cache

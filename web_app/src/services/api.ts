@@ -233,11 +233,11 @@ export const api = {
     return await handleResponse<Patient[]>(res);
   },
 
-  async createPatient(name: string, phone: string, dob?: string): Promise<Patient> {
+  async createPatient(name: string, phone?: string, dob?: string): Promise<Patient> {
     const res = await fetch(`${API_BASE_URL}/patients`, {
       method: 'POST',
       headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name.trim(), phone: phone.trim(), dob: dob || null }),
+      body: JSON.stringify({ name: name.trim(), phone: phone && phone.trim() ? phone.trim() : null, dob: dob || null }),
     });
     return await handleResponse<Patient>(res);
   },

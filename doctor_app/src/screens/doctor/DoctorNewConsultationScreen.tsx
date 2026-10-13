@@ -1635,7 +1635,7 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
               onChangeText={setQuickPatientName}
             />
 
-            <Text style={styles.inputLabel}>Mobile Number (Indian +91) *</Text>
+            <Text style={styles.inputLabel}>Mobile Phone (Optional)</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 8, borderWidth: 1, borderColor: '#CBD5E1', marginBottom: 16 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#E2E8F0', paddingHorizontal: 10, paddingVertical: 12, borderTopLeftRadius: 7, borderBottomLeftRadius: 7, gap: 4 }}>
                 <Text style={{ fontSize: 14 }}>🇮🇳</Text>
@@ -1643,7 +1643,7 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
               </View>
               <TextInput
                 style={{ flex: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: '#0F172A' }}
-                placeholder="10-digit mobile number"
+                placeholder="10-digit mobile number (Optional)"
                 placeholderTextColor="#94A3B8"
                 value={quickPatientPhone}
                 onChangeText={(val) => setQuickPatientPhone(val.replace(/\D/g, '').slice(0, 10))}
@@ -1651,16 +1651,6 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
                 maxLength={10}
               />
             </View>
-
-            <Text style={styles.inputLabel}>Unique Patient ID / Hospital UHID (Optional)</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="e.g. PRX-PAT-1001 (Leave empty to auto-generate)"
-              placeholderTextColor="#94A3B8"
-              value={quickPatientUhid}
-              onChangeText={setQuickPatientUhid}
-              autoCapitalize="characters"
-            />
 
             {pendingLink && (
               <View style={{ backgroundColor: '#FEF3C7', borderRadius: 8, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: '#FDE68A' }}>

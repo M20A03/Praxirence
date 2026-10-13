@@ -63,14 +63,14 @@ export const PatientSearch: React.FC<PatientSearchProps> = ({
   const handleCreatePatient = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreateError(null);
-    if (!newName.trim() || !newPhone.trim()) {
-      setCreateError('Name and phone number are required.');
+    if (!newName.trim()) {
+      setCreateError('Patient full name is required.');
       return;
     }
 
     try {
       setCreating(true);
-      const created = await api.createPatient(newName.trim(), newPhone.trim(), newDob || undefined);
+      const created = await api.createPatient(newName.trim(), newPhone.trim() || undefined, newDob || undefined);
       onSelectPatient(created);
       setIsModalOpen(false);
       setNewName('');
@@ -329,11 +329,10 @@ export const PatientSearch: React.FC<PatientSearchProps> = ({
               </div>
 
               <div className="input-group">
-                <label className="input-label">Phone Number (with country code) *</label>
+                <label className="input-label">Phone Number (Optional)</label>
                 <input
                   type="tel"
-                  required
-                  placeholder="e.g. +15551234567"
+                  placeholder="e.g. +919876543210 (Optional)"
                   className="input-field"
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}

@@ -41,7 +41,6 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
   const [modalVisible, setModalVisible] = useState(false);
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState('');
-  const [newUhid, setNewUhid] = useState('');
   const isFocused = useIsFocused();
 
   useEffect(() => {
@@ -117,35 +116,35 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
       Alert.alert('Incomplete', 'Please enter the patient name.');
       return;
     }
+    let formattedPhone: string | undefined = undefined;
     const cleanDigits = newPhone.replace(/\D/g, '');
-    if (cleanDigits.length !== 10 || !/^[6-9]/.test(cleanDigits)) {
-      Alert.alert('Phone Required', 'Please enter a valid 10-digit Indian mobile number (+91) starting with 6, 7, 8, or 9.');
-      return;
+    if (cleanDigits.length > 0) {
+      if (cleanDigits.length !== 10 || !/^[6-9]/.test(cleanDigits)) {
+        Alert.alert('Invalid Phone', 'Please enter a valid 10-digit Indian mobile number (+91), or leave it empty.');
+        return;
+      }
+      formattedPhone = `+91${cleanDigits}`;
     }
-    const formattedPhone = `+91${cleanDigits}`;
     setAddingPatient(true);
     try {
       const created = await mobileApi.createPatient({
         name: newName.trim(),
         phone: formattedPhone,
-        uhid: newUhid.trim() ? newUhid.trim().toUpperCase() : undefined,
       });
       setPatients((prev) => [created, ...prev.filter(p => p.id !== created.id)]);
       setModalVisible(false);
       setNewName('');
       setNewPhone('');
-      setNewUhid('');
       if (created.authorization_status === 'pending_confirmation') {
         Alert.alert(
           'Confirmation Request Dispatched',
           `A confirmation request has been dispatched to ${created.name}'s Praxirence app with code: ${created.confirmation_code}.\n\nPatient must tap 'Authorize' in their app to link.`
         );
       } else {
-        Alert.alert('Patient Registered', `${created.name} (${created.uhid || ''}) was successfully authorized.`);
+        Alert.alert('Patient Registered', `${created.name} (Patient ID: ${created.uhid || created.id}) was successfully registered.`);
       }
     } catch (err: any) {
-      Alert.alert('Registration Notice', err.message || 'Patient registered in local directory.');
-      setModalVisible(false);
+      Alert.alert('Error', err?.message || 'Failed to create patient');
     } finally {
       setAddingPatient(false);
     }
@@ -246,7 +245,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
                 <View style={{ flex: 1 }}>
                   <Text style={styles.patientName}>{pat.name}</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
-                    <Text style={styles.patientPhone}>{pat.phone}</Text>
+                    {pat.phone ? <Text style={styles.patientPhone}>{pat.phone}</Text> : null}
                     <View style={styles.patientIdBadge}>
                       <Text style={styles.patientIdBadgeText}>ID: {pat.uhid || `PX-${pat.id.slice(0, 8).toUpperCase()}`}</Text>
                     </View>
@@ -323,7 +322,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
               <View style={{ flex: 1 }}>
                 <Text style={styles.modalSubtitle}>PATIENT CARE PLAN ARCHIVE</Text>
                 <Text style={styles.modalTitle}>{selectedPatient?.name}</Text>
-                <Text style={styles.modalPhone}>{selectedPatient?.phone}</Text>
+                {selectedPatient?.phone ? <Text style={styles.modalPhone}>{selectedPatient.phone}</Text> : null}
               </View>
               <TouchableOpacity onPress={() => setSelectedPatient(null)} style={styles.closeBtn}>
                 <Ionicons name="close" size={24} color={Colors.textSecondary} />
@@ -486,7 +485,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
               onChangeText={setNewName}
             />
 
-            <Text style={styles.inputLabel}>Mobile Phone (Indian +91)</Text>
+            <Text style={styles.inputLabel}>Mobile Phone (Optional)</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 8, borderWidth: 1, borderColor: Colors.border, marginBottom: 16 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', paddingHorizontal: 10, paddingVertical: 12, borderTopLeftRadius: 7, borderBottomLeftRadius: 7, gap: 4, borderRightWidth: 1, borderRightColor: '#E2E8F0' }}>
                 <Text style={{ fontSize: 14 }}>🇮🇳</Text>
@@ -494,7 +493,7 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
               </View>
               <TextInput
                 style={{ flex: 1, paddingHorizontal: 12, paddingVertical: 12, fontSize: 15, color: Colors.text }}
-                placeholder="10-digit mobile number"
+                placeholder="10-digit mobile number (Optional)"
                 placeholderTextColor={Colors.textSecondary}
                 value={newPhone.replace('+91', '').trim()}
                 onChangeText={(val) => setNewPhone(val.replace(/\D/g, '').slice(0, 10))}
@@ -502,16 +501,6 @@ export const DoctorPatientsScreen: React.FC<DoctorPatientsScreenProps> = ({
                 maxLength={10}
               />
             </View>
-
-            <Text style={styles.inputLabel}>Unique Patient ID / Hospital UHID (Optional)</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="e.g. PRX-PAT-1001 (Leave empty to auto-generate)"
-              placeholderTextColor={Colors.textSecondary}
-              value={newUhid}
-              onChangeText={setNewUhid}
-              autoCapitalize="characters"
-            />
 
             <TouchableOpacity
               style={styles.submitPatientBtn}

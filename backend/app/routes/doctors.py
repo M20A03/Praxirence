@@ -953,7 +953,13 @@ def update_doctor_credentials(
         except (ValueError, TypeError):
             pass
     if payload.staff_pin is not None and payload.staff_pin.strip():
-        doctor.staff_pin = payload.staff_pin.strip()
+        pin = payload.staff_pin.strip()
+        if len(pin) != 6 or not pin.isdigit():
+            raise HTTPException(
+                status_code=400,
+                detail="Clinic Staff PIN must be exactly 6 numeric digits (e.g. 583921)."
+            )
+        doctor.staff_pin = pin
     if payload.daily_online_limit is not None:
         try:
             doctor.daily_online_limit = max(1, min(100, int(payload.daily_online_limit)))
@@ -985,7 +991,7 @@ def update_doctor_credentials(
             "experience_years": doctor.experience_years,
             "languages": doctor.languages,
             "consultation_fee": getattr(doctor, "consultation_fee", 500) or 500,
-            "staff_pin": getattr(doctor, "staff_pin", "1234") or "1234",
+            "staff_pin": getattr(doctor, "staff_pin", "123456") or "123456",
             "daily_online_limit": getattr(doctor, "daily_online_limit", 15) or 15,
             "require_manual_confirmation": bool(getattr(doctor, "require_manual_confirmation", 1)),
             "role": "doctor"
@@ -1024,7 +1030,7 @@ def get_doctor_profile(
         "experience_years": doctor.experience_years,
         "languages": doctor.languages,
         "consultation_fee": getattr(doctor, "consultation_fee", 500) or 500,
-        "staff_pin": getattr(doctor, "staff_pin", "1234") or "1234",
+        "staff_pin": getattr(doctor, "staff_pin", "123456") or "123456",
         "daily_online_limit": getattr(doctor, "daily_online_limit", 15) or 15,
         "require_manual_confirmation": bool(getattr(doctor, "require_manual_confirmation", 1)),
         "role": "doctor"

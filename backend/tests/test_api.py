@@ -507,10 +507,10 @@ def test_staff_receptionist_login_and_privacy_guard():
     doc_id = login_res.json()["user"]["id"]
     doc_email = login_res.json()["user"]["email"]
 
-    # 2. Staff logs in with doctor email and default PIN "1234"
+    # 2. Staff logs in with doctor email and default PIN "123456"
     staff_login_res = client.post(
         "/auth/staff/login",
-        json={"doctor_identifier": doc_email, "staff_pin": "1234"}
+        json={"doctor_identifier": doc_email, "staff_pin": "123456"}
     )
     assert staff_login_res.status_code == 200
     staff_data = staff_login_res.json()
@@ -556,7 +556,7 @@ def test_doctor_online_quota_and_manual_confirmation():
     # Staff login
     staff_res = client.post(
         "/auth/staff/login",
-        json={"doctor_identifier": "testdoc@praxirence.com", "staff_pin": "1234"}
+        json={"doctor_identifier": "testdoc@praxirence.com", "staff_pin": "123456"}
     )
     assert staff_res.status_code == 200
     staff_token = staff_res.json()["access_token"]
@@ -672,7 +672,7 @@ def test_staff_pin_brute_force_lockout_and_strict_auth():
     # 1. Random non-existent doctor identifier -> 404 Not Found (zero fallback!)
     bad_id_res = client.post(
         "/auth/staff/login",
-        json={"doctor_identifier": "random_fake_doctor@praxirence.com", "staff_pin": "1234"}
+        json={"doctor_identifier": "random_fake_doctor@praxirence.com", "staff_pin": "123456"}
     )
     assert bad_id_res.status_code == 404
     assert "No active doctor clinic found" in bad_id_res.json()["detail"]
@@ -689,7 +689,7 @@ def test_staff_pin_brute_force_lockout_and_strict_auth():
     for i in range(1, 5):
         wrong_res = client.post(
             "/auth/staff/login",
-            json={"doctor_identifier": doc_email, "staff_pin": f"888{i}"}
+            json={"doctor_identifier": doc_email, "staff_pin": f"88888{i}"}
         )
         assert wrong_res.status_code == 401
         assert "Incorrect Staff PIN" in wrong_res.json()["detail"]
@@ -698,7 +698,7 @@ def test_staff_pin_brute_force_lockout_and_strict_auth():
     # 4. 5th wrong attempt triggers 429 Too Many Requests (Lockout)
     lockout_res = client.post(
         "/auth/staff/login",
-        json={"doctor_identifier": doc_email, "staff_pin": "0000"}
+        json={"doctor_identifier": doc_email, "staff_pin": "000000"}
     )
     assert lockout_res.status_code == 429
     assert "locked for 15 minutes" in lockout_res.json()["detail"].lower() or "locked" in lockout_res.json()["detail"].lower()
@@ -706,7 +706,7 @@ def test_staff_pin_brute_force_lockout_and_strict_auth():
     # 5. Even with the correct PIN, login is BLOCKED while lockout is active
     locked_try_res = client.post(
         "/auth/staff/login",
-        json={"doctor_identifier": doc_email, "staff_pin": "1234"}
+        json={"doctor_identifier": doc_email, "staff_pin": "123456"}
     )
     assert locked_try_res.status_code == 429
     assert "locked" in locked_try_res.json()["detail"].lower()

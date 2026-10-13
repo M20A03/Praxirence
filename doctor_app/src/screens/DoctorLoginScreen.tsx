@@ -88,8 +88,8 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
       return;
     }
-    if (!staffPin.trim()) {
-      setError("Please enter the 4-digit Staff PIN.");
+    if (!staffPin.trim() || staffPin.trim().length !== 6 || !/^\d{6}$/.test(staffPin.trim())) {
+      setError("Please enter the 6-digit Staff PIN.");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
       return;
     }
@@ -337,18 +337,18 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                 />
               </View>
 
-              <Text style={styles.label}>4-Digit Staff Access PIN</Text>
+              <Text style={styles.label}>6-Digit Staff Access PIN</Text>
               <View style={[styles.inputContainer, { justifyContent: 'space-between' }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                   <Ionicons name="keypad-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
                   <TextInput
                     style={[styles.input, { letterSpacing: staffShowPin ? 4 : 8, fontWeight: '700' }]}
-                    placeholder="••••"
+                    placeholder="••••••"
                     placeholderTextColor={Colors.textSecondary}
                     value={staffPin}
                     onChangeText={setStaffPin}
                     keyboardType="number-pad"
-                    maxLength={8}
+                    maxLength={6}
                     secureTextEntry={!staffShowPin}
                     editable={!staffLoading}
                   />
@@ -364,7 +364,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                   />
                 </TouchableOpacity>
               </View>
-              <Text style={styles.pinHintText}>Default PIN is 1234. Doctor can change PIN in their Profile screen.</Text>
+              <Text style={styles.pinHintText}>Default PIN is 123456. Doctor can change PIN in their Profile screen.</Text>
 
               <TouchableOpacity
                 style={[styles.primaryBtn, staffLoading && { opacity: 0.8 }, { marginTop: 16 }]}

@@ -99,7 +99,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
   };
 
   // Front-Desk Staff PIN Management States
-  const [staffPin, setStaffPin] = useState<string>(doctor.staff_pin || "1234");
+  const [staffPin, setStaffPin] = useState<string>(doctor.staff_pin || "123456");
   const [showStaffPin, setShowStaffPin] = useState<boolean>(false);
   const [showEditStaffPinModal, setShowEditStaffPinModal] = useState<boolean>(false);
   const [editStaffPinInput, setEditStaffPinInput] = useState<string>("");
@@ -107,8 +107,8 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
 
   const handleSaveStaffPin = async () => {
     const pin = editStaffPinInput.trim();
-    if (!pin || pin.length < 4) {
-      Alert.alert("Invalid PIN", "Please enter at least a 4-digit numeric PIN for your front-desk staff.");
+    if (!pin || pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+      Alert.alert("Invalid PIN", "Please enter a 6-digit numeric PIN (e.g. 583921) for your front-desk staff.");
       return;
     }
     setSavingStaffPin(true);
@@ -1102,7 +1102,7 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
             <Text style={styles.staffCredLabel}>Staff Access PIN:</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <View style={styles.pinDisplayBadge}>
-                <Text style={styles.staffPinCode}>{showStaffPin ? staffPin : '••••'}</Text>
+                <Text style={styles.staffPinCode}>{showStaffPin ? staffPin : '••••••'}</Text>
               </View>
               <TouchableOpacity onPress={() => setShowStaffPin(!showStaffPin)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Ionicons name={showStaffPin ? "eye-off-outline" : "eye-outline"} size={20} color="#64748B" />
@@ -1557,18 +1557,18 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
             </View>
 
             <Text style={{ fontSize: 13, color: '#64748B', marginBottom: 14 }}>
-              Set a 4-8 digit numeric PIN that your clinic receptionist will use to sign in outside your cabin.
+              Set a secure 6-digit numeric PIN that your clinic receptionist will use to sign in outside your cabin.
             </Text>
 
-            <Text style={styles.inputLabel}>New Staff PIN (Numeric)</Text>
+            <Text style={styles.inputLabel}>New 6-Digit Staff PIN</Text>
             <TextInput
               style={[styles.modalInput, { letterSpacing: 8, fontSize: 20, fontWeight: '700', textAlign: 'center' }]}
-              placeholder="••••"
+              placeholder="e.g. 583921"
               placeholderTextColor="#94A3B8"
               value={editStaffPinInput}
-              onChangeText={(t) => setEditStaffPinInput(t.replace(/\D/g, '').slice(0, 8))}
+              onChangeText={(t) => setEditStaffPinInput(t.replace(/\D/g, '').slice(0, 6))}
               keyboardType="number-pad"
-              maxLength={8}
+              maxLength={6}
             />
 
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>

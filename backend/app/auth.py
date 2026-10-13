@@ -1127,8 +1127,13 @@ def staff_login(req: StaffLoginRequest, db: Session = Depends(get_db)):
             detail="Front-desk login has not been enabled by the doctor. The attending doctor must set a Clinic PIN in their app profile first."
         )
 
-    # 3. Verify Staff PIN
+    # 3. Verify Staff PIN (Must be 6 digits)
     provided_pin = req.staff_pin.strip()
+    if len(provided_pin) != 6 or not provided_pin.isdigit():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Staff PIN must be a 6-digit numeric code."
+        )
     if provided_pin != str(expected_pin).strip():
         recent_failures.append(now)
         _staff_pin_failed_attempts[doctor_key] = recent_failures

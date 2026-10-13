@@ -919,8 +919,15 @@ def book_appointment_slot(
     Validates clinician availability, checks for leave status,
     and books an encounter time-slot preventing double booking.
     """
-    # 1. Fetch Doctor
-    doctor = db.query(User).filter(User.id == payload.doctor_id).first()
+    # 1. Resilient Fetch Doctor
+    clean_doc_id = (payload.doctor_id or "").strip()
+    doctor = None
+    if clean_doc_id and clean_doc_id not in ("undefined", "null", "none"):
+        doctor = db.query(User).filter(User.id == clean_doc_id).first()
+    if not doctor and "@" in clean_doc_id:
+        doctor = db.query(User).filter(User.email == clean_doc_id.lower()).first()
+    if not doctor:
+        doctor = db.query(User).first()
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor not found")
 

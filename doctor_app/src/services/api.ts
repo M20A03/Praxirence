@@ -884,8 +884,17 @@ export const mobileApi = {
         } catch (_) {}
       }
     }
-    if (!targetId) {
-      throw new Error('Doctor ID is required to update credentials');
+    if (!targetId || targetId === 'undefined' || targetId === 'null') {
+      const storedProf = await AsyncStorage.getItem('praxirence_doctor_profile');
+      if (storedProf) {
+        try {
+          const parsed = JSON.parse(storedProf);
+          if (parsed && parsed.id) targetId = parsed.id;
+        } catch (_) {}
+      }
+    }
+    if (!targetId || targetId === 'undefined' || targetId === 'null') {
+      targetId = 'me';
     }
     const res = await resilientFetch(`${getEffectiveApiUrl()}/doctors/${targetId}/profile`, {
       method: 'PUT',

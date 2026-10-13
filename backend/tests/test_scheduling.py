@@ -472,3 +472,49 @@ def test_doctor_custom_consultation_fee():
     matching_doc = next((d for d in list_res.json()["doctors"] if d["id"] == doc_id), None)
     assert matching_doc is not None
     assert matching_doc["consultation_fee"] == 1200
+
+
+def test_doctor_profile_update_unregistered_autoprovisions():
+    """
+    Verifies that when a doctor registers/onboards with a newly generated or unknown ID,
+    the backend automatically provisions/updates the profile without 404 'Doctor not found'.
+    """
+    setup_module()
+    
+    # Update profile with an unknown or new doctor ID (e.g. from mobile onboarding modal)
+    new_doc_id = "doc-new-onboard-777"
+    res = client.put(f"/doctors/{new_doc_id}/profile", json={
+        "name": "Dr. Karnataka Cardio",
+        "email": "karnataka.cardio@praxirence.com",
+        "degree": "MBBS, MD",
+        "specialty": "Cardio",
+        "clinic_name": "Clinic",
+        "state": "Karnataka",
+        "city": "Bengaluru",
+        "reg_number": "KMC-849201",
+        "experience_years": "8 Years"
+    })
+
+    assert res.status_code == 200, f"Expected 200 but got {res.status_code}: {res.text}"
+    data = res.json()
+    assert data["success"] is True
+    assert data["doctor"]["name"] == "Dr. Karnataka Cardio"
+    assert data["doctor"]["specialty"] == "Cardio"
+    assert data["doctor"]["clinic_name"] == "Clinic"
+    assert data["doctor"]["state"] == "Karnataka"
+
+
+def test_doctor_profile_update_me_slug():
+    """
+    Verifies that PUT /doctors/me/profile works seamlessly without 'Doctor not found'.
+    """
+    setup_module()
+    res = client.put("/doctors/me/profile", json={
+        "name": "Dr. Active Clinician",
+        "degree": "MBBS",
+        "specialty": "General Medicine"
+    })
+    assert res.status_code == 200
+    data = res.json()
+    assert data["success"] is True
+    assert "Dr." in data["doctor"]["name"]

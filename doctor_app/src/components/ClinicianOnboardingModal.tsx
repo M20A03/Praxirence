@@ -14,6 +14,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../theme/colors';
 import { FontFamily, FontSize } from '../theme/typography';
 import { DoctorUser } from '../types';
@@ -73,8 +74,30 @@ export const ClinicianOnboardingModal: React.FC<ClinicianOnboardingModalProps> =
 
     setSaving(true);
     try {
+      let targetDoctorId = doctor?.id;
+      if (!targetDoctorId || targetDoctorId === 'undefined' || targetDoctorId === 'null') {
+        try {
+          const stored = await AsyncStorage.getItem('praxirence_doctor_profile');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed?.id) targetDoctorId = parsed.id;
+          }
+        } catch (_) {}
+      }
+      if (!targetDoctorId || targetDoctorId === 'undefined' || targetDoctorId === 'null') {
+        try {
+          const stored = await AsyncStorage.getItem('praxirence_user');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed?.id) targetDoctorId = parsed.id;
+          }
+        } catch (_) {}
+      }
+
       const payload: Partial<DoctorUser> = {
         name: name.trim(),
+        email: doctor?.email,
+        phone: doctor?.phone,
         reg_number: regNumber.trim(),
         degree: degree.trim(),
         specialty: specialty.trim(),
@@ -85,12 +108,15 @@ export const ClinicianOnboardingModal: React.FC<ClinicianOnboardingModalProps> =
         experience_years: expYears.trim() || undefined,
       };
 
-      const res = await mobileApi.updateDoctorProfile(payload, doctor.id);
+      const res = await mobileApi.updateDoctorProfile(payload, targetDoctorId || 'me');
       const updated: DoctorUser = {
         ...doctor,
         ...payload,
         ...(res.doctor || {}),
       };
+
+      await AsyncStorage.setItem('praxirence_doctor_profile', JSON.stringify(updated));
+      await AsyncStorage.setItem('praxirence_user', JSON.stringify(updated));
 
       Alert.alert(
         'Credentials Verified',

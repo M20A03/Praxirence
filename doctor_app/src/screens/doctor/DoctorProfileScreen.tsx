@@ -34,11 +34,13 @@ const AVAILABLE_HOURS = [
 interface DoctorProfileScreenProps {
   doctor: DoctorUser;
   onLogout: () => void;
+  onSwitchToReceptionist?: () => void;
 }
 
 export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
   doctor,
   onLogout,
+  onSwitchToReceptionist,
 }) => {
   const [profileDoctor, setProfileDoctor] = useState<DoctorUser>(doctor);
   const [showEditCredentialsModal, setShowEditCredentialsModal] = useState<boolean>(false);
@@ -64,6 +66,38 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
   const [showStatePicker, setShowStatePicker] = useState<boolean>(false);
   const [showCityPicker, setShowCityPicker] = useState<boolean>(false);
   const [savingLocation, setSavingLocation] = useState<boolean>(false);
+
+  // Front-Desk Staff PIN Management States
+  const [staffPin, setStaffPin] = useState<string>(doctor.staff_pin || "1234");
+  const [showStaffPin, setShowStaffPin] = useState<boolean>(false);
+  const [showEditStaffPinModal, setShowEditStaffPinModal] = useState<boolean>(false);
+  const [editStaffPinInput, setEditStaffPinInput] = useState<string>("");
+  const [savingStaffPin, setSavingStaffPin] = useState<boolean>(false);
+
+  const handleSaveStaffPin = async () => {
+    const pin = editStaffPinInput.trim();
+    if (!pin || pin.length < 4) {
+      Alert.alert("Invalid PIN", "Please enter at least a 4-digit numeric PIN for your front-desk staff.");
+      return;
+    }
+    setSavingStaffPin(true);
+    try {
+      const res = await mobileApi.updateDoctorProfile({ staff_pin: pin });
+      if (res.doctor && res.doctor.staff_pin) {
+        setStaffPin(res.doctor.staff_pin);
+        setProfileDoctor(res.doctor);
+      } else {
+        setStaffPin(pin);
+        setProfileDoctor(prev => ({ ...prev, staff_pin: pin }));
+      }
+      setShowEditStaffPinModal(false);
+      Alert.alert("Staff PIN Updated", `Your clinic receptionist can now sign in using PIN: ${pin}`);
+    } catch (err: any) {
+      Alert.alert("Error", err?.message || "Failed to update Staff PIN");
+    } finally {
+      setSavingStaffPin(false);
+    }
+  };
 
   const [latencyMs, setLatencyMs] = useState<number>(55);
   const [isLive, setIsLive] = useState<boolean>(true);
@@ -924,6 +958,62 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
 
       </View>
 
+      {/* Front-Desk & Staff OPD Queue Card */}
+      <View style={styles.sectionCard}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="people" size={20} color="#0284C7" />
+            <Text style={styles.sectionTitle}>Front-Desk & Staff Access</Text>
+          </View>
+          <View style={{ backgroundColor: '#E0F2FE', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: '#0369A1' }}>OPD DESK</Text>
+          </View>
+        </View>
+
+        <Text style={styles.securityDesc}>
+          Allow your clinic receptionist outside your cabin to register walk-in patients, manage queue tokens, and collect fees without exposing private medical recordings or clinical notes.
+        </Text>
+
+        <View style={styles.staffCredentialsBox}>
+          <View style={styles.staffCredRow}>
+            <Text style={styles.staffCredLabel}>Clinic Doctor Identifier:</Text>
+            <Text style={styles.staffCredValue}>{profileDoctor.phone || profileDoctor.email || profileDoctor.id}</Text>
+          </View>
+          <View style={styles.staffCredRow}>
+            <Text style={styles.staffCredLabel}>Staff Access PIN:</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={styles.staffPinCode}>{showStaffPin ? staffPin : '••••'}</Text>
+              <TouchableOpacity onPress={() => setShowStaffPin(!showStaffPin)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name={showStaffPin ? "eye-off-outline" : "eye-outline"} size={18} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+          <TouchableOpacity
+            style={styles.editPinBtn}
+            onPress={() => {
+              setEditStaffPinInput(staffPin);
+              setShowEditStaffPinModal(true);
+            }}
+          >
+            <Ionicons name="key-outline" size={16} color="#0284C7" />
+            <Text style={styles.editPinBtnText}>Change Staff PIN</Text>
+          </TouchableOpacity>
+
+          {onSwitchToReceptionist && (
+            <TouchableOpacity
+              style={styles.launchStaffBtn}
+              onPress={onSwitchToReceptionist}
+            >
+              <Ionicons name="clipboard-outline" size={16} color="#FFFFFF" />
+              <Text style={styles.launchStaffBtnText}>Open Front-Desk</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
       {/* Hospital Clinical System Status */}
       <View style={styles.sectionCard}>
         <View style={styles.telemetryHeader}>
@@ -1311,6 +1401,68 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
               <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
               <Text style={styles.modalSaveBtnText}>Set {selectedHour}:{selectedMinute} {selectedPeriod}</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Edit Staff PIN Modal */}
+      <Modal
+        visible={showEditStaffPinModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowEditStaffPinModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="key" size={20} color={Colors.primary} />
+                <Text style={styles.modalTitle}>Update Staff Access PIN</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowEditStaffPinModal(false)}>
+                <Ionicons name="close" size={22} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 13, color: '#64748B', marginBottom: 14 }}>
+              Set a 4-8 digit numeric PIN that your clinic receptionist will use to sign in outside your cabin.
+            </Text>
+
+            <Text style={styles.inputLabel}>New Staff PIN (Numeric)</Text>
+            <TextInput
+              style={[styles.modalInput, { letterSpacing: 8, fontSize: 20, fontWeight: '700', textAlign: 'center' }]}
+              placeholder="••••"
+              placeholderTextColor="#94A3B8"
+              value={editStaffPinInput}
+              onChangeText={(t) => setEditStaffPinInput(t.replace(/\D/g, '').slice(0, 8))}
+              keyboardType="number-pad"
+              maxLength={8}
+            />
+
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
+              <TouchableOpacity
+                style={[styles.modalCancelBtn, { flex: 1 }]}
+                onPress={() => setShowEditStaffPinModal(false)}
+                disabled={savingStaffPin}
+              >
+                <Text style={styles.modalCancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalSaveBtn, { flex: 1.5, marginTop: 0 }, savingStaffPin && { opacity: 0.8 }]}
+                onPress={handleSaveStaffPin}
+                disabled={savingStaffPin}
+              >
+                {savingStaffPin ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <Text style={styles.modalSaveBtnText}>Save PIN</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -2097,6 +2249,81 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
     marginBottom: 12,
+  },
+  staffCredentialsBox: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 12,
+    marginTop: 10,
+    gap: 8,
+  },
+  staffCredRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  staffCredLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  staffCredValue: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  staffPinCode: {
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 3,
+    color: '#0284C7',
+  },
+  editPinBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    backgroundColor: '#F0F9FF',
+    gap: 6,
+  },
+  editPinBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0284C7',
+  },
+  launchStaffBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: '#0284C7',
+    gap: 6,
+  },
+  launchStaffBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  modalCancelBtn: {
+    backgroundColor: '#F1F5F9',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCancelBtnText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '600',
   },
   timeFilterChip: {
     flex: 1,

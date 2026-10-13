@@ -509,3 +509,49 @@ def test_patient_health_records_pdf_download():
     assert pdf_res.status_code == 200
     assert "application/pdf" in pdf_res.headers.get("content-type")
     assert len(pdf_res.content) > 1000
+
+
+
+
+def test_staff_receptionist_login_and_privacy_guard():
+    # 1. Doctor logs in
+    login_res = client.post(
+        "/auth/doctor/login",
+        json={"email": "testdoc@praxirence.com", "password": "DocPass123!"}
+    )
+    assert login_res.status_code == 200
+    doc_id = login_res.json()["user"]["id"]
+    doc_email = login_res.json()["user"]["email"]
+
+    # 2. Staff logs in with doctor email and default PIN "1234"
+    staff_login_res = client.post(
+        "/auth/staff/login",
+        json={"doctor_identifier": doc_email, "staff_pin": "1234"}
+    )
+    assert staff_login_res.status_code == 200
+    staff_data = staff_login_res.json()
+    assert staff_data["role"] == "receptionist"
+    assert "access_token" in staff_data
+    assert staff_data["user"]["doctor_id"] == doc_id
+    receptionist_token = staff_data["access_token"]
+    staff_headers = {"Authorization": f"Bearer {receptionist_token}"}
+
+    # 3. Front-desk staff CAN register a walk-in patient
+    walkin_res = client.post(
+        "/patients",
+        headers=staff_headers,
+        json={"name": "Walkin Patient", "phone": "+919876500011", "dob": "1995-01-01"}
+    )
+    assert walkin_res.status_code in (200, 201)
+    walkin_id = walkin_res.json()["id"]
+
+    # 4. Front-desk staff is STRICTLY BLOCKED from clinical audio upload / care plan generation (HTTP 403)
+    dummy_wav = b"RIFF" + bytes(40)
+    upload_res = client.post(
+        "/visits/upload-audio",
+        headers=staff_headers,
+        files={"audio_file": ("test.wav", dummy_wav, "audio/wav")},
+        data={"patient_id": walkin_id, "session_id": "test-session-1"}
+    )
+    assert upload_res.status_code == 403
+    assert "front-desk" in upload_res.json()["detail"].lower() or "staff" in upload_res.json()["detail"].lower()

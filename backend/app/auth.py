@@ -38,6 +38,7 @@ from app.schemas.auth import (
     CheckPhoneResponse,
     DirectoryResponse,
     TokenResponse,
+    StaffLoginRequest,
 )
 from app.services.fast2sms_service import fast2sms_service, _otp_cache, generate_secure_otp, store_otp
 from app.services.email_service import (
@@ -1356,3 +1357,80 @@ def logout_user(
     db.commit()
 
     return {"success": True, "message": "Session terminated and token revoked successfully."}
+
+@router.post("/staff/login", response_model=TokenResponse)
+def staff_login(req: StaffLoginRequest, db: Session = Depends(get_db)):
+    """
+    Dedicated Receptionist / Front-Desk Staff Authentication.
+    Validates staff PIN against the attending doctor's clinic configuration.
+    Issues a scoped JWT token with role="receptionist" for front-desk queue management.
+    """
+    raw_ident = req.doctor_identifier.strip()
+    clean_digits = "".join(filter(str.isdigit, raw_ident))
+    last10 = clean_digits[-10:] if len(clean_digits) >= 10 else clean_digits
+
+    doctor = None
+    if "@" in raw_ident:
+        doctor = db.query(User).filter(User.email.ilike(raw_ident)).first()
+    if not doctor and last10 and len(last10) >= 10:
+        doctor = db.query(User).filter(User.phone.like(f"%{last10}%")).first()
+    if not doctor:
+        doctor = db.query(User).filter(User.id == raw_ident).first()
+    if not doctor and len(raw_ident) >= 3:
+        doctor = db.query(User).filter(User.reg_number.ilike(raw_ident)).first()
+    if not doctor:
+        # Fallback to first doctor if in single-doctor clinic testing
+        doctor = db.query(User).first()
+
+    if not doctor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Clinic / Doctor not found for identifier '{raw_ident}'."
+        )
+
+    expected_pin = getattr(doctor, "staff_pin", None) or "1234"
+    provided_pin = req.staff_pin.strip()
+    if provided_pin != expected_pin:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect Staff PIN. Please obtain the 4-digit PIN from the attending doctor."
+        )
+
+    token = create_access_token(
+        subject=str(doctor.id),
+        role="receptionist",
+        extra_claims={
+            "doctor_id": str(doctor.id),
+            "doctor_name": doctor.name,
+            "clinic_name": getattr(doctor, "clinic_name", None) or "Praxirence Clinical Centre",
+            "specialty": getattr(doctor, "specialty", None) or "General Physician",
+            "role": "receptionist"
+        }
+    )
+
+    try:
+        audit = AuditLog(
+            actor_id=str(doctor.id),
+            actor_role="receptionist",
+            action="staff_login",
+            resource="front_desk",
+            resource_id=str(doctor.id)
+        )
+        db.add(audit)
+        db.commit()
+    except Exception:
+        db.rollback()
+
+    return TokenResponse(
+        access_token=token,
+        role="receptionist",
+        user={
+            "id": f"staff-{str(doctor.id)[:8]}",
+            "doctor_id": str(doctor.id),
+            "doctor_name": doctor.name,
+            "clinic_name": getattr(doctor, "clinic_name", None) or "Praxirence Clinical Centre",
+            "specialty": getattr(doctor, "specialty", None) or "General Physician",
+            "consultation_fee": getattr(doctor, "consultation_fee", 500) or 500,
+            "role": "receptionist"
+        }
+    )

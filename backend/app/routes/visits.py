@@ -271,6 +271,12 @@ async def upload_consultation_audio(
     4. Automatically deletes audio unless keep_recording is True.
     5. Returns draft visit for doctor editing in < 1 second.
     """
+    if getattr(current_doctor, "_auth_role", "doctor") == "receptionist":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access Denied: Front-desk staff are not permitted to record or process clinical consultations."
+        )
+
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     if not patient:
         patient = db.query(Patient).filter(Patient.name.ilike(f"%{patient_id}%")).first()

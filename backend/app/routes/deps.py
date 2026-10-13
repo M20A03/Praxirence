@@ -45,10 +45,10 @@ def get_current_doctor(
     db: Session = Depends(get_db)
 ) -> User:
     role = payload.get("role")
-    if role != "doctor":
+    if role not in ("doctor", "receptionist"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Requires doctor privilege"
+            detail="Requires doctor or clinical staff privilege"
         )
     user_id = payload.get("sub")
     user = db.query(User).filter(User.id == user_id).first()
@@ -57,6 +57,7 @@ def get_current_doctor(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Doctor account not found or removed"
         )
+    setattr(user, "_auth_role", role)
     return user
 
 

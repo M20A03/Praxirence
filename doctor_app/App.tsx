@@ -23,7 +23,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { Colors } from './src/theme/colors';
 import { FontFamily, FontSize, LetterSpacing } from './src/theme/typography';
-import { DoctorUser, PatientSummary } from './src/types';
+import { DoctorUser, PatientSummary, ReceptionistUser } from './src/types';
 import { SplashScreen } from './src/screens/SplashScreen';
 import { DoctorLoginScreen } from './src/screens/DoctorLoginScreen';
 
@@ -32,6 +32,7 @@ import { DoctorDashboardScreen } from './src/screens/doctor/DoctorDashboardScree
 import { DoctorPatientsScreen } from './src/screens/doctor/DoctorPatientsScreen';
 import { DoctorNewConsultationScreen } from './src/screens/doctor/DoctorNewConsultationScreen';
 import { DoctorProfileScreen } from './src/screens/doctor/DoctorProfileScreen';
+import { ReceptionistDashboardScreen } from './src/screens/doctor/ReceptionistDashboardScreen';
 import DoctorCopilotScreen from './src/screens/doctor/DoctorCopilotScreen';
 import { ClinicianOnboardingModal } from './src/components/ClinicianOnboardingModal';
 
@@ -47,6 +48,7 @@ const Tab = createBottomTabNavigator();
 function DoctorAppContent() {
   const [showSplash, setShowSplash] = useState<boolean>(true);
   const [currentDoctor, setCurrentDoctor] = useState<DoctorUser | null>(null);
+  const [currentStaff, setCurrentStaff] = useState<ReceptionistUser | null>(null);
   const [loadingSession, setLoadingSession] = useState<boolean>(true);
 
   // Biometric App Lock Gatekeeper
@@ -171,7 +173,10 @@ function DoctorAppContent() {
     const restore = async () => {
       try {
         const session = await mobileApi.restoreSession();
-        if (session && session.user && session.role === 'doctor') {
+        if (session && session.user && session.role === 'receptionist') {
+          setCurrentStaff(session.user as ReceptionistUser);
+          setCurrentDoctor(null);
+        } else if (session && session.user && session.role === 'doctor') {
           const u = session.user as any;
           setCurrentDoctor({
             id: u.id,
@@ -220,20 +225,41 @@ function DoctorAppContent() {
     restore();
   }, []);
 
-  const handleAuthenticated = (doctor: DoctorUser) => {
-    setCurrentDoctor(doctor);
-    checkAndPromptBiometric();
+  const handleAuthenticated = (user: DoctorUser | ReceptionistUser) => {
+    if (user.role === 'receptionist') {
+      setCurrentStaff(user as ReceptionistUser);
+      setCurrentDoctor(null);
+    } else {
+      setCurrentDoctor(user as DoctorUser);
+      setCurrentStaff(null);
+      checkAndPromptBiometric();
+    }
   };
 
   const handleLogout = async () => {
     await mobileApi.clearSession();
     setCurrentDoctor(null);
+    setCurrentStaff(null);
     setIsBiometricLocked(false);
   };
 
   // Splash Screen
   if (showSplash || loadingSession) {
     return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  }
+
+  // Front-Desk Receptionist / Staff Workspace
+  if (currentStaff) {
+    return (
+      <SafeAreaProvider>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <ReceptionistDashboardScreen
+          staffUser={currentStaff}
+          onLogout={handleLogout}
+          onSwitchToDoctorLogin={handleLogout}
+        />
+      </SafeAreaProvider>
+    );
   }
 
   // Doctor Authentication Screen
@@ -438,6 +464,18 @@ function DoctorAppContent() {
               <DoctorProfileScreen
                 doctor={currentDoctor}
                 onLogout={handleLogout}
+                onSwitchToReceptionist={() => {
+                  const staffObj: ReceptionistUser = {
+                    id: currentDoctor.id,
+                    doctor_id: currentDoctor.id,
+                    doctor_name: currentDoctor.name,
+                    clinic_name: currentDoctor.clinic_name,
+                    specialty: currentDoctor.specialty,
+                    consultation_fee: currentDoctor.consultation_fee,
+                    role: 'receptionist',
+                  };
+                  setCurrentStaff(staffObj);
+                }}
               />
             )}
           </Tab.Screen>

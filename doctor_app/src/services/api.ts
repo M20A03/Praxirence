@@ -5,6 +5,7 @@ import { NetworkSecurity } from '../security/NetworkSecurityInterceptor';
 import {
   PatientUser,
   DoctorUser,
+  ReceptionistUser,
   ActiveUser,
   UserRole,
   Visit,
@@ -230,6 +231,30 @@ export const mobileApi = {
     }
     const data = await res.json();
     await this.saveSession('doctor', data.access_token, data.user);
+    return data;
+  },
+
+  async staffLogin(params: { doctor_identifier: string; staff_pin: string }): Promise<{ access_token: string; role: 'receptionist'; user: ReceptionistUser }> {
+    const res = await resilientFetch(`${getEffectiveApiUrl()}/auth/staff/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        doctor_identifier: params.doctor_identifier.trim(),
+        staff_pin: params.staff_pin.trim(),
+      }),
+    }, 0);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Staff login failed. Please verify doctor identifier and staff PIN.');
+    }
+    const data = await res.json();
+    if (data.access_token) {
+      authToken = data.access_token;
+      await AsyncStorage.setItem('praxirence_token', data.access_token);
+      if (data.user) {
+        await this.saveSession('receptionist', data.access_token, data.user);
+      }
+    }
     return data;
   },
 

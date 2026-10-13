@@ -19,10 +19,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
 import { mobileApi } from '../services/api';
 import { BrandLogoMobile } from '../components/BrandLogoMobile';
-import { DoctorUser } from '../types';
+import { DoctorUser, ReceptionistUser } from '../types';
 
 interface DoctorLoginScreenProps {
-  onAuthenticated: (doctor: DoctorUser) => void;
+  onAuthenticated: (user: DoctorUser | ReceptionistUser) => void;
 }
 
 export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenticated }) => {
@@ -71,6 +71,43 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
     }, 1000);
     return () => clearInterval(timer);
   }, [resendCooldown]);
+
+  const [loginMode, setLoginMode] = useState<'doctor' | 'staff'>('doctor');
+
+  // Front-Desk Staff Login States
+  const [staffDoctorIdentifier, setStaffDoctorIdentifier] = useState('');
+  const [staffPin, setStaffPin] = useState('');
+  const [staffShowPin, setStaffShowPin] = useState(false);
+  const [staffLoading, setStaffLoading] = useState(false);
+
+  const handleStaffLogin = async () => {
+    if (!staffDoctorIdentifier.trim()) {
+      setError("Please enter the clinic Doctor's Mobile Number or Email.");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+      return;
+    }
+    if (!staffPin.trim()) {
+      setError("Please enter the 4-digit Staff PIN.");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+      return;
+    }
+    setError(null);
+    setStaffLoading(true);
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      const res = await mobileApi.staffLogin({
+        doctor_identifier: staffDoctorIdentifier.trim(),
+        staff_pin: staffPin.trim(),
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      onAuthenticated(res.user);
+    } catch (err: any) {
+      setError(err?.message || "Front-Desk staff verification failed. Please check Doctor ID and Staff PIN.");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+    } finally {
+      setStaffLoading(false);
+    }
+  };
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -223,6 +260,39 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
 
         {/* Form Card */}
         <View style={styles.card}>
+          {/* Role Segment Selector */}
+          <View style={styles.tabSelector}>
+            <TouchableOpacity
+              style={[styles.tabButton, loginMode === 'doctor' && styles.tabButtonActive]}
+              onPress={() => { setLoginMode('doctor'); setError(null); }}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="medkit"
+                size={15}
+                color={loginMode === 'doctor' ? '#0284C7' : Colors.textSecondary}
+              />
+              <Text style={[styles.tabButtonText, loginMode === 'doctor' && styles.tabButtonTextActive]}>
+                Doctor Login
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.tabButton, loginMode === 'staff' && styles.tabButtonActive]}
+              onPress={() => { setLoginMode('staff'); setError(null); }}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="clipboard"
+                size={15}
+                color={loginMode === 'staff' ? '#0284C7' : Colors.textSecondary}
+              />
+              <Text style={[styles.tabButtonText, loginMode === 'staff' && styles.tabButtonTextActive]}>
+                Front-Desk / Staff
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {error && (
             <View style={styles.errorBox}>
               <Ionicons name="alert-circle" size={16} color="#ef4444" />
@@ -237,8 +307,90 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
             </View>
           )}
 
-          <View>
-            <Text style={styles.label}>Physician Full Name</Text>
+          {loginMode === 'staff' ? (
+            <View>
+              <View style={styles.staffHeaderBanner}>
+                <View style={styles.staffIconBox}>
+                  <Ionicons name="people" size={20} color="#0284C7" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.staffBannerTitle}>Clinic Front-Desk & OPD Reception</Text>
+                  <Text style={styles.staffBannerSubtitle}>
+                    Register walk-in patients, manage queue tokens, and collect fees outside doctor cabin.
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={styles.label}>Doctor's Mobile Number or Email</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="person-circle-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Doctor's 10-digit mobile (+91) or email"
+                  placeholderTextColor={Colors.textSecondary}
+                  value={staffDoctorIdentifier}
+                  onChangeText={setStaffDoctorIdentifier}
+                  autoCapitalize="none"
+                  keyboardType="default"
+                  editable={!staffLoading}
+                />
+              </View>
+
+              <Text style={styles.label}>4-Digit Staff Access PIN</Text>
+              <View style={[styles.inputContainer, { justifyContent: 'space-between' }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                  <Ionicons name="keypad-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
+                  <TextInput
+                    style={[styles.input, { letterSpacing: staffShowPin ? 4 : 8, fontWeight: '700' }]}
+                    placeholder="••••"
+                    placeholderTextColor={Colors.textSecondary}
+                    value={staffPin}
+                    onChangeText={setStaffPin}
+                    keyboardType="number-pad"
+                    maxLength={8}
+                    secureTextEntry={!staffShowPin}
+                    editable={!staffLoading}
+                  />
+                </View>
+                <TouchableOpacity
+                  onPress={() => setStaffShowPin(!staffShowPin)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons
+                    name={staffShowPin ? "eye-off-outline" : "eye-outline"}
+                    size={18}
+                    color={Colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.pinHintText}>Default PIN is 1234. Doctor can change PIN in their Profile screen.</Text>
+
+              <TouchableOpacity
+                style={[styles.primaryBtn, staffLoading && { opacity: 0.8 }, { marginTop: 16 }]}
+                activeOpacity={0.7}
+                onPress={handleStaffLogin}
+                disabled={staffLoading}
+              >
+                {staffLoading ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <>
+                    <Ionicons name="enter-outline" size={18} color="#ffffff" />
+                    <Text style={styles.primaryBtnText}>Open Front-Desk OPD Desk →</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <View style={styles.privacyShieldNote}>
+                <Ionicons name="shield-checkmark" size={15} color="#059669" />
+                <Text style={styles.privacyShieldText}>
+                  Strict Medical Privacy: Front-desk mode does not have access to clinical audio, care plans, or private medical notes.
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <View>
+              <Text style={styles.label}>Physician Full Name</Text>
             <View style={styles.inputContainer}>
               <Ionicons name="person" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
               <TextInput
@@ -344,6 +496,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
               </View>
             )}
           </View>
+          )}
         </View>
 
         {/* Legal & Security Compliance Footer */}
@@ -911,6 +1064,95 @@ const styles = StyleSheet.create({
   presetBtnActive: {
     backgroundColor: Colors.primary,
     borderColor: Colors.primary,
+  },
+  tabSelector: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 10,
+    padding: 4,
+    marginBottom: 16,
+    gap: 4,
+  },
+  tabButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 6,
+  },
+  tabButtonActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tabButtonText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+  },
+  tabButtonTextActive: {
+    color: '#0284C7',
+    fontWeight: '700',
+  },
+  staffHeaderBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F9FF',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    marginBottom: 16,
+    gap: 10,
+  },
+  staffIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    backgroundColor: '#E0F2FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  staffBannerTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0369A1',
+    marginBottom: 2,
+  },
+  staffBannerSubtitle: {
+    fontSize: 11,
+    color: '#475569',
+    lineHeight: 15,
+  },
+  pinHintText: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 4,
+    marginLeft: 2,
+  },
+  privacyShieldNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#ECFDF5',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    marginTop: 14,
+    gap: 8,
+  },
+  privacyShieldText: {
+    fontSize: 11,
+    color: '#065F46',
+    flex: 1,
+    lineHeight: 15,
+    fontWeight: '500',
   },
   presetBtnText: {
     fontFamily: FontFamily.medium,

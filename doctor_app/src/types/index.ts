@@ -1,4 +1,4 @@
-export type UserRole = 'doctor' | 'patient';
+export type UserRole = 'doctor' | 'patient' | 'receptionist';
 
 export interface DoctorUser {
   id: string;
@@ -30,6 +30,7 @@ export interface DoctorUser {
   is_available_today?: boolean;
   current_delay_mins?: number;
   delay_updated_at?: string;
+  staff_pin?: string;
 }
 
 export interface DoctorScheduleConfig {
@@ -53,7 +54,17 @@ export interface PatientUser {
   role?: 'patient';
 }
 
-export type ActiveUser = DoctorUser | PatientUser;
+export interface ReceptionistUser {
+  id: string;
+  doctor_id: string;
+  doctor_name: string;
+  clinic_name?: string;
+  specialty?: string;
+  consultation_fee?: number;
+  role: 'receptionist';
+}
+
+export type ActiveUser = DoctorUser | PatientUser | ReceptionistUser;
 
 export interface PatientSummary {
   id: string;

@@ -43,6 +43,7 @@ class DoctorScheduleUpdate(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     consultation_fee: Optional[int] = None
+    staff_pin: Optional[str] = None
 
 
 class LeaveToggleRequest(BaseModel):
@@ -814,6 +815,7 @@ class DoctorProfileUpdateRequest(BaseModel):
     experience_years: Optional[str] = None
     languages: Optional[List[str]] = None
     consultation_fee: Optional[int] = None
+    staff_pin: Optional[str] = None
 
 
 @router.put("/{doctor_id}/profile")
@@ -928,6 +930,8 @@ def update_doctor_credentials(
             doctor.consultation_fee = max(0, int(payload.consultation_fee))
         except (ValueError, TypeError):
             pass
+    if payload.staff_pin is not None and payload.staff_pin.strip():
+        doctor.staff_pin = payload.staff_pin.strip()
 
     db.commit()
     db.refresh(doctor)
@@ -952,8 +956,43 @@ def update_doctor_credentials(
             "experience_years": doctor.experience_years,
             "languages": doctor.languages,
             "consultation_fee": getattr(doctor, "consultation_fee", 500) or 500,
+            "staff_pin": getattr(doctor, "staff_pin", "1234") or "1234",
             "role": "doctor"
         }
     }
 
 
+
+@router.get("/{doctor_id}/profile")
+def get_doctor_profile(
+    doctor_id: str,
+    db: Session = Depends(get_db)
+):
+    doctor = None
+    clean_id = (doctor_id or "").strip()
+    if clean_id and clean_id not in ("undefined", "null", "none", "doc-default", "me"):
+        doctor = db.query(User).filter(User.id == clean_id).first()
+    if not doctor:
+        doctor = db.query(User).first()
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+    return {
+        "id": str(doctor.id),
+        "name": doctor.name,
+        "email": doctor.email,
+        "phone": doctor.phone,
+        "degree": doctor.degree,
+        "qualifications": doctor.qualifications,
+        "designation": doctor.designation,
+        "specialty": doctor.specialty,
+        "clinic_name": doctor.clinic_name,
+        "clinic_address": doctor.clinic_address,
+        "city": doctor.city,
+        "state": doctor.state,
+        "reg_number": doctor.reg_number,
+        "experience_years": doctor.experience_years,
+        "languages": doctor.languages,
+        "consultation_fee": getattr(doctor, "consultation_fee", 500) or 500,
+        "staff_pin": getattr(doctor, "staff_pin", "1234") or "1234",
+        "role": "doctor"
+    }

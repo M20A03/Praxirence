@@ -2,6 +2,12 @@ from typing import Optional, Dict, Any
 from pydantic import BaseModel, EmailStr
 
 
+class StaffLoginRequest(BaseModel):
+    doctor_identifier: str  # doctor's phone (+91 or 10-digits), email, reg_number, or ID
+    staff_pin: str
+
+
+
 class DoctorLoginRequest(BaseModel):
     email: EmailStr
     password: str

@@ -206,8 +206,16 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
       const res = await mobileApi.requestDoctorOtp(`+91${digits}`, 'sms');
       setPhoneOtpSent(true);
-      setPhoneOtpCode('');
       setResendCooldown(60);
+      if (res?.otp_code) {
+        setPhoneOtpCode(res.otp_code);
+        Alert.alert(
+          "Clinical Access Code",
+          `Verification code: ${res.otp_code}\n\n(Auto-filled for instant verification)`
+        );
+      } else {
+        setPhoneOtpCode('');
+      }
       setSuccessNotice(res?.message || `Access code sent to +91 ${digits}.`);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch (err: any) {

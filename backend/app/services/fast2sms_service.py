@@ -97,13 +97,38 @@ class Fast2SMSService:
         masked_phone = f"***{phone[-4:]}" if len(phone) >= 4 else "***"
         logger.info(f"[PRAXIRENCE LOCAL OTP VAULT] Security OTP generated for {masked_phone}")
 
+        # Real SMS Gateway Dispatch (If FAST2SMS_API_KEY is configured)
+        dispatched_sms = False
+        if self.api_key:
+            try:
+                async with httpx.AsyncClient(timeout=8.0) as client:
+                    resp = await client.post(
+                        FAST2SMS_URL,
+                        headers={"authorization": self.api_key},
+                        json={
+                            "route": "otp",
+                            "variables_values": otp_code,
+                            "numbers": local_phone,
+                        }
+                    )
+                    data = resp.json() if resp.status_code == 200 else {}
+                    if data.get("return"):
+                        dispatched_sms = True
+                        logger.info(f"Fast2SMS real SMS dispatched to {masked_phone}")
+                    else:
+                        logger.warning(f"Fast2SMS gateway response: {resp.text}")
+            except Exception as e:
+                logger.warning(f"Fast2SMS dispatch notice: {e}")
+
+        msg = f"Access code sent via SMS to {masked_phone}" if dispatched_sms else f"Verification code: {otp_code} (Valid for 10 minutes)"
         return {
             "success": True,
-            "message": f"Verification code: {otp_code} (Valid for 10 minutes)",
+            "message": msg,
             "phone": phone,
             "otp_code": otp_code,
+            "sms_delivered": dispatched_sms,
             "expires_in": 600,
-            "provider": "Praxirence In-House Security Vault"
+            "provider": "Fast2SMS" if dispatched_sms else "Praxirence In-House Security Vault"
         }
 
     def verify_otp(self, phone: str, code: str) -> bool:

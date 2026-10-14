@@ -70,7 +70,7 @@ class AIService:
             for m in models:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key}"
                 try:
-                    with httpx.Client(timeout=35.0) as client:
+                    with httpx.Client(timeout=6.0) as client:
                         res = client.post(url, json=payload, headers={"X-goog-api-key": api_key, "Content-Type": "application/json"})
                         if res.status_code == 200:
                             data = res.json()

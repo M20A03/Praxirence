@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey, JSON, Integer
+from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey, JSON, Integer, Index
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -8,6 +8,9 @@ from app.core.database import Base
 class Visit(Base):
     """Clinical consultation visit containing audio, AI extracted care plan and reminders"""
     __tablename__ = "visits"
+    __table_args__ = (
+        Index("idx_doc_date_slot", "doctor_id", "appointment_date", "time_slot"),
+    )
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     patient_id = Column(String(36), ForeignKey("patients.id", ondelete="CASCADE"), nullable=False, index=True)

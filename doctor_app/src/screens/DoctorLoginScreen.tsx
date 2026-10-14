@@ -360,7 +360,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                   />
                 </TouchableOpacity>
               </View>
-              <Text style={styles.pinHintText}>Default PIN is 123456. Doctor can change PIN in their Profile screen.</Text>
+              <Text style={styles.pinHintText}>Enter the 6-digit access PIN configured by your clinic's attending doctor.</Text>
 
               <TouchableOpacity
                 style={[styles.primaryBtn, staffLoading && { opacity: 0.8 }, { marginTop: 16 }]}

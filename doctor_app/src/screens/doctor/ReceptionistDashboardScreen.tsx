@@ -134,6 +134,40 @@ export const ReceptionistDashboardScreen: React.FC<ReceptionistDashboardScreenPr
     }
   };
 
+  const [batchConfirming, setBatchConfirming] = useState<boolean>(false);
+
+  const handleBatchConfirmPending = async () => {
+    if (pendingAppointments.length === 0) return;
+    Alert.alert(
+      'Confirm All Appointments?',
+      `Are you sure you want to confirm all ${pendingAppointments.length} pending online appointment(s)? Sequential tokens will be assigned immediately.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: `Yes, Confirm All (${pendingAppointments.length})`,
+          onPress: async () => {
+            setBatchConfirming(true);
+            try {
+              const res = await mobileApi.batchConfirmAppointments(pendingAppointments.map(p => p.id));
+              try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
+              Alert.alert(
+                'Batch Confirmation Complete',
+                `Successfully confirmed ${res.confirmed_count} appointment(s). Queue tokens have been issued.`
+              );
+              setPendingAppointments([]);
+              setShowPendingModal(false);
+              await loadQueue();
+            } catch (err: any) {
+              Alert.alert('Batch Confirmation Error', err?.message || 'Failed to batch confirm');
+            } finally {
+              setBatchConfirming(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const handleRejectPending = async () => {
     if (!rejectingItem) return;
     setProcessingPendingId(rejectingItem.id);
@@ -582,6 +616,41 @@ export const ReceptionistDashboardScreen: React.FC<ReceptionistDashboardScreenPr
                 <Ionicons name="close" size={22} color="#64748B" />
               </TouchableOpacity>
             </View>
+
+            {pendingAppointments.length > 1 && (
+              <TouchableOpacity
+                style={{
+                  backgroundColor: '#059669',
+                  paddingVertical: 10,
+                  paddingHorizontal: 16,
+                  borderRadius: 10,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  marginBottom: 12,
+                  shadowColor: '#059669',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 4,
+                  elevation: 2,
+                }}
+                onPress={handleBatchConfirmPending}
+                disabled={batchConfirming}
+                activeOpacity={0.85}
+              >
+                {batchConfirming ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-done-circle" size={18} color="#FFFFFF" />
+                    <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>
+                      Confirm All Pending ({pendingAppointments.length})
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
 
             <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
               {pendingAppointments.length === 0 ? (

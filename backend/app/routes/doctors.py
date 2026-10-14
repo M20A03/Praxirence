@@ -21,6 +21,7 @@ from app.models.doctor_review import DoctorReview
 from app.models.audit_log import AuditLog
 from app.services.realtime_service import realtime_manager
 from app.auth import normalize_phone_digits
+from app.routes.deps import get_current_doctor
 
 logger = logging.getLogger("praxirence.routes.doctors")
 
@@ -961,7 +962,9 @@ def update_doctor_credentials(
                 status_code=400,
                 detail="Clinic Staff PIN must be exactly 6 numeric digits (e.g. 583921)."
             )
-        doctor.staff_pin = pin
+        if pin != doctor.staff_pin:
+            doctor.staff_pin = pin
+            doctor.pin_version = (getattr(doctor, "pin_version", 1) or 1) + 1
     if payload.daily_online_limit is not None:
         try:
             doctor.daily_online_limit = max(1, min(100, int(payload.daily_online_limit)))
@@ -1032,7 +1035,6 @@ def get_doctor_profile(
         "experience_years": doctor.experience_years,
         "languages": doctor.languages,
         "consultation_fee": getattr(doctor, "consultation_fee", 500) or 500,
-        "staff_pin": getattr(doctor, "staff_pin", "123456") or "123456",
         "daily_online_limit": getattr(doctor, "daily_online_limit", 15) or 15,
         "require_manual_confirmation": bool(getattr(doctor, "require_manual_confirmation", 1)),
         "role": "doctor"
@@ -1043,6 +1045,7 @@ def get_doctor_profile(
 class BookingSettingsUpdateRequest(BaseModel):
     daily_online_limit: Optional[int] = Field(None, ge=1, le=100)
     require_manual_confirmation: Optional[bool] = None
+    staff_pin: Optional[str] = None
 
 
 @router.put("/{doctor_id}/booking-settings")
@@ -1065,6 +1068,16 @@ def update_doctor_booking_settings(
             doctor.daily_online_limit = max(1, min(100, payload.daily_online_limit))
         if payload.require_manual_confirmation is not None:
             doctor.require_manual_confirmation = 1 if payload.require_manual_confirmation else 0
+        if payload.staff_pin is not None and payload.staff_pin.strip():
+            pin = payload.staff_pin.strip()
+            if len(pin) != 6 or not pin.isdigit():
+                raise HTTPException(
+                    status_code=400,
+                    detail="Clinic Staff PIN must be exactly 6 numeric digits (e.g. 583921)."
+                )
+            if pin != doctor.staff_pin:
+                doctor.staff_pin = pin
+                doctor.pin_version = (getattr(doctor, "pin_version", 1) or 1) + 1
         db.commit()
         db.refresh(doctor)
 
@@ -1073,4 +1086,25 @@ def update_doctor_booking_settings(
         "message": "Online appointment quota & confirmation settings saved successfully",
         "daily_online_limit": getattr(doctor, "daily_online_limit", 15) or 15,
         "require_manual_confirmation": bool(getattr(doctor, "require_manual_confirmation", 1))
+    }
+
+
+@router.get("/me/staff-pin")
+def get_doctor_staff_pin(
+    current_doctor = Depends(get_current_doctor),
+    db: Session = Depends(get_db)
+):
+    """
+    Authenticated Doctor Staff PIN endpoint.
+    Protected from public exposure; front-desk staff role cannot view master PIN.
+    """
+    if getattr(current_doctor, "_auth_role", "doctor") == "receptionist":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access Denied: Front-desk staff are not permitted to inspect or modify the master Clinic PIN."
+        )
+    return {
+        "success": True,
+        "staff_pin": getattr(current_doctor, "staff_pin", "123456") or "123456",
+        "pin_version": getattr(current_doctor, "pin_version", 1) or 1
     }

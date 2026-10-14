@@ -529,6 +529,31 @@ export const mobileApi = {
     return await res.json();
   },
 
+  async batchConfirmAppointments(visitIds?: string[], date?: string): Promise<{ success: boolean; message: string; confirmed_count: number; confirmed_visits: any[] }> {
+    const res = await resilientFetch(`${getEffectiveApiUrl()}/appointments/batch-confirm`, {
+      method: 'POST',
+      headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visit_ids: visitIds, date }),
+    }, 0);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to batch confirm appointments');
+    }
+    return await res.json();
+  },
+
+  async getDoctorStaffPin(): Promise<{ success: boolean; staff_pin: string; pin_version: number }> {
+    const res = await resilientFetch(`${getEffectiveApiUrl()}/doctors/me/staff-pin`, {
+      method: 'GET',
+      headers: getHeaders(),
+    }, 0);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to fetch clinic staff PIN');
+    }
+    return await res.json();
+  },
+
   async rejectAppointment(visitId: string, reason?: string): Promise<any> {
     const res = await resilientFetch(`${getEffectiveApiUrl()}/appointments/${visitId}/reject`, {
       method: 'POST',

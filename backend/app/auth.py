@@ -1172,7 +1172,8 @@ def staff_login(req: StaffLoginRequest, db: Session = Depends(get_db)):
             "doctor_name": doctor.name,
             "clinic_name": getattr(doctor, "clinic_name", None) or "Praxirence Clinical Centre",
             "specialty": getattr(doctor, "specialty", None) or "General Physician",
-            "role": "receptionist"
+            "role": "receptionist",
+            "pin_version": getattr(doctor, "pin_version", 1) or 1
         }
     )
 

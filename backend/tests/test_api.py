@@ -489,7 +489,7 @@ def test_patient_health_records_pdf_download():
     )
     patient_id = p_res.json()["id"]
 
-    pdf_res = client.get(f"/patients/{patient_id}/records/pdf")
+    pdf_res = client.get(f"/patients/{patient_id}/records/pdf", headers=headers)
     assert pdf_res.status_code == 200
     assert "application/pdf" in pdf_res.headers.get("content-type")
     assert len(pdf_res.content) > 1000

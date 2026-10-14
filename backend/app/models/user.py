@@ -41,6 +41,7 @@ class User(Base):
     custom_slots = Column(JSON, default=dict)  # {"YYYY-MM-DD": {"added": ["05:30 PM"], "blocked": ["02:00 PM"]}}
     consultation_fee = Column(Integer, default=500)
     staff_pin = Column(String(20), default="123456", nullable=True)
+    pin_version = Column(Integer, default=1, nullable=False)
     daily_online_limit = Column(Integer, default=15, nullable=False)
     require_manual_confirmation = Column(Integer, default=1, nullable=False)
     current_delay_mins = Column(Integer, default=0, nullable=False)

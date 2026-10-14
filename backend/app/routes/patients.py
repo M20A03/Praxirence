@@ -587,6 +587,13 @@ def get_patient(
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
 
+    if isinstance(current_user, Patient):
+        if str(current_user.id) != str(patient.id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You are not authorized to view another patient's medical records."
+            )
+
     doc_id = None
     if isinstance(current_user, User):
         doc_id = current_user.id
@@ -623,6 +630,13 @@ def get_patient_visits(
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
+
+    if isinstance(current_user, Patient):
+        if str(current_user.id) != str(patient.id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You are not authorized to view another patient's medical records."
+            )
 
     if isinstance(current_user, User):
         link = db.query(DoctorPatientLink).filter(
@@ -693,6 +707,13 @@ def get_consent_document(
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
+
+    if isinstance(current_user, Patient):
+        if str(current_user.id) != str(patient.id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You are not authorized to view another patient's consent document."
+            )
 
     return ConsentDocumentResponse(
         title="Praxirence Plain-Language Patient Telehealth Consent",
@@ -1324,7 +1345,8 @@ def update_patient_profile(
 @router.get("/{patient_id}/records/pdf")
 def get_patient_health_records_pdf(
     patient_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user_or_patient)
 ):
     """
     Generates and downloads a comprehensive medical history & health records summary PDF
@@ -1333,6 +1355,27 @@ def get_patient_health_records_pdf(
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
+
+    if isinstance(current_user, Patient):
+        if str(current_user.id) != str(patient.id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You are not authorized to download another patient's health records."
+            )
+    elif isinstance(current_user, User):
+        link = db.query(DoctorPatientLink).filter(
+            DoctorPatientLink.doctor_id == current_user.id,
+            DoctorPatientLink.patient_id == patient.id
+        ).first()
+        has_visit = db.query(Visit).filter(
+            Visit.doctor_id == current_user.id,
+            Visit.patient_id == patient.id
+        ).first() is not None
+        if not (link and link.status == "authorized") and not has_visit:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You are not authorized to download this patient's medical records."
+            )
 
     visits = db.query(Visit).filter(Visit.patient_id == patient_id).order_by(Visit.created_at.desc()).all()
     visits_data = []

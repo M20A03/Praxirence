@@ -9,7 +9,7 @@ import logging
 import json
 import hashlib
 from datetime import datetime, timezone, timedelta
-from typing import Optional, Tuple, Dict, Any
+from typing import Optional, Tuple, Dict, Any, List
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status, Request
 from app.services.replay_protection import verify_anti_replay_headers
@@ -1083,7 +1083,7 @@ def book_appointment_slot(
     if existing_booking:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"The time slot {clean_slot} on {payload.appointment_date} has already been reserved. Please pick an alternative slot."
+            detail=f"The time slot {clean_slot} on {payload.appointment_date} has already been reserved. This time slot was just reserved by another patient. Please select an alternate slot."
         )
 
     # 6. Sequential OPD Token Allocation & Queue Calculation
@@ -2064,6 +2064,12 @@ def confirm_pending_appointment(
     if str(visit.doctor_id) != str(current_doctor.id):
         raise HTTPException(status_code=403, detail="Cannot confirm appointments for another clinician")
 
+    if visit.status != "pending_confirmation":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot confirm appointment with status '{visit.status}'. Only 'pending_confirmation' visits can be confirmed."
+        )
+
     auth_role = getattr(current_doctor, "_auth_role", "doctor")
     visit.status = "confirmed"
     visit.confirmed_by_id = str(current_doctor.id)
@@ -2185,4 +2191,88 @@ def reject_pending_appointment(
         "visit_id": str(visit.id),
         "status": "rejected",
         "rejection_reason": reason
+    }
+
+
+
+class BatchConfirmRequest(BaseModel):
+    visit_ids: Optional[List[str]] = None
+    date: Optional[str] = None
+
+
+@router.post("/appointments/batch-confirm")
+def batch_confirm_pending_appointments(
+    payload: BatchConfirmRequest = None,
+    db: Session = Depends(get_db),
+    current_doctor = Depends(get_current_doctor)
+):
+    """
+    Atomically confirms multiple pending appointment requests in one tap.
+    Guarantees sequential token assignment without gaps.
+    """
+    auth_role = getattr(current_doctor, "_auth_role", "doctor")
+    query = (
+        db.query(Visit)
+        .filter(
+            Visit.doctor_id == current_doctor.id,
+            Visit.status == "pending_confirmation"
+        )
+    )
+    if payload and payload.visit_ids:
+        query = query.filter(Visit.id.in_(payload.visit_ids))
+    if payload and payload.date:
+        query = query.filter(Visit.appointment_date == payload.date)
+
+    pending_list = query.order_by(Visit.created_at.asc()).all()
+    if not pending_list:
+        return {
+            "success": True,
+            "message": "No pending appointments to confirm",
+            "confirmed_count": 0,
+            "confirmed_visits": []
+        }
+
+    confirmed_results = []
+    for visit in pending_list:
+        visit.status = "confirmed"
+        visit.confirmed_by_id = str(current_doctor.id)
+        visit.confirmed_by_role = auth_role
+        visit.confirmed_at = datetime.now(timezone.utc)
+        if not visit.token_number:
+            existing_count = (
+                db.query(Visit)
+                .filter(
+                    Visit.doctor_id == current_doctor.id,
+                    Visit.appointment_date == visit.appointment_date,
+                    Visit.status != "cancelled"
+                )
+                .count()
+            )
+            visit.token_number = existing_count + 1
+
+        tok_disp = f"PX-{visit.token_number:02d}"
+        confirmed_results.append({
+            "visit_id": str(visit.id),
+            "patient_name": visit.patient.name if visit.patient else "Patient",
+            "appointment_date": visit.appointment_date,
+            "time_slot": visit.time_slot,
+            "token_display": tok_disp
+        })
+
+    db.commit()
+
+    try:
+        realtime_manager.emit_to_doctor_sync(
+            str(current_doctor.id),
+            "QUEUE_UPDATE",
+            {"action": "batch_confirmed", "count": len(confirmed_results)}
+        )
+    except Exception as e:
+        logger.warning(f"Batch confirmation realtime emit notice: {e}")
+
+    return {
+        "success": True,
+        "message": f"Successfully confirmed {len(confirmed_results)} online appointment(s).",
+        "confirmed_count": len(confirmed_results),
+        "confirmed_visits": confirmed_results
     }

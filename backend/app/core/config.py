@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Praxirence"
     API_V1_STR: str = "/api/v1"
     ENVIRONMENT: str = "development"
+    ENABLE_DEMO_OTP: bool = False
     DEBUG: bool = True
 
     # Security & Auth

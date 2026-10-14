@@ -57,6 +57,17 @@ def get_current_doctor(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Doctor account not found or removed"
         )
+
+    # Invalidate receptionist session if doctor has rotated the clinic staff PIN
+    if role == "receptionist":
+        token_pin_version = payload.get("pin_version")
+        current_pin_version = getattr(user, "pin_version", 1) or 1
+        if token_pin_version is not None and token_pin_version != current_pin_version:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Clinic Staff PIN was updated by the attending doctor. Please log in again with the new PIN."
+            )
+
     setattr(user, "_auth_role", role)
     return user
 

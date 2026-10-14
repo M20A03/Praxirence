@@ -82,20 +82,33 @@ def get_stored_email_otp_name(email: str) -> Optional[str]:
 
 
 def verify_email_otp(email: str, code: str) -> bool:
-    """Verify email OTP against cache or active demo code"""
+    """
+    Verify email OTP against cryptographic in-memory cache.
+    Demo bypass is strictly prohibited in production and only active if explicitly enabled in tests.
+    """
     clean_email = email.lower().strip()
+    clean_code = code.strip()
+
+    allow_demo = (
+        getattr(settings, "ENABLE_DEMO_OTP", False)
+        and getattr(settings, "ENVIRONMENT", "").lower() in ("test", "testing")
+    )
 
     record = _email_otp_cache.get(clean_email)
     if not record:
-        if code.strip() == "123456":
+        if allow_demo and clean_code == "123456":
             return True
         return False
 
     if datetime.now(timezone.utc) > record["expires_at"]:
         _email_otp_cache.pop(clean_email, None)
-        return code.strip() == "123456"
+        return allow_demo and clean_code == "123456"
 
-    if code.strip() in (record["code"], "123456"):
+    if clean_code == record["code"]:
+        _email_otp_cache.pop(clean_email, None)
+        return True
+
+    if allow_demo and clean_code == "123456":
         _email_otp_cache.pop(clean_email, None)
         return True
 

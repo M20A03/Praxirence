@@ -903,7 +903,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                 ) : (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Ionicons name="checkmark-done" size={16} color="#ffffff" />
-                    <Text style={styles.confirmBtnText}>Confirm Slot & Book</Text>
+                    <Text style={styles.confirmBtnText}>{t('booking_confirm_button') || 'Confirm Slot & Book'}</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -927,9 +927,9 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                   <Ionicons name="time" size={44} color="#D97706" />
                 </View>
 
-                <Text style={styles.successTitle}>Request Submitted</Text>
+                <Text style={styles.successTitle}>{t('booking_request_submitted') || 'Request Submitted'}</Text>
                 <Text style={styles.successSubtitle}>
-                  Awaiting confirmation from Dr. {confirmedBookingData?.doctor_name} or clinic front desk. You will receive an alert once approved.
+                  {t('booking_awaiting_confirmation') || `Awaiting confirmation from Dr. ${confirmedBookingData?.doctor_name || ''} or clinic front desk. You will receive an alert once approved.`}
                 </Text>
               </>
             ) : (
@@ -938,7 +938,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                   <Ionicons name="checkmark-circle" size={44} color="#059669" />
                 </View>
 
-                <Text style={styles.successTitle}>Appointment Confirmed</Text>
+                <Text style={styles.successTitle}>{t('booking_confirmed_title') || 'Appointment Confirmed'}</Text>
                 <Text style={styles.successSubtitle}>
                   Your consultation has been confirmed in the clinic schedule.
                 </Text>
@@ -959,8 +959,8 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                   <Ionicons name="people" size={12} color="#0284C7" />
                   <Text style={styles.queueStatsPillText}>
                     {confirmedBookingData?.patients_ahead && confirmedBookingData.patients_ahead > 0
-                      ? `${confirmedBookingData.patients_ahead} patient${confirmedBookingData.patients_ahead > 1 ? 's' : ''} ahead`
-                      : 'First in queue'}
+                      ? `${confirmedBookingData.patients_ahead} ${confirmedBookingData.patients_ahead > 1 ? (t('patients_ahead_text') || 'patients ahead') : (t('patient_ahead_single') || 'patient ahead')}`
+                      : (t('first_in_queue') || 'First in queue')}
                   </Text>
                 </View>
                 <View style={[styles.queueStatsPill, { backgroundColor: '#FEF3C7' }]}>
@@ -968,7 +968,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                   <Text style={[styles.queueStatsPillText, { color: '#B45309' }]}>
                     {confirmedBookingData?.estimated_wait_mins && confirmedBookingData.estimated_wait_mins > 0
                       ? `~${confirmedBookingData.estimated_wait_mins}m wait`
-                      : 'No wait'}
+                      : (t('no_wait_text') || 'No wait')}
                   </Text>
                 </View>
               </View>
@@ -1001,7 +1001,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
             <View style={styles.confirmationNoticeBox}>
               <Ionicons name="checkmark-done-circle" size={16} color="#16A34A" />
               <Text style={styles.confirmationNoticeText}>
-                Instant confirmation and token active in your Praxirence Care Vault
+                {t('vault_token_notice') || 'Instant confirmation and token active in your Praxirence Care Vault'}
               </Text>
             </View>
 

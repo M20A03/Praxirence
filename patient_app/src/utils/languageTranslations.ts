@@ -21,6 +21,16 @@ export const SUPPORTED_LANGUAGES: LanguageOption[] = [
 
 export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
   en: {
+    booking_request_submitted: 'Request Submitted',
+    booking_awaiting_confirmation: 'Awaiting confirmation from clinic front desk. You will receive an alert once approved.',
+    booking_quota_full: 'Online Booking Full',
+    booking_confirm_button: 'Confirm Slot & Book',
+    first_in_queue: 'First in queue',
+    patients_ahead_text: 'patients ahead',
+    patient_ahead_single: 'patient ahead',
+    no_wait_text: 'No wait',
+    vault_token_notice: 'Instant confirmation and token active in your Praxirence Care Vault',
+
     verifiedCliniciansSubtitle: 'Verified Clinician Directory & Scheduling',
     searchDoctorPlaceholder: 'Search doctor, specialty, city, hospital...',
     nearbyDoctorsGps: 'Nearby Doctors (GPS)',
@@ -301,6 +311,16 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
   },
 
   kn: {
+    booking_request_submitted: 'ವಿನಂತಿಯನ್ನು ಸಲ್ಲಿಸಲಾಗಿದೆ',
+    booking_awaiting_confirmation: 'ಕ್ಲಿನಿಕ್‌ನಿಂದ ದೃಢೀಕರಣಕ್ಕಾಗಿ ಕಾಯಲಾಗುತ್ತಿದೆ. ಅನುಮೋದಿಸಿದ ತಕ್ಷಣ ಸೂಚನೆ ಬರುತ್ತದೆ.',
+    booking_quota_full: 'ಆನ್‌ಲೈನ್ ಬುಕಿಂಗ್ ಭರ್ತಿಯಾಗಿದೆ',
+    booking_confirm_button: 'ಸ್ಲಾಟ್ ದೃಢೀಕರಿಸಿ ಮತ್ತು ಬುಕ್ ಮಾಡಿ',
+    first_in_queue: 'ಸರದಿಯಲ್ಲಿ ಮೊದಲು',
+    patients_ahead_text: 'ರೋಗಿಗಳು ಮುಂದಿದ್ದಾರೆ',
+    patient_ahead_single: 'ರೋಗಿ ಮುಂದಿದ್ದಾರೆ',
+    no_wait_text: 'ಕಾಯುವ ಅಗತ್ಯವಿಲ್ಲ',
+    vault_token_notice: 'ತಕ್ಷಣದ ದೃಢೀಕರಣ ಮತ್ತು ಟೋಕನ್ ನಿಮ್ಮ ಕೇರ್ ವಾಲ್ಟ್‌ನಲ್ಲಿ ಸಕ್ರಿಯವಾಗಿದೆ',
+
     verifiedCliniciansSubtitle: 'ಪರಿಶೀಲಿತ ವೈದ್ಯರ ಡೈರೆಕ್ಟರಿ ಮತ್ತು ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್',
     searchDoctorPlaceholder: 'ವೈದ್ಯರು, ವಿಶೇಷತೆ, ನಗರ ಅಥವಾ ಆಸ್ಪತ್ರೆಯನ್ನು ಹುಡುಕಿ...',
     nearbyDoctorsGps: 'ಹತ್ತಿರದ ವೈದ್ಯರು (GPS)',
@@ -581,6 +601,16 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
   },
 
   hi: {
+    booking_request_submitted: 'अनुरोध भेजा गया',
+    booking_awaiting_confirmation: 'क्लिनिक से पुष्टि की प्रतीक्षा है। स्वीकृति मिलते ही सूचना दी जाएगी।',
+    booking_quota_full: 'ऑनलाइन बुकिंग पूरी हो चुकी है',
+    booking_confirm_button: 'स्लॉट पक्का करें और बुक करें',
+    first_in_queue: 'कतार में पहले',
+    patients_ahead_text: 'मरीज़ आगे हैं',
+    patient_ahead_single: 'मरीज़ आगे है',
+    no_wait_text: 'कोई प्रतीक्षा नहीं',
+    vault_token_notice: 'तुरंत पुष्टि और टोकन आपके केयर वॉल्ट में सक्रिय है',
+
     verifiedCliniciansSubtitle: 'सत्यापित चिकित्सक निर्देशिका एवं समय-सारणी',
     searchDoctorPlaceholder: 'डॉक्टर, विशेषज्ञता, शहर या अस्पताल खोजें...',
     nearbyDoctorsGps: 'नजदीकी डॉक्टर (GPS)',
@@ -861,6 +891,16 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
   },
 
   bho: {
+    booking_request_submitted: 'अनुरोध भेजल गइल',
+    booking_awaiting_confirmation: 'क्लिनिक से पुष्टि के इंतजार बा। मंजूरी मिलते सूचना मिले जाई।',
+    booking_quota_full: 'ऑनलाइन बुकिंग पूरा हो गइल बा',
+    booking_confirm_button: 'स्लॉट पक्का करीं आ बुक करीं',
+    first_in_queue: 'कतार में पहिला',
+    patients_ahead_text: 'मरीज आगे बाड़ें',
+    patient_ahead_single: 'मरीज आगे बा',
+    no_wait_text: 'कौनो इंतजार नइखे',
+    vault_token_notice: 'तुरंत पुष्टि आ टोकन रउआ केयर वॉल्ट में सक्रिय बा',
+
     verifiedCliniciansSubtitle: 'सत्यापित डॉक्टर निर्देशिका आ बुकिंग',
     searchDoctorPlaceholder: 'डॉक्टर, स्पेशियलिटी, शहर भा अस्पताल खोजीं...',
     nearbyDoctorsGps: 'नगीचे के डॉक्टर (GPS)',
@@ -1141,6 +1181,16 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
   },
 
   ur: {
+    booking_request_submitted: 'درخواست جمع کر دی گئی',
+    booking_awaiting_confirmation: 'کلینک سے تصدیق کا انتظار ہے۔ منظوری ملتے ہی مطلع کر دیا جائے گا۔',
+    booking_quota_full: 'آن لائن بکنگ مکمل ہو گئی ہے',
+    booking_confirm_button: 'وقت کی تصدیق کریں اور بک کریں',
+    first_in_queue: 'قطار میں سب سے پہلے',
+    patients_ahead_text: 'مریض آگے ہیں',
+    patient_ahead_single: 'مریض آگے ہے',
+    no_wait_text: 'کوئی انتظار نہیں',
+    vault_token_notice: 'فوری تصدیق اور ٹوکن آپ کے کیئر والٹ میں فعال ہے',
+
     verifiedCliniciansSubtitle: 'تصدیق شدہ ڈاکٹروں کی ڈائرکٹری اور شیڈولنگ',
     searchDoctorPlaceholder: 'ڈاکٹر، خصوصیت، شہر یا ہسپتال تلاش کریں...',
     nearbyDoctorsGps: 'قریبی ڈاکٹر (GPS)',
@@ -1421,6 +1471,16 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
   },
 
   te: {
+    booking_request_submitted: 'అభ్యర్థన సమర్పించబడింది',
+    booking_awaiting_confirmation: 'క్లినిక్ నిర్ధారణ కోసం వేచి చూస్తోంది. ఆమోదించబడిన వెంటనే మీకు తెలియజేయబడుతుంది.',
+    booking_quota_full: 'ఆన్‌లైన్ బుకింగ్ పూర్తయింది',
+    booking_confirm_button: 'స్లాట్‌ను నిర్ధారించి బుక్ చేయండి',
+    first_in_queue: 'క్యూలో మొదటివారు',
+    patients_ahead_text: 'రోగులు ముందున్నారు',
+    patient_ahead_single: 'రోగి ముందున్నారు',
+    no_wait_text: 'వేచి ఉండాల్సిన అవసరం లేదు',
+    vault_token_notice: 'తక్షణ నిర్ధారణ మరియు టోకెన్ మీ కేర్ వాల్ట్‌లో సక్రియంగా ఉంది',
+
     verifiedCliniciansSubtitle: 'ధృవీకరించబడిన వైద్యుల డైరెక్టరీ & అపాయింట్‌మెంట్లు',
     searchDoctorPlaceholder: 'వైద్యుడు, స్పెషాలిటీ, నగరం లేదా ఆసుపత్రిని వెతకండి...',
     nearbyDoctorsGps: 'సమీప వైద్యులు (GPS)',
@@ -1701,6 +1761,16 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
   },
 
   ta: {
+    booking_request_submitted: 'கோரிக்கை சமர்ப்பிக்கப்பட்டது',
+    booking_awaiting_confirmation: 'மருத்துவமனை உறுதிப்படுத்தலுக்காக காத்திருக்கிறது. அங்கீகரிக்கப்பட்டதும் தகவல் அனுப்பப்படும்.',
+    booking_quota_full: 'ஆன்லைன் முன்பதிவு நிறைவடைந்தது',
+    booking_confirm_button: 'நேரத்தை உறுதிசெய்து முன்பதிவு செய்க',
+    first_in_queue: 'வரிசையில் முதலிடம்',
+    patients_ahead_text: 'நோயாளிகள் முன்னால் உள்ளனர்',
+    patient_ahead_single: 'நோயாளி முன்னால் உள்ளார்',
+    no_wait_text: 'காத்திருப்பு இல்லை',
+    vault_token_notice: 'உடனடி உறுதிப்படுத்தல் மற்றும் டோக்கன் உங்கள் கேர் வால்ட்டில் செயலில் உள்ளது',
+
     verifiedCliniciansSubtitle: 'சரிபார்க்கப்பட்ட மருத்துவர் பட்டியல் & முன்பதிவு',
     searchDoctorPlaceholder: 'மருத்துவர், சிறப்பு, நகரம் அல்லது மருத்துவமனையைத் தேடுங்கள்...',
     nearbyDoctorsGps: 'அருகிலுள்ள மருத்துவர்கள் (GPS)',
@@ -1981,6 +2051,16 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
   },
 
   mr: {
+    booking_request_submitted: 'विनंती सादर केली',
+    booking_awaiting_confirmation: 'क्लिनिककडून पुष्टीकरणाची वाट पाहत आहे. मंजुरी मिळताच सूचना मिळेल.',
+    booking_quota_full: 'ऑनलाइन बुकिंग पूर्ण झाले आहे',
+    booking_confirm_button: 'स्लॉट निश्चित करा आणि बुक करा',
+    first_in_queue: 'रांगेत प्रथम',
+    patients_ahead_text: 'रुग्ण पुढे आहेत',
+    patient_ahead_single: 'रुग्ण पुढे आहे',
+    no_wait_text: 'प्रतीक्षा नाही',
+    vault_token_notice: 'त्वरित पुष्टी आणि टोकन आपल्या केअर व्हॉल्टमध्ये सक्रिय आहे',
+
     verifiedCliniciansSubtitle: 'सत्यापित डॉक्टर निर्देशिका आणि वेळ',
     searchDoctorPlaceholder: 'डॉक्टर, विशेषज्ञता, शहर किंवा रुग्णालय शोधा...',
     nearbyDoctorsGps: 'जवळपासचे डॉक्टर (GPS)',
@@ -2261,6 +2341,16 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
   },
 
   ml: {
+    booking_request_submitted: 'അഭ്യർത്ഥന സമർപ്പിച്ചു',
+    booking_awaiting_confirmation: 'ക്ലിനിക്കിൽ നിന്നുള്ള സ്ഥിരീകരണത്തിനായി കാത്തിരിക്കുന്നു. അംഗീകരിച്ചയുടൻ അറിയിപ്പ് ലഭിക്കും.',
+    booking_quota_full: 'ഓൺലൈൻ ബുക്കിംഗ് പൂർത്തിയായി',
+    booking_confirm_button: 'സ്ലോട്ട് സ്ഥിരീകരിച്ച് ബുക്ക് ചെയ്യുക',
+    first_in_queue: 'വരിയിൽ ആദ്യം',
+    patients_ahead_text: 'രോഗികൾ മുന്നിലുണ്ട്',
+    patient_ahead_single: 'രോഗി മുന്നിലുണ്ട്',
+    no_wait_text: 'കാത്തിരിപ്പില്ല',
+    vault_token_notice: 'ഉടൻ സ്ഥിരീകരണവും ടോക്കണും നിങ്ങളുടെ കെയർ വോൾട്ടിൽ സജീവമാണ്',
+
     verifiedCliniciansSubtitle: 'പരിശോധിച്ചുറപ്പിച്ച ഡോക്ടർമാരുടെ ഡയറക്ടറിയും ബുക്കിംഗും',
     searchDoctorPlaceholder: 'ഡോക്ടർ, സ്പെഷ്യാലിറ്റി, നഗരം അല്ലെങ്കിൽ ആശുപത്രി തിരയുക...',
     nearbyDoctorsGps: 'അടുത്തുള്ള ഡോക്ടർമാർ (GPS)',
@@ -2541,6 +2631,16 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
   },
 
   pa: {
+    booking_request_submitted: 'ਬੇਨਤੀ ਜਮ੍ਹਾਂ ਕਰਵਾਈ ਗਈ',
+    booking_awaiting_confirmation: 'ਕਲੀਨਿਕ ਤੋਂ ਪੁਸ਼ਟੀ ਦੀ ਉਡੀਕ ਹੈ। ਮਨਜ਼ੂਰੀ ਮਿਲਦੇ ਹੀ ਸੂਚਿਤ ਕੀਤਾ ਜਾਵੇਗਾ।',
+    booking_quota_full: 'ਆਨਲਾਈਨ ਬੁਕਿੰਗ ਪੂਰੀ ਹੋ ਚੁੱਕੀ ਹੈ',
+    booking_confirm_button: 'ਸਲਾਟ ਦੀ ਪੁਸ਼ਟੀ ਕਰੋ ਅਤੇ ਬੁੱਕ ਕਰੋ',
+    first_in_queue: 'ਕਤਾਰ ਵਿੱਚ ਪਹਿਲੇ',
+    patients_ahead_text: 'ਮਰੀਜ਼ ਅੱਗੇ ਹਨ',
+    patient_ahead_single: 'ਮਰੀਜ਼ ਅੱਗੇ ਹੈ',
+    no_wait_text: 'ਕੋਈ ਉਡੀਕ ਨਹੀਂ',
+    vault_token_notice: 'ਤੁਰੰਤ ਪੁਸ਼ਟੀ ਅਤੇ ਟੋਕਨ ਤੁਹਾਡੇ ਕੇਅਰ ਵਾਲਟ ਵਿੱਚ ਸਰਗਰਮ ਹੈ',
+
     verifiedCliniciansSubtitle: 'ਪ੍ਰਮਾਣਿਤ ਡਾਕਟਰ ਡਾਇਰੈਕਟਰੀ ਅਤੇ ਸਮਾਂ-ਸਾਰਣੀ',
     searchDoctorPlaceholder: 'ਡਾਕਟਰ, ਵਿਸ਼ੇਸ਼ਤਾ, ਸ਼ਹਿਰ ਜਾਂ ਹਸਪਤਾਲ ਖੋਜੋ...',
     nearbyDoctorsGps: 'ਨੇੜਲੇ ਡਾਕਟਰ (GPS)',

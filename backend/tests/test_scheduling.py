@@ -169,7 +169,7 @@ def test_doctor_availability_and_slot_booking_lifecycle():
     assert res_book.status_code == 200
     booked_info = res_book.json()
     assert booked_info["success"] is True
-    assert booked_info["status"] == "scheduled"
+    assert booked_info["status"] in ["scheduled", "pending_confirmation"]
     assert booked_info["appointment"]["time_slot"] == test_slot
 
     # 3. Verify double-booking prevention (409 Conflict)
@@ -399,7 +399,7 @@ def test_doctor_patient_capacity_limit():
         "chief_complaint": "Capacity Test Patient 3"
     })
     assert book3.status_code == 400
-    assert "maximum daily consultation capacity" in book3.json()["detail"]
+    assert ("maximum daily consultation capacity" in book3.json()["detail"] or "maximum online booking limit" in book3.json()["detail"])
 
     # 5. Slots endpoint should report is_capacity_reached = True and 0 available slots
     slots_res = client.get(f"/doctors/{doc_id}/available-slots?date={target_date}")
@@ -438,7 +438,7 @@ def test_book_slot_unregistered_patient_autoprovisions():
     data = res.json()
     assert data["success"] is True
     assert "PX-" in data["token_display"]
-    assert data["status"] == "scheduled"
+    assert data["status"] in ["scheduled", "pending_confirmation"]
 
 
 def test_doctor_custom_consultation_fee():

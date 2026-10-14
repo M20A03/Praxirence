@@ -308,7 +308,7 @@ def get_doctor_availability(
         .filter(
             Visit.doctor_id == doctor.id,
             Visit.appointment_date == target_date_str,
-            Visit.status.in_(["scheduled", "draft", "approved", "completed", "in_progress"])
+            Visit.status.in_(["scheduled", "draft", "approved", "completed", "in_progress", "pending_confirmation", "confirmed"])
         )
         .all()
     )

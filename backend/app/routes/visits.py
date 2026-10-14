@@ -949,8 +949,9 @@ def book_appointment_slot(
         if not patient and any(c.isdigit() for c in target_pid) and not target_pid.startswith("pat-"):
             clean_digits = "".join(c for c in target_pid if c.isdigit())
             if len(clean_digits) >= 10:
-                p_hash = compute_phone_hash(clean_digits[-10:])
-                patient = db.query(Patient).filter(Patient.phone_hash == p_hash).first()
+                last10 = clean_digits[-10:]
+                t_hashes = [compute_phone_hash(target_pid), compute_phone_hash(last10), compute_phone_hash(f"+91{last10}")]
+                patient = db.query(Patient).filter(Patient.phone_hash.in_(t_hashes)).first()
 
     # Fallback to Authorization Bearer token if present
     if not patient and request:
@@ -967,10 +968,13 @@ def book_appointment_slot(
 
     # Fallback to patient_phone from payload if passed
     if not patient and getattr(payload, "patient_phone", None):
-        clean_p = "".join(c for c in payload.patient_phone if c.isdigit())
-        if len(clean_p) >= 10:
-            p_hash = compute_phone_hash(clean_p[-10:])
-            patient = db.query(Patient).filter(Patient.phone_hash == p_hash).first()
+        raw_p = payload.patient_phone.strip()
+        clean_p = "".join(c for c in raw_p if c.isdigit())
+        last10 = clean_p[-10:] if len(clean_p) >= 10 else clean_p
+        hashes = [compute_phone_hash(raw_p)]
+        if last10:
+            hashes.extend([compute_phone_hash(last10), compute_phone_hash(f"+91{last10}")])
+        patient = db.query(Patient).filter(Patient.phone_hash.in_(hashes)).first()
 
     # If still not found, auto-provision Patient record so appointment booking NEVER blocks
     if not patient:
@@ -982,16 +986,28 @@ def book_appointment_slot(
             p_name = payload.patient_name.strip() if getattr(payload, "patient_name", None) and payload.patient_name else "Patient"
             rand_suffix = "".join(random.choices(string.digits, k=8))
             p_phone = payload.patient_phone.strip() if getattr(payload, "patient_phone", None) and payload.patient_phone else f"+9198{rand_suffix}"
-            patient = Patient(
-                id=prov_id,
-                name=p_name,
-                consent_status=True,
-                uhid=generate_uhid(db)
-            )
-            patient.phone = p_phone
-            db.add(patient)
-            db.commit()
-            db.refresh(patient)
+            
+            # Check if patient with this phone already exists under any format
+            p_clean = "".join(c for c in p_phone if c.isdigit())
+            p_10 = p_clean[-10:] if len(p_clean) >= 10 else p_clean
+            candidate_hashes = [compute_phone_hash(p_phone)]
+            if p_10:
+                candidate_hashes.extend([compute_phone_hash(p_10), compute_phone_hash(f"+91{p_10}")])
+            existing_phone_p = db.query(Patient).filter(Patient.phone_hash.in_(candidate_hashes)).first()
+            
+            if existing_phone_p:
+                patient = existing_phone_p
+            else:
+                patient = Patient(
+                    id=prov_id,
+                    name=p_name,
+                    consent_status=True,
+                    uhid=generate_uhid(db)
+                )
+                patient.phone = p_phone
+                db.add(patient)
+                db.commit()
+                db.refresh(patient)
 
     # 2. Parse appointment date
     try:
@@ -1090,7 +1106,7 @@ def book_appointment_slot(
             Visit.doctor_id == doctor.id,
             Visit.appointment_date == payload.appointment_date,
             Visit.token_number < token_num,
-            Visit.status.in_(["scheduled", "draft", "in_progress", "approved"])
+            Visit.status.in_(["scheduled", "draft", "in_progress", "approved", "pending_confirmation", "confirmed"])
         )
         .count()
     )
@@ -1352,7 +1368,7 @@ def get_visit_queue_status(
     )
 
     # Active visits: status in in_progress, scheduled, draft, approved
-    active_visits = [v for v in day_visits if v.status in ["in_progress", "scheduled", "draft", "approved"]]
+    active_visits = [v for v in day_visits if v.status in ["in_progress", "scheduled", "draft", "approved", "pending_confirmation", "confirmed"]]
 
     # Current serving visit: prioritize 'in_progress' visit, else the earliest active token
     serving_visit = next((v for v in active_visits if v.status == "in_progress"), None)

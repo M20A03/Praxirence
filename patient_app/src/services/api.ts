@@ -290,66 +290,6 @@ export const mobileApi = {
     return data;
   },
 
-  async requestUnifiedOtp(phone: string, channel: 'sms' = 'sms'): Promise<{ success: boolean; message: string; demo_code?: string }> {
-    // Try Doctor OTP endpoint first, fall back to Patient OTP endpoint
-    try {
-      const res = await resilientFetch(`${getEffectiveApiUrl()}/auth/doctor/otp/request`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, channel }),
-      }, 0);
-      if (res.ok) return await res.json();
-    } catch {
-      // fallback to patient OTP
-    }
-
-    const res = await resilientFetch(`${getEffectiveApiUrl()}/auth/otp/request`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, channel }),
-    }, 0);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Failed to request OTP');
-    }
-    return res.json();
-  },
-
-  async verifyUnifiedOtp(phone: string, code: string): Promise<{ access_token?: string; role?: UserRole; user?: ActiveUser; verified: boolean }> {
-    // 1. Try Doctor OTP verify
-    try {
-      const docRes = await resilientFetch(`${getEffectiveApiUrl()}/auth/doctor/otp/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, code }),
-      }, 0);
-      if (docRes.ok) {
-        const data = await docRes.json();
-        return { access_token: data.access_token, role: 'doctor', user: data.user, verified: true };
-      }
-    } catch {
-      // Continue to patient verify
-    }
-
-    // 2. Try Patient OTP verify
-    const patRes = await resilientFetch(`${getEffectiveApiUrl()}/auth/otp/verify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, code }),
-    }, 0);
-
-    if (!patRes.ok) {
-      const err = await patRes.json().catch(() => ({}));
-      throw new Error(err.detail || 'Invalid or expired OTP code');
-    }
-
-    const data = await patRes.json();
-    return { access_token: data.access_token, role: 'patient', user: data.user, verified: true };
-  },
-
-
-
-
   async registerPatient(params: {
     name: string;
     phone?: string;

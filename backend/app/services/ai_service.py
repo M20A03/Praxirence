@@ -58,7 +58,7 @@ class AIService:
                     ]
                 }]
             }
-            models = ["gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
+            models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
             for m in models:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key}"
                 try:
@@ -81,8 +81,8 @@ class AIService:
         Transcribes doctor-patient consultation audio using local Whisper or Multimodal Cloud ASR.
         Guarantees processing for long consultations without truncation.
         """
-        # 1. Try local Whisper if weights are loaded
-        if self.model_loader and getattr(self.model_loader, "whisper_model", None):
+        # 1. Try high-performance local Whisper / Faster-Whisper ASR
+        if self.model_loader:
             try:
                 text = self.model_loader.transcribe(audio_path, language=language)
                 if text and text != "Doctor: Patient consultation completed. No specific prescription recorded.":
@@ -484,7 +484,7 @@ class AIService:
             "generationConfig": {"temperature": 0.1, "maxOutputTokens": 4096, "response_mime_type": "application/json"}
         }
 
-        models = ["gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
+        models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
         for m in models:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key}"
             try:

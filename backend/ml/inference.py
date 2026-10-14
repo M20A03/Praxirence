@@ -74,7 +74,20 @@ class ModelLoader:
 
         logger.info(f"Initializing ModelLoader on device: {self.device.upper()}")
 
-        # 1. Load Whisper ASR
+        # 1. Load Whisper ASR (High-Performance CTranslate2 Faster-Whisper)
+        try:
+            from faster_whisper import WhisperModel
+            logger.info("Pre-loading Faster-Whisper base CTranslate2 ASR...")
+            self._faster_whisper_model = WhisperModel(
+                "base",
+                device=self.device if self.device == "cuda" else "cpu",
+                compute_type="float16" if self.device == "cuda" else "int8",
+                cpu_threads=4,
+            )
+            logger.info("Faster-Whisper CTranslate2 ASR ready.")
+        except Exception as fw_err:
+            logger.warning(f"Faster-Whisper pre-load notice: {fw_err}")
+
         try:
             from transformers import WhisperForConditionalGeneration, WhisperProcessor  # type: ignore
             from peft import PeftModel  # type: ignore
@@ -162,34 +175,64 @@ class ModelLoader:
         converted_wav = None
         target_path = audio_path
 
-        # If not .wav or needs conversion, convert via ffmpeg to 16kHz mono WAV
-        if not audio_path.lower().endswith(".wav"):
-            try:
-                import subprocess
-                converted_wav = audio_path + ".converted.wav"
-                subprocess.run(
-                    ["ffmpeg", "-y", "-i", audio_path, "-ar", str(SAMPLE_RATE), "-ac", "1", converted_wav],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    check=False
-                )
-                if os.path.exists(converted_wav) and os.path.getsize(converted_wav) > 0:
+        # Standardize and normalize all audio inputs to 16kHz mono 16-bit PCM WAV with loudness normalization
+        try:
+            import subprocess
+            converted_wav = audio_path + ".std_16k.wav"
+            cmd = [
+                "ffmpeg", "-y", "-i", audio_path,
+                "-vn",
+                "-ar", str(SAMPLE_RATE),
+                "-ac", "1",
+                "-c:a", "pcm_s16le",
+                "-af", "loudnorm=I=-16:TP=-1.5:LRA=11",
+                converted_wav
+            ]
+            res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+            if res.returncode == 0 and os.path.exists(converted_wav) and os.path.getsize(converted_wav) > 100:
+                target_path = converted_wav
+            else:
+                cmd_simple = [
+                    "ffmpeg", "-y", "-i", audio_path,
+                    "-vn",
+                    "-ar", str(SAMPLE_RATE),
+                    "-ac", "1",
+                    "-c:a", "pcm_s16le",
+                    converted_wav
+                ]
+                subprocess.run(cmd_simple, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+                if os.path.exists(converted_wav) and os.path.getsize(converted_wav) > 100:
                     target_path = converted_wav
-            except Exception as conv_err:
-                logger.warning(f"Audio conversion failed: {conv_err}")
+        except Exception as conv_err:
+            logger.warning(f"Audio conversion failed: {conv_err}")
 
-        # In-House Local Speech Recognition (Zero external API, 100% On-Premise)
+        # Ensure Faster-Whisper CTranslate2 model is loaded and ready
+        if self._faster_whisper_model is None:
+            try:
+                from faster_whisper import WhisperModel
+                logger.info("Initializing faster-whisper CTranslate2 engine (base, int8)...")
+                self._faster_whisper_model = WhisperModel(
+                    "base",
+                    device=self.device if self.device == "cuda" else "cpu",
+                    compute_type="float16" if self.device == "cuda" else "int8",
+                    cpu_threads=4,
+                )
+                logger.info("faster-whisper CTranslate2 engine loaded successfully.")
+            except Exception as e:
+                logger.warning(f"Could not load faster-whisper: {e}")
+
+        # In-House Local Speech Recognition (CTranslate2 Base, Zero cloud latency, 100% On-Premise)
         if hasattr(self, "_faster_whisper_model") and self._faster_whisper_model:
             try:
                 clinical_prompt = build_whisper_clinical_prompt()
                 transcribe_kwargs = {
-                    "beam_size": 2,
-                    "best_of": 2,
-                    "temperature": [0.0, 0.2, 0.4, 0.6],
-                    "repetition_penalty": 1.2,
+                    "beam_size": 3,
+                    "best_of": 3,
+                    "temperature": [0.0, 0.2, 0.4],
+                    "repetition_penalty": 1.15,
                     "initial_prompt": clinical_prompt,
                     "vad_filter": True,
-                    "vad_parameters": dict(min_silence_duration_ms=500, threshold=0.45),
+                    "vad_parameters": dict(min_silence_duration_ms=400, threshold=0.4),
                 }
                 if language and language.lower() not in ("auto", "none"):
                     transcribe_kwargs["language"] = language.lower()

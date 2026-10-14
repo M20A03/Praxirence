@@ -914,16 +914,147 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     (v) => (v.status === 'approved' || v.status === 'completed') && (Boolean(v.diagnosis) || (v.medicines && v.medicines.length > 0))
   );
   const activeMedicines: MedicineItem[] = latestApprovedVisit?.medicines || [];
-  const prescribedReminders: ReminderItem[] = (latestApprovedVisit?.reminders || []).map((r, i) => {
-    const medClean = (r.medicine_name || '').toLowerCase().trim();
-    const customTime = customMedTimes[medClean];
-    return {
-      ...r,
-      id: `prescribed_${i}`,
-      time: customTime || r.time,
-      is_custom: false,
-    };
-  });
+
+  // When patient hasn't customized reminder times, our own clinical default time reminder schedule works automatically
+  const getPrescribedOrDerivedReminders = (): ReminderItem[] => {
+    if (!latestApprovedVisit) return [];
+
+    // If explicit reminders were saved by doctor, use them, overriding with customMedTimes if set
+    if (latestApprovedVisit.reminders && latestApprovedVisit.reminders.length > 0) {
+      return latestApprovedVisit.reminders.map((r, i) => {
+        const medClean = (r.medicine_name || '').toLowerCase().trim();
+        const customTime = customMedTimes[medClean];
+        return {
+          ...r,
+          id: `prescribed_${i}`,
+          time: customTime || r.time || '08:30 AM',
+          is_custom: false,
+        };
+      });
+    }
+
+    // If patient hasn't set custom reminders or no explicit visit reminders exist,
+    // our own custom time reminder schedule automatically works for all prescribed medicines:
+    const derived: ReminderItem[] = [];
+    activeMedicines.forEach((med, medIdx) => {
+      const medClean = (med.name || '').toLowerCase().trim();
+      const customTime = customMedTimes[medClean];
+
+      // If patient configured their own time for this medicine, use it!
+      if (customTime) {
+        derived.push({
+          id: `derived_${medIdx}_custom`,
+          medicine_name: med.name,
+          dosage: med.dosage,
+          time: customTime,
+          frequency: med.frequency || 'Daily',
+          instructions: med.instructions || 'Take as advised by your doctor',
+          is_custom: false,
+        });
+        return;
+      }
+
+      // Otherwise, our own custom clinical default time reminder schedule works:
+      const freq = (med.frequency || '').toLowerCase();
+      const inst = (med.instructions || '').toLowerCase();
+      const isBeforeMeal = inst.includes('before') || inst.includes('empty');
+
+      if (freq.includes('1-1-1') || freq.includes('tds') || freq.includes('three') || freq.includes('thrice')) {
+        derived.push(
+          {
+            id: `derived_${medIdx}_morn`,
+            medicine_name: med.name,
+            dosage: med.dosage,
+            time: isBeforeMeal ? '07:30 AM' : '08:30 AM',
+            frequency: med.frequency || 'Three times daily',
+            instructions: isBeforeMeal ? 'Before breakfast' : 'After breakfast',
+            meal_relation: isBeforeMeal ? 'before_meal' : 'after_meal',
+            is_custom: false,
+          },
+          {
+            id: `derived_${medIdx}_noon`,
+            medicine_name: med.name,
+            dosage: med.dosage,
+            time: '01:30 PM',
+            frequency: med.frequency || 'Three times daily',
+            instructions: 'After lunch',
+            meal_relation: 'after_meal',
+            is_custom: false,
+          },
+          {
+            id: `derived_${medIdx}_night`,
+            medicine_name: med.name,
+            dosage: med.dosage,
+            time: '08:30 PM',
+            frequency: med.frequency || 'Three times daily',
+            instructions: 'After dinner',
+            meal_relation: 'after_meal',
+            is_custom: false,
+          }
+        );
+      } else if (freq.includes('1-0-1') || freq.includes('bd') || freq.includes('twice') || freq.includes('morning & night')) {
+        derived.push(
+          {
+            id: `derived_${medIdx}_morn`,
+            medicine_name: med.name,
+            dosage: med.dosage,
+            time: isBeforeMeal ? '07:30 AM' : '08:30 AM',
+            frequency: med.frequency || 'Twice daily',
+            instructions: isBeforeMeal ? 'Before breakfast' : 'After breakfast',
+            meal_relation: isBeforeMeal ? 'before_meal' : 'after_meal',
+            is_custom: false,
+          },
+          {
+            id: `derived_${medIdx}_night`,
+            medicine_name: med.name,
+            dosage: med.dosage,
+            time: '08:30 PM',
+            frequency: med.frequency || 'Twice daily',
+            instructions: 'After dinner',
+            meal_relation: 'after_meal',
+            is_custom: false,
+          }
+        );
+      } else if (freq.includes('0-0-1') || freq.includes('night') || freq.includes('bedtime') || freq.includes('hs')) {
+        derived.push({
+          id: `derived_${medIdx}_night`,
+          medicine_name: med.name,
+          dosage: med.dosage,
+          time: '09:30 PM',
+          frequency: med.frequency || 'Night at bedtime',
+          instructions: 'Before sleep',
+          // bedtime
+          is_custom: false,
+        });
+      } else if (freq.includes('0-1-0') || freq.includes('afternoon') || freq.includes('lunch')) {
+        derived.push({
+          id: `derived_${medIdx}_noon`,
+          medicine_name: med.name,
+          dosage: med.dosage,
+          time: '01:30 PM',
+          frequency: med.frequency || 'Once daily at noon',
+          instructions: 'After lunch',
+          meal_relation: 'after_meal',
+          is_custom: false,
+        });
+      } else {
+        derived.push({
+          id: `derived_${medIdx}_daily`,
+          medicine_name: med.name,
+          dosage: med.dosage,
+          time: isBeforeMeal ? '07:30 AM' : '08:30 AM',
+          frequency: med.frequency || 'Once daily',
+          instructions: isBeforeMeal ? 'Before breakfast' : 'After breakfast',
+          meal_relation: isBeforeMeal ? 'before_meal' : 'after_meal',
+          is_custom: false,
+        });
+      }
+    });
+
+    return derived;
+  };
+
+  const prescribedReminders: ReminderItem[] = getPrescribedOrDerivedReminders();
 
   const customReminderItems: ReminderItem[] = patientCustomReminders.map((c) => ({
     id: c.id,
@@ -2078,33 +2209,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             Set the exact time you want to receive daily medication alarm notifications:
           </Text>
 
-          {/* Quick Presets */}
-          <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B', textTransform: 'uppercase', marginBottom: 6 }}>Quick Presets</Text>
-          <View style={{ flexDirection: 'row', gap: 6, marginBottom: 16 }}>
-            {[
-              { label: '8:00 AM', h: 8, m: 0, ap: 'AM' },
-              { label: '1:30 PM', h: 1, m: 30, ap: 'PM' },
-              { label: '8:30 PM', h: 8, m: 30, ap: 'PM' },
-            ].map((preset, pidx) => (
-              <TouchableOpacity
-                key={pidx}
-                style={{
-                  flex: 1,
-                  paddingVertical: 7,
-                  borderRadius: 8,
-                  backgroundColor: '#F1F5F9',
-                  alignItems: 'center',
-                }}
-                onPress={() => {
-                  setPickerHour(preset.h);
-                  setPickerMinute(preset.m);
-                  setPickerAmPm(preset.ap as any);
-                }}
-              >
-                <Text style={{ fontSize: 11, fontWeight: '700', color: '#0369A1' }}>{preset.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+
 
           {/* Time Picker Controls */}
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 12, backgroundColor: '#F8FAFC', borderRadius: 12, marginBottom: 16 }}>
@@ -2338,36 +2443,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               ))}
             </View>
 
-            {/* Quick Presets for Time */}
-            <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B', textTransform: 'uppercase', marginBottom: 6 }}>
-              {t('timingLabel')} Presets
-            </Text>
-            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 12 }}>
-              {[
-                { label: '8:00 AM', h: 8, m: 0, ap: 'AM' },
-                { label: '1:30 PM', h: 1, m: 30, ap: 'PM' },
-                { label: '8:30 PM', h: 8, m: 30, ap: 'PM' },
-                { label: '10:00 PM', h: 10, m: 0, ap: 'PM' },
-              ].map((preset, pidx) => (
-                <TouchableOpacity
-                  key={pidx}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 7,
-                    borderRadius: 8,
-                    backgroundColor: '#F1F5F9',
-                    alignItems: 'center',
-                  }}
-                  onPress={() => {
-                    setPickerHour(preset.h);
-                    setPickerMinute(preset.m);
-                    setPickerAmPm(preset.ap as any);
-                  }}
-                >
-                  <Text style={{ fontSize: 10, fontWeight: '700', color: '#0369A1' }}>{preset.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+
 
             {/* Time Picker Controls */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 10, backgroundColor: '#F8FAFC', borderRadius: 12, marginBottom: 16 }}>

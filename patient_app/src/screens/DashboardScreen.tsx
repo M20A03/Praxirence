@@ -12,11 +12,15 @@ import {
   Image,
   BackHandler,
   ActivityIndicator,
+  Linking,
+  Platform,
 } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontFamily, FontSize, LetterSpacing } from '../theme';
-import { PatientUser, Visit, MedicineItem, ReminderItem, VitalsRecord, QueueStatusResponse, FamilyMemberProfile } from '../types';
+import { PatientUser, Visit, MedicineItem, ReminderItem, PatientCustomReminder, VitalsRecord, QueueStatusResponse, FamilyMemberProfile } from '../types';
 import { mobileApi } from '../services/api';
 import { registerForPushNotificationsAsync } from '../services/notifications';
 import { patientRealtime } from '../services/realtime';
@@ -105,6 +109,16 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   // Real-time In-App DPDP Consent Request Modal
   const [pendingConsentRequest, setPendingConsentRequest] = useState<any>(null);
   const [respondingConsent, setRespondingConsent] = useState<boolean>(false);
+
+  // Patient Self-Scheduled Custom Medication Reminders
+  const [patientCustomReminders, setPatientCustomReminders] = useState<PatientCustomReminder[]>([]);
+  const [showReminderModal, setShowReminderModal] = useState<boolean>(false);
+  const [reminderMedName, setReminderMedName] = useState<string>('');
+  const [reminderDosage, setReminderDosage] = useState<string>('1 Tablet');
+  const [reminderMealRelation, setReminderMealRelation] = useState<'after_meal' | 'before_meal' | 'empty_stomach' | 'with_meal'>('after_meal');
+  const [reminderInstructions, setReminderInstructions] = useState<string>('Take with water after food');
+  const [editingCustomReminderId, setEditingCustomReminderId] = useState<string | null>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState<boolean>(false);
 
   // Custom Medication Reminder Time Selector
   const [customMedTimes, setCustomMedTimes] = useState<Record<string, string>>({});
@@ -441,9 +455,156 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     } catch (_) {}
   };
 
+  const loadCustomReminders = async () => {
+    try {
+      const items = await NotificationService.getPatientCustomReminders();
+      setPatientCustomReminders(items);
+    } catch (_) {}
+  };
+
   useEffect(() => {
     loadCustomMedTimes();
+    loadCustomReminders();
   }, []);
+
+  const handleOpenAddReminderModal = (prefillMedName?: string, prefillDosage?: string) => {
+    setEditingCustomReminderId(null);
+    setReminderMedName(prefillMedName || '');
+    setReminderDosage(prefillDosage || '1 Tablet');
+    setReminderMealRelation('after_meal');
+    setReminderInstructions('Take with water after food');
+    setPickerHour(8);
+    setPickerMinute(30);
+    setPickerAmPm('AM');
+    setShowReminderModal(true);
+  };
+
+  const handleOpenEditReminderModal = (rem: ReminderItem) => {
+    if (rem.is_custom && rem.id) {
+      setEditingCustomReminderId(rem.id);
+      setReminderMedName(rem.medicine_name);
+      setReminderDosage(rem.dosage || '1 Tablet');
+      setReminderInstructions(rem.instructions || 'Take as planned');
+      setReminderMealRelation(rem.meal_relation || 'after_meal');
+      if (rem.time && rem.time.includes(':')) {
+        const parts = rem.time.split(':');
+        let h = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        if (!isNaN(h)) {
+          if (h >= 12) {
+            setPickerAmPm('PM');
+            setPickerHour(h === 12 ? 12 : h - 12);
+          } else {
+            setPickerAmPm('AM');
+            setPickerHour(h === 0 ? 12 : h);
+          }
+        }
+        if (!isNaN(m)) setPickerMinute(m);
+      }
+      setShowReminderModal(true);
+    } else {
+      handleOpenTimePicker(rem.medicine_name);
+    }
+  };
+
+  const handleSavePatientCustomReminder = async () => {
+    if (!reminderMedName.trim()) {
+      Alert.alert('Required', 'Please enter or select a medication name.');
+      return;
+    }
+    let h24 = pickerHour % 12;
+    if (pickerAmPm === 'PM') h24 += 12;
+    const hh = h24.toString().padStart(2, '0');
+    const mm = pickerMinute.toString().padStart(2, '0');
+    const timeStr = `${hh}:${mm}`;
+
+    try {
+      await NotificationService.savePatientCustomReminder({
+        id: editingCustomReminderId || undefined,
+        medicine_name: reminderMedName.trim(),
+        dosage: reminderDosage.trim() || '1 Tablet',
+        time: timeStr,
+        frequency: 'Daily',
+        instructions: reminderInstructions.trim(),
+        meal_relation: reminderMealRelation,
+        is_custom: true,
+      });
+
+      await NotificationService.setCustomMedicationTime(reminderMedName.trim(), timeStr);
+      const updatedTimes = await NotificationService.getCustomMedicationTimes();
+      setCustomMedTimes(updatedTimes);
+
+      await NotificationService.scheduleCarePlanReminders(visits);
+      await loadCustomReminders();
+
+      const dispTime = `${pickerHour.toString().padStart(2, '0')}:${mm} ${pickerAmPm}`;
+      setShowReminderModal(false);
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
+      Alert.alert(
+        'Reminder Scheduled',
+        `Daily medication alarm for ${reminderMedName.trim()} set for ${dispTime}.`
+      );
+    } catch (err: any) {
+      Alert.alert('Error', 'Could not save reminder. Please try again.');
+    }
+  };
+
+  const handleDeletePatientCustomReminder = async (id: string) => {
+    try {
+      await NotificationService.deletePatientCustomReminder(id);
+      await NotificationService.scheduleCarePlanReminders(visits);
+      await loadCustomReminders();
+      setShowReminderModal(false);
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
+      Alert.alert('Reminder Removed', 'Medication reminder has been deleted.');
+    } catch (_) {
+      Alert.alert('Error', 'Could not delete reminder.');
+    }
+  };
+
+  const handleDownloadPrescriptionPdf = async (visitId: string, patientName?: string) => {
+    try {
+      setDownloadingPdf(true);
+      try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch (_) {}
+      const remoteUrl = mobileApi.getPrescriptionPdfUrl(visitId);
+
+      if (Platform.OS === 'web') {
+        window.open(remoteUrl, '_blank');
+        return;
+      }
+
+      const prescriptionDir = `${FileSystem.documentDirectory}prescriptions/`;
+      const localFilePath = `${prescriptionDir}prescription_${visitId}.pdf`;
+
+      const dirInfo = await FileSystem.getInfoAsync(prescriptionDir);
+      if (!dirInfo.exists) {
+        await FileSystem.makeDirectoryAsync(prescriptionDir, { intermediates: true });
+      }
+
+      const downloadRes = await FileSystem.downloadAsync(remoteUrl, localFilePath);
+      if (downloadRes.status === 200) {
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(downloadRes.uri, {
+            mimeType: 'application/pdf',
+            dialogTitle: `Prescription - ${patientName || user.name || 'Patient'}`,
+            UTI: 'com.adobe.pdf',
+          });
+          return;
+        }
+      }
+      await Linking.openURL(remoteUrl);
+    } catch (err: any) {
+      console.warn('PDF download error:', err);
+      try {
+        const remoteUrl = mobileApi.getPrescriptionPdfUrl(visitId);
+        await Linking.openURL(remoteUrl);
+      } catch (_) {
+        Alert.alert('Download Notice', 'Prescription PDF could not be opened right now. Please check your network connection.');
+      }
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   const handleOpenTimePicker = (medName: string) => {
     setEditingMedTimeName(medName);
@@ -491,7 +652,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
     Alert.alert(
       'Reminder Updated',
-      
+      `Daily dose reminder for ${targetMed} is now set for ${dispTime}.`
     );
   };
 
@@ -544,6 +705,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         // Automatically schedule native recurring alarm notifications
         NotificationService.scheduleCarePlanReminders(data).catch(() => {});
         syncQueueStatusForVisits(data);
+        loadCustomReminders().catch(() => {});
       }
       setIsOfflineCached(false);
       setIsLive(true);
@@ -752,7 +914,30 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     (v) => (v.status === 'approved' || v.status === 'completed') && (Boolean(v.diagnosis) || (v.medicines && v.medicines.length > 0))
   );
   const activeMedicines: MedicineItem[] = latestApprovedVisit?.medicines || [];
-  const upcomingReminders: ReminderItem[] = latestApprovedVisit?.reminders || [];
+  const prescribedReminders: ReminderItem[] = (latestApprovedVisit?.reminders || []).map((r, i) => {
+    const medClean = (r.medicine_name || '').toLowerCase().trim();
+    const customTime = customMedTimes[medClean];
+    return {
+      ...r,
+      id: `prescribed_${i}`,
+      time: customTime || r.time,
+      is_custom: false,
+    };
+  });
+
+  const customReminderItems: ReminderItem[] = patientCustomReminders.map((c) => ({
+    id: c.id,
+    medicine_name: c.medicine_name,
+    dosage: c.dosage,
+    time: c.time,
+    frequency: c.frequency || 'Daily',
+    instructions: c.instructions,
+    meal_relation: c.meal_relation,
+    is_custom: true,
+  }));
+
+  const allReminders: ReminderItem[] = [...prescribedReminders, ...customReminderItems];
+  const upcomingReminders: ReminderItem[] = allReminders;
 
   const handleMarkTaken = async (key: string) => {
     try {
@@ -1248,6 +1433,32 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 </Text>
               </TouchableOpacity>
             )}
+
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                backgroundColor: '#0D9488',
+                borderRadius: 8,
+                paddingVertical: 9,
+                marginTop: 8,
+              }}
+              disabled={downloadingPdf}
+              onPress={() => handleDownloadPrescriptionPdf(latestApprovedVisit.id, latestApprovedVisit.patient_name)}
+            >
+              {downloadingPdf ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Ionicons name="document-text-outline" size={15} color="#FFFFFF" />
+                  <Text style={{ fontFamily: FontFamily.bold, fontSize: FontSize.xs, color: '#FFFFFF' }}>
+                    {t('downloadPrescriptionPdf')}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -1292,28 +1503,98 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                   <Text style={styles.medDuration}>{t('durationDays')}: {med.duration_days} {t('daysText')}</Text>
                 </View>
               )}
+
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 5,
+                  marginTop: 8,
+                  alignSelf: 'flex-start',
+                  backgroundColor: '#F0FDFA',
+                  paddingHorizontal: 10,
+                  paddingVertical: 5,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: '#CCFBF1'
+                }}
+                onPress={() => handleOpenAddReminderModal(med.name, med.dosage)}
+              >
+                <Ionicons name="alarm-outline" size={13} color="#0D9488" />
+                <Text style={{ fontSize: 11, fontWeight: '700', color: '#0D9488' }}>
+                  {customMedTimes[med.name.toLowerCase().trim()]
+                    ? `${t('timingLabel')}: ${customMedTimes[med.name.toLowerCase().trim()]}`
+                    : t('setMedicineReminder')}
+                </Text>
+              </TouchableOpacity>
             </View>
           ))
         )}
       </View>
 
       {/* Upcoming Reminders List */}
-      {upcomingReminders.length > 1 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('allDailyReminders')}</Text>
-          {upcomingReminders.map((rem, idx) => (
-            <View key={idx} style={styles.reminderRow}>
+      <View style={styles.section}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <Text style={styles.sectionTitle}>{t('allDailyReminders')} ({allReminders.length})</Text>
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              backgroundColor: '#0284C7',
+              paddingHorizontal: 10,
+              paddingVertical: 6,
+              borderRadius: 8,
+            }}
+            onPress={() => handleOpenAddReminderModal()}
+          >
+            <Ionicons name="add-circle-outline" size={14} color="#FFFFFF" />
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#FFFFFF' }}>{t('addCustomReminder')}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {allReminders.length === 0 ? (
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 12, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' }}>
+            <Ionicons name="alarm-outline" size={26} color="#94A3B8" />
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#334155', marginTop: 6 }}>No Reminders Scheduled</Text>
+            <Text style={{ fontSize: 11, color: '#64748B', textAlign: 'center', marginTop: 2, marginBottom: 10 }}>Set daily reminders to never miss your pills and medications.</Text>
+            <TouchableOpacity
+              style={{ backgroundColor: '#0284C7', paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 5 }}
+              onPress={() => handleOpenAddReminderModal()}
+            >
+              <Ionicons name="add" size={15} color="#FFFFFF" />
+              <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 12 }}>{t('setMedicineReminder')}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          allReminders.map((rem, idx) => (
+            <TouchableOpacity
+              key={rem.id || idx}
+              style={styles.reminderRow}
+              activeOpacity={0.8}
+              onPress={() => handleOpenEditReminderModal(rem)}
+            >
               <View style={styles.reminderTimeBadge}>
                 <Text style={styles.reminderTimeText}>{rem.time}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.reminderMedName}>{rem.medicine_name} ({rem.dosage})</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={styles.reminderMedName}>{rem.medicine_name} ({rem.dosage})</Text>
+                  <View style={{ backgroundColor: rem.is_custom ? '#E0F2FE' : '#CCFBF1', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                    <Text style={{ fontSize: 9, fontWeight: '800', color: rem.is_custom ? '#0369A1' : '#0F766E' }}>
+                      {rem.is_custom ? 'My Reminder' : 'Doctor Rx'}
+                    </Text>
+                  </View>
+                </View>
                 <Text style={styles.reminderMedInst}>{rem.instructions || t('dailyDose')}</Text>
               </View>
-            </View>
-          ))}
-        </View>
-      )}
+              <View style={{ padding: 4 }}>
+                <Ionicons name="create-outline" size={16} color="#64748B" />
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
+      </View>
     </ScrollView>
 
     {/* Real Interactive Vitals Tracker Modal */}
@@ -1886,6 +2167,278 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             >
               <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
               <Text style={{ fontSize: 13, fontWeight: '800', color: '#FFFFFF' }}>Save Time</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+
+    {/* Comprehensive Patient-Controlled Medicine Reminder Modal */}
+    <Modal visible={showReminderModal} transparent animationType="slide">
+      <View style={{ flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.7)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ width: '100%', maxWidth: 380, maxHeight: '90%', backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 10 }}>
+          {/* Header */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: '#E0F2FE', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="alarm" size={20} color="#0284C7" />
+              </View>
+              <View>
+                <Text style={{ fontSize: 16, fontWeight: '800', color: '#0F172A' }}>
+                  {editingCustomReminderId ? 'Edit Medicine Reminder' : t('setMedicineReminder')}
+                </Text>
+                <Text style={{ fontSize: 11, color: '#64748B' }}>Personal daily medication alert</Text>
+              </View>
+            </View>
+            <TouchableOpacity onPress={() => setShowReminderModal(false)} style={{ padding: 4 }}>
+              <Ionicons name="close" size={22} color="#64748B" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {/* Quick Pick from Active Prescriptions if available */}
+            {!editingCustomReminderId && activeMedicines.length > 0 && (
+              <View style={{ marginBottom: 12 }}>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B', textTransform: 'uppercase', marginBottom: 6 }}>
+                  {t('chooseFromPrescribed')}
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+                  {activeMedicines.map((m, mi) => (
+                    <TouchableOpacity
+                      key={mi}
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 5,
+                        borderRadius: 8,
+                        backgroundColor: reminderMedName.toLowerCase() === m.name.toLowerCase() ? '#0284C7' : '#F1F5F9',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                      onPress={() => {
+                        setReminderMedName(m.name);
+                        setReminderDosage(m.dosage || '1 Tablet');
+                      }}
+                    >
+                      <Ionicons
+                        name="medkit-outline"
+                        size={12}
+                        color={reminderMedName.toLowerCase() === m.name.toLowerCase() ? '#FFFFFF' : '#0369A1'}
+                      />
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontWeight: '700',
+                          color: reminderMedName.toLowerCase() === m.name.toLowerCase() ? '#FFFFFF' : '#0369A1',
+                        }}
+                      >
+                        {m.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Medicine Name Input */}
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155', marginBottom: 4 }}>
+              {t('medicineNameLabel')} *
+            </Text>
+            <TextInput
+              style={{
+                backgroundColor: '#F8FAFC',
+                borderWidth: 1,
+                borderColor: '#E2E8F0',
+                borderRadius: 10,
+                paddingHorizontal: 12,
+                paddingVertical: 9,
+                fontSize: 14,
+                color: '#0F172A',
+                marginBottom: 12,
+              }}
+              placeholder="e.g. Paracetamol 650mg, Vitamin C"
+              placeholderTextColor="#94A3B8"
+              value={reminderMedName}
+              onChangeText={setReminderMedName}
+            />
+
+            {/* Dosage Input & Chips */}
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155', marginBottom: 4 }}>
+              {t('dosageLabel')}
+            </Text>
+            <TextInput
+              style={{
+                backgroundColor: '#F8FAFC',
+                borderWidth: 1,
+                borderColor: '#E2E8F0',
+                borderRadius: 10,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                fontSize: 13,
+                color: '#0F172A',
+                marginBottom: 6,
+              }}
+              placeholder="e.g. 1 Tablet, 5ml"
+              placeholderTextColor="#94A3B8"
+              value={reminderDosage}
+              onChangeText={setReminderDosage}
+            />
+            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+              {['1 Tablet', '1 Capsule', '5 ml', '2 Drops', '1 Sachet'].map((d, di) => (
+                <TouchableOpacity
+                  key={di}
+                  style={{
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                    borderRadius: 6,
+                    backgroundColor: reminderDosage === d ? '#E0F2FE' : '#F1F5F9',
+                    borderWidth: 1,
+                    borderColor: reminderDosage === d ? '#0284C7' : 'transparent',
+                  }}
+                  onPress={() => setReminderDosage(d)}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: reminderDosage === d ? '#0284C7' : '#64748B' }}>
+                    {d}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Meal Relation Timing */}
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#334155', marginBottom: 6 }}>
+              {t('mealTimingLabel')}
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+              {[
+                { key: 'after_meal', label: t('afterFood') || 'After Food' },
+                { key: 'before_meal', label: t('beforeFood') || 'Before Food' },
+                { key: 'empty_stomach', label: t('emptyStomach') || 'Empty Stomach' },
+                { key: 'with_meal', label: t('atBedtime') || 'At Bedtime' },
+              ].map((mopt) => (
+                <TouchableOpacity
+                  key={mopt.key}
+                  style={{
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 8,
+                    backgroundColor: reminderMealRelation === mopt.key ? '#0284C7' : '#F1F5F9',
+                  }}
+                  onPress={() => setReminderMealRelation(mopt.key as any)}
+                >
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: '700',
+                      color: reminderMealRelation === mopt.key ? '#FFFFFF' : '#475569',
+                    }}
+                  >
+                    {mopt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Quick Presets for Time */}
+            <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B', textTransform: 'uppercase', marginBottom: 6 }}>
+              {t('timingLabel')} Presets
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 12 }}>
+              {[
+                { label: '8:00 AM', h: 8, m: 0, ap: 'AM' },
+                { label: '1:30 PM', h: 1, m: 30, ap: 'PM' },
+                { label: '8:30 PM', h: 8, m: 30, ap: 'PM' },
+                { label: '10:00 PM', h: 10, m: 0, ap: 'PM' },
+              ].map((preset, pidx) => (
+                <TouchableOpacity
+                  key={pidx}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 7,
+                    borderRadius: 8,
+                    backgroundColor: '#F1F5F9',
+                    alignItems: 'center',
+                  }}
+                  onPress={() => {
+                    setPickerHour(preset.h);
+                    setPickerMinute(preset.m);
+                    setPickerAmPm(preset.ap as any);
+                  }}
+                >
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: '#0369A1' }}>{preset.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Time Picker Controls */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 10, backgroundColor: '#F8FAFC', borderRadius: 12, marginBottom: 16 }}>
+              {/* Hour Picker */}
+              <View style={{ alignItems: 'center' }}>
+                <TouchableOpacity onPress={() => setPickerHour((h) => (h >= 12 ? 1 : h + 1))} style={{ padding: 4 }}>
+                  <Ionicons name="chevron-up" size={18} color="#0284C7" />
+                </TouchableOpacity>
+                <Text style={{ fontSize: 24, fontWeight: '800', color: '#0F172A', minWidth: 36, textAlign: 'center' }}>
+                  {pickerHour.toString().padStart(2, '0')}
+                </Text>
+                <TouchableOpacity onPress={() => setPickerHour((h) => (h <= 1 ? 12 : h - 1))} style={{ padding: 4 }}>
+                  <Ionicons name="chevron-down" size={18} color="#0284C7" />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={{ fontSize: 24, fontWeight: '800', color: '#64748B' }}>:</Text>
+
+              {/* Minute Picker */}
+              <View style={{ alignItems: 'center' }}>
+                <TouchableOpacity onPress={() => setPickerMinute((m) => (m >= 45 ? 0 : m + 15))} style={{ padding: 4 }}>
+                  <Ionicons name="chevron-up" size={18} color="#0284C7" />
+                </TouchableOpacity>
+                <Text style={{ fontSize: 24, fontWeight: '800', color: '#0F172A', minWidth: 36, textAlign: 'center' }}>
+                  {pickerMinute.toString().padStart(2, '0')}
+                </Text>
+                <TouchableOpacity onPress={() => setPickerMinute((m) => (m <= 0 ? 45 : m - 15))} style={{ padding: 4 }}>
+                  <Ionicons name="chevron-down" size={18} color="#0284C7" />
+                </TouchableOpacity>
+              </View>
+
+              {/* AM / PM Toggle */}
+              <View style={{ flexDirection: 'row', backgroundColor: '#E2E8F0', borderRadius: 8, padding: 3, marginLeft: 10 }}>
+                <TouchableOpacity
+                  style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: pickerAmPm === 'AM' ? '#0284C7' : 'transparent' }}
+                  onPress={() => setPickerAmPm('AM')}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: pickerAmPm === 'AM' ? '#FFFFFF' : '#475569' }}>AM</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: pickerAmPm === 'PM' ? '#0284C7' : 'transparent' }}
+                  onPress={() => setPickerAmPm('PM')}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: pickerAmPm === 'PM' ? '#FFFFFF' : '#475569' }}>PM</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Action Buttons */}
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+            {editingCustomReminderId && (
+              <TouchableOpacity
+                style={{ paddingHorizontal: 12, paddingVertical: 12, borderRadius: 10, backgroundColor: '#FEE2E2', alignItems: 'center', justifyContent: 'center' }}
+                onPress={() => handleDeletePatientCustomReminder(editingCustomReminderId)}
+              >
+                <Ionicons name="trash-outline" size={18} color="#DC2626" />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={{ flex: 1, paddingVertical: 12, borderRadius: 10, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' }}
+              onPress={() => setShowReminderModal(false)}
+            >
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#475569' }}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ flex: 1.6, paddingVertical: 12, borderRadius: 10, backgroundColor: '#0284C7', alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}
+              onPress={handleSavePatientCustomReminder}
+            >
+              <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
+              <Text style={{ fontSize: 13, fontWeight: '800', color: '#FFFFFF' }}>{t('saveReminder')}</Text>
             </TouchableOpacity>
           </View>
         </View>

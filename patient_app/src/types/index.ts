@@ -171,6 +171,7 @@ export interface MedicineItem {
 }
 
 export interface ReminderItem {
+  id?: string;
   medicine_name: string;
   dosage: string;
   time: string; // 24h format e.g. 08:30
@@ -178,6 +179,19 @@ export interface ReminderItem {
   instructions?: string;
   meal_relation?: 'before_meal' | 'after_meal' | 'empty_stomach' | 'with_meal';
   is_sos?: boolean;
+  is_custom?: boolean;
+}
+
+export interface PatientCustomReminder {
+  id: string;
+  medicine_name: string;
+  dosage: string;
+  time: string; // 24h format e.g. 08:30
+  frequency?: string;
+  instructions?: string;
+  meal_relation?: 'before_meal' | 'after_meal' | 'empty_stomach' | 'with_meal';
+  is_custom: boolean;
+  created_at: string;
 }
 
 export interface Visit {

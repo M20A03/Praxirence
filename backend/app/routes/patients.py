@@ -1393,12 +1393,14 @@ def get_patient_health_records_pdf(
                     "frequency": m.get("frequency", "OD"),
                     "instructions": m.get("instructions", "After food")
                 })
+        from app.routes.visits import parse_transcription_and_summary
+        raw_text, pat_summary, doc_advice = parse_transcription_and_summary(v.raw_transcription)
         visits_data.append({
             "doctor_name": clean_doc,
             "date": v.created_at.strftime("%d %b %Y") if v.created_at else "Recent",
             "diagnosis": v.diagnosis or "Clinical Consultation",
-            "patient_summary": v.patient_summary or "",
-            "doctor_advice": v.doctor_advice or "",
+            "patient_summary": pat_summary or "",
+            "doctor_advice": doc_advice or "",
             "medicines": meds
         })
 

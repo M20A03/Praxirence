@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Visit, MedicineItem, ReminderItem } from '../types';
+import { Visit, MedicineItem, ReminderItem, PatientCustomReminder } from '../types';
 
 // Configure notification presentation in-app
 try {
@@ -96,11 +96,11 @@ export const NotificationService = {
       let scheduledCount = 0;
       const scheduledKeys = new Set<string>();
 
-      // Only schedule for the latest active prescription/visit
-      const latestVisit = visits && visits.length > 0 ? visits[0] : null;
-      if (!latestVisit) return 0;
-
       const customTimes = await this.getCustomMedicationTimes();
+
+      // 1. Process latest active doctor prescription/visit if present
+      const latestVisit = visits && visits.length > 0 ? visits[0] : null;
+      if (latestVisit) {
 
       // 1. Process explicit reminder items if provided by doctor
       if (latestVisit.reminders && latestVisit.reminders.length > 0) {
@@ -269,12 +269,113 @@ export const NotificationService = {
       } catch (followupErr) {
         console.warn('Notice scheduling follow-up check-in notifications:', followupErr);
       }
+      } // end if (latestVisit)
+
+      // 2. Process patient self-scheduled custom reminders
+      try {
+        const patientCustomReminders = await this.getPatientCustomReminders();
+        for (const customRem of patientCustomReminders) {
+          let hour = 8;
+          let minute = 30;
+          if (customRem.time && customRem.time.includes(':')) {
+            const parts = customRem.time.split(':');
+            const parsedHour = parseInt(parts[0], 10);
+            const parsedMin = parseInt(parts[1], 10);
+            hour = !isNaN(parsedHour) ? parsedHour : 8;
+            minute = !isNaN(parsedMin) ? parsedMin : 30;
+          }
+
+          const remKey = `custom_${customRem.id}_${hour}_${minute}`;
+          if (scheduledKeys.has(remKey)) continue;
+          scheduledKeys.add(remKey);
+
+          await Notifications.scheduleNotificationAsync({
+            identifier: `medication_${customRem.id}`,
+            content: {
+              title: `Dose Reminder: ${customRem.medicine_name}`,
+              body: `${customRem.dosage} • ${customRem.instructions || 'Daily medication reminder'}`,
+              data: {
+                type: 'medicine_reminder',
+                medicine: customRem.medicine_name,
+                dosage: customRem.dosage,
+                is_custom: true,
+              },
+              sound: 'default',
+            },
+            trigger: {
+              hour,
+              minute,
+              repeats: true,
+              channelId: 'medicine-reminders',
+            },
+          });
+          scheduledCount++;
+        }
+      } catch (customErr) {
+        console.warn('Notice scheduling patient custom reminders:', customErr);
+      }
 
       await AsyncStorage.setItem('@praxirence_scheduled_reminders_count', scheduledCount.toString());
       return scheduledCount;
     } catch (err) {
       console.warn('Failed to schedule care plan reminders:', err);
       return 0;
+    }
+  },
+
+  /**
+   * Get patient-created custom medication reminders from storage
+   */
+  async getPatientCustomReminders(): Promise<PatientCustomReminder[]> {
+    try {
+      const data = await AsyncStorage.getItem('@praxirence_patient_custom_reminders');
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  /**
+   * Save or update a patient-created custom medication reminder
+   */
+  async savePatientCustomReminder(item: Omit<PatientCustomReminder, 'id' | 'created_at'> & { id?: string }): Promise<PatientCustomReminder> {
+    try {
+      const list = await this.getPatientCustomReminders();
+      const existingIdx = item.id ? list.findIndex(r => r.id === item.id) : -1;
+      const newReminder: PatientCustomReminder = {
+        id: item.id || `custom_rem_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        medicine_name: item.medicine_name.trim(),
+        dosage: item.dosage.trim() || '1 Dose',
+        time: item.time,
+        frequency: item.frequency || 'Daily',
+        instructions: item.instructions || 'Take as planned',
+        meal_relation: item.meal_relation,
+        is_custom: true,
+        created_at: new Date().toISOString()
+      };
+      if (existingIdx >= 0) {
+        list[existingIdx] = newReminder;
+      } else {
+        list.push(newReminder);
+      }
+      await AsyncStorage.setItem('@praxirence_patient_custom_reminders', JSON.stringify(list));
+      return newReminder;
+    } catch (e) {
+      console.warn('Could not save patient custom reminder:', e);
+      throw e;
+    }
+  },
+
+  /**
+   * Delete a patient-created custom medication reminder
+   */
+  async deletePatientCustomReminder(id: string): Promise<void> {
+    try {
+      const list = await this.getPatientCustomReminders();
+      const filtered = list.filter(r => r.id !== id);
+      await AsyncStorage.setItem('@praxirence_patient_custom_reminders', JSON.stringify(filtered));
+    } catch (e) {
+      console.warn('Could not delete patient custom reminder:', e);
     }
   },
 

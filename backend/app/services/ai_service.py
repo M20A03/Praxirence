@@ -58,8 +58,16 @@ class AIService:
                     ]
                 }]
             }
-            models = [os.environ.get("GEMINI_PRIMARY_MODEL", "gemini-3.8-flash"), "gemini-3.7-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
-            models = list(dict.fromkeys(models))
+            models = [
+                os.environ.get("GEMINI_TRANSCRIPTION_MODEL", "gemini-3.5-transcribe"),
+                os.environ.get("GEMINI_PRIMARY_MODEL", "gemini-3.8-flash"),
+                "gemini-3.7-flash",
+                "gemini-3.6-flash",
+                "gemini-3.5-flash",
+                "gemini-3.5-flash-lite",
+                "gemini-flash-latest",
+            ]
+            models = list(dict.fromkeys([m for m in models if m]))
             for m in models:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key}"
                 try:
@@ -485,8 +493,16 @@ class AIService:
             "generationConfig": {"temperature": 0.1, "maxOutputTokens": 4096, "response_mime_type": "application/json"}
         }
 
-        models = [os.environ.get("GEMINI_PRIMARY_MODEL", "gemini-3.8-flash"), "gemini-3.7-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
-        models = list(dict.fromkeys(models))
+        models = [
+            os.environ.get("GEMINI_PRIMARY_MODEL", "gemini-3.8-flash"),
+            "gemini-3.7-flash",
+            "gemini-3.6-flash",
+            "gemini-3.5-flash",
+            "gemini-3.5-flash-lite",
+            "gemini-3-flash-preview",
+            "gemini-flash-latest",
+        ]
+        models = list(dict.fromkeys([m for m in models if m]))
         for m in models:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key}"
             try:

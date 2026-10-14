@@ -30,6 +30,18 @@ interface DoctorSearchScreenProps {
   onOpenChatWithDoctor?: (doctorName: string) => void;
 }
 
+const getSpecialtyLabel = (spec: string, t: (k: string) => string): string => {
+  switch (spec) {
+    case 'All': return t('specialtyAll') || 'All';
+    case 'General Physician': return t('specialtyGeneralPhysician') || 'General Physician';
+    case 'Cardiology': return t('specialtyCardiology') || 'Cardiology';
+    case 'Pediatrics': return t('specialtyPediatrics') || 'Pediatrics';
+    case 'Pulmonology': return t('specialtyPulmonology') || 'Pulmonology';
+    case 'Orthopedics': return t('specialtyOrthopedics') || 'Orthopedics';
+    default: return spec;
+  }
+};
+
 const SPECIALTY_FILTERS = [
   'All',
   'General Physician',
@@ -341,7 +353,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
       {/* Top Clinical Header with Brand Logo and Verified Clinicians Badge */}
       <View style={styles.topHeader}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <BrandLogoMobile variant="header" size="sm" subtitleText="Verified Clinician Directory & Scheduling" />
+          <BrandLogoMobile variant="header" size="sm" subtitleText={t("verifiedCliniciansSubtitle") || "Verified Clinician Directory & Scheduling"} />
           <Image source={require('../../assets/features/doctors.png')} style={{ width: 44, height: 44 }} resizeMode="contain" />
         </View>
       </View>
@@ -352,7 +364,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
           <Ionicons name="search" size={18} color={Colors.textSecondary} style={{ marginRight: 8 }} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search doctor, specialty, city, hospital..."
+            placeholder={t("searchDoctorPlaceholder") || "Search doctor, specialty, city, hospital..."}
             placeholderTextColor={Colors.textSecondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -380,7 +392,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
               color={isNearbyOnly ? '#FFFFFF' : Colors.primaryDark}
             />
             <Text style={[styles.nearbyPillText, isNearbyOnly && styles.nearbyPillTextActive]}>
-              Nearby Doctors (GPS)
+              {t('nearbyDoctorsGps') || 'Nearby Doctors (GPS)'}
             </Text>
           </TouchableOpacity>
 
@@ -392,7 +404,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
           >
             <Ionicons name="map-outline" size={13} color={selectedState !== 'All States' ? '#FFFFFF' : Colors.primary} style={{ marginRight: 4 }} />
             <Text style={[styles.dropdownPillText, selectedState !== 'All States' && styles.dropdownPillTextActive]}>
-              {selectedState === 'All States' ? 'State: All India' : selectedState}
+              {selectedState === 'All States' ? (t('stateAllIndia') || 'State: All India') : selectedState}
             </Text>
             <Ionicons name="chevron-down" size={12} color={selectedState !== 'All States' ? '#FFFFFF' : Colors.textSecondary} style={{ marginLeft: 4 }} />
           </TouchableOpacity>
@@ -405,7 +417,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
           >
             <Ionicons name="business-outline" size={13} color={selectedCity !== 'All Cities' ? '#FFFFFF' : Colors.primary} style={{ marginRight: 4 }} />
             <Text style={[styles.dropdownPillText, selectedCity !== 'All Cities' && styles.dropdownPillTextActive]}>
-              {selectedCity === 'All Cities' ? 'City: All Cities' : selectedCity}
+              {selectedCity === 'All Cities' ? (t('cityAllCities') || 'City: All Cities') : selectedCity}
             </Text>
             <Ionicons name="chevron-down" size={12} color={selectedCity !== 'All Cities' ? '#FFFFFF' : Colors.textSecondary} style={{ marginLeft: 4 }} />
           </TouchableOpacity>
@@ -421,7 +433,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
               activeOpacity={0.7}
             >
               <Ionicons name="close-circle" size={13} color="#EF4444" style={{ marginRight: 3 }} />
-              <Text style={styles.clearFilterText}>Reset</Text>
+              <Text style={styles.clearFilterText}>{t("reset") || "Reset"}</Text>
             </TouchableOpacity>
           )}
         </ScrollView>
@@ -445,7 +457,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                   selectedSpecialty === specialty && styles.filterPillTextActive,
                 ]}
               >
-                {specialty}
+                {getSpecialtyLabel(specialty, t)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -474,21 +486,21 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
           </Text>
           <View style={styles.liveDbBadge}>
             <View style={styles.liveDbDot} />
-            <Text style={styles.liveDbText}>Verified Practice</Text>
+            <Text style={styles.liveDbText}>{t("verifiedPractice") || "Verified Practice"}</Text>
           </View>
         </View>
 
         {loading && !refreshing ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={Colors.primary} />
-            <Text style={styles.loadingText}>Fetching certified clinicians & practice slots...</Text>
+            <Text style={styles.loadingText}>{t("fetchingClinicians") || "Fetching certified clinicians & practice slots..."}</Text>
           </View>
         ) : filteredDoctors.length === 0 ? (
           <View style={styles.emptyCard}>
             <Image source={require('../../assets/features/doctors.png')} style={{ width: 64, height: 64, marginBottom: 16, opacity: 0.7 }} resizeMode="contain" />
-            <Text style={styles.emptyTitle}>No Clinicians Found</Text>
+            <Text style={styles.emptyTitle}>{t('noCliniciansFound') || 'No Clinicians Found'}</Text>
             <Text style={styles.emptySubtitle}>
-              Try adjusting your city filter, radius, or search keywords.
+              {t('noCliniciansSubtitle') || 'Try adjusting your city filter, radius, or search keywords.'}
             </Text>
           </View>
         ) : (
@@ -547,7 +559,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                       >
                         <Ionicons name="star" size={11} color="#D97706" />
                         <Text style={styles.ratingBadgeText}>
-                          {doc.rating ? doc.rating.toFixed(1) : '4.9'} ({doc.review_count || 0} reviews)
+                          {doc.rating ? doc.rating.toFixed(1) : '4.9'} ({doc.review_count || 0} {t('reviewsText') || 'reviews'})
                         </Text>
                       </TouchableOpacity>
 
@@ -561,14 +573,14 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                       {doc.distance_km !== undefined && doc.distance_km !== null && (
                         <View style={styles.distanceBadge}>
                           <Ionicons name="pin" size={10} color="#0284C7" />
-                          <Text style={styles.distanceBadgeText}>{doc.distance_km} km away</Text>
+                          <Text style={styles.distanceBadgeText}>{doc.distance_km} {t('kmAway') || 'km away'}</Text>
                         </View>
                       )}
 
                       <View style={[styles.availabilityBadge, isAvailToday ? styles.availGreen : styles.availAmber]}>
                         <View style={[styles.availDot, isAvailToday ? { backgroundColor: '#10B981' } : { backgroundColor: '#F59E0B' }]} />
                         <Text style={[styles.availText, isAvailToday ? { color: '#047857' } : { color: '#B45309' }]}>
-                          {isAvailToday ? 'Available Today' : 'On Leave Today'}
+                          {isAvailToday ? (t('availableToday') || 'Available Today') : (t('onLeaveToday') || 'On Leave Today')}
                         </Text>
                       </View>
 
@@ -597,7 +609,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                       <Ionicons name="calendar-outline" size={14} color="#ffffff" />
-                      <Text style={styles.bookButtonText}>Book Slot</Text>
+                      <Text style={styles.bookButtonText}>{t("bookSlot") || "Book Slot"}</Text>
                     </View>
                   </TouchableOpacity>
                 </View>
@@ -660,7 +672,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
               <View style={styles.stepSection}>
                 <View style={styles.stepHeaderRow}>
                   <View style={styles.stepNumberBadge}><Text style={styles.stepNumberText}>1</Text></View>
-                  <Text style={styles.stepTitle}>Select Date / तारीख चुनें</Text>
+                  <Text style={styles.stepTitle}>{t("selectDateStep") || "Select Date"}</Text>
                 </View>
 
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.calendarStrip}>
@@ -716,7 +728,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                   <View style={styles.stepSection}>
                     <View style={styles.stepHeaderRow}>
                       <View style={styles.stepNumberBadge}><Text style={styles.stepNumberText}>2</Text></View>
-                      <Text style={styles.stepTitle}>Select Time Slot / समय चुनें</Text>
+                      <Text style={styles.stepTitle}>{t("selectTimeSlotStep") || "Select Time Slot"}</Text>
                     </View>
 
                     {availability?.daily_online_limit && (
@@ -731,7 +743,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                     {/* Morning Slots */}
                     {morningSlots.length > 0 && (
                       <View style={{ marginBottom: 12 }}>
-                        <Text style={styles.slotGroupTitle}>Morning Session (सुबह)</Text>
+                        <Text style={styles.slotGroupTitle}>{t("morningSession") || "Morning Session"}</Text>
                         <View style={styles.slotsGrid}>
                           {morningSlots.map((slot) => {
                             const isSelected = selectedSlot === slot.time;

@@ -262,6 +262,8 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                 autoComplete="off"
                 importantForAutofill="no"
                 autoCorrect={false}
+                textContentType="none"
+                spellCheck={false}
               />
             </View>
 
@@ -425,6 +427,8 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                   autoComplete="off"
                   importantForAutofill="no"
                   autoCorrect={false}
+                  textContentType="none"
+                  spellCheck={false}
                 />
               </View>
 

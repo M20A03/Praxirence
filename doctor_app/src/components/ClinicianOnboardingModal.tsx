@@ -35,7 +35,12 @@ export const ClinicianOnboardingModal: React.FC<ClinicianOnboardingModalProps> =
   onComplete,
   onLogout,
 }) => {
-  const [name, setName] = useState<string>(doctor.name || '');
+  const rawDocName = (doctor.name || '').replace(/^(Dr\.?\s*)+/i, '').trim();
+  const emailPrefix = doctor.email ? doctor.email.split('@')[0].toLowerCase() : '';
+  const isDefaultOrEmail = !rawDocName ||
+    rawDocName.toLowerCase() === 'physician' ||
+    Boolean(emailPrefix && rawDocName.toLowerCase().replace(/[\s._-]+/g, '') === emailPrefix.replace(/[\s._-]+/g, ''));
+  const [name, setName] = useState<string>(isDefaultOrEmail ? '' : (doctor.name || ''));
   const [regNumber, setRegNumber] = useState<string>(doctor.reg_number || '');
   const [degree, setDegree] = useState<string>(doctor.degree || '');
   const [specialty, setSpecialty] = useState<string>(doctor.specialty || '');
@@ -161,6 +166,11 @@ export const ClinicianOnboardingModal: React.FC<ClinicianOnboardingModalProps> =
               onChangeText={setName}
               placeholder="e.g. Dr. Jane Smith"
               placeholderTextColor="#94A3B8"
+              autoComplete="off"
+              importantForAutofill="no"
+              autoCorrect={false}
+              textContentType="none"
+              spellCheck={false}
             />
 
             <Text style={styles.fieldLabel}>

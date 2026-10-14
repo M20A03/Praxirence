@@ -463,8 +463,7 @@ def verify_doctor_email_otp(req: DoctorEmailOTPVerifyRequest, db: Session = Depe
             if effective_name:
                 doc_name = effective_name
             else:
-                username = clean_email.split("@")[0].replace(".", " ").title()
-                doc_name = f"Dr. {username}"
+                doc_name = ""
             doctor = User(
                 email=clean_email,
                 hashed_password=get_password_hash(f"EmailOTPVerified_{clean_email}"),
@@ -501,7 +500,7 @@ def verify_doctor_email_otp(req: DoctorEmailOTPVerifyRequest, db: Session = Depe
             raise HTTPException(status_code=500, detail="Failed to retrieve or provision doctor profile.")
 
     doc_id = str(doctor.id)
-    doc_name = doctor.name or "Dr. Physician"
+    doc_name = doctor.name or ""
     doc_specialty = getattr(doctor, "specialty", None)
     doc_clinic = getattr(doctor, "clinic_name", None)
     doc_reg = getattr(doctor, "reg_number", None)
@@ -826,8 +825,7 @@ def verify_patient_email_otp(req: PatientEmailOTPVerifyRequest, db: Session = De
 
     # Find or provision patient record
     email_hash = compute_phone_hash(clean_email)
-    derived_name = clean_email.split("@")[0].replace(".", " ").title()
-    effective_name = (req.name.strip() if getattr(req, "name", None) and req.name.strip() else None) or stored_name or derived_name
+    effective_name = (req.name.strip() if getattr(req, "name", None) and req.name.strip() else None) or (stored_name.strip() if stored_name and stored_name.strip() else "")
     patient = None
     try:
         if hasattr(Patient, "email"):
@@ -872,7 +870,7 @@ def verify_patient_email_otp(req: PatientEmailOTPVerifyRequest, db: Session = De
             raise HTTPException(status_code=500, detail="Failed to retrieve or provision patient profile.")
 
     pat_id = str(patient.id)
-    pat_name = patient.name or "Patient"
+    pat_name = patient.name or ""
 
     token = create_access_token(
         subject=pat_id,

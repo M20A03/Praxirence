@@ -474,15 +474,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         <View style={styles.cardHeaderRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
             <Ionicons name="cloud-download-outline" size={18} color="#0D9488" />
-            <Text style={styles.cardTitle}>App Version & Updates</Text>
+            <Text style={styles.cardTitle}>{t('appVersionAndUpdates')}</Text>
           </View>
           <View style={styles.versionBadge}>
-            <Text style={styles.versionBadgeText}>v2.1 Production</Text>
+            <Text style={styles.versionBadgeText}>{t('v2Production') || 'v2.1 Production'}</Text>
           </View>
         </View>
 
         <Text style={styles.updateCardSubtitle}>
-          Download latest updates directly from our official portal with 1-click APK installer.
+          {t('downloadLatestUpdatesSub')}
         </Text>
 
         <TouchableOpacity
@@ -491,7 +491,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           activeOpacity={0.85}
         >
           <Ionicons name="arrow-down-circle-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
-          <Text style={styles.updateNowButtonText}>Update App via Website</Text>
+          <Text style={styles.updateNowButtonText}>{t('updateAppViaWebsite')}</Text>
           <Ionicons name="open-outline" size={14} color="#FFFFFF" style={{ marginLeft: 6 }} />
         </TouchableOpacity>
       </View>

@@ -403,6 +403,8 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                       autoComplete="off"
                       importantForAutofill="no"
                       autoCorrect={false}
+                      textContentType="none"
+                      spellCheck={false}
                     />
                   </View>
 
@@ -561,6 +563,8 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                   autoComplete="off"
                   importantForAutofill="no"
                   autoCorrect={false}
+                  textContentType="none"
+                  spellCheck={false}
                 />
               </View>
 

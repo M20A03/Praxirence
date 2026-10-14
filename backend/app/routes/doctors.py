@@ -838,6 +838,8 @@ class DoctorProfileUpdateRequest(BaseModel):
     languages: Optional[List[str]] = None
     consultation_fee: Optional[int] = None
     staff_pin: Optional[str] = None
+    daily_online_limit: Optional[int] = None
+    require_manual_confirmation: Optional[bool] = None
 
 
 @router.put("/{doctor_id}/profile")

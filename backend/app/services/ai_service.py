@@ -58,10 +58,9 @@ class AIService:
                     ]
                 }]
             }
+            # Specialized Google Speech/Audio models (gemini-3.8 is for text/reasoning, not voice audio)
             models = [
                 os.environ.get("GEMINI_TRANSCRIPTION_MODEL", "gemini-3.5-transcribe"),
-                os.environ.get("GEMINI_PRIMARY_MODEL", "gemini-3.8-flash"),
-                "gemini-3.7-flash",
                 "gemini-3.6-flash",
                 "gemini-3.5-flash",
                 "gemini-3.5-flash-lite",

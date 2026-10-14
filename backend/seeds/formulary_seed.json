@@ -10,7 +10,17 @@
     "category": "Antibiotic"
   },
   {
+    "brand": "Augmentin 1000",
+    "generic": "Amoxicillin and Potassium Clavulanate",
+    "category": "Antibiotic"
+  },
+  {
     "brand": "Moxikind-CV 625",
+    "generic": "Amoxicillin and Potassium Clavulanate",
+    "category": "Antibiotic"
+  },
+  {
+    "brand": "Moxikind-CV 375",
     "generic": "Amoxicillin and Potassium Clavulanate",
     "category": "Antibiotic"
   },
@@ -20,7 +30,52 @@
     "category": "Antibiotic"
   },
   {
+    "brand": "Clavam 375",
+    "generic": "Amoxicillin and Potassium Clavulanate",
+    "category": "Antibiotic"
+  },
+  {
+    "brand": "Clavam Forte",
+    "generic": "Amoxicillin and Potassium Clavulanate",
+    "category": "Antibiotic"
+  },
+  {
+    "brand": "Novamox 500",
+    "generic": "Amoxicillin",
+    "category": "Antibiotic"
+  },
+  {
+    "brand": "Novamox 250",
+    "generic": "Amoxicillin",
+    "category": "Antibiotic"
+  },
+  {
+    "brand": "Mox 500",
+    "generic": "Amoxicillin",
+    "category": "Antibiotic"
+  },
+  {
+    "brand": "Roscillin 500",
+    "generic": "Ampicillin",
+    "category": "Antibiotic"
+  },
+  {
+    "brand": "Klox 500",
+    "generic": "Cloxacillin",
+    "category": "Antibiotic"
+  },
+  {
     "brand": "Azithral 500",
+    "generic": "Azithromycin",
+    "category": "Macrolide Antibiotic"
+  },
+  {
+    "brand": "Azithral 250",
+    "generic": "Azithromycin",
+    "category": "Macrolide Antibiotic"
+  },
+  {
+    "brand": "Azithral Junior",
     "generic": "Azithromycin",
     "category": "Macrolide Antibiotic"
   },
@@ -30,8 +85,38 @@
     "category": "Macrolide Antibiotic"
   },
   {
+    "brand": "Azee 250",
+    "generic": "Azithromycin",
+    "category": "Macrolide Antibiotic"
+  },
+  {
     "brand": "Zithrox 500",
     "generic": "Azithromycin",
+    "category": "Macrolide Antibiotic"
+  },
+  {
+    "brand": "Roxid 150",
+    "generic": "Roxithromycin",
+    "category": "Macrolide Antibiotic"
+  },
+  {
+    "brand": "Rulide 150",
+    "generic": "Roxithromycin",
+    "category": "Macrolide Antibiotic"
+  },
+  {
+    "brand": "Claribid 500",
+    "generic": "Clarithromycin",
+    "category": "Macrolide Antibiotic"
+  },
+  {
+    "brand": "Claribid 250",
+    "generic": "Clarithromycin",
+    "category": "Macrolide Antibiotic"
+  },
+  {
+    "brand": "Klacid 500",
+    "generic": "Clarithromycin",
     "category": "Macrolide Antibiotic"
   },
   {
@@ -40,8 +125,28 @@
     "category": "Cephalosporin Antibiotic"
   },
   {
+    "brand": "Taxim-O 100",
+    "generic": "Cefixime",
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
+    "brand": "Taxim-O CV",
+    "generic": "Cefixime and Potassium Clavulanate",
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
     "brand": "Zifi 200",
     "generic": "Cefixime",
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
+    "brand": "Zifi 100",
+    "generic": "Cefixime",
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
+    "brand": "Zifi-CV",
+    "generic": "Cefixime and Potassium Clavulanate",
     "category": "Cephalosporin Antibiotic"
   },
   {
@@ -50,13 +155,118 @@
     "category": "Cephalosporin Antibiotic"
   },
   {
+    "brand": "Cefspan 200",
+    "generic": "Cefixime",
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
+    "brand": "Ceftum 500",
+    "generic": "Cefuroxime Axetil",
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
+    "brand": "Ceftum 250",
+    "generic": "Cefuroxime Axetil",
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
+    "brand": "Cefakind 500",
+    "generic": "Cefuroxime Axetil",
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
+    "brand": "Cefakind 250",
+    "generic": "Cefuroxime Axetil",
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
+    "brand": "Zefu 500",
+    "generic": "Cefuroxime Axetil",
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
     "brand": "Monocef 1g",
     "generic": "Ceftriaxone",
-    "category": "Injectable Cephalosporin"
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
+    "brand": "Monocef 500",
+    "generic": "Ceftriaxone",
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
+    "brand": "Monocef 250",
+    "generic": "Ceftriaxone",
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
+    "brand": "Monocef-SB 1g",
+    "generic": "Ceftriaxone and Sulbactam",
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
+    "brand": "Monocef-O 200",
+    "generic": "Cefpodoxime Proxetil",
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
+    "brand": "Monocef-O 100",
+    "generic": "Cefpodoxime Proxetil",
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
+    "brand": "Cefoprox 200",
+    "generic": "Cefpodoxime Proxetil",
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
+    "brand": "Gudcef 200",
+    "generic": "Cefpodoxime Proxetil",
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
+    "brand": "Gudcef-CV 200",
+    "generic": "Cefpodoxime and Clavulanate",
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
+    "brand": "Taxim 1g",
+    "generic": "Cefotaxime",
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
+    "brand": "Magnex 1g",
+    "generic": "Cefoperazone and Sulbactam",
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
+    "brand": "Magnex Forte 1.5g",
+    "generic": "Cefoperazone and Sulbactam",
+    "category": "Cephalosporin Antibiotic"
+  },
+  {
+    "brand": "Pipzo 4.5g",
+    "generic": "Piperacillin and Tazobactam",
+    "category": "Antibacterial Combination"
+  },
+  {
+    "brand": "Tazact 4.5g",
+    "generic": "Piperacillin and Tazobactam",
+    "category": "Antibacterial Combination"
   },
   {
     "brand": "Ciplox 500",
     "generic": "Ciprofloxacin",
+    "category": "Fluoroquinolone Antibiotic"
+  },
+  {
+    "brand": "Ciplox 250",
+    "generic": "Ciprofloxacin",
+    "category": "Fluoroquinolone Antibiotic"
+  },
+  {
+    "brand": "Ciplox-TZ",
+    "generic": "Ciprofloxacin and Tinidazole",
     "category": "Fluoroquinolone Antibiotic"
   },
   {
@@ -65,14 +275,44 @@
     "category": "Fluoroquinolone Antibiotic"
   },
   {
+    "brand": "Cifran 250",
+    "generic": "Ciprofloxacin",
+    "category": "Fluoroquinolone Antibiotic"
+  },
+  {
+    "brand": "Cifran-CT",
+    "generic": "Ciprofloxacin and Tinidazole",
+    "category": "Fluoroquinolone Antibiotic"
+  },
+  {
+    "brand": "Oflox 200",
+    "generic": "Ofloxacin",
+    "category": "Fluoroquinolone Antibiotic"
+  },
+  {
+    "brand": "Oflox 400",
+    "generic": "Ofloxacin",
+    "category": "Fluoroquinolone Antibiotic"
+  },
+  {
     "brand": "Oflox-OZ",
     "generic": "Ofloxacin and Ornidazole",
-    "category": "Antimicrobial"
+    "category": "Fluoroquinolone Antibiotic"
   },
   {
     "brand": "Zenflox-OZ",
     "generic": "Ofloxacin and Ornidazole",
-    "category": "Antimicrobial"
+    "category": "Fluoroquinolone Antibiotic"
+  },
+  {
+    "brand": "Zanocin 200",
+    "generic": "Ofloxacin",
+    "category": "Fluoroquinolone Antibiotic"
+  },
+  {
+    "brand": "Zanocin-OZ",
+    "generic": "Ofloxacin and Ornidazole",
+    "category": "Fluoroquinolone Antibiotic"
   },
   {
     "brand": "Levomac 500",
@@ -80,7 +320,47 @@
     "category": "Fluoroquinolone Antibiotic"
   },
   {
+    "brand": "Levomac 750",
+    "generic": "Levofloxacin",
+    "category": "Fluoroquinolone Antibiotic"
+  },
+  {
+    "brand": "L-Cin 500",
+    "generic": "Levofloxacin",
+    "category": "Fluoroquinolone Antibiotic"
+  },
+  {
+    "brand": "Glevo 500",
+    "generic": "Levofloxacin",
+    "category": "Fluoroquinolone Antibiotic"
+  },
+  {
+    "brand": "Avelox 400",
+    "generic": "Moxifloxacin",
+    "category": "Fluoroquinolone Antibiotic"
+  },
+  {
+    "brand": "Mahamox 400",
+    "generic": "Moxifloxacin",
+    "category": "Fluoroquinolone Antibiotic"
+  },
+  {
     "brand": "Faropenem 200",
+    "generic": "Faropenem Sodium",
+    "category": "Penem Antibiotic"
+  },
+  {
+    "brand": "Farobact 200",
+    "generic": "Faropenem Sodium",
+    "category": "Penem Antibiotic"
+  },
+  {
+    "brand": "Faronem 200",
+    "generic": "Faropenem Sodium",
+    "category": "Penem Antibiotic"
+  },
+  {
+    "brand": "Duonem 200",
     "generic": "Faropenem Sodium",
     "category": "Penem Antibiotic"
   },
@@ -90,29 +370,299 @@
     "category": "Carbapenem Antibiotic"
   },
   {
-    "brand": "Doxypal-DR",
+    "brand": "Merocrit 1g",
+    "generic": "Meropenem",
+    "category": "Carbapenem Antibiotic"
+  },
+  {
+    "brand": "Meromac 1g",
+    "generic": "Meropenem",
+    "category": "Carbapenem Antibiotic"
+  },
+  {
+    "brand": "Doxy-1 100",
     "generic": "Doxycycline",
     "category": "Tetracycline Antibiotic"
   },
   {
+    "brand": "Microdox-LBX",
+    "generic": "Doxycycline and Lactobacillus",
+    "category": "Tetracycline Antibiotic"
+  },
+  {
+    "brand": "Minoz 100",
+    "generic": "Minocycline",
+    "category": "Tetracycline Antibiotic"
+  },
+  {
+    "brand": "Minoz 50",
+    "generic": "Minocycline",
+    "category": "Tetracycline Antibiotic"
+  },
+  {
+    "brand": "Flagyl 400",
+    "generic": "Metronidazole",
+    "category": "Antiprotozoal / Antibacterial"
+  },
+  {
+    "brand": "Flagyl 200",
+    "generic": "Metronidazole",
+    "category": "Antiprotozoal / Antibacterial"
+  },
+  {
+    "brand": "Metrogyl 400",
+    "generic": "Metronidazole",
+    "category": "Antiprotozoal / Antibacterial"
+  },
+  {
+    "brand": "Metrogyl 200",
+    "generic": "Metronidazole",
+    "category": "Antiprotozoal / Antibacterial"
+  },
+  {
+    "brand": "Norflox 400",
+    "generic": "Norfloxacin",
+    "category": "Fluoroquinolone Antibiotic"
+  },
+  {
+    "brand": "Norflox-TZ",
+    "generic": "Norfloxacin and Tinidazole",
+    "category": "Fluoroquinolone Antibiotic"
+  },
+  {
+    "brand": "Septran DS",
+    "generic": "Trimethoprim and Sulfamethoxazole",
+    "category": "Sulfa Antibacterial"
+  },
+  {
+    "brand": "Septran",
+    "generic": "Trimethoprim and Sulfamethoxazole",
+    "category": "Sulfa Antibacterial"
+  },
+  {
+    "brand": "Bactrim DS",
+    "generic": "Trimethoprim and Sulfamethoxazole",
+    "category": "Sulfa Antibacterial"
+  },
+  {
+    "brand": "Dalacin-C 300",
+    "generic": "Clindamycin",
+    "category": "Lincosamide Antibiotic"
+  },
+  {
+    "brand": "Dalacin-C 150",
+    "generic": "Clindamycin",
+    "category": "Lincosamide Antibiotic"
+  },
+  {
+    "brand": "Zyvox 600",
+    "generic": "Linezolid",
+    "category": "Oxazolidinone Antibiotic"
+  },
+  {
+    "brand": "Lizomac 600",
+    "generic": "Linezolid",
+    "category": "Oxazolidinone Antibiotic"
+  },
+  {
+    "brand": "Linid 600",
+    "generic": "Linezolid",
+    "category": "Oxazolidinone Antibiotic"
+  },
+  {
+    "brand": "Vancocin 1g",
+    "generic": "Vancomycin",
+    "category": "Glycopeptide Antibiotic"
+  },
+  {
+    "brand": "Colistin 1MIU",
+    "generic": "Colistimethate Sodium",
+    "category": "Polymyxin Antibiotic"
+  },
+  {
+    "brand": "Colistin 2MIU",
+    "generic": "Colistimethate Sodium",
+    "category": "Polymyxin Antibiotic"
+  },
+  {
+    "brand": "Rifagut 400",
+    "generic": "Rifaximin",
+    "category": "Gastrointestinal Antibiotic"
+  },
+  {
+    "brand": "Rifagut 550",
+    "generic": "Rifaximin",
+    "category": "Gastrointestinal Antibiotic"
+  },
+  {
+    "brand": "Rifagut 200",
+    "generic": "Rifaximin",
+    "category": "Gastrointestinal Antibiotic"
+  },
+  {
+    "brand": "Diflucan 150",
+    "generic": "Fluconazole",
+    "category": "Antifungal"
+  },
+  {
+    "brand": "Forcan 150",
+    "generic": "Fluconazole",
+    "category": "Antifungal"
+  },
+  {
+    "brand": "Forcan 200",
+    "generic": "Fluconazole",
+    "category": "Antifungal"
+  },
+  {
+    "brand": "Zocon 150",
+    "generic": "Fluconazole",
+    "category": "Antifungal"
+  },
+  {
+    "brand": "Canditral 200",
+    "generic": "Itraconazole",
+    "category": "Antifungal"
+  },
+  {
+    "brand": "Canditral 100",
+    "generic": "Itraconazole",
+    "category": "Antifungal"
+  },
+  {
+    "brand": "Itaspor 200",
+    "generic": "Itraconazole",
+    "category": "Antifungal"
+  },
+  {
+    "brand": "Itaspor 100",
+    "generic": "Itraconazole",
+    "category": "Antifungal"
+  },
+  {
+    "brand": "Terbinaforce 250",
+    "generic": "Terbinafine",
+    "category": "Antifungal"
+  },
+  {
+    "brand": "Sebifin 250",
+    "generic": "Terbinafine",
+    "category": "Antifungal"
+  },
+  {
+    "brand": "Vfend 200",
+    "generic": "Voriconazole",
+    "category": "Antifungal"
+  },
+  {
+    "brand": "Zovirax 400",
+    "generic": "Acyclovir",
+    "category": "Antiviral"
+  },
+  {
+    "brand": "Zovirax 800",
+    "generic": "Acyclovir",
+    "category": "Antiviral"
+  },
+  {
+    "brand": "Herperax 400",
+    "generic": "Acyclovir",
+    "category": "Antiviral"
+  },
+  {
+    "brand": "Valcivir 500",
+    "generic": "Valacyclovir",
+    "category": "Antiviral"
+  },
+  {
+    "brand": "Valcivir 1000",
+    "generic": "Valacyclovir",
+    "category": "Antiviral"
+  },
+  {
+    "brand": "Tamiflu 75",
+    "generic": "Oseltamivir",
+    "category": "Antiviral"
+  },
+  {
+    "brand": "Antiflu 75",
+    "generic": "Oseltamivir",
+    "category": "Antiviral"
+  },
+  {
+    "brand": "Fluvir 75",
+    "generic": "Oseltamivir",
+    "category": "Antiviral"
+  },
+  {
+    "brand": "Zentel 400",
+    "generic": "Albendazole",
+    "category": "Anthelmintic"
+  },
+  {
+    "brand": "Bandy 400",
+    "generic": "Albendazole",
+    "category": "Anthelmintic"
+  },
+  {
+    "brand": "Bandy-Plus",
+    "generic": "Albendazole and Ivermectin",
+    "category": "Anthelmintic"
+  },
+  {
+    "brand": "Ivecop 6",
+    "generic": "Ivermectin",
+    "category": "Antiparasitic"
+  },
+  {
+    "brand": "Ivecop 12",
+    "generic": "Ivermectin",
+    "category": "Antiparasitic"
+  },
+  {
     "brand": "Dolo 650",
-    "generic": "Paracetamol 650mg",
-    "category": "Antipyretic/Analgesic"
+    "generic": "Paracetamol",
+    "category": "Analgesic and Antipyretic"
   },
   {
     "brand": "Calpol 650",
-    "generic": "Paracetamol 650mg",
-    "category": "Antipyretic/Analgesic"
+    "generic": "Paracetamol",
+    "category": "Analgesic and Antipyretic"
+  },
+  {
+    "brand": "Calpol 500",
+    "generic": "Paracetamol",
+    "category": "Analgesic and Antipyretic"
+  },
+  {
+    "brand": "P-650",
+    "generic": "Paracetamol",
+    "category": "Analgesic and Antipyretic"
   },
   {
     "brand": "Pacimol 650",
-    "generic": "Paracetamol 650mg",
-    "category": "Antipyretic/Analgesic"
+    "generic": "Paracetamol",
+    "category": "Analgesic and Antipyretic"
+  },
+  {
+    "brand": "Crocin 650",
+    "generic": "Paracetamol",
+    "category": "Analgesic and Antipyretic"
   },
   {
     "brand": "Crocin Advance",
-    "generic": "Paracetamol Fast Release",
-    "category": "Analgesic"
+    "generic": "Paracetamol",
+    "category": "Analgesic and Antipyretic"
+  },
+  {
+    "brand": "Zerodol 100",
+    "generic": "Aceclofenac",
+    "category": "NSAID Anti-inflammatory"
+  },
+  {
+    "brand": "Zerodol-P",
+    "generic": "Aceclofenac and Paracetamol",
+    "category": "NSAID Anti-inflammatory"
   },
   {
     "brand": "Zerodol-SP",
@@ -120,9 +670,24 @@
     "category": "Anti-inflammatory"
   },
   {
-    "brand": "Zerodol-P",
+    "brand": "Zerodol-TH 4",
+    "generic": "Aceclofenac and Thiocolchicoside",
+    "category": "Muscle Relaxant Combination"
+  },
+  {
+    "brand": "Zerodol-TH 8",
+    "generic": "Aceclofenac and Thiocolchicoside",
+    "category": "Muscle Relaxant Combination"
+  },
+  {
+    "brand": "Zerodol-CR",
+    "generic": "Aceclofenac Controlled Release",
+    "category": "NSAID Anti-inflammatory"
+  },
+  {
+    "brand": "Hifenac-P",
     "generic": "Aceclofenac and Paracetamol",
-    "category": "Anti-inflammatory"
+    "category": "NSAID Anti-inflammatory"
   },
   {
     "brand": "Hifenac-D",
@@ -130,14 +695,59 @@
     "category": "Antispasmodic"
   },
   {
+    "brand": "Voveran 50",
+    "generic": "Diclofenac Sodium",
+    "category": "NSAID Anti-inflammatory"
+  },
+  {
+    "brand": "Voveran SR 75",
+    "generic": "Diclofenac Sodium",
+    "category": "NSAID Anti-inflammatory"
+  },
+  {
     "brand": "Voveran SR 100",
-    "generic": "Diclofenac Sodium Sustained Release",
-    "category": "NSAID"
+    "generic": "Diclofenac Sodium",
+    "category": "NSAID Anti-inflammatory"
+  },
+  {
+    "brand": "Dynapar AQ",
+    "generic": "Diclofenac Sodium Injection",
+    "category": "NSAID Anti-inflammatory"
+  },
+  {
+    "brand": "Dynapar 75",
+    "generic": "Diclofenac and Paracetamol",
+    "category": "NSAID Anti-inflammatory"
   },
   {
     "brand": "Combiflam",
     "generic": "Ibuprofen and Paracetamol",
-    "category": "Analgesic"
+    "category": "NSAID Anti-inflammatory"
+  },
+  {
+    "brand": "Brufen 400",
+    "generic": "Ibuprofen",
+    "category": "NSAID Anti-inflammatory"
+  },
+  {
+    "brand": "Brufen 200",
+    "generic": "Ibuprofen",
+    "category": "NSAID Anti-inflammatory"
+  },
+  {
+    "brand": "Ibugesic-Plus",
+    "generic": "Ibuprofen and Paracetamol",
+    "category": "NSAID Anti-inflammatory"
+  },
+  {
+    "brand": "Meftal 500",
+    "generic": "Mefenamic Acid",
+    "category": "NSAID Anti-inflammatory"
+  },
+  {
+    "brand": "Meftal 250",
+    "generic": "Mefenamic Acid",
+    "category": "NSAID Anti-inflammatory"
   },
   {
     "brand": "Meftal-Spas",
@@ -145,188 +755,853 @@
     "category": "Antispasmodic"
   },
   {
-    "brand": "Meftal 500",
-    "generic": "Mefenamic Acid",
-    "category": "NSAID"
+    "brand": "Nise 100",
+    "generic": "Nimesulide",
+    "category": "NSAID Anti-inflammatory"
   },
   {
-    "brand": "Ultracet",
-    "generic": "Tramadol and Paracetamol",
-    "category": "Opioid Analgesic"
+    "brand": "Nimulid 100",
+    "generic": "Nimesulide",
+    "category": "NSAID Anti-inflammatory"
   },
   {
-    "brand": "Nucoxia 90",
-    "generic": "Etoricoxib",
-    "category": "COX-2 Inhibitor"
+    "brand": "Nicip 100",
+    "generic": "Nimesulide",
+    "category": "NSAID Anti-inflammatory"
+  },
+  {
+    "brand": "Naprosyn 500",
+    "generic": "Naproxen",
+    "category": "NSAID Anti-inflammatory"
+  },
+  {
+    "brand": "Naprosyn 250",
+    "generic": "Naproxen",
+    "category": "NSAID Anti-inflammatory"
+  },
+  {
+    "brand": "Dolonex DT",
+    "generic": "Piroxicam",
+    "category": "NSAID Anti-inflammatory"
+  },
+  {
+    "brand": "Dolonex 20",
+    "generic": "Piroxicam",
+    "category": "NSAID Anti-inflammatory"
+  },
+  {
+    "brand": "Ketanov 10",
+    "generic": "Ketorolac Tromethamine",
+    "category": "NSAID Analgesic"
   },
   {
     "brand": "Ketorol-DT",
     "generic": "Ketorolac Tromethamine",
-    "category": "NSAID"
+    "category": "NSAID Analgesic"
+  },
+  {
+    "brand": "Nucoxia 90",
+    "generic": "Etoricoxib",
+    "category": "Cox-2 Inhibitor NSAID"
+  },
+  {
+    "brand": "Nucoxia 60",
+    "generic": "Etoricoxib",
+    "category": "Cox-2 Inhibitor NSAID"
+  },
+  {
+    "brand": "Nucoxia 120",
+    "generic": "Etoricoxib",
+    "category": "Cox-2 Inhibitor NSAID"
+  },
+  {
+    "brand": "Nucoxia-MR",
+    "generic": "Etoricoxib and Thiocolchicoside",
+    "category": "Muscle Relaxant Combination"
+  },
+  {
+    "brand": "Etoshine 90",
+    "generic": "Etoricoxib",
+    "category": "Cox-2 Inhibitor NSAID"
+  },
+  {
+    "brand": "Etoshine 60",
+    "generic": "Etoricoxib",
+    "category": "Cox-2 Inhibitor NSAID"
+  },
+  {
+    "brand": "Celebrex 200",
+    "generic": "Celecoxib",
+    "category": "Cox-2 Inhibitor NSAID"
+  },
+  {
+    "brand": "Cobix 200",
+    "generic": "Celecoxib",
+    "category": "Cox-2 Inhibitor NSAID"
+  },
+  {
+    "brand": "Myoril 4",
+    "generic": "Thiocolchicoside",
+    "category": "Muscle Relaxant"
+  },
+  {
+    "brand": "Myoril 8",
+    "generic": "Thiocolchicoside",
+    "category": "Muscle Relaxant"
+  },
+  {
+    "brand": "Thiospas 4",
+    "generic": "Thiocolchicoside",
+    "category": "Muscle Relaxant"
+  },
+  {
+    "brand": "Thiospas 8",
+    "generic": "Thiocolchicoside",
+    "category": "Muscle Relaxant"
+  },
+  {
+    "brand": "Mobizox",
+    "generic": "Diclofenac, Paracetamol and Chlorzoxazone",
+    "category": "Muscle Relaxant Combination"
+  },
+  {
+    "brand": "Flexon-MR",
+    "generic": "Ibuprofen, Paracetamol and Chlorzoxazone",
+    "category": "Muscle Relaxant Combination"
+  },
+  {
+    "brand": "Baclof 10",
+    "generic": "Baclofen",
+    "category": "Muscle Relaxant"
+  },
+  {
+    "brand": "Lioresal 10",
+    "generic": "Baclofen",
+    "category": "Muscle Relaxant"
+  },
+  {
+    "brand": "Tizan 2",
+    "generic": "Tizanidine",
+    "category": "Muscle Relaxant"
+  },
+  {
+    "brand": "Ultracet",
+    "generic": "Tramadol and Paracetamol",
+    "category": "Opioid Analgesic Combination"
+  },
+  {
+    "brand": "Tramazac-P",
+    "generic": "Tramadol and Paracetamol",
+    "category": "Opioid Analgesic Combination"
+  },
+  {
+    "brand": "Tramazac 50",
+    "generic": "Tramadol",
+    "category": "Opioid Analgesic"
+  },
+  {
+    "brand": "Pantocid 40",
+    "generic": "Pantoprazole",
+    "category": "Proton Pump Inhibitor"
+  },
+  {
+    "brand": "Pantocid-D",
+    "generic": "Pantoprazole and Domperidone",
+    "category": "Antireflux Combination"
+  },
+  {
+    "brand": "Pantocid-DSR",
+    "generic": "Pantoprazole and Domperidone SR",
+    "category": "Antireflux Combination"
+  },
+  {
+    "brand": "Pantocid-IT",
+    "generic": "Pantoprazole and Itopride",
+    "category": "Antireflux Combination"
+  },
+  {
+    "brand": "Pantocid-L",
+    "generic": "Pantoprazole and Levosulpiride",
+    "category": "Antireflux Combination"
+  },
+  {
+    "brand": "Pan 40",
+    "generic": "Pantoprazole",
+    "category": "Proton Pump Inhibitor"
+  },
+  {
+    "brand": "Pan 20",
+    "generic": "Pantoprazole",
+    "category": "Proton Pump Inhibitor"
+  },
+  {
+    "brand": "Pan-D",
+    "generic": "Pantoprazole and Domperidone",
+    "category": "Antireflux Combination"
+  },
+  {
+    "brand": "Pan-L",
+    "generic": "Pantoprazole and Levosulpiride",
+    "category": "Antireflux Combination"
+  },
+  {
+    "brand": "Razo 20",
+    "generic": "Rabeprazole",
+    "category": "Proton Pump Inhibitor"
+  },
+  {
+    "brand": "Razo-D",
+    "generic": "Rabeprazole and Domperidone",
+    "category": "Antireflux Combination"
+  },
+  {
+    "brand": "Razo-L",
+    "generic": "Rabeprazole and Levosulpiride",
+    "category": "Antireflux Combination"
+  },
+  {
+    "brand": "Rabicip 20",
+    "generic": "Rabeprazole",
+    "category": "Proton Pump Inhibitor"
+  },
+  {
+    "brand": "Rabicip-D",
+    "generic": "Rabeprazole and Domperidone",
+    "category": "Antireflux Combination"
+  },
+  {
+    "brand": "Omez 20",
+    "generic": "Omeprazole",
+    "category": "Proton Pump Inhibitor"
+  },
+  {
+    "brand": "Omez-D",
+    "generic": "Omeprazole and Domperidone",
+    "category": "Antireflux Combination"
+  },
+  {
+    "brand": "Nexpro 40",
+    "generic": "Esomeprazole",
+    "category": "Proton Pump Inhibitor"
+  },
+  {
+    "brand": "Nexpro 20",
+    "generic": "Esomeprazole",
+    "category": "Proton Pump Inhibitor"
+  },
+  {
+    "brand": "Nexpro-RD 40",
+    "generic": "Esomeprazole and Domperidone",
+    "category": "Antireflux Combination"
+  },
+  {
+    "brand": "Nexpro-L",
+    "generic": "Esomeprazole and Levosulpiride",
+    "category": "Antireflux Combination"
+  },
+  {
+    "brand": "Lanzol 30",
+    "generic": "Lansoprazole",
+    "category": "Proton Pump Inhibitor"
+  },
+  {
+    "brand": "Aciloc 150",
+    "generic": "Ranitidine",
+    "category": "H2 Blocker"
+  },
+  {
+    "brand": "Aciloc 300",
+    "generic": "Ranitidine",
+    "category": "H2 Blocker"
+  },
+  {
+    "brand": "Rantac 150",
+    "generic": "Ranitidine",
+    "category": "H2 Blocker"
+  },
+  {
+    "brand": "Famocid 40",
+    "generic": "Famotidine",
+    "category": "H2 Blocker"
+  },
+  {
+    "brand": "Famocid 20",
+    "generic": "Famotidine",
+    "category": "H2 Blocker"
+  },
+  {
+    "brand": "Gelusil MPS",
+    "generic": "Aluminium Hydroxide, Magnesium and Simethicone",
+    "category": "Antacid"
+  },
+  {
+    "brand": "Digene",
+    "generic": "Magnesium Hydroxide, Simethicone and Sodium Carboxymethylcellulose",
+    "category": "Antacid"
+  },
+  {
+    "brand": "Mucaine Gel",
+    "generic": "Oxetacaine, Aluminium and Magnesium Hydroxide",
+    "category": "Antacid Anaesthetic"
+  },
+  {
+    "brand": "Sucrafil",
+    "generic": "Sucralfate",
+    "category": "Mucosal Protective"
+  },
+  {
+    "brand": "Sucrafil-O",
+    "generic": "Sucralfate and Oxetacaine",
+    "category": "Mucosal Protective"
+  },
+  {
+    "brand": "Ondem 4",
+    "generic": "Ondansetron",
+    "category": "Antiemetic"
+  },
+  {
+    "brand": "Ondem 8",
+    "generic": "Ondansetron",
+    "category": "Antiemetic"
+  },
+  {
+    "brand": "Emeset 4",
+    "generic": "Ondansetron",
+    "category": "Antiemetic"
+  },
+  {
+    "brand": "Vomikind 4",
+    "generic": "Ondansetron",
+    "category": "Antiemetic"
+  },
+  {
+    "brand": "Vomistop",
+    "generic": "Domperidone",
+    "category": "Antiemetic"
+  },
+  {
+    "brand": "Perinorm 10",
+    "generic": "Metoclopramide",
+    "category": "Prokinetic Antiemetic"
+  },
+  {
+    "brand": "Ganaton 50",
+    "generic": "Itopride Hydrochloride",
+    "category": "Prokinetic"
+  },
+  {
+    "brand": "Drotin-M",
+    "generic": "Drotaverine and Mefenamic Acid",
+    "category": "Antispasmodic"
+  },
+  {
+    "brand": "Drotikind 40",
+    "generic": "Drotaverine",
+    "category": "Antispasmodic"
+  },
+  {
+    "brand": "Cyclopam",
+    "generic": "Dicyclomine and Paracetamol",
+    "category": "Antispasmodic"
+  },
+  {
+    "brand": "Colimex",
+    "generic": "Dicyclomine and Paracetamol",
+    "category": "Antispasmodic"
+  },
+  {
+    "brand": "Colospa 135",
+    "generic": "Mebeverine Hydrochloride",
+    "category": "Antispasmodic"
+  },
+  {
+    "brand": "Colospa Retard",
+    "generic": "Mebeverine Hydrochloride SR",
+    "category": "Antispasmodic"
+  },
+  {
+    "brand": "Librax",
+    "generic": "Chlordiazepoxide and Clidinium Bromide",
+    "category": "Antispasmodic Anxiolytic"
+  },
+  {
+    "brand": "Darolac",
+    "generic": "Probiotics Blend",
+    "category": "Probiotic"
+  },
+  {
+    "brand": "Econorm",
+    "generic": "Saccharomyces boulardii",
+    "category": "Probiotic"
+  },
+  {
+    "brand": "Vizylac",
+    "generic": "Lactic Acid Bacillus and B-Complex",
+    "category": "Probiotic"
+  },
+  {
+    "brand": "Sporlac",
+    "generic": "Lactobacillus sporogenes",
+    "category": "Probiotic"
+  },
+  {
+    "brand": "VSL#3",
+    "generic": "High Potency Polybiotic Blend",
+    "category": "Probiotic"
+  },
+  {
+    "brand": "Lopamide 2",
+    "generic": "Loperamide",
+    "category": "Antidiarrheal"
+  },
+  {
+    "brand": "Imodium 2",
+    "generic": "Loperamide",
+    "category": "Antidiarrheal"
+  },
+  {
+    "brand": "Redotril 100",
+    "generic": "Racecadotril",
+    "category": "Antidiarrheal"
+  },
+  {
+    "brand": "Enuff 100",
+    "generic": "Racecadotril",
+    "category": "Antidiarrheal"
+  },
+  {
+    "brand": "Udiliv 300",
+    "generic": "Ursodeoxycholic Acid",
+    "category": "Hepatoprotective"
+  },
+  {
+    "brand": "Ursocol 300",
+    "generic": "Ursodeoxycholic Acid",
+    "category": "Hepatoprotective"
+  },
+  {
+    "brand": "Heptral 400",
+    "generic": "Ademetionine (S-Adenosylmethionine)",
+    "category": "Hepatoprotective"
+  },
+  {
+    "brand": "Hepamerz",
+    "generic": "L-Ornithine L-Aspartate",
+    "category": "Hepatoprotective"
+  },
+  {
+    "brand": "Creon 10000",
+    "generic": "Pancreatin Enzymes",
+    "category": "Digestive Enzyme"
+  },
+  {
+    "brand": "Creon 25000",
+    "generic": "Pancreatin Enzymes",
+    "category": "Digestive Enzyme"
+  },
+  {
+    "brand": "Mesacol 800",
+    "generic": "Mesalamine",
+    "category": "Anti-inflammatory Bowel"
+  },
+  {
+    "brand": "Mesacol 400",
+    "generic": "Mesalamine",
+    "category": "Anti-inflammatory Bowel"
+  },
+  {
+    "brand": "Duphalac",
+    "generic": "Lactulose",
+    "category": "Laxative"
+  },
+  {
+    "brand": "Looz",
+    "generic": "Lactulose",
+    "category": "Laxative"
+  },
+  {
+    "brand": "Cremaffin",
+    "generic": "Liquid Paraffin and Milk of Magnesia",
+    "category": "Laxative"
+  },
+  {
+    "brand": "Cremaffin Plus",
+    "generic": "Liquid Paraffin, Milk of Magnesia and Sodium Picosulfate",
+    "category": "Laxative"
+  },
+  {
+    "brand": "Movicol",
+    "generic": "Polyethylene Glycol and Electrolytes",
+    "category": "Laxative"
+  },
+  {
+    "brand": "Softovac",
+    "generic": "Isabgol and Ayurvedic Fiber",
+    "category": "Laxative"
   },
   {
     "brand": "Telma 40",
-    "generic": "Telmisartan 40mg",
-    "category": "ARB Antihypertensive"
+    "generic": "Telmisartan",
+    "category": "Antihypertensive ARB"
+  },
+  {
+    "brand": "Telma 20",
+    "generic": "Telmisartan",
+    "category": "Antihypertensive ARB"
   },
   {
     "brand": "Telma 80",
-    "generic": "Telmisartan 80mg",
-    "category": "ARB Antihypertensive"
+    "generic": "Telmisartan",
+    "category": "Antihypertensive ARB"
+  },
+  {
+    "brand": "Telma-H",
+    "generic": "Telmisartan and Hydrochlorothiazide",
+    "category": "Antihypertensive Combination"
   },
   {
     "brand": "Telma-AM",
     "generic": "Telmisartan and Amlodipine",
-    "category": "Combination Antihypertensive"
+    "category": "Antihypertensive Combination"
   },
   {
-    "brand": "Telmikind-AM",
-    "generic": "Telmisartan and Amlodipine",
-    "category": "Combination Antihypertensive"
-  },
-  {
-    "brand": "Telpres-CT",
+    "brand": "Telma-CT",
     "generic": "Telmisartan and Chlorthalidone",
-    "category": "Diuretic Combination"
+    "category": "Antihypertensive Combination"
+  },
+  {
+    "brand": "Telmikind 40",
+    "generic": "Telmisartan",
+    "category": "Antihypertensive ARB"
+  },
+  {
+    "brand": "Telpres 40",
+    "generic": "Telmisartan",
+    "category": "Antihypertensive ARB"
   },
   {
     "brand": "Amlong 5",
-    "generic": "Amlodipine Besylate 5mg",
-    "category": "CCB Antihypertensive"
+    "generic": "Amlodipine",
+    "category": "Calcium Channel Blocker"
   },
   {
-    "brand": "Stamlo 5",
-    "generic": "S-Amlodipine 5mg",
-    "category": "CCB Antihypertensive"
+    "brand": "Amlong 2.5",
+    "generic": "Amlodipine",
+    "category": "Calcium Channel Blocker"
+  },
+  {
+    "brand": "Amlong 10",
+    "generic": "Amlodipine",
+    "category": "Calcium Channel Blocker"
+  },
+  {
+    "brand": "Amlokind-AT",
+    "generic": "Amlodipine and Atenolol",
+    "category": "Antihypertensive Combination"
   },
   {
     "brand": "Cilacar 10",
-    "generic": "Cilnidipine 10mg",
-    "category": "CCB Antihypertensive"
+    "generic": "Cilnidipine",
+    "category": "Calcium Channel Blocker"
   },
   {
-    "brand": "Cardace 5",
-    "generic": "Ramipril 5mg",
-    "category": "ACE Inhibitor"
+    "brand": "Cilacar 5",
+    "generic": "Cilnidipine",
+    "category": "Calcium Channel Blocker"
   },
   {
-    "brand": "Envas 5",
-    "generic": "Enalapril Maleate 5mg",
-    "category": "ACE Inhibitor"
+    "brand": "Cilacar 20",
+    "generic": "Cilnidipine",
+    "category": "Calcium Channel Blocker"
   },
   {
-    "brand": "Betaloc 25",
-    "generic": "Metoprolol Succinate 25mg",
-    "category": "Beta Blocker"
+    "brand": "Cilacar-T",
+    "generic": "Cilnidipine and Telmisartan",
+    "category": "Antihypertensive Combination"
   },
   {
-    "brand": "Metolar-XR 50",
-    "generic": "Metoprolol Extended Release",
-    "category": "Beta Blocker"
+    "brand": "Atorva 20",
+    "generic": "Atorvastatin",
+    "category": "Lipid Lowering Statin"
   },
   {
-    "brand": "Nebicard 5",
-    "generic": "Nebivolol 5mg",
-    "category": "Beta Blocker"
+    "brand": "Atorva 10",
+    "generic": "Atorvastatin",
+    "category": "Lipid Lowering Statin"
   },
   {
-    "brand": "Concor 5",
-    "generic": "Bisoprolol Fumarate 5mg",
-    "category": "Beta Blocker"
+    "brand": "Atorva 40",
+    "generic": "Atorvastatin",
+    "category": "Lipid Lowering Statin"
+  },
+  {
+    "brand": "Atorlip-F",
+    "generic": "Atorvastatin and Fenofibrate",
+    "category": "Lipid Lowering Combination"
+  },
+  {
+    "brand": "Rosuvas 10",
+    "generic": "Rosuvastatin",
+    "category": "Lipid Lowering Statin"
+  },
+  {
+    "brand": "Rosuvas 20",
+    "generic": "Rosuvastatin",
+    "category": "Lipid Lowering Statin"
+  },
+  {
+    "brand": "Rosuvas 5",
+    "generic": "Rosuvastatin",
+    "category": "Lipid Lowering Statin"
+  },
+  {
+    "brand": "Rosuvas-F",
+    "generic": "Rosuvastatin and Fenofibrate",
+    "category": "Lipid Lowering Combination"
+  },
+  {
+    "brand": "Rozucor 10",
+    "generic": "Rosuvastatin",
+    "category": "Lipid Lowering Statin"
   },
   {
     "brand": "Ecosprin 75",
-    "generic": "Aspirin (Enteric Coated)",
+    "generic": "Aspirin (Acetylsalicylic Acid)",
     "category": "Antiplatelet"
   },
   {
     "brand": "Ecosprin 150",
-    "generic": "Aspirin (Enteric Coated)",
+    "generic": "Aspirin (Acetylsalicylic Acid)",
     "category": "Antiplatelet"
   },
   {
-    "brand": "Ecosprin-AV 75",
+    "brand": "Ecosprin-AV 75/20",
     "generic": "Aspirin and Atorvastatin",
     "category": "Cardiovascular Combination"
   },
   {
-    "brand": "Atorva 10",
-    "generic": "Atorvastatin Calcium 10mg",
-    "category": "Statin"
-  },
-  {
-    "brand": "Atorva 20",
-    "generic": "Atorvastatin Calcium 20mg",
-    "category": "Statin"
-  },
-  {
-    "brand": "Rosuvas 10",
-    "generic": "Rosuvastatin 10mg",
-    "category": "Statin"
-  },
-  {
-    "brand": "Rozucor 20",
-    "generic": "Rosuvastatin 20mg",
-    "category": "Statin"
-  },
-  {
     "brand": "Clopilet 75",
-    "generic": "Clopidogrel 75mg",
+    "generic": "Clopidogrel",
     "category": "Antiplatelet"
+  },
+  {
+    "brand": "Deplatt-A",
+    "generic": "Clopidogrel and Aspirin",
+    "category": "Antiplatelet Combination"
   },
   {
     "brand": "Brilinta 90",
-    "generic": "Ticagrelor 90mg",
+    "generic": "Ticagrelor",
     "category": "Antiplatelet"
   },
   {
-    "brand": "Clexane 40mg",
-    "generic": "Enoxaparin Sodium",
-    "category": "LMWH Anticoagulant"
+    "brand": "Metolar-XR 50",
+    "generic": "Metoprolol Succinate",
+    "category": "Beta Blocker"
   },
   {
-    "brand": "Acitrom 2",
-    "generic": "Nicoumalone / Acenocoumarol",
-    "category": "Anticoagulant"
+    "brand": "Metolar-XR 25",
+    "generic": "Metoprolol Succinate",
+    "category": "Beta Blocker"
   },
   {
-    "brand": "Eliquis 5",
-    "generic": "Apixaban 5mg",
-    "category": "NOAC Anticoagulant"
+    "brand": "Betaloc 50",
+    "generic": "Metoprolol Succinate",
+    "category": "Beta Blocker"
   },
   {
-    "brand": "Xarelto 15",
-    "generic": "Rivaroxaban 15mg",
-    "category": "NOAC Anticoagulant"
+    "brand": "Betaloc 25",
+    "generic": "Metoprolol Succinate",
+    "category": "Beta Blocker"
   },
   {
-    "brand": "Lasix 40",
-    "generic": "Furosemide 40mg",
-    "category": "Loop Diuretic"
+    "brand": "Concor 5",
+    "generic": "Bisoprolol Fumarate",
+    "category": "Beta Blocker"
+  },
+  {
+    "brand": "Concor 2.5",
+    "generic": "Bisoprolol Fumarate",
+    "category": "Beta Blocker"
+  },
+  {
+    "brand": "Concor AM",
+    "generic": "Bisoprolol and Amlodipine",
+    "category": "Antihypertensive Combination"
+  },
+  {
+    "brand": "Nebicard 5",
+    "generic": "Nebivolol",
+    "category": "Beta Blocker"
+  },
+  {
+    "brand": "Nebicard 2.5",
+    "generic": "Nebivolol",
+    "category": "Beta Blocker"
+  },
+  {
+    "brand": "Ciplar 40",
+    "generic": "Propranolol",
+    "category": "Non-selective Beta Blocker"
+  },
+  {
+    "brand": "Ciplar 10",
+    "generic": "Propranolol",
+    "category": "Non-selective Beta Blocker"
+  },
+  {
+    "brand": "Ciplar-LA 40",
+    "generic": "Propranolol Long Acting",
+    "category": "Non-selective Beta Blocker"
+  },
+  {
+    "brand": "Cardace 5",
+    "generic": "Ramipril",
+    "category": "ACE Inhibitor"
+  },
+  {
+    "brand": "Cardace 2.5",
+    "generic": "Ramipril",
+    "category": "ACE Inhibitor"
+  },
+  {
+    "brand": "Ramipres 5",
+    "generic": "Ramipril",
+    "category": "ACE Inhibitor"
+  },
+  {
+    "brand": "Envas 5",
+    "generic": "Enalapril",
+    "category": "ACE Inhibitor"
+  },
+  {
+    "brand": "Losar 50",
+    "generic": "Losartan Potassium",
+    "category": "Antihypertensive ARB"
+  },
+  {
+    "brand": "Losar-H",
+    "generic": "Losartan and Hydrochlorothiazide",
+    "category": "Antihypertensive Combination"
   },
   {
     "brand": "Dytor 10",
-    "generic": "Torsemide 10mg",
+    "generic": "Torsemide",
+    "category": "Loop Diuretic"
+  },
+  {
+    "brand": "Dytor 20",
+    "generic": "Torsemide",
+    "category": "Loop Diuretic"
+  },
+  {
+    "brand": "Dytor Plus 10",
+    "generic": "Torsemide and Spironolactone",
+    "category": "Diuretic Combination"
+  },
+  {
+    "brand": "Lasix 40",
+    "generic": "Furosemide",
     "category": "Loop Diuretic"
   },
   {
     "brand": "Aldactone 25",
-    "generic": "Spironolactone 25mg",
-    "category": "Potassium-Sparing Diuretic"
+    "generic": "Spironolactone",
+    "category": "Potassium-sparing Diuretic"
+  },
+  {
+    "brand": "Sorbitrate 10",
+    "generic": "Isosorbide Dinitrate",
+    "category": "Vasodilator Antianginal"
   },
   {
     "brand": "Sorbitrate 5",
     "generic": "Isosorbide Dinitrate",
-    "category": "Nitrate Vasodilator"
+    "category": "Vasodilator Antianginal"
   },
   {
-    "brand": "Monit 30",
+    "brand": "Monit 20",
     "generic": "Isosorbide Mononitrate",
-    "category": "Nitrate Vasodilator"
+    "category": "Vasodilator Antianginal"
+  },
+  {
+    "brand": "Imdur 30",
+    "generic": "Isosorbide Mononitrate CR",
+    "category": "Vasodilator Antianginal"
+  },
+  {
+    "brand": "Nicostar 5",
+    "generic": "Nicorandil",
+    "category": "Potassium Channel Opener"
+  },
+  {
+    "brand": "Ranolaz 500",
+    "generic": "Ranolazine",
+    "category": "Antianginal"
+  },
+  {
+    "brand": "Ivabrad 5",
+    "generic": "Ivabradine",
+    "category": "HCN Channel Blocker"
+  },
+  {
+    "brand": "Eliquis 5",
+    "generic": "Apixaban",
+    "category": "Direct Oral Anticoagulant (DOAC)"
+  },
+  {
+    "brand": "Eliquis 2.5",
+    "generic": "Apixaban",
+    "category": "Direct Oral Anticoagulant (DOAC)"
+  },
+  {
+    "brand": "Xarelto 20",
+    "generic": "Rivaroxaban",
+    "category": "Direct Oral Anticoagulant (DOAC)"
+  },
+  {
+    "brand": "Xarelto 10",
+    "generic": "Rivaroxaban",
+    "category": "Direct Oral Anticoagulant (DOAC)"
+  },
+  {
+    "brand": "Pradaxa 110",
+    "generic": "Dabigatran Etexilate",
+    "category": "Direct Thrombin Inhibitor"
+  },
+  {
+    "brand": "Warf 5",
+    "generic": "Warfarin Sodium",
+    "category": "Anticoagulant"
+  },
+  {
+    "brand": "Acitrom 2",
+    "generic": "Nicoumalone (Acenocoumarol)",
+    "category": "Anticoagulant"
+  },
+  {
+    "brand": "Cordarone 200",
+    "generic": "Amiodarone",
+    "category": "Antiarrhythmic"
+  },
+  {
+    "brand": "Arkamin",
+    "generic": "Clonidine",
+    "category": "Central Alpha-2 Agonist"
   },
   {
     "brand": "Glycomet 500",
-    "generic": "Metformin Hydrochloride 500mg",
+    "generic": "Metformin Hydrochloride",
+    "category": "Biguanide Antidiabetic"
+  },
+  {
+    "brand": "Glycomet 850",
+    "generic": "Metformin Hydrochloride",
+    "category": "Biguanide Antidiabetic"
+  },
+  {
+    "brand": "Glycomet 1g",
+    "generic": "Metformin Hydrochloride",
     "category": "Biguanide Antidiabetic"
   },
   {
@@ -335,64 +1610,164 @@
     "category": "Biguanide Antidiabetic"
   },
   {
-    "brand": "Glycomet-GP 1",
-    "generic": "Glimepiride and Metformin",
-    "category": "Oral Antidiabetic"
-  },
-  {
-    "brand": "Glycomet-GP 2",
-    "generic": "Glimepiride and Metformin",
-    "category": "Oral Antidiabetic"
+    "brand": "Glycomet-SR 1000",
+    "generic": "Metformin Sustained Release",
+    "category": "Biguanide Antidiabetic"
   },
   {
     "brand": "Amaryl 1mg",
-    "generic": "Glimepiride 1mg",
-    "category": "Sulfonylurea"
+    "generic": "Glimepiride",
+    "category": "Sulfonylurea Antidiabetic"
   },
   {
     "brand": "Amaryl 2mg",
-    "generic": "Glimepiride 2mg",
-    "category": "Sulfonylurea"
+    "generic": "Glimepiride",
+    "category": "Sulfonylurea Antidiabetic"
+  },
+  {
+    "brand": "Amaryl 3mg",
+    "generic": "Glimepiride",
+    "category": "Sulfonylurea Antidiabetic"
+  },
+  {
+    "brand": "Amaryl-M 1",
+    "generic": "Glimepiride and Metformin",
+    "category": "Oral Antidiabetic Combination"
+  },
+  {
+    "brand": "Amaryl-M 2",
+    "generic": "Glimepiride and Metformin",
+    "category": "Oral Antidiabetic Combination"
+  },
+  {
+    "brand": "Amaryl-M Forte",
+    "generic": "Glimepiride and High Dose Metformin",
+    "category": "Oral Antidiabetic Combination"
+  },
+  {
+    "brand": "Diamicron MR 60",
+    "generic": "Gliclazide Modified Release",
+    "category": "Sulfonylurea Antidiabetic"
+  },
+  {
+    "brand": "Diamicron MR 30",
+    "generic": "Gliclazide Modified Release",
+    "category": "Sulfonylurea Antidiabetic"
+  },
+  {
+    "brand": "Reclide MR 60",
+    "generic": "Gliclazide Modified Release",
+    "category": "Sulfonylurea Antidiabetic"
+  },
+  {
+    "brand": "Reclide-M",
+    "generic": "Gliclazide and Metformin",
+    "category": "Oral Antidiabetic Combination"
   },
   {
     "brand": "Januvia 100",
-    "generic": "Sitagliptin 100mg",
-    "category": "DPP-4 Inhibitor"
+    "generic": "Sitagliptin",
+    "category": "DPP-4 Inhibitor Antidiabetic"
+  },
+  {
+    "brand": "Januvia 50",
+    "generic": "Sitagliptin",
+    "category": "DPP-4 Inhibitor Antidiabetic"
   },
   {
     "brand": "Janumet 50/500",
     "generic": "Sitagliptin and Metformin",
-    "category": "Antidiabetic Combination"
+    "category": "Oral Antidiabetic Combination"
+  },
+  {
+    "brand": "Janumet 50/1000",
+    "generic": "Sitagliptin and Metformin",
+    "category": "Oral Antidiabetic Combination"
   },
   {
     "brand": "Galvus 50",
-    "generic": "Vildagliptin 50mg",
-    "category": "DPP-4 Inhibitor"
+    "generic": "Vildagliptin",
+    "category": "DPP-4 Inhibitor Antidiabetic"
   },
   {
     "brand": "Galvus Met 50/500",
     "generic": "Vildagliptin and Metformin",
-    "category": "Antidiabetic Combination"
+    "category": "Oral Antidiabetic Combination"
+  },
+  {
+    "brand": "Galvus Met 50/1000",
+    "generic": "Vildagliptin and Metformin",
+    "category": "Oral Antidiabetic Combination"
   },
   {
     "brand": "Trajenta 5",
-    "generic": "Linagliptin 5mg",
-    "category": "DPP-4 Inhibitor"
+    "generic": "Linagliptin",
+    "category": "DPP-4 Inhibitor Antidiabetic"
+  },
+  {
+    "brand": "Trajenta Duo 2.5/500",
+    "generic": "Linagliptin and Metformin",
+    "category": "Oral Antidiabetic Combination"
+  },
+  {
+    "brand": "Trajenta Duo 2.5/1000",
+    "generic": "Linagliptin and Metformin",
+    "category": "Oral Antidiabetic Combination"
+  },
+  {
+    "brand": "Zita 20",
+    "generic": "Teneligliptin",
+    "category": "DPP-4 Inhibitor Antidiabetic"
+  },
+  {
+    "brand": "Tenlimac 20",
+    "generic": "Teneligliptin",
+    "category": "DPP-4 Inhibitor Antidiabetic"
+  },
+  {
+    "brand": "Tenlimac-M",
+    "generic": "Teneligliptin and Metformin",
+    "category": "Oral Antidiabetic Combination"
   },
   {
     "brand": "Forxiga 10",
-    "generic": "Dapagliflozin 10mg",
-    "category": "SGLT2 Inhibitor"
+    "generic": "Dapagliflozin",
+    "category": "SGLT2 Inhibitor Antidiabetic"
   },
   {
-    "brand": "Jardiance 10",
-    "generic": "Empagliflozin 10mg",
-    "category": "SGLT2 Inhibitor"
+    "brand": "Forxiga 5",
+    "generic": "Dapagliflozin",
+    "category": "SGLT2 Inhibitor Antidiabetic"
+  },
+  {
+    "brand": "Xigduo XR 10/1000",
+    "generic": "Dapagliflozin and Metformin",
+    "category": "Oral Antidiabetic Combination"
   },
   {
     "brand": "Jardiance 25",
-    "generic": "Empagliflozin 25mg",
-    "category": "SGLT2 Inhibitor"
+    "generic": "Empagliflozin",
+    "category": "SGLT2 Inhibitor Antidiabetic"
+  },
+  {
+    "brand": "Jardiance 10",
+    "generic": "Empagliflozin",
+    "category": "SGLT2 Inhibitor Antidiabetic"
+  },
+  {
+    "brand": "Jardiance Duo",
+    "generic": "Empagliflozin and Metformin",
+    "category": "Oral Antidiabetic Combination"
+  },
+  {
+    "brand": "Invokana 100",
+    "generic": "Canagliflozin",
+    "category": "SGLT2 Inhibitor Antidiabetic"
+  },
+  {
+    "brand": "Rybelsus 3mg",
+    "generic": "Oral Semaglutide",
+    "category": "GLP-1 Receptor Agonist"
   },
   {
     "brand": "Rybelsus 7mg",
@@ -400,243 +1775,1208 @@
     "category": "GLP-1 Receptor Agonist"
   },
   {
-    "brand": "Voglibose 0.2",
+    "brand": "Rybelsus 14mg",
+    "generic": "Oral Semaglutide",
+    "category": "GLP-1 Receptor Agonist"
+  },
+  {
+    "brand": "Ozempic 1mg",
+    "generic": "Semaglutide Injection",
+    "category": "GLP-1 Receptor Agonist"
+  },
+  {
+    "brand": "Victoza",
+    "generic": "Liraglutide Injection",
+    "category": "GLP-1 Receptor Agonist"
+  },
+  {
+    "brand": "Volibo 0.3",
     "generic": "Voglibose",
-    "category": "Alpha-Glucosidase Inhibitor"
+    "category": "Alpha-glucosidase Inhibitor"
   },
   {
-    "brand": "Thyronorm 50mcg",
-    "generic": "Levothyroxine Sodium",
-    "category": "Thyroid Hormone"
+    "brand": "Volibo 0.2",
+    "generic": "Voglibose",
+    "category": "Alpha-glucosidase Inhibitor"
   },
   {
-    "brand": "Thyronorm 100mcg",
-    "generic": "Levothyroxine Sodium",
-    "category": "Thyroid Hormone"
+    "brand": "Volibo-M",
+    "generic": "Voglibose and Metformin",
+    "category": "Oral Antidiabetic Combination"
   },
   {
-    "brand": "Eltroxin 50mcg",
-    "generic": "Levothyroxine Sodium",
-    "category": "Thyroid Hormone"
+    "brand": "Pioz 15",
+    "generic": "Pioglitazone",
+    "category": "Thiazolidinedione Antidiabetic"
+  },
+  {
+    "brand": "Pioz 30",
+    "generic": "Pioglitazone",
+    "category": "Thiazolidinedione Antidiabetic"
   },
   {
     "brand": "Mixtard 30/70",
-    "generic": "Biphasic Isophane Insulin",
+    "generic": "Biphasic Isophane Insulin Injection",
     "category": "Insulin"
   },
   {
-    "brand": "Lantus SoloStar",
+    "brand": "Novomix 30",
+    "generic": "Biphasic Insulin Aspart",
+    "category": "Insulin"
+  },
+  {
+    "brand": "Lantus",
     "generic": "Insulin Glargine",
-    "category": "Basal Insulin"
+    "category": "Long-acting Insulin"
   },
   {
-    "brand": "Pan 40",
-    "generic": "Pantoprazole Sodium 40mg",
-    "category": "Proton Pump Inhibitor"
+    "brand": "Basalog",
+    "generic": "Insulin Glargine",
+    "category": "Long-acting Insulin"
   },
   {
-    "brand": "Pantocid 40",
-    "generic": "Pantoprazole Sodium 40mg",
-    "category": "Proton Pump Inhibitor"
+    "brand": "Tresiba",
+    "generic": "Insulin Degludec",
+    "category": "Ultra Long-acting Insulin"
   },
   {
-    "brand": "Pan-D",
-    "generic": "Pantoprazole and Domperidone",
-    "category": "PPI with Prokinetic"
+    "brand": "Novorapid",
+    "generic": "Insulin Aspart",
+    "category": "Rapid-acting Insulin"
   },
   {
-    "brand": "Pantocid-DSR",
-    "generic": "Pantoprazole and Domperidone SR",
-    "category": "PPI with Prokinetic"
+    "brand": "Humalog",
+    "generic": "Insulin Lispro",
+    "category": "Rapid-acting Insulin"
   },
   {
-    "brand": "Razo 20",
-    "generic": "Rabeprazole Sodium 20mg",
-    "category": "Proton Pump Inhibitor"
+    "brand": "Thyronorm 100",
+    "generic": "Thyroxine Sodium (Levothyroxine)",
+    "category": "Thyroid Hormone"
   },
   {
-    "brand": "Rablet 20",
-    "generic": "Rabeprazole Sodium 20mg",
-    "category": "Proton Pump Inhibitor"
+    "brand": "Thyronorm 75",
+    "generic": "Thyroxine Sodium (Levothyroxine)",
+    "category": "Thyroid Hormone"
   },
   {
-    "brand": "Razo-D",
-    "generic": "Rabeprazole and Domperidone",
-    "category": "PPI with Prokinetic"
+    "brand": "Thyronorm 50",
+    "generic": "Thyroxine Sodium (Levothyroxine)",
+    "category": "Thyroid Hormone"
   },
   {
-    "brand": "Nexpro 40",
-    "generic": "Esomeprazole 40mg",
-    "category": "Proton Pump Inhibitor"
+    "brand": "Thyronorm 25",
+    "generic": "Thyroxine Sodium (Levothyroxine)",
+    "category": "Thyroid Hormone"
   },
   {
-    "brand": "Omez 20",
-    "generic": "Omeprazole 20mg",
-    "category": "Proton Pump Inhibitor"
+    "brand": "Thyronorm 12.5",
+    "generic": "Thyroxine Sodium (Levothyroxine)",
+    "category": "Thyroid Hormone"
   },
   {
-    "brand": "Omez-D",
-    "generic": "Omeprazole and Domperidone",
-    "category": "PPI with Prokinetic"
+    "brand": "Thyronorm 88",
+    "generic": "Thyroxine Sodium (Levothyroxine)",
+    "category": "Thyroid Hormone"
   },
   {
-    "brand": "Eldoper",
-    "generic": "Loperamide Hydrochloride",
-    "category": "Antidiarrheal"
+    "brand": "Thyronorm 112",
+    "generic": "Thyroxine Sodium (Levothyroxine)",
+    "category": "Thyroid Hormone"
   },
   {
-    "brand": "Econorm",
-    "generic": "Saccharomyces boulardii",
-    "category": "Probiotic"
+    "brand": "Thyronorm 125",
+    "generic": "Thyroxine Sodium (Levothyroxine)",
+    "category": "Thyroid Hormone"
   },
   {
-    "brand": "Duphalac",
-    "generic": "Lactulose Solution",
-    "category": "Osmotic Laxative"
+    "brand": "Eltroxin 100",
+    "generic": "Levothyroxine Sodium",
+    "category": "Thyroid Hormone"
   },
   {
-    "brand": "Sucrafil O",
-    "generic": "Sucralfate and Oxetacaine",
-    "category": "Mucosal Protectant"
+    "brand": "Eltroxin 50",
+    "generic": "Levothyroxine Sodium",
+    "category": "Thyroid Hormone"
   },
   {
-    "brand": "Udiliv 300",
-    "generic": "Ursodeoxycholic Acid",
-    "category": "Hepatoprotective"
+    "brand": "Neomercazole 10",
+    "generic": "Carbimazole",
+    "category": "Antithyroid Agent"
   },
   {
-    "brand": "Liv-52 DS",
-    "generic": "Himalaya Herbal Hepatoprotective",
-    "category": "Herbal Liver Care"
+    "brand": "Neomercazole 5",
+    "generic": "Carbimazole",
+    "category": "Antithyroid Agent"
   },
   {
-    "brand": "Montair-LC",
-    "generic": "Montelukast and Levocetirizine",
-    "category": "Antiallergic/Antiasthmatic"
+    "brand": "Wysolone 20",
+    "generic": "Prednisolone",
+    "category": "Glucocorticoid Steroid"
   },
   {
-    "brand": "Montek-LC",
-    "generic": "Montelukast and Levocetirizine",
-    "category": "Antiallergic/Antiasthmatic"
+    "brand": "Wysolone 10",
+    "generic": "Prednisolone",
+    "category": "Glucocorticoid Steroid"
   },
   {
-    "brand": "Allegra 120",
-    "generic": "Fexofenadine Hydrochloride 120mg",
-    "category": "Antihistamine"
+    "brand": "Wysolone 5",
+    "generic": "Prednisolone",
+    "category": "Glucocorticoid Steroid"
   },
   {
-    "brand": "Allegra 180",
-    "generic": "Fexofenadine Hydrochloride 180mg",
-    "category": "Antihistamine"
+    "brand": "Omnacortil 20",
+    "generic": "Prednisolone",
+    "category": "Glucocorticoid Steroid"
   },
   {
-    "brand": "Levocet 5",
-    "generic": "Levocetirizine 5mg",
-    "category": "Antihistamine"
+    "brand": "Omnacortil 10",
+    "generic": "Prednisolone",
+    "category": "Glucocorticoid Steroid"
   },
   {
-    "brand": "Cetzine 10",
-    "generic": "Cetirizine Hydrochloride 10mg",
-    "category": "Antihistamine"
+    "brand": "Dexona 4",
+    "generic": "Dexamethasone",
+    "category": "Glucocorticoid Steroid"
+  },
+  {
+    "brand": "Dexona 0.5",
+    "generic": "Dexamethasone",
+    "category": "Glucocorticoid Steroid"
+  },
+  {
+    "brand": "Medrol 16",
+    "generic": "Methylprednisolone",
+    "category": "Glucocorticoid Steroid"
+  },
+  {
+    "brand": "Medrol 8",
+    "generic": "Methylprednisolone",
+    "category": "Glucocorticoid Steroid"
+  },
+  {
+    "brand": "Medrol 4",
+    "generic": "Methylprednisolone",
+    "category": "Glucocorticoid Steroid"
+  },
+  {
+    "brand": "Defcort 6",
+    "generic": "Deflazacort",
+    "category": "Glucocorticoid Steroid"
+  },
+  {
+    "brand": "Cabgolin 0.5",
+    "generic": "Cabergoline",
+    "category": "Dopamine Agonist Prolactin Inhibitor"
   },
   {
     "brand": "Asthalin Inhaler",
-    "generic": "Salbutamol 100mcg",
-    "category": "Short-Acting Bronchodilator"
+    "generic": "Salbutamol (Albuterol)",
+    "category": "Bronchodilator Inhaler"
+  },
+  {
+    "brand": "Asthalin Respules",
+    "generic": "Salbutamol Respirator Solution",
+    "category": "Bronchodilator Inhaler"
+  },
+  {
+    "brand": "Levolin 50mcg",
+    "generic": "Levosalbutamol Inhaler",
+    "category": "Bronchodilator Inhaler"
+  },
+  {
+    "brand": "Levolin Respules",
+    "generic": "Levosalbutamol Respirator Solution",
+    "category": "Bronchodilator Inhaler"
   },
   {
     "brand": "Budecort 200",
-    "generic": "Budesonide Inhalation",
+    "generic": "Budesonide Inhaler",
     "category": "Inhaled Corticosteroid"
   },
   {
-    "brand": "Budecort 0.5mg Respules",
-    "generic": "Budesonide Nebulizer",
-    "category": "Corticosteroid"
+    "brand": "Budecort 100",
+    "generic": "Budesonide Inhaler",
+    "category": "Inhaled Corticosteroid"
   },
   {
-    "brand": "Duolin Respules",
-    "generic": "Levosalbutamol and Ipratropium",
-    "category": "Bronchodilator Nebulizer"
+    "brand": "Budecort Respules 0.5",
+    "generic": "Budesonide Nebulising Suspension",
+    "category": "Inhaled Corticosteroid"
+  },
+  {
+    "brand": "Budecort Respules 1mg",
+    "generic": "Budesonide Nebulising Suspension",
+    "category": "Inhaled Corticosteroid"
   },
   {
     "brand": "Foracort 200",
     "generic": "Formoterol and Budesonide",
-    "category": "Asthma Controller Inhaler"
+    "category": "Inhaler Combination"
+  },
+  {
+    "brand": "Foracort 400",
+    "generic": "Formoterol and Budesonide",
+    "category": "Inhaler Combination"
+  },
+  {
+    "brand": "Foracort Rotacaps",
+    "generic": "Formoterol and Budesonide Powder",
+    "category": "Inhaler Combination"
   },
   {
     "brand": "Seroflo 250",
     "generic": "Salmeterol and Fluticasone",
-    "category": "COPD/Asthma Inhaler"
+    "category": "Inhaler Combination"
   },
   {
-    "brand": "Deriphyllin Retard 150",
+    "brand": "Seroflo 125",
+    "generic": "Salmeterol and Fluticasone",
+    "category": "Inhaler Combination"
+  },
+  {
+    "brand": "Duolin Respules",
+    "generic": "Levosalbutamol and Ipratropium Bromide",
+    "category": "Bronchodilator Combination"
+  },
+  {
+    "brand": "Duolin Inhaler",
+    "generic": "Levosalbutamol and Ipratropium Bromide",
+    "category": "Bronchodilator Combination"
+  },
+  {
+    "brand": "Tiova Inhaler",
+    "generic": "Tiotropium Bromide",
+    "category": "Anticholinergic Inhaler"
+  },
+  {
+    "brand": "Montair 10",
+    "generic": "Montelukast Sodium",
+    "category": "Leukotriene Receptor Antagonist"
+  },
+  {
+    "brand": "Montair-LC",
+    "generic": "Montelukast and Levocetirizine",
+    "category": "Antiallergic Combination"
+  },
+  {
+    "brand": "Montair-LC Kid",
+    "generic": "Montelukast and Levocetirizine Paediatric",
+    "category": "Antiallergic Combination"
+  },
+  {
+    "brand": "Telekast-L",
+    "generic": "Montelukast and Levocetirizine",
+    "category": "Antiallergic Combination"
+  },
+  {
+    "brand": "Monticope",
+    "generic": "Montelukast and Levocetirizine",
+    "category": "Antiallergic Combination"
+  },
+  {
+    "brand": "Allegra 120",
+    "generic": "Fexofenadine Hydrochloride",
+    "category": "Antihistamine"
+  },
+  {
+    "brand": "Allegra 180",
+    "generic": "Fexofenadine Hydrochloride",
+    "category": "Antihistamine"
+  },
+  {
+    "brand": "Allegra-M",
+    "generic": "Fexofenadine and Montelukast",
+    "category": "Antiallergic Combination"
+  },
+  {
+    "brand": "Cetzine 10",
+    "generic": "Cetirizine Hydrochloride",
+    "category": "Antihistamine"
+  },
+  {
+    "brand": "Alerid 10",
+    "generic": "Cetirizine Hydrochloride",
+    "category": "Antihistamine"
+  },
+  {
+    "brand": "Zyrtec 10",
+    "generic": "Cetirizine Hydrochloride",
+    "category": "Antihistamine"
+  },
+  {
+    "brand": "Levocet 5",
+    "generic": "Levocetirizine",
+    "category": "Antihistamine"
+  },
+  {
+    "brand": "Xyzal 5",
+    "generic": "Levocetirizine",
+    "category": "Antihistamine"
+  },
+  {
+    "brand": "1-AL 5",
+    "generic": "Levocetirizine",
+    "category": "Antihistamine"
+  },
+  {
+    "brand": "Bilashine 20",
+    "generic": "Bilastine",
+    "category": "Antihistamine"
+  },
+  {
+    "brand": "Bilast 20",
+    "generic": "Bilastine",
+    "category": "Antihistamine"
+  },
+  {
+    "brand": "Ascoril-LS",
+    "generic": "Levosalbutamol, Ambroxol and Guaiphenesin",
+    "category": "Expectorant Cough Syrup"
+  },
+  {
+    "brand": "Ascoril-D",
+    "generic": "Dextromethorphan, Phenylephrine and Chlorpheniramine",
+    "category": "Cough Syrup"
+  },
+  {
+    "brand": "Grilinctus",
+    "generic": "Dextromethorphan, Chlorpheniramine, Guaifenesin and Ammonium",
+    "category": "Cough Syrup"
+  },
+  {
+    "brand": "Benadryl",
+    "generic": "Diphenhydramine, Ammonium and Sodium Citrate",
+    "category": "Cough Syrup"
+  },
+  {
+    "brand": "Mucinac 600",
+    "generic": "N-Acetylcysteine Effervescent",
+    "category": "Mucolytic"
+  },
+  {
+    "brand": "Mucomix 600",
+    "generic": "N-Acetylcysteine",
+    "category": "Mucolytic"
+  },
+  {
+    "brand": "Deriphyllin 300",
+    "generic": "Theophylline and Etofylline Retard",
+    "category": "Bronchodilator"
+  },
+  {
+    "brand": "Deriphyllin 150",
     "generic": "Theophylline and Etofylline",
     "category": "Bronchodilator"
   },
   {
-    "brand": "Ascoril-LS Syrup",
-    "generic": "Levosalbutamol, Ambroxol, Guaiphenesin",
-    "category": "Expectorant Cough Syrup"
+    "brand": "Doxolin 400",
+    "generic": "Doxofylline",
+    "category": "Xanthine Bronchodilator"
   },
   {
-    "brand": "Alex Cough Syrup",
-    "generic": "Dextromethorphan, Phenylephrine, CPM",
-    "category": "Antitussive Syrup"
+    "brand": "Otrivin Nasal Spray",
+    "generic": "Xylometazoline Hydrochloride",
+    "category": "Nasal Decongestant"
   },
   {
-    "brand": "Grilinctus",
-    "generic": "Dextromethorphan and CPM Syrup",
-    "category": "Antitussive Syrup"
+    "brand": "Nasivion Adult",
+    "generic": "Oxymetazoline Hydrochloride",
+    "category": "Nasal Decongestant"
+  },
+  {
+    "brand": "Flomist Nasal Spray",
+    "generic": "Fluticasone Propionate Aqueous",
+    "category": "Corticosteroid Nasal Spray"
+  },
+  {
+    "brand": "Gabapin 300",
+    "generic": "Gabapentin",
+    "category": "Neuropathic Pain Anticonvulsant"
+  },
+  {
+    "brand": "Gabapin 100",
+    "generic": "Gabapentin",
+    "category": "Neuropathic Pain Anticonvulsant"
+  },
+  {
+    "brand": "Gabapin-NT",
+    "generic": "Gabapentin and Nortriptyline",
+    "category": "Neuropathic Pain Combination"
+  },
+  {
+    "brand": "Pregalin 75",
+    "generic": "Pregabalin",
+    "category": "Neuropathic Pain Anticonvulsant"
+  },
+  {
+    "brand": "Pregalin-M 75",
+    "generic": "Pregabalin and Methylcobalamin",
+    "category": "Neuropathic Pain Combination"
+  },
+  {
+    "brand": "Pregeb-M 75",
+    "generic": "Pregabalin and Methylcobalamin",
+    "category": "Neuropathic Pain Combination"
+  },
+  {
+    "brand": "Neurobion Forte",
+    "generic": "Vitamin B Complex with B12",
+    "category": "Neurotropic Vitamin"
+  },
+  {
+    "brand": "Nurokind-Plus RF",
+    "generic": "Mecobalamin, Alpha Lipoic Acid and Pyridoxine",
+    "category": "Neurotropic Vitamin"
+  },
+  {
+    "brand": "Tegretol CR 200",
+    "generic": "Carbamazepine Controlled Release",
+    "category": "Antiepileptic"
+  },
+  {
+    "brand": "Tegretol 200",
+    "generic": "Carbamazepine",
+    "category": "Antiepileptic"
+  },
+  {
+    "brand": "Mazetol 200",
+    "generic": "Carbamazepine",
+    "category": "Antiepileptic"
+  },
+  {
+    "brand": "Zenoxa 300",
+    "generic": "Oxcarbazepine",
+    "category": "Antiepileptic"
+  },
+  {
+    "brand": "Zenoxa 600",
+    "generic": "Oxcarbazepine",
+    "category": "Antiepileptic"
+  },
+  {
+    "brand": "Encorate Chrono 500",
+    "generic": "Sodium Valproate and Valproic Acid CR",
+    "category": "Antiepileptic Mood Stabilizer"
+  },
+  {
+    "brand": "Encorate Chrono 300",
+    "generic": "Sodium Valproate and Valproic Acid CR",
+    "category": "Antiepileptic Mood Stabilizer"
+  },
+  {
+    "brand": "Levera 500",
+    "generic": "Levetiracetam",
+    "category": "Antiepileptic"
+  },
+  {
+    "brand": "Levera 250",
+    "generic": "Levetiracetam",
+    "category": "Antiepileptic"
+  },
+  {
+    "brand": "Levera 1g",
+    "generic": "Levetiracetam",
+    "category": "Antiepileptic"
+  },
+  {
+    "brand": "Eptoin 100",
+    "generic": "Phenytoin Sodium",
+    "category": "Antiepileptic"
+  },
+  {
+    "brand": "Frisium 10",
+    "generic": "Clobazam",
+    "category": "Benzodiazepine Anticonvulsant"
+  },
+  {
+    "brand": "Frisium 5",
+    "generic": "Clobazam",
+    "category": "Benzodiazepine Anticonvulsant"
+  },
+  {
+    "brand": "Gardenal 60",
+    "generic": "Phenobarbitone",
+    "category": "Barbiturate Anticonvulsant"
+  },
+  {
+    "brand": "Nexito 10",
+    "generic": "Escitalopram",
+    "category": "SSRI Antidepressant"
+  },
+  {
+    "brand": "Nexito 5",
+    "generic": "Escitalopram",
+    "category": "SSRI Antidepressant"
+  },
+  {
+    "brand": "Nexito Plus",
+    "generic": "Escitalopram and Clonazepam",
+    "category": "Anxiolytic Antidepressant"
+  },
+  {
+    "brand": "Nexito Forte",
+    "generic": "Escitalopram and Clonazepam High Strength",
+    "category": "Anxiolytic Antidepressant"
+  },
+  {
+    "brand": "Clonafit 0.5",
+    "generic": "Clonazepam",
+    "category": "Benzodiazepine Anxiolytic"
+  },
+  {
+    "brand": "Clonafit 0.25",
+    "generic": "Clonazepam",
+    "category": "Benzodiazepine Anxiolytic"
+  },
+  {
+    "brand": "Lonazep 0.5",
+    "generic": "Clonazepam",
+    "category": "Benzodiazepine Anxiolytic"
+  },
+  {
+    "brand": "Ativan 2mg",
+    "generic": "Lorazepam",
+    "category": "Benzodiazepine Anxiolytic"
+  },
+  {
+    "brand": "Ativan 1mg",
+    "generic": "Lorazepam",
+    "category": "Benzodiazepine Anxiolytic"
+  },
+  {
+    "brand": "Alprax 0.5",
+    "generic": "Alprazolam",
+    "category": "Benzodiazepine Anxiolytic"
+  },
+  {
+    "brand": "Alprax 0.25",
+    "generic": "Alprazolam",
+    "category": "Benzodiazepine Anxiolytic"
+  },
+  {
+    "brand": "Restyl 0.5",
+    "generic": "Alprazolam",
+    "category": "Benzodiazepine Anxiolytic"
+  },
+  {
+    "brand": "Etilaam 0.5",
+    "generic": "Etizolam",
+    "category": "Thienodiazepine Anxiolytic"
+  },
+  {
+    "brand": "Zolcalm 10",
+    "generic": "Zolpidem Tartrate",
+    "category": "Sedative Hypnotic"
+  },
+  {
+    "brand": "Nitrest 10",
+    "generic": "Zolpidem Tartrate",
+    "category": "Sedative Hypnotic"
+  },
+  {
+    "brand": "Sertima 50",
+    "generic": "Sertraline",
+    "category": "SSRI Antidepressant"
+  },
+  {
+    "brand": "Sertima 100",
+    "generic": "Sertraline",
+    "category": "SSRI Antidepressant"
+  },
+  {
+    "brand": "Flunil 20",
+    "generic": "Fluoxetine",
+    "category": "SSRI Antidepressant"
+  },
+  {
+    "brand": "Duzela 30",
+    "generic": "Duloxetine",
+    "category": "SNRI Antidepressant"
+  },
+  {
+    "brand": "Duzela 20",
+    "generic": "Duloxetine",
+    "category": "SNRI Antidepressant"
+  },
+  {
+    "brand": "Venlor-XR 75",
+    "generic": "Venlafaxine Extended Release",
+    "category": "SNRI Antidepressant"
+  },
+  {
+    "brand": "Tryptomer 25",
+    "generic": "Amitriptyline Hydrochloride",
+    "category": "Tricyclic Antidepressant"
+  },
+  {
+    "brand": "Tryptomer 10",
+    "generic": "Amitriptyline Hydrochloride",
+    "category": "Tricyclic Antidepressant"
+  },
+  {
+    "brand": "Mirtaz 15",
+    "generic": "Mirtazapine",
+    "category": "Tetracyclic Antidepressant"
+  },
+  {
+    "brand": "Oleanz 5",
+    "generic": "Olanzapine",
+    "category": "Atypical Antipsychotic"
+  },
+  {
+    "brand": "Oleanz 10",
+    "generic": "Olanzapine",
+    "category": "Atypical Antipsychotic"
+  },
+  {
+    "brand": "Sizodon 2",
+    "generic": "Risperidone",
+    "category": "Atypical Antipsychotic"
+  },
+  {
+    "brand": "Qutan 50",
+    "generic": "Quetiapine Fumarate",
+    "category": "Atypical Antipsychotic"
+  },
+  {
+    "brand": "Qutan 25",
+    "generic": "Quetiapine Fumarate",
+    "category": "Atypical Antipsychotic"
+  },
+  {
+    "brand": "Suminat 50",
+    "generic": "Sumatriptan Succinate",
+    "category": "5-HT1 Migraine Abortive"
+  },
+  {
+    "brand": "Rizact 10",
+    "generic": "Rizatriptan Benzoate",
+    "category": "5-HT1 Migraine Abortive"
+  },
+  {
+    "brand": "Vasograin",
+    "generic": "Ergotamine, Caffeine, Paracetamol and Belladonna",
+    "category": "Migraine Combination"
+  },
+  {
+    "brand": "Sibelium 10",
+    "generic": "Flunarizine",
+    "category": "Calcium Channel Blocker Migraine Prophylaxis"
+  },
+  {
+    "brand": "Sibelium 5",
+    "generic": "Flunarizine",
+    "category": "Calcium Channel Blocker Migraine Prophylaxis"
+  },
+  {
+    "brand": "Vertin 16",
+    "generic": "Betahistine Dihydrochloride",
+    "category": "Antivertigo Histaminergic"
+  },
+  {
+    "brand": "Vertin 24",
+    "generic": "Betahistine Dihydrochloride",
+    "category": "Antivertigo Histaminergic"
+  },
+  {
+    "brand": "Vertin 8",
+    "generic": "Betahistine Dihydrochloride",
+    "category": "Antivertigo Histaminergic"
+  },
+  {
+    "brand": "Stugeron 25",
+    "generic": "Cinnarizine",
+    "category": "Antivertigo Antihistaminic"
+  },
+  {
+    "brand": "Pacitane 2",
+    "generic": "Trihexyphenidyl Hydrochloride",
+    "category": "Antiparkinsonian Anticholinergic"
+  },
+  {
+    "brand": "Syndopa Plus",
+    "generic": "Levodopa and Carbidopa",
+    "category": "Antiparkinsonian Dopaminergic"
+  },
+  {
+    "brand": "Syndopa 110",
+    "generic": "Levodopa and Carbidopa",
+    "category": "Antiparkinsonian Dopaminergic"
+  },
+  {
+    "brand": "Admenta 10",
+    "generic": "Memantine Hydrochloride",
+    "category": "NMDA Antagonist Dementia"
+  },
+  {
+    "brand": "Donecept 5",
+    "generic": "Donepezil Hydrochloride",
+    "category": "Cholinesterase Inhibitor Dementia"
+  },
+  {
+    "brand": "Strocit 500",
+    "generic": "Citicoline Sodium",
+    "category": "Neuroprotective Cerebrovascular"
+  },
+  {
+    "brand": "Neurocetam 800",
+    "generic": "Piracetam",
+    "category": "Nootropic Cognitive Enhancer"
+  },
+  {
+    "brand": "Urimax 0.4",
+    "generic": "Tamsulosin Hydrochloride",
+    "category": "Alpha-1 Blocker BPH"
+  },
+  {
+    "brand": "Urimax-D",
+    "generic": "Tamsulosin and Dutasteride",
+    "category": "BPH Combination"
+  },
+  {
+    "brand": "Veltam 0.4",
+    "generic": "Tamsulosin Hydrochloride",
+    "category": "Alpha-1 Blocker BPH"
+  },
+  {
+    "brand": "Veltam Plus",
+    "generic": "Tamsulosin and Dutasteride",
+    "category": "BPH Combination"
+  },
+  {
+    "brand": "Silodal 8",
+    "generic": "Silodosin",
+    "category": "Selective Alpha-1A Blocker BPH"
+  },
+  {
+    "brand": "Silodal 4",
+    "generic": "Silodosin",
+    "category": "Selective Alpha-1A Blocker BPH"
+  },
+  {
+    "brand": "Silodal-D",
+    "generic": "Silodosin and Dutasteride",
+    "category": "BPH Combination"
+  },
+  {
+    "brand": "Dutas 0.5",
+    "generic": "Dutasteride",
+    "category": "5-Alpha Reductase Inhibitor"
+  },
+  {
+    "brand": "Finast 5",
+    "generic": "Finasteride",
+    "category": "5-Alpha Reductase Inhibitor"
+  },
+  {
+    "brand": "Cital Liquid",
+    "generic": "Disodium Hydrogen Citrate",
+    "category": "Urinary Alkalinizer"
+  },
+  {
+    "brand": "Citralka Liquid",
+    "generic": "Disodium Hydrogen Citrate",
+    "category": "Urinary Alkalinizer"
+  },
+  {
+    "brand": "Potrate-MB6",
+    "generic": "Potassium Citrate, Magnesium and Vitamin B6",
+    "category": "Urinary Alkalinizer Kidney Stone"
+  },
+  {
+    "brand": "Urispas 200",
+    "generic": "Flavoxate Hydrochloride",
+    "category": "Urinary Antispasmodic"
+  },
+  {
+    "brand": "Soliten 5",
+    "generic": "Solifenacin Succinate",
+    "category": "Antimuscarinic Overactive Bladder"
+  },
+  {
+    "brand": "Mirago 25",
+    "generic": "Mirabegron Extended Release",
+    "category": "Beta-3 Agonist Overactive Bladder"
+  },
+  {
+    "brand": "Manforce 50",
+    "generic": "Sildenafil Citrate",
+    "category": "PDE-5 Inhibitor"
+  },
+  {
+    "brand": "Manforce 100",
+    "generic": "Sildenafil Citrate",
+    "category": "PDE-5 Inhibitor"
+  },
+  {
+    "brand": "Megalis 20",
+    "generic": "Tadalafil",
+    "category": "PDE-5 Inhibitor"
+  },
+  {
+    "brand": "Megalis 10",
+    "generic": "Tadalafil",
+    "category": "PDE-5 Inhibitor"
+  },
+  {
+    "brand": "Susten 200",
+    "generic": "Natural Micronized Progesterone",
+    "category": "Progestogen"
+  },
+  {
+    "brand": "Susten 300",
+    "generic": "Natural Micronized Progesterone SR",
+    "category": "Progestogen"
+  },
+  {
+    "brand": "Naturogest 200",
+    "generic": "Natural Micronized Progesterone",
+    "category": "Progestogen"
+  },
+  {
+    "brand": "Duphaston 10",
+    "generic": "Dydrogesterone",
+    "category": "Progestogen"
+  },
+  {
+    "brand": "Regestrone 5",
+    "generic": "Norethisterone",
+    "category": "Progestogen Menstrual Disorders"
+  },
+  {
+    "brand": "Primolut-N",
+    "generic": "Norethisterone",
+    "category": "Progestogen Menstrual Disorders"
+  },
+  {
+    "brand": "Mala-D",
+    "generic": "Levonorgestrel and Ethinylestradiol",
+    "category": "Oral Contraceptive Pill"
+  },
+  {
+    "brand": "Saheli",
+    "generic": "Ormeloxifene (Centchroman)",
+    "category": "Non-hormonal Contraceptive (SERM)"
+  },
+  {
+    "brand": "Unwanted-72",
+    "generic": "Levonorgestrel Emergency Contraceptive",
+    "category": "Emergency Contraceptive"
+  },
+  {
+    "brand": "i-Pill",
+    "generic": "Levonorgestrel Emergency Contraceptive",
+    "category": "Emergency Contraceptive"
+  },
+  {
+    "brand": "Fertomid 50",
+    "generic": "Clomiphene Citrate",
+    "category": "Ovulation Inducer"
+  },
+  {
+    "brand": "Fempro 2.5",
+    "generic": "Letrozole",
+    "category": "Aromatase Inhibitor Ovulation Inducer"
   },
   {
     "brand": "Shelcal 500",
-    "generic": "Calcium and Vitamin D3",
-    "category": "Calcium Supplement"
+    "generic": "Calcium Carbonate and Vitamin D3",
+    "category": "Calcium Mineral Supplement"
   },
   {
-    "brand": "Uprise-D3 60K",
-    "generic": "Cholecalciferol 60,000 IU",
+    "brand": "Shelcal-HD",
+    "generic": "Calcium and High Dose Vitamin D3",
+    "category": "Calcium Mineral Supplement"
+  },
+  {
+    "brand": "Shelcal-M",
+    "generic": "Calcium, Vitamin D3, Magnesium and Minerals",
+    "category": "Calcium Mineral Supplement"
+  },
+  {
+    "brand": "Cipcal 500",
+    "generic": "Calcium Carbonate and Vitamin D3",
+    "category": "Calcium Mineral Supplement"
+  },
+  {
+    "brand": "Gemcal",
+    "generic": "Calcium Carbonate, Calcitriol and Zinc",
+    "category": "Calcium Mineral Supplement"
+  },
+  {
+    "brand": "D-Rise 60K",
+    "generic": "Cholecalciferol (Vitamin D3) 60,000 IU",
     "category": "High-Dose Vitamin D3"
   },
   {
     "brand": "Calcirol 60K",
-    "generic": "Cholecalciferol Sachet",
-    "category": "Vitamin D3"
+    "generic": "Cholecalciferol (Vitamin D3) 60,000 IU",
+    "category": "High-Dose Vitamin D3"
   },
   {
-    "brand": "Becadexamin",
-    "generic": "Multivitamin with Zinc and Minerals",
-    "category": "Multivitamin"
-  },
-  {
-    "brand": "Supradyn Daily",
-    "generic": "Multivitamins, Minerals and Trace Elements",
-    "category": "Multivitamin"
-  },
-  {
-    "brand": "Becosules Z",
-    "generic": "Vitamin B-Complex, Vitamin C, Zinc",
-    "category": "Vitamin B Complex"
-  },
-  {
-    "brand": "Neurobion Forte",
-    "generic": "Vitamin B1, B6, B12 (Mecobalamin)",
-    "category": "Neurotropic B-Vitamins"
+    "brand": "Uprise-D3 60K",
+    "generic": "Cholecalciferol (Vitamin D3) 60,000 IU",
+    "category": "High-Dose Vitamin D3"
   },
   {
     "brand": "Orofer-XT",
     "generic": "Ferrous Ascorbate and Folic Acid",
-    "category": "Iron Supplement"
+    "category": "Hematinic Iron Supplement"
+  },
+  {
+    "brand": "Autrin",
+    "generic": "Dried Ferrous Sulfate, Vitamin B12 and Folic Acid",
+    "category": "Hematinic Iron Supplement"
+  },
+  {
+    "brand": "Livogen",
+    "generic": "Ferrous Fumarate and Folic Acid",
+    "category": "Hematinic Iron Supplement"
+  },
+  {
+    "brand": "Folvite 5mg",
+    "generic": "Folic Acid (Vitamin B9)",
+    "category": "Hematinic Vitamin"
+  },
+  {
+    "brand": "Becosules",
+    "generic": "Vitamin B Complex with Vitamin C",
+    "category": "Vitamin B Complex"
+  },
+  {
+    "brand": "Becosules Performance",
+    "generic": "Multivitamins, Minerals and Ginseng",
+    "category": "Multivitamin Supplement"
   },
   {
     "brand": "Limcee 500",
+    "generic": "Vitamin C (Ascorbic Acid) Chewable",
+    "category": "Vitamin C Supplement"
+  },
+  {
+    "brand": "Celin 500",
     "generic": "Vitamin C (Ascorbic Acid)",
-    "category": "Vitamin C"
+    "category": "Vitamin C Supplement"
   },
   {
     "brand": "Zincovit",
-    "generic": "Multivitamin with Zinc and Grape Seed Extract",
-    "category": "Multivitamin & Antioxidant"
+    "generic": "Multivitamins, Multiminerals with Grape Seed Extract",
+    "category": "Multivitamin with Zinc"
+  },
+  {
+    "brand": "Zinconia 50",
+    "generic": "Zinc Acetate",
+    "category": "Zinc Mineral Supplement"
+  },
+  {
+    "brand": "A to Z NS",
+    "generic": "Multivitamins, Multiminerals and Antioxidants",
+    "category": "Multivitamin Supplement"
+  },
+  {
+    "brand": "Supradyn",
+    "generic": "Multivitamins, Minerals and Trace Elements",
+    "category": "Multivitamin Supplement"
+  },
+  {
+    "brand": "Evion 400",
+    "generic": "Vitamin E (Tocopheryl Acetate)",
+    "category": "Vitamin E Antioxidant"
+  },
+  {
+    "brand": "Evion 600",
+    "generic": "Vitamin E (Tocopheryl Acetate)",
+    "category": "Vitamin E Antioxidant"
+  },
+  {
+    "brand": "Electral ORS",
+    "generic": "Oral Rehydration Salts (WHO Formula)",
+    "category": "Oral Electrolyte Replacement"
+  },
+  {
+    "brand": "Electrokind-L",
+    "generic": "Oral Electrolyte with Zinc",
+    "category": "Oral Electrolyte Replacement"
+  },
+  {
+    "brand": "Cartigen Forte",
+    "generic": "Glucosamine, Chondroitin, Vitamins and Minerals",
+    "category": "Joint Support"
+  },
+  {
+    "brand": "Lubrijoint 500",
+    "generic": "Glucosamine Sulfate",
+    "category": "Joint Support"
+  },
+  {
+    "brand": "Osteofos 70",
+    "generic": "Alendronate Sodium",
+    "category": "Bisphosphonate Osteoporosis"
+  },
+  {
+    "brand": "Betnovate-C",
+    "generic": "Betamethasone and Clioquinol (Iodochlorhydroxyquin)",
+    "category": "Topical Corticosteroid Antibacterial"
+  },
+  {
+    "brand": "Betnovate-N",
+    "generic": "Betamethasone and Neomycin",
+    "category": "Topical Corticosteroid Antibacterial"
+  },
+  {
+    "brand": "Betnovate-GM",
+    "generic": "Betamethasone, Gentamicin and Miconazole",
+    "category": "Topical Triple Action"
+  },
+  {
+    "brand": "T-Bact 2%",
+    "generic": "Mupirocin Ointment",
+    "category": "Topical Antibacterial"
+  },
+  {
+    "brand": "Bactroban 2%",
+    "generic": "Mupirocin Ointment",
+    "category": "Topical Antibacterial"
+  },
+  {
+    "brand": "Soframycin",
+    "generic": "Framycetin Skin Cream",
+    "category": "Topical Antibacterial"
+  },
+  {
+    "brand": "Neosporin",
+    "generic": "Neomycin, Polymyxin B and Bacitracin",
+    "category": "Topical Triple Antibiotic"
+  },
+  {
+    "brand": "Fucidin 2%",
+    "generic": "Fusidic Acid Cream",
+    "category": "Topical Antibacterial"
+  },
+  {
+    "brand": "Silverex Ionic",
+    "generic": "Silver Sulfadiazine and Chlorhexidine",
+    "category": "Burn Wound Antiseptic"
+  },
+  {
+    "brand": "Candid-B Cream",
+    "generic": "Clotrimazole and Beclomethasone",
+    "category": "Topical Antifungal Corticosteroid"
+  },
+  {
+    "brand": "Candid Dusting Powder",
+    "generic": "Clotrimazole 1%",
+    "category": "Topical Antifungal"
+  },
+  {
+    "brand": "Lulican 1%",
+    "generic": "Luliconazole Cream",
+    "category": "Topical Antifungal"
+  },
+  {
+    "brand": "Lulifin 1%",
+    "generic": "Luliconazole Cream",
+    "category": "Topical Antifungal"
+  },
+  {
+    "brand": "Nizral 2% Shampoo",
+    "generic": "Ketoconazole Antidandruff",
+    "category": "Antifungal Scalp Treatment"
+  },
+  {
+    "brand": "Scalpe Plus",
+    "generic": "Ketoconazole and Zinc Pyrithione",
+    "category": "Antifungal Scalp Treatment"
+  },
+  {
+    "brand": "Permite 5%",
+    "generic": "Permethrin Cream",
+    "category": "Scabicide Antiparasitic"
+  },
+  {
+    "brand": "Scaboma",
+    "generic": "Lindane Lotion",
+    "category": "Scabicide Antiparasitic"
+  },
+  {
+    "brand": "Tenovate Cream",
+    "generic": "Clobetasol Propionate",
+    "category": "Potent Topical Corticosteroid"
+  },
+  {
+    "brand": "Momate Cream",
+    "generic": "Mometasone Furoate",
+    "category": "Medium Potency Topical Corticosteroid"
+  },
+  {
+    "brand": "Retino-A 0.05%",
+    "generic": "Tretinoin Cream",
+    "category": "Retinoid Acne Treatment"
+  },
+  {
+    "brand": "Deriva-CMS",
+    "generic": "Adapalene and Clindamycin Gel",
+    "category": "Topical Acne Combination"
+  },
+  {
+    "brand": "Caladryl Lotion",
+    "generic": "Calamine and Diphenhydramine",
+    "category": "Topical Antipruritic Soothing"
+  },
+  {
+    "brand": "Ciplox Eye/Ear Drops",
+    "generic": "Ciprofloxacin 0.3%",
+    "category": "Ophthalmic / Otic Antibacterial"
+  },
+  {
+    "brand": "Moxicip Eye Drops",
+    "generic": "Moxifloxacin 0.5%",
+    "category": "Ophthalmic Antibacterial"
+  },
+  {
+    "brand": "Vigamox Eye Drops",
+    "generic": "Moxifloxacin 0.5%",
+    "category": "Ophthalmic Antibacterial"
+  },
+  {
+    "brand": "Tobrex Eye Drops",
+    "generic": "Tobramycin 0.3%",
+    "category": "Ophthalmic Antibacterial"
+  },
+  {
+    "brand": "Tobracid-D Drops",
+    "generic": "Tobramycin and Dexamethasone",
+    "category": "Ophthalmic Antibiotic Steroid"
+  },
+  {
+    "brand": "Refresh Tears",
+    "generic": "Carboxymethylcellulose Sodium 0.5%",
+    "category": "Lubricant Eye Drops"
+  },
+  {
+    "brand": "Systane Ultra",
+    "generic": "Polyethylene Glycol and Propylene Glycol",
+    "category": "Lubricant Eye Drops"
+  },
+  {
+    "brand": "Pataday Eye Drops",
+    "generic": "Olopatadine Hydrochloride 0.2%",
+    "category": "Ophthalmic Antiallergic"
+  },
+  {
+    "brand": "Timolet 0.5%",
+    "generic": "Timolol Maleate",
+    "category": "Antiglaucoma Beta Blocker"
+  },
+  {
+    "brand": "Waxolve Ear Drops",
+    "generic": "Paradichlorobenzene, Benzocaine, Chlorbutol and Turpentine",
+    "category": "Cerumenolytic Ear Drops"
+  },
+  {
+    "brand": "Clearwax Ear Drops",
+    "generic": "Paradichlorobenzene, Benzocaine and Chlorbutol",
+    "category": "Cerumenolytic Ear Drops"
   }
 ]

@@ -95,11 +95,7 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
         const clean10 = rawDigits.length === 10 ? rawDigits : (rawDigits.length === 12 && rawDigits.startsWith('91') ? rawDigits.slice(2) : '');
         setOnboardPhone(clean10);
         const enteredName = patientName.trim();
-        const emailUserPart = (user.email || email || '').split('@')[0].replace(/\./g, ' ').toLowerCase();
-        const userClean = (user.name || '').trim().toLowerCase();
-        const isAutoFromEmail = userClean === emailUserPart;
-        const resolvedName = enteredName || (!isAutoFromEmail && user.name ? user.name : '') || '';
-        setOnboardName(resolvedName);
+        setOnboardName(enteredName || '');
         setOnboardAge(user.age ? String(user.age) : '');
         setOnboardGender((user.gender as any) || '');
         setOnboardLanguage(user.language || 'English');
@@ -263,6 +259,9 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                 value={patientName}
                 onChangeText={setPatientName}
                 editable={!loading && !emailOtpSent}
+                autoComplete="off"
+                importantForAutofill="no"
+                autoCorrect={false}
               />
             </View>
 
@@ -423,6 +422,9 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                   placeholderTextColor={Colors.textSecondary}
                   value={onboardName}
                   onChangeText={setOnboardName}
+                  autoComplete="off"
+                  importantForAutofill="no"
+                  autoCorrect={false}
                 />
               </View>
 

@@ -130,11 +130,7 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
       setOnboardPhone(clean10);
       const enteredName = doctorName.trim();
       const formattedEntered = enteredName ? (enteredName.startsWith('Dr.') ? enteredName : `Dr. ${enteredName}`) : '';
-      const emailUserPart = (user.email || email || '').split('@')[0].replace(/\./g, ' ').toLowerCase();
-      const userClean = (user.name || '').replace(/^(Dr\.?\s*)/i, '').trim().toLowerCase();
-      const isAutoFromEmail = userClean === emailUserPart;
-      const resolvedName = formattedEntered || (!isAutoFromEmail && user.name ? user.name : '') || '';
-      setOnboardDoctorName(resolvedName);
+      setOnboardDoctorName(formattedEntered || '');
       setOnboardSpecialty(user.specialty || '');
       setOnboardClinic(user.clinic_name || '');
       setOnboardRegNo(user.reg_number || '');
@@ -404,6 +400,9 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                       value={doctorName}
                       onChangeText={setDoctorName}
                       editable={!loading && !emailOtpSent}
+                      autoComplete="off"
+                      importantForAutofill="no"
+                      autoCorrect={false}
                     />
                   </View>
 
@@ -559,6 +558,9 @@ export const DoctorLoginScreen: React.FC<DoctorLoginScreenProps> = ({ onAuthenti
                   placeholderTextColor={Colors.textSecondary}
                   value={onboardDoctorName}
                   onChangeText={setOnboardDoctorName}
+                  autoComplete="off"
+                  importantForAutofill="no"
+                  autoCorrect={false}
                 />
               </View>
 

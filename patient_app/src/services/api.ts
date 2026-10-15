@@ -577,6 +577,7 @@ export const mobileApi = {
   },
 
   async createStructuredVisit(params: {
+    visit_id?: string;
     patient_id: string;
     diagnosis: string;
     medicines: MedicineItem[];
@@ -600,7 +601,7 @@ export const mobileApi = {
     }
 
     const fallbackVisit: Visit = {
-      id: 'visit_' + Date.now(),
+      id: params.visit_id || ('visit_' + Date.now()),
       patient_id: params.patient_id,
       doctor_id: 'doctor_active',
       date: new Date().toISOString(),

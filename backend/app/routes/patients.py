@@ -659,7 +659,13 @@ def get_patient_visits(
                 detail="Access denied: You are not authorized to view this patient's medical records. Patient authorization required."
             )
 
-    visits = db.query(Visit).filter(Visit.patient_id == patient_id).order_by(Visit.date.desc()).all()
+    if isinstance(current_user, Patient):
+        visits = db.query(Visit).filter(
+            Visit.patient_id == patient_id,
+            Visit.status != "draft"
+        ).order_by(Visit.date.desc()).all()
+    else:
+        visits = db.query(Visit).filter(Visit.patient_id == patient_id).order_by(Visit.date.desc()).all()
 
     result = []
     for v in visits:
@@ -790,7 +796,7 @@ def get_upcoming_patient_schedule(
         db.query(Visit)
         .filter(
             Visit.doctor_id == current_doctor.id,
-            Visit.status.in_(["scheduled", "confirmed", "in_progress", "draft", "approved", "deferred"])
+            Visit.status.in_(["scheduled", "confirmed", "in_progress", "draft", "deferred", "waiting"])
         )
         .order_by(
             case((Visit.triage_level == "Urgent", 0), (Visit.triage_level == "Priority", 1), else_=2),
@@ -830,7 +836,7 @@ def get_upcoming_patient_schedule(
 
     completed_count = db.query(Visit).filter(
         Visit.doctor_id == current_doctor.id,
-        Visit.status == "completed"
+        Visit.status.in_(["completed", "approved"])
     ).count()
 
     pending_count = db.query(Visit).filter(

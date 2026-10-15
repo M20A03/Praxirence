@@ -169,6 +169,7 @@ export interface SOAPStructure {
 }
 
 export interface ConsultationSummarizeResult {
+  id?: string;
   patient_summary: string;
   doctor_advice: string;
   warning_signs: string[];
@@ -221,6 +222,7 @@ export interface ChatMessage {
 }
 
 export interface UpcomingScheduleItem {
+  id?: string;
   token: string;
   token_number?: number;
   visit_id?: string;

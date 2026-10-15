@@ -24,7 +24,7 @@ import { EmptyState } from '../../components/EmptyState';
 
 interface DoctorDashboardScreenProps {
   doctor: DoctorUser;
-  onNavigateToNewVisit: (patientId?: string, patientName?: string, chiefComplaint?: string) => void;
+  onNavigateToNewVisit: (patientId?: string, patientName?: string, chiefComplaint?: string, visitId?: string) => void;
   onNavigateToPatients: () => void;
 }
 
@@ -1006,7 +1006,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
                 <View style={styles.primaryActionRow}>
                   <TouchableOpacity
                     style={styles.startConsultBtn}
-                    onPress={() => onNavigateToNewVisit(item.patient_id, item.patient_name, item.chief_complaint)}
+                    onPress={() => onNavigateToNewVisit(item.patient_id, item.patient_name, item.chief_complaint, item.visit_id || item.id)}
                     activeOpacity={0.88}
                   >
                     <Ionicons name="mic" size={16} color="#ffffff" />

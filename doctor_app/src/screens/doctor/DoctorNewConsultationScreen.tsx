@@ -29,6 +29,7 @@ interface DoctorNewConsultationScreenProps {
   preselectedPatientId?: string;
   preselectedPatientName?: string;
   preselectedComplaint?: string;
+  preselectedVisitId?: string;
   onConsultationSaved: () => void;
   onCancel: () => void;
 }
@@ -38,11 +39,13 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
   preselectedPatientId,
   preselectedPatientName,
   preselectedComplaint,
+  preselectedVisitId,
   onConsultationSaved,
   onCancel,
 }) => {
   const [patients, setPatients] = useState<PatientSummary[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>(preselectedPatientId || '');
+  const [activeVisitId, setActiveVisitId] = useState<string | undefined>(preselectedVisitId);
   const [diagnosis, setDiagnosis] = useState('');
   const [doctorVerified, setDoctorVerified] = useState<boolean>(false);
   
@@ -343,6 +346,12 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
   }, [preselectedPatientId]);
 
   useEffect(() => {
+    if (preselectedVisitId) {
+      setActiveVisitId(preselectedVisitId);
+    }
+  }, [preselectedVisitId]);
+
+  useEffect(() => {
     const unsub = doctorRealtime.on('PATIENT_LINK_AUTHORIZED', (payload: any) => {
       loadPatients();
       if (payload?.patient_id) {
@@ -485,6 +494,9 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
   };
 
   const handleAudioProcessed = (result: ConsultationSummarizeResult) => {
+    if (result.id) {
+      setActiveVisitId(result.id);
+    }
     if (result.conversation === '[AUDIO_SILENT_OR_INAUDIBLE]' || result.patient_summary?.includes('AUDIO_SILENT_OR_INAUDIBLE')) {
       Alert.alert(
         'Inaudible or Silent Audio Detected',
@@ -630,6 +642,7 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
     try {
       // 1. Create structured visit with patient summary & doctor advice
       const createdVisit = await mobileApi.createStructuredVisit({
+        visit_id: activeVisitId,
         patient_id: selectedPatientId,
         diagnosis: diagnosis.trim(),
         patient_summary: patientSummary.trim(),
@@ -680,6 +693,7 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
             setSubmitting(true);
             try {
               const createdVisit = await mobileApi.createStructuredVisit({
+                visit_id: activeVisitId,
                 patient_id: selectedPatientId,
                 diagnosis: diagnosis.trim() || 'General Consultation / Clinical Follow-up',
                 patient_summary: patientSummary.trim() || 'Consultation concluded by attending physician. No active medications required.',
@@ -1031,6 +1045,7 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
           patientId={selectedPatientId}
           patientName={patients.find((p) => p.id === selectedPatientId)?.name || 'Patient'}
           doctorName={doctor.name}
+          visitId={activeVisitId}
           onRecordingProcessed={handleAudioProcessed}
         />
 

@@ -299,3 +299,85 @@ def test_doctor_patient_isolation_zero_trust():
     assert len(uhid_matches) >= 1
     matched = next(m for m in uhid_matches if m["id"] == pat_b_id)
     assert matched["authorization_status"] == "unauthorized"
+
+
+def test_audio_upload_visit_deduplication(monkeypatch):
+    import io
+    from app.services.ai_service import ai_service
+    from app.services.storage_service import storage_service
+
+    # Mock audio transcription and storage to run in-memory
+    monkeypatch.setattr(ai_service, "transcribe_audio", lambda path, language=None: "Doctor: Patient has cough. Prescribing Azithromycin 500mg.")
+    async def fake_save(file):
+        return ("/tmp/test.wav", "test.wav")
+    monkeypatch.setattr(storage_service, "save_upload_audio", fake_save)
+    monkeypatch.setattr(storage_service, "delete_audio_file", lambda path: None)
+
+    doc_a_id, _ = setup_test_users()
+    headers_a = get_auth_headers(doc_a_id)
+
+    # 1. Create Patient
+    res = client.post(
+        "/patients",
+        json={"name": "Deduplication Patient", "phone": "+919877700011", "age": 35, "gender": "Female"},
+        headers=headers_a
+    )
+    assert res.status_code == 201
+    pat_id = res.json()["id"]
+
+    # 2. Book scheduled appointment
+    today_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    book_res = client.post(
+        "/visits/book-slot",
+        json={
+            "doctor_id": doc_a_id,
+            "patient_id": pat_id,
+            "appointment_date": today_iso,
+            "time_slot": "11:00 AM",
+            "chief_complaint": "Persistent cough"
+        },
+        headers=headers_a
+    )
+    assert book_res.status_code == 200
+    scheduled_visit_id = book_res.json()["visit_id"]
+
+    # 3. Doctor uploads audio linking visit_id
+    fake_audio = io.BytesIO(b"RIFF....WAVEfmt ")
+    upload_res = client.post(
+        "/visits/upload-audio",
+        data={
+            "patient_id": pat_id,
+            "visit_id": scheduled_visit_id,
+            "keep_recording": "false",
+            "language": "auto"
+        },
+        files={"audio_file": ("test.wav", fake_audio, "audio/wav")},
+        headers=headers_a
+    )
+    assert upload_res.status_code == 200
+    upload_data = upload_res.json()
+    assert upload_data["id"] == scheduled_visit_id, "Must reuse existing scheduled visit ID"
+
+    # 4. Verify only 1 visit exists for this patient
+    visits_res = client.get(f"/patients/{pat_id}/visits", headers=headers_a)
+    assert visits_res.status_code == 200
+    assert len(visits_res.json()) == 1, "Must NOT create duplicate visit row"
+
+    # 5. Doctor approves visit
+    approve_res = client.post(f"/visits/{scheduled_visit_id}/approve", headers=headers_a)
+    assert approve_res.status_code == 200
+
+    # 6. Check upcoming schedule queue: approved visit must not be waiting in active queue
+    sched_res = client.get("/patients/schedule/upcoming", headers=headers_a)
+    assert sched_res.status_code == 200
+    queue_visits = [q for q in sched_res.json()["queue"] if q["visit_id"] == scheduled_visit_id]
+    assert len(queue_visits) == 0, "Approved visit must not appear in waiting queue"
+    assert sched_res.json()["completed"] >= 1
+
+    # Cleanup test data to maintain 0 rows
+    db = TestingSessionLocal()
+    db.query(Visit).filter(Visit.patient_id == pat_id).delete()
+    db.query(DoctorPatientLink).filter(DoctorPatientLink.patient_id == pat_id).delete()
+    db.query(Patient).filter(Patient.id == pat_id).delete()
+    db.commit()
+    db.close()

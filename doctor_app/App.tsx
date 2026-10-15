@@ -60,6 +60,7 @@ function DoctorAppContent() {
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>();
   const [selectedPatientName, setSelectedPatientName] = useState<string | undefined>();
   const [selectedComplaint, setSelectedComplaint] = useState<string | undefined>();
+  const [selectedVisitId, setSelectedVisitId] = useState<string | undefined>();
 
   const checkAndPromptBiometric = async () => {
     try {
@@ -391,10 +392,11 @@ function DoctorAppContent() {
             {(props) => (
               <DoctorDashboardScreen
                 doctor={currentDoctor}
-                onNavigateToNewVisit={(patientId, patientName, chiefComplaint) => {
+                onNavigateToNewVisit={(patientId, patientName, chiefComplaint, visitId) => {
                   setSelectedPatientId(patientId);
                   setSelectedPatientName(patientName);
                   setSelectedComplaint(chiefComplaint);
+                  setSelectedVisitId(visitId);
                   props.navigation.navigate('NewConsult');
                 }}
                 onNavigateToPatients={() => props.navigation.navigate('CarePlans')}
@@ -412,6 +414,7 @@ function DoctorAppContent() {
                   setSelectedPatientId(patient.id);
                   setSelectedPatientName(patient.name);
                   setSelectedComplaint(undefined);
+                  setSelectedVisitId(undefined);
                   props.navigation.navigate('NewConsult');
                 }}
               />
@@ -428,16 +431,19 @@ function DoctorAppContent() {
                 preselectedPatientId={selectedPatientId}
                 preselectedPatientName={selectedPatientName}
                 preselectedComplaint={selectedComplaint}
+                preselectedVisitId={selectedVisitId}
                 onConsultationSaved={() => {
                   setSelectedPatientId(undefined);
                   setSelectedPatientName(undefined);
                   setSelectedComplaint(undefined);
+                  setSelectedVisitId(undefined);
                   props.navigation.navigate('Schedule');
                 }}
                 onCancel={() => {
                   setSelectedPatientId(undefined);
                   setSelectedPatientName(undefined);
                   setSelectedComplaint(undefined);
+                  setSelectedVisitId(undefined);
                   props.navigation.navigate('Schedule');
                 }}
               />

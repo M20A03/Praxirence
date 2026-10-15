@@ -975,6 +975,7 @@ export const mobileApi = {
     patientName?: string;
     doctorName?: string;
     language?: string;
+    visitId?: string;
   }): Promise<ConsultationSummarizeResult> {
     // Proactively verify / refresh auth token if missing
     if (!authToken || authToken.length < 15) {
@@ -1010,6 +1011,9 @@ export const mobileApi = {
     const formData = new FormData();
     const effectivePatientId = params.patientId && params.patientId.length > 3 ? params.patientId : 'pat_live_01';
     formData.append('patient_id', effectivePatientId);
+    if (params.visitId) {
+      formData.append('visit_id', params.visitId);
+    }
     formData.append('keep_recording', 'false');
     formData.append('language', params.language || 'auto');
 
@@ -1060,6 +1064,7 @@ export const mobileApi = {
       if (res.ok) {
         const visit = await res.json();
         return {
+          id: visit.id,
           diagnosis: visit.diagnosis || 'Clinical Assessment Completed',
           patient_summary: visit.patient_summary || '',
           doctor_advice: visit.doctor_advice || '',
@@ -1082,6 +1087,7 @@ export const mobileApi = {
   },
 
     async createStructuredVisit(params: {
+    visit_id?: string;
     patient_id: string;
     diagnosis: string;
     medicines: MedicineItem[];
@@ -1105,7 +1111,7 @@ export const mobileApi = {
     }
 
     const fallbackVisit: Visit = {
-      id: 'visit_' + Date.now(),
+      id: params.visit_id || ('visit_' + Date.now()),
       patient_id: params.patient_id,
       doctor_id: 'doctor_active',
       date: new Date().toISOString(),

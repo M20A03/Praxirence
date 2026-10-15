@@ -22,6 +22,7 @@ interface AudioConsultationRecorderProps {
   patientId: string;
   patientName: string;
   doctorName: string;
+  visitId?: string;
   onRecordingProcessed: (result: ConsultationSummarizeResult) => void;
 }
 
@@ -29,6 +30,7 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
   patientId,
   patientName,
   doctorName,
+  visitId,
   onRecordingProcessed,
 }) => {
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
@@ -373,6 +375,7 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
         patientName,
         doctorName,
         language: selectedLanguage,
+        visitId,
       });
 
       // Clear local offline cache on successful upload

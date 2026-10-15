@@ -184,8 +184,8 @@ def create_structured_visit(
             .filter(
                 Visit.patient_id == patient.id,
                 Visit.doctor_id == current_doctor.id,
-                Visit.status.in_(["scheduled", "in_progress", "draft"]),
-                Visit.appointment_date == today_iso
+                Visit.status.in_(["scheduled", "in_progress", "draft", "waiting", "confirmed", "booked"]),
+                (Visit.appointment_date == today_iso) | (Visit.appointment_date == None)
             )
             .order_by(Visit.created_at.desc())
             .first()
@@ -202,11 +202,14 @@ def create_structured_visit(
         visit.medicines = [m.model_dump() for m in req.medicines]
         visit.reminders = [r.model_dump() for r in req.reminders]
         visit.raw_transcription = stored_transcription
+        if not visit.appointment_date:
+            visit.appointment_date = today_iso
         visit.status = "draft"
     else:
         visit = Visit(
             patient_id=patient.id,
             doctor_id=current_doctor.id,
+            appointment_date=today_iso,
             diagnosis=req.diagnosis,
             medicines=[m.model_dump() for m in req.medicines],
             reminders=[r.model_dump() for r in req.reminders],
@@ -258,6 +261,7 @@ def create_structured_visit(
 
 async def upload_consultation_audio(
     patient_id: str = Form(...),
+    visit_id: Optional[str] = Form(None),
     keep_recording: bool = Form(False),
     language: Optional[str] = Form(None),
     audio_file: UploadFile = File(...),
@@ -344,19 +348,48 @@ async def upload_consultation_audio(
         final_medicines = summarized.get("medicines") or care_plan.get("medicines", [])
         final_reminders = summarized.get("reminders") or care_plan.get("reminders", [])
 
-        # Create draft visit
-        visit = Visit(
-            patient_id=patient.id,
-            doctor_id=current_doctor.id,
-            audio_file_path=stored_path,
-            keep_recording=retained_recording,
-            raw_transcription=stored_transcription,
-            diagnosis=final_diagnosis,
-            medicines=final_medicines,
-            reminders=final_reminders,
-            status="draft"
-        )
-        db.add(visit)
+        today_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        existing_visit = None
+        if visit_id:
+            existing_visit = db.query(Visit).filter(Visit.id == visit_id).first()
+        if not existing_visit:
+            existing_visit = (
+                db.query(Visit)
+                .filter(
+                    Visit.patient_id == patient.id,
+                    Visit.doctor_id == current_doctor.id,
+                    Visit.status.in_(["scheduled", "in_progress", "draft", "waiting", "confirmed", "booked"]),
+                    (Visit.appointment_date == today_iso) | (Visit.appointment_date == None)
+                )
+                .order_by(Visit.created_at.desc())
+                .first()
+            )
+
+        if existing_visit:
+            visit = existing_visit
+            visit.audio_file_path = stored_path
+            visit.keep_recording = retained_recording
+            visit.raw_transcription = stored_transcription
+            visit.diagnosis = final_diagnosis
+            visit.medicines = final_medicines
+            visit.reminders = final_reminders
+            if not visit.appointment_date:
+                visit.appointment_date = today_iso
+            visit.status = "draft"
+        else:
+            visit = Visit(
+                patient_id=patient.id,
+                doctor_id=current_doctor.id,
+                appointment_date=today_iso,
+                audio_file_path=stored_path,
+                keep_recording=retained_recording,
+                raw_transcription=stored_transcription,
+                diagnosis=final_diagnosis,
+                medicines=final_medicines,
+                reminders=final_reminders,
+                status="draft"
+            )
+            db.add(visit)
         db.commit()
         db.refresh(visit)
 
@@ -1395,8 +1428,8 @@ def get_visit_queue_status(
         .all()
     )
 
-    # Active visits: status in in_progress, scheduled, draft, approved
-    active_visits = [v for v in day_visits if v.status in ["in_progress", "scheduled", "draft", "approved", "pending_confirmation", "confirmed"]]
+    # Active visits: status in in_progress, scheduled, draft, deferred, waiting
+    active_visits = [v for v in day_visits if v.status in ["in_progress", "scheduled", "draft", "deferred", "waiting", "pending_confirmation", "confirmed"]]
 
     # Current serving visit: prioritize 'in_progress' visit, else the earliest active token
     serving_visit = next((v for v in active_visits if v.status == "in_progress"), None)

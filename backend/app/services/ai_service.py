@@ -63,7 +63,7 @@ class AIService:
                             "1. Do NOT invent, hallucinate, assume, or add any dialogue, symptoms, diseases, medications, dosages, or advice not explicitly spoken in the audio.\n"
                             "2. If the audio contains NO human speech, is silent, consists only of background noise, or is unintelligible, respond ONLY with: [AUDIO_SILENT_OR_INAUDIBLE]\n"
                             "3. Retain the exact language spoken (Hinglish, English, Hindi, or regional terms) and label speaker turns as Doctor: and Patient: when distinguishable.\n"
-                            "4. Accurately transcribe Indian brand and generic medication names, strengths, and dosages (e.g. Augmentin 625, Dolo 650, Pantocid 40, Telma 40, 1-0-1, BD, OD, TDS, SOS) exactly as spoken."
+                            "4. Accurately transcribe Indian brand and generic medication names, strengths, and dosages (e.g. Augmentin 625, Dolo 650, Pantocid 40, Telma 40, Azithral 500, Montair LC, 1-0-1, BD, OD, TDS, SOS) exactly as spoken."
                         )}
                     ]
                 }]

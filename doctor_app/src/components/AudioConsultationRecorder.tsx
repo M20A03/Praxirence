@@ -343,12 +343,22 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
     setIsRecording(false);
     setIsPaused(false);
     isRecordingRef.current = false;
+    const recordedDuration = durationSec;
     try {
       await activeRecording.stopAndUnloadAsync();
       const uri = activeRecording.getURI();
       setRecording(null);
       recordingRef.current = null;
       setLastAudioUri(uri);
+
+      if (recordedDuration < 2) {
+        Alert.alert(
+          "Microphone Muted or Audio Silent",
+          "The recorded consultation was under 2 seconds. Clinical speech-to-text requires audible dialogue to structure medications and care plans. Please speak into the microphone and record at least 2 to 3 seconds.",
+          [{ text: "OK" }]
+        );
+        return;
+      }
 
       if (uri) {
         // Automatically process with AI

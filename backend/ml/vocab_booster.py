@@ -144,7 +144,10 @@ _NON_MEDICINE_WORDS = {
     "breakfast", "lunch", "dinner", "namaste", "sahab", "fever", "cough", "chest", "pain",
     "pressure", "normal", "review", "intake", "water", "daily", "twice", "thrice", "taking",
     "prescribing", "continue", "stopped", "symptoms", "trouble", "feeling", "walking", "gentle",
-    "emergency", "advise", "advised", "please", "sitting", "minutes", "seconds", "hours", "along", "around", "about", "always", "already", "taking", "having", "eating", "giving", "tablet", "water"
+    "emergency", "advise", "advised", "please", "sitting", "minutes", "seconds", "hours", "along",
+    "around", "about", "always", "already", "having", "eating", "giving",
+    "once", "weekly", "monthly", "yearly", "take", "takes", "dose", "doses", "days", "weeks",
+    "months", "years", "time", "times", "food", "empty", "stomach", "milk", "start", "started"
 }
 
 def fuzzy_correct_medicine_names(transcript: str, db: Any = None) -> str:
@@ -172,6 +175,13 @@ def fuzzy_correct_medicine_names(transcript: str, db: Any = None) -> str:
         if len(g) >= 4:
             canonical_names.add(g)
 
+    for rule in _PHONETIC_RULES:
+        rep = rule.get("replacement", "")
+        if rep and len(rep) >= 4:
+            clean_rep = rep.split()[0].strip()
+            if len(clean_rep) >= 4:
+                canonical_names.add(clean_rep)
+
     if not canonical_names:
         return transcript
 
@@ -198,7 +208,7 @@ def fuzzy_correct_medicine_names(transcript: str, db: Any = None) -> str:
 
         # Check fuzzy phonetic similarity against Indian Formulary
         lower_candidates = [name.lower() for name in canonical_list]
-        matches = difflib.get_close_matches(lower_w, lower_candidates, n=1, cutoff=0.70)
+        matches = difflib.get_close_matches(lower_w, lower_candidates, n=1, cutoff=0.78)
         if matches:
             best_match = lookup_map[matches[0]]
             # Replace target while preserving punctuation

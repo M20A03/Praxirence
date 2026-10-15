@@ -84,19 +84,35 @@ def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     return round(R * c, 2)
 
 
+def parse_time_to_minutes(time_str: str) -> int:
+    """Robustly parses '09:00 AM', '9:30 am', '05:00 PM', '17:30', '9:00' into total minutes from midnight."""
+    cleaned = (time_str or "").strip()
+    if not cleaned:
+        return 9 * 60
+    is_pm = "pm" in cleaned.lower()
+    is_am = "am" in cleaned.lower()
+    time_part = re.sub(r"[^0-9:]", "", cleaned)
+    parts = time_part.split(":")
+    h = int(parts[0]) if len(parts) > 0 and parts[0] else 9
+    m = int(parts[1]) if len(parts) > 1 and parts[1] else 0
+    if is_pm and h < 12:
+        h += 12
+    elif is_am and h == 12:
+        h = 0
+    return h * 60 + m
+
+
 def generate_time_slots(start_str: str, end_str: str, slot_mins: int = 30) -> List[str]:
-    """Generates 12-hour formatted time slots between start and end hours."""
+    """Generates 12-hour formatted time slots strictly between doctor's configured start and end hours."""
     slots = []
     try:
-        start_h, start_m = map(int, (start_str or "09:00").split(":"))
-        end_h, end_m = map(int, (end_str or "18:00").split(":"))
-        current_mins = start_h * 60 + start_m
-        end_mins = end_h * 60 + end_m
+        current_mins = parse_time_to_minutes(start_str or "09:00 AM")
+        end_mins = parse_time_to_minutes(end_str or "05:00 PM")
+        slot_mins = max(10, min(120, slot_mins or 30))
 
         while current_mins + slot_mins <= end_mins:
             h = current_mins // 60
             m = current_mins % 60
-            # Format as "09:00 AM" or "02:30 PM"
             am_pm = "AM" if h < 12 else "PM"
             disp_h = h % 12
             if disp_h == 0:
@@ -104,9 +120,7 @@ def generate_time_slots(start_str: str, end_str: str, slot_mins: int = 30) -> Li
             slots.append(f"{disp_h:02d}:{m:02d} {am_pm}")
             current_mins += slot_mins
     except Exception as e:
-        logger.warning(f"Error calculating time slots: {e}")
-        slots = ["09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM",
-                 "02:00 PM", "02:30 PM", "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM", "05:00 PM"]
+        logger.warning(f"Error calculating doctor time slots: {e}")
     return slots
 
 
@@ -133,7 +147,24 @@ def list_doctors(
 
     results = []
     for d in doctors:
-        doc_city = getattr(d, "city", "") or ""
+        # Exclude fake, test, audit, and placeholder accounts from public directory
+        doc_email_lower = (d.email or "").lower()
+        doc_name_lower = (d.name or "").lower()
+        doc_id_str = str(d.id or "")
+
+        if (
+            doc_id_str.startswith("prax_")
+            or "test" in doc_email_lower
+            or "audit" in doc_email_lower
+            or "recheck" in doc_email_lower
+            or "dummy" in doc_email_lower
+            or "example.com" in doc_email_lower
+            or "@doctor.praxirence.com" in doc_email_lower
+            or doc_name_lower in ["dr. attending physician", "attending physician", "doctor", "dr. test physician"]
+        ):
+            continue
+
+        doc_city = getattr(d, "city", "") or "" 
         doc_state = getattr(d, "state", "") or ""
         doc_specialty = getattr(d, "specialty", "General Physician") or "General Physician"
         doc_name = d.name or "Doctor"
@@ -1109,3 +1140,26 @@ def get_doctor_staff_pin(
         "staff_pin": getattr(current_doctor, "staff_pin", "123456") or "123456",
         "pin_version": getattr(current_doctor, "pin_version", 1) or 1
     }
+
+
+@router.post("/clean-test-data")
+def clean_test_doctors(db: Session = Depends(get_db)):
+    test_users = (
+        db.query(User)
+        .filter(
+            (User.id.like("prax_%"))
+            | (User.email.like("%test%"))
+            | (User.email.like("%audit%"))
+            | (User.email.like("%recheck%"))
+            | (User.email.like("%dummy%"))
+            | (User.email.like("%@doctor.praxirence.com"))
+            | (User.name == "Dr. Attending Physician")
+            | (User.name == "Dr. Test Physician")
+        )
+        .all()
+    )
+    count = len(test_users)
+    for u in test_users:
+        db.delete(u)
+    db.commit()
+    return {"success": True, "deleted_count": count}

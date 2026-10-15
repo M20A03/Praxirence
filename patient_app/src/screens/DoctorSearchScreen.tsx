@@ -101,7 +101,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
   const [availability, setAvailability] = useState<DoctorAvailabilityResponse | null>(null);
   const [loadingAvailability, setLoadingAvailability] = useState<boolean>(false);
   const [selectedSlot, setSelectedSlot] = useState<string>('');
-  const [bookingType, setBookingType] = useState<'in_person' | 'video' | 'chat'>('in_person');
+  const [bookingType, setBookingType] = useState<'in_person'>('in_person');
   const [chiefComplaint, setChiefComplaint] = useState<string>('');
   const [bookingInProgress, setBookingInProgress] = useState<boolean>(false);
 
@@ -213,28 +213,48 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
     }
   };
 
-  const generate14Days = () => {
-    const days = [];
-    for (let i = 0; i < 14; i++) {
+  const getDoctorPracticeDays = (doc: DoctorUser | null) => {
+    if (!doc) return [];
+    const docAvailDays = (doc.available_days && doc.available_days.length > 0)
+      ? doc.available_days
+      : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const docUnavailDates = doc.unavailable_dates || [];
+
+    const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    const validDays: { iso: string; dayName: string; dayNum: number; monthName: string }[] = [];
+
+    for (let i = 0; i < 21; i++) {
       const d = new Date();
       d.setDate(d.getDate() + i);
       const iso = d.toISOString().split('T')[0];
-      const dayName = i === 0 ? 'Today' : i === 1 ? 'Tmrw' : d.toLocaleDateString('en-US', { weekday: 'short' });
-      const dayNum = d.getDate();
-      const monthName = d.toLocaleDateString('en-US', { month: 'short' });
-      days.push({ iso, dayName, dayNum, monthName });
+      const dow = DAY_NAMES[d.getDay()];
+
+      if (docAvailDays.includes(dow) && !docUnavailDates.includes(iso)) {
+        const dayLabel = i === 0 ? 'Today' : i === 1 ? 'Tmrw' : dow;
+        validDays.push({
+          iso,
+          dayName: dayLabel,
+          dayNum: d.getDate(),
+          monthName: MONTH_NAMES[d.getMonth()],
+        });
+      }
+      if (validDays.length >= 10) break;
     }
-    return days;
+
+    return validDays;
   };
 
   const handleOpenBookingModal = async (doctor: DoctorUser) => {
     setSelectedDoctor(doctor);
-    const todayIso = new Date().toISOString().split('T')[0];
-    setSelectedDate(todayIso);
+    const practiceDays = getDoctorPracticeDays(doctor);
+    const initialDate = practiceDays.length > 0 ? practiceDays[0].iso : new Date().toISOString().split('T')[0];
+    setSelectedDate(initialDate);
     setSelectedSlot('');
     setChiefComplaint('');
     setShowBookingModal(true);
-    await loadDoctorSlots(doctor.id, todayIso);
+    await loadDoctorSlots(doctor.id, initialDate);
   };
 
   const loadDoctorSlots = async (doctorId: string, dateStr: string) => {
@@ -320,6 +340,23 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
   };
 
   const filteredDoctors = doctors.filter((doc) => {
+    // Exclude fake, test, audit, and placeholder accounts
+    const docId = String(doc.id || '');
+    const docName = String(doc.name || '').toLowerCase();
+    const docEmail = String(doc.email || '').toLowerCase();
+    if (
+      docId.startsWith('prax_') ||
+      docEmail.includes('test') ||
+      docEmail.includes('audit') ||
+      docEmail.includes('recheck') ||
+      docEmail.includes('dummy') ||
+      docEmail.includes('@doctor.praxirence.com') ||
+      docName.includes('attending physician') ||
+      docName === 'dr. test physician' ||
+      docName === 'doctor'
+    ) {
+      return false;
+    }
     if (selectedState !== 'All States') {
       const st = selectedState.toLowerCase();
       const docSt = (doc.state || '').toLowerCase();
@@ -344,7 +381,6 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
     );
   });
 
-  const fourteenDays = generate14Days();
   const morningSlots = availability?.slots.filter((s) => (s?.time || '').includes('AM')) || [];
   const afternoonSlots = availability?.slots.filter((s) => (s?.time || '').includes('PM')) || [];
 
@@ -676,7 +712,7 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                 </View>
 
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.calendarStrip}>
-                  {fourteenDays.map((d) => {
+                  {getDoctorPracticeDays(selectedDoctor).map((d) => {
                     const isSelected = selectedDate === d.iso;
                     return (
                       <TouchableOpacity
@@ -819,32 +855,40 @@ export const DoctorSearchScreen: React.FC<DoctorSearchScreenProps> = ({
                   <View style={styles.stepSection}>
                     <View style={styles.stepHeaderRow}>
                       <View style={styles.stepNumberBadge}><Text style={styles.stepNumberText}>3</Text></View>
-                      <Text style={styles.stepTitle}>Visit Type & Symptoms / लक्षण</Text>
+                      <Text style={styles.stepTitle}>In-Person Clinic Visit & Symptoms / लक्षण</Text>
                     </View>
 
-                    {/* Consultation Type Selector */}
-                    <View style={styles.consultTypeRow}>
-                      {[
-                        { id: 'in_person', label: 'In-Person Clinic', icon: 'business-outline' },
-                        { id: 'video', label: 'Video Call', icon: 'videocam-outline' },
-                        { id: 'chat', label: 'Chat Triage', icon: 'chatbubbles-outline' },
-                      ].map((t) => (
-                        <TouchableOpacity
-                          key={t.id}
-                          style={[styles.consultTypeBtn, bookingType === t.id && styles.consultTypeBtnActive]}
-                          onPress={() => setBookingType(t.id as any)}
-                          activeOpacity={0.7}
-                        >
-                          <Ionicons
-                            name={t.icon as any}
-                            size={14}
-                            color={bookingType === t.id ? '#FFFFFF' : Colors.textPrimary}
-                          />
-                          <Text style={[styles.consultTypeBtnText, bookingType === t.id && styles.consultTypeBtnTextActive]}>
-                            {t.label}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
+                    {/* Dedicated In-Person Clinic Consultation Badge */}
+                    <View style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 10,
+                      backgroundColor: '#F0FDFA',
+                      borderWidth: 1.5,
+                      borderColor: '#99F6E4',
+                      borderRadius: 14,
+                      paddingVertical: 12,
+                      paddingHorizontal: 14,
+                      marginBottom: 14,
+                    }}>
+                      <View style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        backgroundColor: '#CCFBF1',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        <Ionicons name="business" size={18} color="#0D9488" />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#0F766E' }}>
+                          In-Person Clinic Consultation (डॉक्टर क्लिनिक विज़िट)
+                        </Text>
+                        <Text style={{ fontSize: 11, color: '#115E59', marginTop: 2 }}>
+                          Physical cabin consultation at {selectedDoctor?.clinic_name || 'Clinic'}
+                        </Text>
+                      </View>
                     </View>
 
                     {/* Quick Symptom Chips */}
@@ -1719,13 +1763,14 @@ const styles = StyleSheet.create({
   dateCard: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 14,
     backgroundColor: '#F8FAFC',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    minWidth: 56,
+    minWidth: 64,
+    minHeight: 68,
   },
   dateCardActive: {
     backgroundColor: Colors.primary,

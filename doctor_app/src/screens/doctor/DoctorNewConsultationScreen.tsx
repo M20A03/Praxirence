@@ -91,6 +91,31 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
   const [uhidSearchResults, setUhidSearchResults] = useState<any[]>([]);
   const [searchingUhid, setSearchingUhid] = useState(false);
 
+  const resetConsultationForm = () => {
+    setDiagnosis("");
+    setDoctorVerified(false);
+    setConversationText("");
+    setSummarizing(false);
+    setPatientSummary("");
+    setDoctorAdvice("");
+    setWarningSigns([]);
+    setMedicines([]);
+    setReminders([]);
+    setAmberAlerts([]);
+    setSoapNote(null);
+    setMedName("");
+    setMedDosage("");
+    setShowAddMed(false);
+  };
+
+  const handleSelectPatientWithReset = (newPatientId: string, newVisitId?: string) => {
+    if (newPatientId !== selectedPatientId) {
+      resetConsultationForm();
+      setSelectedPatientId(newPatientId);
+      setActiveVisitId(newVisitId);
+    }
+  };
+
   const handleRequestLiveConsent = async (patId: string) => {
     setRequestingConsentAuth(true);
     try {
@@ -160,7 +185,7 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
     if (!patients.some((existing) => existing.id === p.id)) {
       setPatients((prev) => [p, ...prev]);
     }
-    setSelectedPatientId(p.id);
+    handleSelectPatientWithReset(p.id);
     setUhidSearchQuery('');
     setUhidSearchResults([]);
   };
@@ -310,16 +335,21 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
               if (selectedPatientId) {
                 await AsyncStorage.removeItem(`@praxirence_consult_draft_${selectedPatientId}`).catch(() => {});
               }
+              resetConsultationForm();
               onCancel();
             },
           },
           {
             text: 'Save Draft & Exit',
-            onPress: onCancel,
+            onPress: () => {
+              resetConsultationForm();
+              onCancel();
+            },
           },
         ]
       );
     } else {
+      resetConsultationForm();
       onCancel();
     }
   };
@@ -340,7 +370,8 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
   }, [isFocused]);
 
   useEffect(() => {
-    if (preselectedPatientId) {
+    if (preselectedPatientId && preselectedPatientId !== selectedPatientId) {
+      resetConsultationForm();
       setSelectedPatientId(preselectedPatientId);
     }
   }, [preselectedPatientId]);
@@ -666,7 +697,10 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
       Alert.alert(
         'Care Plan Dispatched',
         'Prescription and care plan successfully verified, saved, and synced to the patient\'s Praxirence app with automated medication alarms.',
-        [{ text: 'Return to Dashboard', onPress: onConsultationSaved }]
+        [{ text: 'Return to Dashboard', onPress: () => {
+          resetConsultationForm();
+          onConsultationSaved();
+        }}]
       );
     } catch (err: any) {
       Alert.alert('Notice', err.message || 'Consultation recorded successfully in offline vault.');
@@ -709,7 +743,10 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
                 await AsyncStorage.removeItem(`@praxirence_consult_draft_${selectedPatientId}`).catch(() => {});
               }
               Alert.alert('Consultation Completed', 'Visit successfully completed and patient queue cleared.', [
-                { text: 'Return to Dashboard', onPress: onConsultationSaved },
+                { text: 'Return to Dashboard', onPress: () => {
+                  resetConsultationForm();
+                  onConsultationSaved();
+                }},
               ]);
             } catch (err: any) {
               Alert.alert('Notice', err.message || 'Consultation recorded.');
@@ -866,7 +903,7 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
                   styles.patientChip,
                   selectedPatientId === pat.id && styles.patientChipActive,
                 ]}
-                onPress={() => setSelectedPatientId(pat.id)}
+                onPress={() => handleSelectPatientWithReset(pat.id)}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                   <Ionicons
@@ -912,6 +949,29 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
                     Active Patient: {currentSelectedPat?.name || 'Selected'}{currentSelectedPat?.uhid ? ` • ${currentSelectedPat?.uhid}` : ''}
                   </Text>
                 </View>
+                {Boolean(preselectedComplaint) && (
+                  <View style={{
+                    marginTop: 8,
+                    padding: 10,
+                    borderRadius: 10,
+                    backgroundColor: '#FEF3C7',
+                    borderWidth: 1,
+                    borderColor: '#FDE68A',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}>
+                    <Ionicons name="medical" size={16} color="#B45309" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#92400E', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        Reason for Visit / Chief Complaint
+                      </Text>
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: '#78350F', marginTop: 2 }}>
+                        {preselectedComplaint}
+                      </Text>
+                    </View>
+                  </View>
+                )}
                 {!isConsentActive && (
                   <View style={{
                     marginTop: 10,

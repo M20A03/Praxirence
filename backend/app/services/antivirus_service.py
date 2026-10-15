@@ -138,10 +138,15 @@ class ClamAVService:
         Validates that the file\'s magic bytes correspond to legitimate audio formats.
         Prevents polyglot file attacks.
         """
-        if len(content) < 12:
-            return False, "File is too short to be a valid audio stream."
-
         _, ext = os.path.splitext(filename.lower())
+
+        if ext not in ALLOWED_AUDIO_EXTENSIONS:
+            return False, f"Unsupported or corrupted audio stream format (extension: {ext})."
+
+        # Sub-second, empty, or silent recordings in allowed formats handled gracefully without security violation
+        if len(content) < 44:
+            return True, "SHORT_OR_SILENT"
+
 
         # WAV check: RIFF header + WAVE format
         if content[:4] == b"RIFF" and content[8:12] == b"WAVE":

@@ -19,6 +19,7 @@ import json
 import logging
 import os
 import re
+import difflib
 from typing import Dict, Any, List, Optional
 import httpx
 
@@ -108,6 +109,10 @@ class AIService:
            if offline, rate-limited, or in isolated edge environments.
         3. Guarantees zero downtime, zero OOM risk on low-resource hosts, and instant care plan delivery.
         """
+        if os.path.exists(audio_path) and os.path.getsize(audio_path) <= 44:
+            logger.info(f"Sub-second / empty audio detected ({os.path.getsize(audio_path)} bytes); returning inaudible token.")
+            return "[AUDIO_SILENT_OR_INAUDIBLE]"
+
         gemini_key = settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY")
 
         # --- TIER 1: High-Speed Multimodal Cloud ASR (0% CPU, 0MB Server RAM, ~1.5-2.5s) ---
@@ -258,22 +263,101 @@ class AIService:
             if current_buffer:
                 diarized_turns.append(f"[{current_speaker}]: {' '.join(current_buffer)}")
 
-        diarized_str = "\n".join(diarized_turns) if diarized_turns else raw_text
+        # Merge consecutive turns belonging to the same speaker
+        merged_turns: List[str] = []
+        for turn in diarized_turns:
+            t_clean = turn.strip()
+            if not t_clean:
+                continue
+            match = re.match(r"^\[(Doctor|Patient)\]:\s*(.*)", t_clean, re.DOTALL)
+            if match:
+                speaker, content = match.group(1), match.group(2).strip()
+                if merged_turns and merged_turns[-1].startswith(f"[{speaker}]:"):
+                    prev_content = merged_turns[-1][len(f"[{speaker}]: "):].strip()
+                    merged_turns[-1] = f"[{speaker}]: {prev_content} {content}".strip()
+                else:
+                    merged_turns.append(f"[{speaker}]: {content}")
+            else:
+                merged_turns.append(t_clean)
 
-        # Detect ambiguous / uncommon drug names or dosages (amber alerts)
+        diarized_str = "\n".join(merged_turns) if merged_turns else raw_text
+
+        # Common non-drug English & clinical terms that frequently precede numbers in dialogue
+        COMMON_NON_DRUGS = {
+            "for", "was", "is", "are", "were", "in", "at", "on", "of", "to", "by", "after", "before",
+            "every", "per", "take", "taking", "took", "prescribe", "prescribed", "give", "given",
+            "days", "day", "weeks", "week", "months", "month", "years", "year", "hours", "hour",
+            "mins", "minute", "minutes", "seconds", "times", "time", "daily", "grade", "stage",
+            "type", "class", "room", "bed", "ward", "bp", "pulse", "hr", "rr", "spo2", "sugar",
+            "glucose", "temp", "temperature", "weight", "height", "bmi", "age", "level", "levels",
+            "score", "scores", "rate", "count", "tests", "test", "dose", "doses", "unit", "units",
+            "plus", "minus", "about", "around", "approx", "approximately", "nearly", "over", "under",
+            "more", "less", "than", "between", "next", "last", "past", "prior", "first", "second",
+            "third", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+            "patient", "doctor", "dr", "pt", "he", "she", "his", "her", "him", "they", "them", "their",
+            "we", "us", "you", "your", "my", "me", "it", "its", "had", "have", "has", "felt", "feel",
+            "feeling", "pain", "fever", "cough", "cold", "headache", "vomiting", "nausea", "stool",
+            "stools", "urine", "walk", "sleep", "rest", "work", "routine", "check", "repeat", "visit",
+            "appointment", "follow", "up", "since", "from", "into", "through", "during", "then", "now",
+            "also", "just", "only", "will", "would", "can", "could", "should", "may", "might", "must",
+            "not", "yes", "yeah", "okay", "fine", "good", "bad", "well", "better", "worse", "severe",
+            "mild", "moderate", "normal", "high", "low", "lost", "gained", "reading", "readings",
+            "tablet", "tablets", "tab", "tabs", "capsule", "capsules", "cap", "caps", "pill", "pills",
+            "syrup", "syp", "injection", "inj", "drops", "cream", "gel", "ointment", "inhaler", "respule"
+        }
+
+        # Reference list of frequent Indian OPD prescription generics & brands for fuzzy standardization
+        COMMON_DRUG_NAMES = [
+            "paracetamol", "augmentin", "amoxicillin", "pantoprazole", "pantocid", "azithromycin",
+            "azithral", "telmisartan", "telma", "metformin", "glycomet", "amlodipine", "atorvastatin",
+            "cetirizine", "montelukast", "ondansetron", "ranitidine", "omeprazole", "ibuprofen",
+            "combiflam", "dolo", "calpol", "crocin", "ciprofloxacin", "ofloxacin", "levofloxacin",
+            "metronidazole", "flagyl", "cefixime", "zifi", "sumatriptan", "rabeprazole", "rosuvastatin",
+            "losartan", "clopidogrel", "glimepiride", "vildagliptin", "linagliptin", "dapagliflozin"
+        ]
+
         ambig_matches = re.finditer(r'\b([a-zA-Z]{3,15})\s+(\d{1,4})\b', raw_text)
         for m in ambig_matches:
             term = m.group(0)
             drug_candidate = m.group(1).lower()
             val = m.group(2)
+            if drug_candidate in COMMON_NON_DRUGS or len(drug_candidate) < 4:
+                continue
+
+            # Check context: Is it preceded by medication tokens or followed by mg/ml/dose?
+            start_pos = max(0, m.start() - 25)
+            context_window = raw_text[start_pos:min(len(raw_text), m.end() + 15)].lower()
+            has_rx_context = any(rx_kw in context_window for rx_kw in [
+                "tab", "tablet", "cap", "capsule", "syp", "syrup", "inj", "dose", "mg", "prescrib",
+                "take", "started on", "1-0-1", "0-1-0", "1-0-0", "sos", "bd", "od", "tds"
+            ])
+
             norm = pharmacology_service.normalize_medication(drug_candidate)
-            if not norm["normalized"]:
-                amber_alerts.append({
-                    "term": term,
-                    "suggested": f"{norm['generic_name']} {val}mg",
-                    "reason": "Uncommon or phonetically transcribed drug candidate. Verify dosage and strength.",
-                    "confidence": 0.74
-                })
+            if norm["normalized"]:
+                num_val = int(val) if val.isdigit() else 0
+                if num_val > 1000 and norm["generic_name"].lower() in ("paracetamol", "dolo", "calpol", "crocin", "augmentin", "amoxicillin"):
+                    amber_alerts.append({
+                        "term": term,
+                        "suggested": f"{norm['generic_name']} {val}mg",
+                        "reason": f"High dosage alert: {val}mg single dose exceeds standard OPD threshold. Verify strength.",
+                        "confidence": 0.85
+                    })
+            else:
+                close_matches = difflib.get_close_matches(drug_candidate, COMMON_DRUG_NAMES, n=1, cutoff=0.72)
+                if close_matches:
+                    amber_alerts.append({
+                        "term": term,
+                        "suggested": f"{close_matches[0].title()} {val}mg",
+                        "reason": f"Phonetically ambiguous drug candidate matching '{close_matches[0].title()}'. Verify dosage and spelling.",
+                        "confidence": 0.82
+                    })
+                elif has_rx_context:
+                    amber_alerts.append({
+                        "term": term,
+                        "suggested": f"{drug_candidate.title()} {val}mg",
+                        "reason": "Uncataloged medication candidate in prescription context. Clinician verification recommended.",
+                        "confidence": 0.70
+                    })
 
         return diarized_str, amber_alerts
 

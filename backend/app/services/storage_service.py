@@ -53,6 +53,17 @@ class StorageService:
                     detail=f"Security Violation: Invalid file signature. {magic_detail}"
                 )
 
+            # If sub-second or empty audio was uploaded, write valid minimal silent WAV header
+            if len(content) < 44:
+                import struct
+                ext = ".wav"
+                content = (
+                    b"RIFF" + struct.pack("<I", 36) + b"WAVE" +
+                    b"fmt " + struct.pack("<I", 16) + struct.pack("<H", 1) + struct.pack("<H", 1) +
+                    struct.pack("<I", 16000) + struct.pack("<I", 32000) + struct.pack("<H", 2) + struct.pack("<H", 16) +
+                    b"data" + struct.pack("<I", 0)
+                )
+
             unique_filename = f"{uuid.uuid4()}{ext}"
             destination = os.path.join(self.upload_dir, unique_filename)
 

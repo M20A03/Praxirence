@@ -1006,7 +1006,7 @@ export const mobileApi = {
 
     const isWav = cleanUri.toLowerCase().endsWith('.wav');
     const filename = cleanUri.split('/').pop() || (isWav ? 'consultation_audio.wav' : 'consultation_audio.m4a');
-    const mimeType = isWav ? 'audio/wav' : 'audio/m4a';
+    const mimeType = isWav ? 'audio/wav' : 'audio/mp4';
 
     const formData = new FormData();
     const effectivePatientId = params.patientId && params.patientId.length > 3 ? params.patientId : 'pat_live_01';

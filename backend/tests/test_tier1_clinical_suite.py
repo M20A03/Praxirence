@@ -245,3 +245,26 @@ def test_ambient_opd_vitals_and_icd10():
 
     icd = ai_service.map_icd10_diagnosis("Essential Hypertension")
     assert icd["code"] == "I10"
+
+
+def test_conversational_phrases_zero_spurious_amber_alerts():
+    """Validates that common English/conversational phrases followed by numbers do not trigger spurious amber alerts."""
+    dialogue = (
+        "Doctor: Hello, take Dolo 650 for 3 days. Your BP was 120 / 80. "
+        "Patient: I have had headache for 2 weeks and mild fever since yesterday. "
+        "Doctor: Come back after 5 days for follow up."
+    )
+    diarized, alerts = ai_service.diarize_and_denoise_transcript(dialogue)
+    alert_terms = [a["term"].lower() for a in alerts]
+    assert not any("for 3" in t for t in alert_terms)
+    assert not any("was 120" in t for t in alert_terms)
+    assert not any("for 2" in t for t in alert_terms)
+    assert not any("after 5" in t for t in alert_terms)
+
+
+def test_subsecond_audio_graceful_handling():
+    """Validates that sub-second or empty audio does not trigger security violation."""
+    from app.services.antivirus_service import antivirus_service
+    is_valid, msg = antivirus_service.validate_audio_magic_bytes(b"short", "test.wav")
+    assert is_valid is True
+    assert msg == "SHORT_OR_SILENT"

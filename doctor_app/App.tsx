@@ -423,7 +423,7 @@ function DoctorAppContent() {
 
           <Tab.Screen
             name="NewConsult"
-            options={{ tabBarLabel: 'Consult' }}
+            options={{ tabBarLabel: 'Consult', unmountOnBlur: true }}
           >
             {(props) => (
               <DoctorNewConsultationScreen

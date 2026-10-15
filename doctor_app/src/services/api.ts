@@ -1023,15 +1023,38 @@ export const mobileApi = {
     const timeoutId = setTimeout(() => controller.abort(), 300000); // 300s (5-min) resilient timeout for long 8-15 min audio
 
     try {
-      const headers = getHeaders();
+      if (!authToken) {
+        try {
+          const storedToken = await SecureStorage.getItem('praxirence_token') || await AsyncStorage.getItem('praxirence_token');
+          if (storedToken) setAuthToken(storedToken);
+        } catch (_) {}
+      }
+      let headers = getHeaders();
       delete (headers as any)['Content-Type'];
 
-      const res = await fetch(`${getEffectiveApiUrl()}/visits/upload-audio`, {
+      let res = await fetch(`${getEffectiveApiUrl()}/visits/upload-audio`, {
         method: 'POST',
         headers,
         body: formData,
         signal: controller.signal,
       });
+
+      if (res.status === 401) {
+        try {
+          const refreshedToken = await SecureStorage.getItem('praxirence_token') || await AsyncStorage.getItem('praxirence_token');
+          if (refreshedToken && refreshedToken !== authToken) {
+            setAuthToken(refreshedToken);
+            headers = getHeaders();
+            delete (headers as any)['Content-Type'];
+            res = await fetch(`${getEffectiveApiUrl()}/visits/upload-audio`, {
+              method: 'POST',
+              headers,
+              body: formData,
+              signal: controller.signal,
+            });
+          }
+        } catch (_) {}
+      }
       clearTimeout(timeoutId);
 
       if (res.ok) {

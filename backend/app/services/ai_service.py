@@ -178,51 +178,110 @@ class AIService:
 
     def diarize_and_denoise_transcript(self, raw_text: str) -> tuple[str, List[Dict[str, Any]]]:
         """
-        Parses conversation into structured [Doctor] and [Patient] diarization turns.
-        Detects phonetic clinical ambiguities and assigns word-level confidence.
+        Parses consultation into cleanly structured [Doctor] and [Patient] turns.
+        Supports both inline speaker tokens (e.g. 'Doctor: ... Patient: ...') and continuous un-tagged text.
+        Preserves natural turn grouping and avoids spurious speaker flipping.
         """
-        lines = [line.strip() for line in raw_text.split('\n') if line.strip()]
+        if not raw_text or not raw_text.strip():
+            return "", []
+
+        # If already cleanly diarized with [Doctor]: and [Patient]: turns, preserve directly
+        existing_lines = [l.strip() for l in raw_text.splitlines() if l.strip()]
+        if existing_lines and all(l.startswith('[Doctor]:') or l.startswith('[Patient]:') for l in existing_lines):
+            return raw_text.strip(), []
+
         diarized_turns: List[str] = []
         amber_alerts: List[Dict[str, Any]] = []
 
-        current_speaker = "Doctor"
+        # Check for explicit speaker labels (inline or line-separated)
+        has_speaker_tags = bool(re.search(r'(?i)\b(?:doctor|patient|dr|pt)\b\s*:', raw_text))
 
-        if not any(prefix in raw_text.lower() for prefix in ["doctor:", "patient:", "dr.", "pt:"]):
-            # Split into sentences or turns
+        if has_speaker_tags:
+            # Normalize brackets and duplicates first
+            normalized = re.sub(r'\[\s*(?:doctor|dr)\s*\]\s*:', 'Doctor:', raw_text, flags=re.IGNORECASE)
+            normalized = re.sub(r'\[\s*(?:patient|pt)\s*\]\s*:', 'Patient:', normalized, flags=re.IGNORECASE)
+            normalized = re.sub(r'\b(?:doctor|dr)\b\s*:\s*(?:doctor|dr)\s*:', 'Doctor:', normalized, flags=re.IGNORECASE)
+            normalized = re.sub(r'\b(?:patient|pt)\b\s*:\s*(?:patient|pt)\s*:', 'Patient:', normalized, flags=re.IGNORECASE)
+
+            # Split by inline speaker headers without dropping content
+            raw_chunks = re.split(r'(?i)(?=(?:\b(?:doctor|patient|dr|pt)\b\s*:))', normalized)
+            current_role = "Doctor"
+
+            for chunk in raw_chunks:
+                c = chunk.strip()
+                if not c:
+                    continue
+                doc_match = re.match(r'(?i)^\b(?:doctor|dr)\b\s*:\s*(.*)', c, re.DOTALL)
+                pat_match = re.match(r'(?i)^\b(?:patient|pt)\b\s*:\s*(.*)', c, re.DOTALL)
+
+                if doc_match:
+                    current_role = "Doctor"
+                    content = doc_match.group(1).strip()
+                elif pat_match:
+                    current_role = "Patient"
+                    content = pat_match.group(1).strip()
+                else:
+                    content = c
+
+                content = re.sub(r'(?i)^(?:\[?\s*(?:doctor|patient|dr|pt)\s*\]?\s*:\s*)+', '', content).strip()
+                if content:
+                    diarized_turns.append(f"[{current_role}]: {content}")
+        else:
+            # Continuous speech without speaker tags: Use clinical discourse cues
             sentences = re.split(r'(?<=[.?!])\s+', raw_text)
+            current_speaker = "Doctor"
+            current_buffer: List[str] = []
+
+            doctor_cues = [
+                "kya takleef", "what brings", "since when", "how long", "let me examine",
+                "let me check", "open your", "deep breath", "saans lijiye", "blood pressure",
+                "temperature", "prescribing", "take this", "tablet", "syrup", "capsule",
+                "mg", "1-0-1", "0-1-0", "1-0-0", "after food", "empty stomach", "subah",
+                "shaam", "khana", "paracetamol", "augmentin", "pantocid", "azithral",
+                "dolo", "telma", "namak kam", "rest kijiye", "come back", "dikhane aana"
+            ]
+
+            patient_cues = [
+                "i have", "mujhe", "pet mein", "sar mein", "dard", "bukhar", "fever",
+                "khansi", "cough", "vomiting", "loose motion", "weakness", "chakkar",
+                "do din", "ek hafte", "yesterday", "kal se", "nahi doctor", "yes doctor",
+                "haan doctor", "nahi liya", "kabhi nahi", "thank you", "dhanyawad"
+            ]
+
+            def detect_role(sent: str) -> Optional[str]:
+                s = sent.lower()
+                doc_score = sum(1 for cue in doctor_cues if cue in s)
+                pat_score = sum(1 for cue in patient_cues if cue in s)
+                if doc_score > pat_score and doc_score > 0:
+                    return "Doctor"
+                if pat_score > doc_score and pat_score > 0:
+                    return "Patient"
+                return None
+
             for s in sentences:
                 s_clean = s.strip()
                 if not s_clean:
                     continue
-                # Heuristic: questions from clinician vs symptoms from patient
-                if any(q in s_clean.lower() for q in ["how long", "what brings you", "let me examine", "prescribing", "take this", "deep breath"]):
-                    current_speaker = "Doctor"
-                elif any(p in s_clean.lower() for p in ["i have", "since yesterday", "pain in", "feeling", "i feel", "vomiting", "fever"]):
-                    current_speaker = "Patient"
-                diarized_turns.append(f"[{current_speaker}]: {s_clean}")
-                current_speaker = "Patient" if current_speaker == "Doctor" else "Doctor"
-        else:
-            for line in lines:
-                l_lower = line.lower()
-                if l_lower.startswith("doctor:") or l_lower.startswith("dr:"):
-                    clean = re.sub(r'^(doctor:|dr:)\s*', '', line, flags=re.IGNORECASE)
-                    diarized_turns.append(f"[Doctor]: {clean.strip()}")
-                elif l_lower.startswith("patient:") or l_lower.startswith("pt:"):
-                    clean = re.sub(r'^(patient:|pt:)\s*', '', line, flags=re.IGNORECASE)
-                    diarized_turns.append(f"[Patient]: {clean.strip()}")
-                else:
-                    diarized_turns.append(f"[{current_speaker}]: {line}")
+                detected = detect_role(s_clean)
+                if detected and detected != current_speaker:
+                    if current_buffer:
+                        diarized_turns.append(f"[{current_speaker}]: {' '.join(current_buffer)}")
+                        current_buffer = []
+                    current_speaker = detected
+
+                current_buffer.append(s_clean)
+
+            if current_buffer:
+                diarized_turns.append(f"[{current_speaker}]: {' '.join(current_buffer)}")
 
         diarized_str = "\n".join(diarized_turns) if diarized_turns else raw_text
 
         # Detect ambiguous / uncommon drug names or dosages (amber alerts)
-        # Regex checks numbers without units or phonetic spellings
         ambig_matches = re.finditer(r'\b([a-zA-Z]{3,15})\s+(\d{1,4})\b', raw_text)
         for m in ambig_matches:
             term = m.group(0)
             drug_candidate = m.group(1).lower()
             val = m.group(2)
-            # Check if recognized in pharmacology
             norm = pharmacology_service.normalize_medication(drug_candidate)
             if not norm["normalized"]:
                 amber_alerts.append({
@@ -344,9 +403,10 @@ class AIService:
         if gemini_key and len(gemini_key) > 10:
             gemini_result = self._call_gemini_care_plan(effective_transcript, patient_name, doctor_name, gemini_key)
             if gemini_result:
-                # Merge vitals & diarization
-                if not gemini_result.get("diarized_transcript"):
-                    gemini_result["diarized_transcript"] = diarized_transcript
+                # Clean and normalize diarization turns without dropping speaker shifts
+                raw_dia = gemini_result.get("diarized_transcript") or diarized_transcript
+                clean_dia, _ = self.diarize_and_denoise_transcript(raw_dia)
+                gemini_result["diarized_transcript"] = clean_dia or diarized_transcript
                 if not gemini_result.get("amber_alerts"):
                     gemini_result["amber_alerts"] = amber_alerts
                 return gemini_result

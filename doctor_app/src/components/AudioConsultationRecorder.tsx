@@ -397,6 +397,7 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
       onRecordingProcessed(result);
 
       const isInaudible =
+        result?.conversation?.includes('[AUDIO_SILENT_OR_INAUDIBLE]') ||
         (result as any)?.transcription?.includes('[AUDIO_SILENT_OR_INAUDIBLE]') ||
         (result as any)?.raw_transcription?.includes('[AUDIO_SILENT_OR_INAUDIBLE]') ||
         (result as any)?.patient_summary?.includes('AUDIO_SILENT_OR_INAUDIBLE') ||

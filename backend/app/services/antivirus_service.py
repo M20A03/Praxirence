@@ -33,7 +33,7 @@ MALICIOUS_MAGIC_HEADERS = [
 ]
 
 # Audio Magic Signatures
-ALLOWED_AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a", ".webm", ".ogg"}
+ALLOWED_AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a", ".mp4", ".aac", ".webm", ".ogg"}
 
 
 class ClamAVScanResult:
@@ -167,6 +167,10 @@ class ClamAVService:
         # M4A / AAC / MP4 check: ftyp atom in first 16 bytes
         if b"ftyp" in content[:16]:
             return True, "M4A"
+
+        # ADTS AAC check (0xFFF / 0xFFE sync word)
+        if len(content) >= 2 and content[0] == 0xFF and (content[1] & 0xF0) == 0xF0:
+            return True, "AAC"
 
         # If extension is allowed and no dangerous headers found, allow with caution
         if ext in ALLOWED_AUDIO_EXTENSIONS:

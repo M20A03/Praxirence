@@ -125,7 +125,7 @@ class AIService:
             import base64
             prepared_path = audio_path
             ext = os.path.splitext(audio_path)[1].lower()
-            mime = "audio/wav" if ext == ".wav" else "audio/mp4" if ext in (".m4a", ".mp4", ".aac") else "audio/mp3" if ext == ".mp3" else "audio/webm"
+            mime = "audio/wav" if ext == ".wav" else "audio/mp4" if ext in (".m4a", ".mp4") else "audio/aac" if ext == ".aac" else "audio/mp3" if ext == ".mp3" else "audio/ogg" if ext == ".ogg" else "audio/webm"
 
             # If audio file is large uncompressed WAV (> 12MB), compress to 64k mono AAC for instant cloud upload
             if os.path.getsize(audio_path) > 12 * 1024 * 1024:

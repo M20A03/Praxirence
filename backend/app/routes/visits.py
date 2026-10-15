@@ -444,7 +444,7 @@ async def upload_consultation_audio(
         logger.warning(f"Audio transcription notice ({e}), utilizing clinical pipeline fallback.")
         fallback_plan = model_loader.extract_care_plan("")
         fallback_transcription = serialize_transcription_and_summary(
-            raw_transcription="Doctor-patient consultation conducted. Clinical assessment completed.",
+            raw_transcription="[AUDIO_SILENT_OR_INAUDIBLE]",
             patient_summary=fallback_plan.get("patient_summary"),
             doctor_advice=fallback_plan.get("doctor_advice")
         )

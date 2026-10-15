@@ -73,9 +73,10 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
 
   const activeScheduledVisit = visits.find(
     (v) =>
-      ['scheduled', 'in_progress', 'draft', 'booked', 'waiting'].includes(v.status) &&
+      ['scheduled', 'in_progress', 'booked', 'waiting'].includes(v.status) &&
       v.status !== 'cancelled' &&
-      v.status !== 'completed'
+      v.status !== 'completed' &&
+      v.status !== 'draft'
   );
 
   const fetchLiveQueueStatus = async () => {
@@ -204,18 +205,21 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
     try {
       setLoading(true);
       const data = await mobileApi.getVisits(user.id);
-      setVisits(data);
-      if (data && data.length > 0) {
-        await AsyncStorage.setItem(cacheKey, JSON.stringify(data));
+      // Strictly hide unverified intermediate draft consultations from patient portal
+      const verified = (data || []).filter((v) => v.status !== 'draft');
+      setVisits(verified);
+      if (verified && verified.length > 0) {
+        await AsyncStorage.setItem(cacheKey, JSON.stringify(verified));
         // Automatically schedule native recurring medication alarms
-        NotificationService.scheduleCarePlanReminders(data).catch(() => {});
+        NotificationService.scheduleCarePlanReminders(verified).catch(() => {});
       }
     } catch (err) {
       console.log('Error loading visits, checking offline cache:', err);
       try {
         const cached = await AsyncStorage.getItem(cacheKey);
         if (cached) {
-          setVisits(JSON.parse(cached));
+          const parsed = JSON.parse(cached);
+          setVisits(Array.isArray(parsed) ? parsed.filter((v: any) => v.status !== 'draft') : []);
         }
       } catch (_) {}
     } finally {
@@ -813,7 +817,7 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
               )}
 
               {/* Scheduled Appointment Cancellation Action */}
-              {['scheduled', 'confirmed', 'draft', 'booked', 'waiting', 'pending_confirmation'].includes(visit.status) && (
+              {['scheduled', 'confirmed', 'booked', 'waiting', 'pending_confirmation'].includes(visit.status) && visit.status !== 'draft' && (
                 <View style={{ marginTop: 14, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#E2E8F0', flexDirection: 'row', justifyContent: 'flex-end' }}>
                   <TouchableOpacity
                     style={{

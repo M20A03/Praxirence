@@ -64,6 +64,7 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
   const recordingRef = useRef<Audio.Recording | null>(null);
   const isRecordingRef = useRef(false);
   const isPausedRef = useRef(false);
+  const maxMeteringRef = useRef<number>(-160);
 
   useEffect(() => {
     recordingRef.current = recording;
@@ -232,6 +233,7 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
 
       const onRecordingStatusUpdate = (status: Audio.RecordingStatus) => {
         if (status.canRecord && status.isRecording && typeof status.metering === 'number') {
+          if (status.metering > maxMeteringRef.current) maxMeteringRef.current = status.metering;
           const db = status.metering; // Typically -160 dB to 0 dB (-60 dB to -10 dB for speech)
           const normalized = Math.max(0.1, Math.min(1.0, (db + 60) / 50));
           barAnims.forEach((anim, idx) => {
@@ -257,6 +259,7 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
       setIsPaused(false);
       setDurationSec(0);
       setLastAudioUri(null);
+      maxMeteringRef.current = -160;
 
       timerRef.current = setInterval(() => {
         setDurationSec((prev) => prev + 1);
@@ -351,10 +354,10 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
       recordingRef.current = null;
       setLastAudioUri(uri);
 
-      if (recordedDuration < 2) {
+      if (recordedDuration < 2 || maxMeteringRef.current < -42) {
         Alert.alert(
           "Microphone Muted or Audio Silent",
-          "The recorded consultation was under 2 seconds. Clinical speech-to-text requires audible dialogue to structure medications and care plans. Please speak into the microphone and record at least 2 to 3 seconds.",
+          "Microphone muted or audio silent. Please record at least 2 to 3 seconds of dialogue.",
           [{ text: "OK" }]
         );
         return;

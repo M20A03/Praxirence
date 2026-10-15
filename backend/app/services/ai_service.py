@@ -64,7 +64,7 @@ def is_inaudible_or_non_speech(raw: Optional[str]) -> bool:
         return False
 
     # Require at least one word with 2+ letters (English or Devanagari)
-    letters = re.findall(r'[a-zA-Z\u0900-\u097F]{2,}', cleaned)
+    letters = re.findall(r'[a-zA-Z\u0900-\u0D7F]{2,}', cleaned)
     if not letters:
         return True
 
@@ -85,11 +85,27 @@ class AIService:
             return None
         if not api_key or len(api_key.strip()) < 15:
             return None
+        temp_compressed = None
         try:
             import base64
+            prepared_path = audio_path
             ext = os.path.splitext(audio_path)[1].lower()
             mime = "audio/wav" if ext == ".wav" else "audio/mp4" if ext in (".m4a", ".mp4", ".aac") else "audio/mp3" if ext == ".mp3" else "audio/webm"
-            with open(audio_path, "rb") as f:
+
+            # If audio file is large uncompressed WAV (> 12MB), compress to 64k mono AAC for instant cloud upload
+            if os.path.getsize(audio_path) > 12 * 1024 * 1024:
+                try:
+                    import subprocess
+                    temp_compressed = audio_path + ".compressed.m4a"
+                    cmd = ["ffmpeg", "-y", "-i", audio_path, "-vn", "-ar", "16000", "-ac", "1", "-b:a", "64k", temp_compressed]
+                    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+                    if os.path.exists(temp_compressed) and os.path.getsize(temp_compressed) > 100:
+                        prepared_path = temp_compressed
+                        mime = "audio/mp4"
+                except Exception as comp_err:
+                    logger.warning(f"Audio pre-compression notice: {comp_err}")
+
+            with open(prepared_path, "rb") as f:
                 b64_audio = base64.b64encode(f.read()).decode("utf-8")
 
             payload = {
@@ -105,6 +121,11 @@ class AIService:
                             "2. If the audio contains NO human speech, is silent, consists only of background noise, or is unintelligible, respond ONLY with: [AUDIO_SILENT_OR_INAUDIBLE]\n"
                             "3. Retain the exact language spoken (Hinglish, English, Hindi, or regional terms) and label speaker turns as Doctor: and Patient: when distinguishable.\n"
                             "4. Accurately transcribe Indian brand and generic medication names, strengths, and dosages (e.g. Augmentin 625, Dolo 650, Pantocid 40, Telma 40, Azithral 500, Montair LC, 1-0-1, BD, OD, TDS, SOS) exactly as spoken."
+                            + (
+                                f"\n5. Primary Language: {language.upper()} (accurately preserve regional medical dialogue in {language})."
+                                if language and language.lower() not in ("auto", "none", "")
+                                else ""
+                            )
                         )}
                     ]
                 }]
@@ -136,6 +157,12 @@ class AIService:
                     logger.warning(f"Gemini ASR attempt with {m} notice: {err}")
         except Exception as e:
             logger.error(f"Error in _transcribe_audio_with_gemini: {e}")
+        finally:
+            if temp_compressed and os.path.exists(temp_compressed):
+                try:
+                    os.remove(temp_compressed)
+                except Exception:
+                    pass
         return None
 
     def transcribe_audio(self, audio_path: str, language: Optional[str] = None) -> str:
@@ -211,8 +238,8 @@ class AIService:
         Supports both inline speaker tokens (e.g. 'Doctor: ... Patient: ...') and continuous un-tagged text.
         Preserves natural turn grouping and avoids spurious speaker flipping.
         """
-        if not raw_text or not raw_text.strip():
-            return "", []
+        if not raw_text or not raw_text.strip() or "[AUDIO_SILENT_OR_INAUDIBLE]" in raw_text:
+            return raw_text.strip() if raw_text else "", []
 
         # If already cleanly diarized with [Doctor]: and [Patient]: turns, preserve directly
         existing_lines = [l.strip() for l in raw_text.splitlines() if l.strip()]

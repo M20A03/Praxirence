@@ -393,9 +393,14 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
         JSON.stringify({ uri, patientId, patientName, doctorName, date: new Date().toISOString() })
       ).catch(() => {});
 
+      const detailMsg = err?.message || 'Network upload interrupted';
       Alert.alert(
         'Offline Consultation Saved',
-        'Audio recording was preserved locally in the offline queue. Tap "Retry Upload (Draft Saved)" when connection stabilizes.'
+        `Audio recording was preserved locally in the offline queue.
+
+Notice: ${detailMsg}
+
+Tap "Retry Upload (Draft Saved)" when connection stabilizes.`
       );
     } finally {
       clearInterval(stepInterval);

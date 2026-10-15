@@ -361,6 +361,8 @@ export const mobileApi = {
       await SecureStorage.setItem('praxirence_role', role);
       await SecureStorage.setItem('praxirence_token', token);
       await SecureStorage.setItem('praxirence_user', JSON.stringify(user));
+      await AsyncStorage.setItem('praxirence_token', token);
+      await AsyncStorage.setItem('praxirence_role', role);
     } catch (e) {
       console.warn('Session save notice:', e);
     }
@@ -919,9 +921,14 @@ export const mobileApi = {
     // Proactively verify / refresh auth token if missing
     if (!authToken || authToken.length < 15) {
       try {
-        const stored = await AsyncStorage.getItem('praxirence_token');
-        if (stored && stored.length > 15) {
-          authToken = stored;
+        const secureTok = await SecureStorage.getItem('praxirence_token');
+        if (secureTok && secureTok.length > 15) {
+          authToken = secureTok;
+        } else {
+          const stored = await AsyncStorage.getItem('praxirence_token');
+          if (stored && stored.length > 15) {
+            authToken = stored;
+          }
         }
       } catch (e) {
         console.warn('Summarize token fetch notice:', e);
@@ -972,13 +979,23 @@ export const mobileApi = {
     // Proactively verify / refresh auth token if missing
     if (!authToken || authToken.length < 15) {
       try {
-        const stored = await AsyncStorage.getItem('praxirence_token');
-        if (stored && stored.length > 15) {
-          authToken = stored;
+        const secureTok = await SecureStorage.getItem('praxirence_token');
+        if (secureTok && secureTok.length > 15) {
+          authToken = secureTok;
+        } else {
+          const stored = await AsyncStorage.getItem('praxirence_token');
+          if (stored && stored.length > 15) {
+            authToken = stored;
+          }
         }
       } catch (e) {
         console.warn('Audio token fetch notice:', e);
       }
+    }
+    if (!authToken || authToken.length < 15) {
+      try {
+        await this.restoreSession();
+      } catch (_) {}
     }
 
     let cleanUri = params.audioUri;

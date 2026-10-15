@@ -5,6 +5,7 @@ clinician out-of-office/leave tracking, and dynamic slot generation.
 """
 
 import math
+import re
 import logging
 import uuid
 from datetime import datetime

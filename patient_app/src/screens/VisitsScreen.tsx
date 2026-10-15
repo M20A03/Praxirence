@@ -42,7 +42,7 @@ interface VisitsScreenProps {
 }
 
 export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -254,37 +254,54 @@ export const VisitsScreen: React.FC<VisitsScreenProps> = ({ user }) => {
       }
 
       setPlayingAudioId(visitId);
-      const targetUrl = audioUrl || `${mobileApi.getApiUrl()}/recordings/visit/${visitId}`;
-      try {
-        const { sound } = await Audio.Sound.createAsync(
-          { uri: targetUrl },
-          { shouldPlay: true }
-        );
-        soundRef.current = sound;
-
-        sound.setOnPlaybackStatusUpdate((status) => {
-          if (status.isLoaded && status.didJustFinish) {
-            setPlayingAudioId(null);
-            sound.unloadAsync().catch(() => {});
-            soundRef.current = null;
-          }
-        });
-      } catch (audioErr) {
-        // Fallback to local on-device Speech TTS
-        const targetVisit = visits.find((v) => v.id === visitId);
-        if (targetVisit) {
-          const textToSpeak = `${targetVisit.patient_summary || targetVisit.diagnosis || 'Clinical evaluation'}. Advice: ${targetVisit.doctor_advice || 'Follow prescription schedule carefully.'}`;
-          Speech.speak(textToSpeak, {
-            language: 'en-IN',
-            rate: 0.9,
-            onDone: () => setPlayingAudioId(null),
-            onError: () => setPlayingAudioId(null),
-            onStopped: () => setPlayingAudioId(null),
-          });
-        } else {
-          setPlayingAudioId(null);
-        }
+      const targetVisit = visits.find((v) => v.id === visitId);
+      if (!targetVisit) {
+        setPlayingAudioId(null);
+        return;
       }
+
+      // If external audio URL explicitly provided and exists, play it
+      if (audioUrl) {
+        try {
+          const { sound } = await Audio.Sound.createAsync(
+            { uri: audioUrl },
+            { shouldPlay: true }
+          );
+          soundRef.current = sound;
+          sound.setOnPlaybackStatusUpdate((status) => {
+            if (status.isLoaded && status.didJustFinish) {
+              setPlayingAudioId(null);
+              sound.unloadAsync().catch(() => {});
+              soundRef.current = null;
+            }
+          });
+          return;
+        } catch (_) {}
+      }
+
+      // Instant Zero-Latency Multilingual Speech TTS (Zero Audio Retention compliant)
+      const langCodeMap: Record<string, string> = {
+        hi: 'hi-IN',
+        ta: 'ta-IN',
+        te: 'te-IN',
+        kn: 'kn-IN',
+        mr: 'mr-IN',
+        ml: 'ml-IN',
+        pa: 'pa-IN',
+        ur: 'ur-IN',
+        bho: 'hi-IN',
+        en: 'en-IN',
+      };
+      const ttsLang = langCodeMap[language] || 'en-IN';
+      const textToSpeak = `${targetVisit.patient_summary || targetVisit.diagnosis || 'Clinical evaluation'}. Advice: ${targetVisit.doctor_advice || 'Follow prescription schedule carefully.'}`;
+
+      Speech.speak(textToSpeak, {
+        language: ttsLang,
+        rate: 0.9,
+        onDone: () => setPlayingAudioId(null),
+        onError: () => setPlayingAudioId(null),
+        onStopped: () => setPlayingAudioId(null),
+      });
     } catch (err) {
       console.warn('Audio playback notice:', err);
       setPlayingAudioId(null);

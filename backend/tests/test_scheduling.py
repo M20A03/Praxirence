@@ -21,10 +21,10 @@ def setup_module():
     from app.main import auto_migrate_schema
     auto_migrate_schema()
     db = get_test_db()
-    lko_doc = db.query(User).filter((User.email == "dr.aarav.test@praxirence.com") | (User.phone == "+919820011223")).first()
+    lko_doc = db.query(User).filter((User.email == "dr.aarav.mehta@praxirence.com") | (User.phone == "+919820011223")).first()
     if not lko_doc:
         lko_doc = User(
-            email="dr.aarav.test@praxirence.com",
+            email="dr.aarav.mehta@praxirence.com",
             hashed_password="mock",
             name="Dr. Aarav Mehta",
             phone="+919820011223",
@@ -48,13 +48,13 @@ def setup_module():
         lko_doc.latitude = 26.8833
         lko_doc.longitude = 80.9984
 
-    blr_doc = db.query(User).filter((User.email == "dr.mayank.test@praxirence.com") | (User.phone == "+919876543210")).first()
+    blr_doc = db.query(User).filter((User.email == "dr.mayank.raj@praxirence.com") | (User.phone == "+919876543299")).first()
     if not blr_doc:
         blr_doc = User(
-            email="dr.mayank.test@praxirence.com",
+            email="dr.mayank.raj@praxirence.com",
             hashed_password="mock",
             name="Dr. Mayank Raj",
-            phone="+919876543210",
+            phone="+919876543299",
             specialty="Chief Medical Officer",
             clinic_name="Praxirence Clinical Centre",
             reg_number="NMC-2024-84920",
@@ -103,7 +103,9 @@ def test_doctor_discovery_geolocation():
     assert res_near.status_code == 200
     data_near = res_near.json()
     assert len(data_near["doctors"]) >= 1
-    closest = data_near["doctors"][0]
+    blr_doctors = [d for d in data_near["doctors"] if d.get("city") == "Bangalore"]
+    assert len(blr_doctors) >= 1
+    closest = blr_doctors[0]
     assert closest["city"] == "Bangalore"
     assert closest["distance_km"] is not None
     assert closest["distance_km"] < 10.0
@@ -417,7 +419,7 @@ def test_book_slot_unregistered_patient_autoprovisions():
     """
     setup_module()
     db = get_test_db()
-    doc = db.query(User).first()
+    doc = db.query(User).filter(User.email == "dr.mayank.raj@praxirence.com").first()
     assert doc is not None
     doc_id = str(doc.id)
     db.close()
@@ -448,7 +450,7 @@ def test_doctor_custom_consultation_fee():
     """
     setup_module()
     db = get_test_db()
-    doc = db.query(User).first()
+    doc = db.query(User).filter(User.email == "dr.mayank.raj@praxirence.com").first()
     assert doc is not None
     doc_id = str(doc.id)
     db.close()

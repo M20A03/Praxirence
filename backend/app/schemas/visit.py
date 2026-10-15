@@ -111,6 +111,10 @@ class VisitResponse(BaseModel):
     token_display: Optional[str] = None
     patients_ahead: Optional[int] = None
     estimated_wait_mins: Optional[int] = None
+    diarized_transcript: Optional[str] = None
+    soap: Optional[Dict[str, Any]] = None
+    amber_alerts: Optional[List[Dict[str, Any]]] = None
+    warning_signs: Optional[List[str]] = None
 
     model_config = ConfigDict(from_attributes=True)
 

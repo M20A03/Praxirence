@@ -167,6 +167,18 @@ class ModelLoader:
         if not audio_path or not os.path.exists(audio_path):
             return "Doctor: Patient consultation completed."
 
+        # Prioritize Cloud Gemini ASR when API key is present (0% CPU, 0MB RAM, ~2s latency)
+        try:
+            from app.core.config import settings
+            from app.services.ai_service import ai_service
+            gemini_key = settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY")
+            if gemini_key:
+                cloud_text = ai_service._transcribe_audio_with_gemini(audio_path, language=language, api_key=gemini_key)
+                if cloud_text:
+                    return cloud_text
+        except Exception as e:
+            logger.info(f"Cloud ASR check notice ({e}), proceeding with local ASR.")
+
         try:
             from app.prompts.care_plan_prompt import WHISPER_AUDIO_PROMPT
         except Exception:

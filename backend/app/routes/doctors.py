@@ -161,6 +161,7 @@ def list_doctors(
             or "dummy" in doc_email_lower
             or "example.com" in doc_email_lower
             or "@doctor.praxirence.com" in doc_email_lower
+            or doc_email_lower.startswith("doc_")
             or doc_name_lower in ["dr. attending physician", "attending physician", "doctor", "dr. test physician"]
         ):
             continue
@@ -193,10 +194,12 @@ def list_doctors(
                 continue
 
         # Geolocation distance calculation
-        doc_lat = getattr(d, "latitude", 12.9716) or 12.9716
-        doc_lng = getattr(d, "longitude", 77.5946) or 77.5946
+        doc_lat = getattr(d, "latitude", None)
+        doc_lng = getattr(d, "longitude", None)
         distance_km = None
         if lat is not None and lng is not None:
+            if doc_lat is None or doc_lng is None:
+                continue
             distance_km = haversine_distance(lat, lng, doc_lat, doc_lng)
             if radius_km and distance_km > radius_km:
                 continue

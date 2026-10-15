@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Platform,
   View,
   Text,
   StyleSheet,
@@ -724,38 +725,42 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
 
         {/* Maximum Daily Patient Capacity Limit */}
         <View style={{ marginTop: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-            <Text style={styles.subHeadingLabel}>Daily Patient Capacity Limit</Text>
-            <View style={{ backgroundColor: '#F0FDFA', borderWidth: 1, borderColor: '#CCFBF1', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 }}>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: '#0F766E' }}>{maxDailyPatients} Patients / Day</Text>
-            </View>
-          </View>
-          <Text style={{ fontSize: 11, color: '#64748B', marginBottom: 10 }}>
+          <Text style={styles.subHeadingLabel}>Daily Patient Capacity Limit</Text>
+          <Text style={{ fontSize: 11, color: '#64748B', marginBottom: 8 }}>
             Maximum patients you will consult in a single day. Bookings automatically pause once reached.
           </Text>
-          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-            {[10, 15, 20, 30, 40, 50].map((limitVal) => {
-              const isSelected = maxDailyPatients === limitVal;
-              return (
-                <TouchableOpacity
-                  key={limitVal}
-                  style={[
-                    styles.dayPill,
-                    { minWidth: 48, paddingHorizontal: 12 },
-                    isSelected && styles.dayPillActive,
-                  ]}
-                  onPress={() => {
-                    try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (_) {}
-                    setMaxDailyPatients(limitVal);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.dayPillText, isSelected && styles.dayPillTextActive]}>
-                    {limitVal}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: '#F8FAFC',
+            borderWidth: 1.5,
+            borderColor: '#CBD5E1',
+            borderRadius: 12,
+            paddingHorizontal: 14,
+            paddingVertical: Platform.OS === 'ios' ? 10 : 4,
+          }}>
+            <Ionicons name="medical-outline" size={18} color="#0D9488" style={{ marginRight: 10 }} />
+            <TextInput
+              style={{
+                flex: 1,
+                fontSize: 15,
+                fontWeight: '700',
+                color: '#0F172A',
+                paddingVertical: 6,
+              }}
+              value={maxDailyPatients > 0 ? String(maxDailyPatients) : ''}
+              onChangeText={(text) => {
+                const cleaned = text.replace(/[^0-9]/g, '');
+                setMaxDailyPatients(cleaned ? parseInt(cleaned, 10) : 0);
+              }}
+              placeholder="Set numbers"
+              placeholderTextColor="#94A3B8"
+              keyboardType="number-pad"
+              maxLength={4}
+            />
+            <Text style={{ fontSize: 12, fontWeight: '600', color: '#64748B' }}>
+              Patients / Day
+            </Text>
           </View>
         </View>
 
@@ -1005,37 +1010,43 @@ export const DoctorProfileScreen: React.FC<DoctorProfileScreenProps> = ({
           Set a daily cap on online appointments to protect your OPD from overbooking. Require manual confirmation so you or your front desk can review each booking before admitting.
         </Text>
 
-        {/* Quota Cap Selector */}
-        <View style={{ marginTop: 12 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#334155' }}>Daily Online Cap</Text>
-            <View style={{ backgroundColor: '#F1F5F9', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#0284C7' }}>{dailyOnlineLimit} Patients / Day</Text>
-            </View>
-          </View>
-
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
-            {[5, 10, 15, 20, 25, 30, 40].map((num) => {
-              const isActive = dailyOnlineLimit === num;
-              return (
-                <TouchableOpacity
-                  key={num}
-                  style={[
-                    styles.quotaChip,
-                    isActive && styles.quotaChipActive
-                  ]}
-                  onPress={() => {
-                    try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch (_) {}
-                    setDailyOnlineLimit(num);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.quotaChipText, isActive && styles.quotaChipTextActive]}>
-                    {num} pts
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+        {/* Manual Daily Online Cap Input */}
+        <View style={{ marginTop: 12, marginBottom: 14 }}>
+          <Text style={{ fontSize: 13, fontWeight: '700', color: '#334155', marginBottom: 6 }}>
+            Daily Online Cap
+          </Text>
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: '#F8FAFC',
+            borderWidth: 1.5,
+            borderColor: '#CBD5E1',
+            borderRadius: 12,
+            paddingHorizontal: 14,
+            paddingVertical: Platform.OS === 'ios' ? 10 : 4,
+          }}>
+            <Ionicons name="people-outline" size={18} color="#0284C7" style={{ marginRight: 10 }} />
+            <TextInput
+              style={{
+                flex: 1,
+                fontSize: 15,
+                fontWeight: '700',
+                color: '#0F172A',
+                paddingVertical: 6,
+              }}
+              value={dailyOnlineLimit > 0 ? String(dailyOnlineLimit) : ''}
+              onChangeText={(text) => {
+                const cleaned = text.replace(/[^0-9]/g, '');
+                setDailyOnlineLimit(cleaned ? parseInt(cleaned, 10) : 0);
+              }}
+              placeholder="Set numbers"
+              placeholderTextColor="#94A3B8"
+              keyboardType="number-pad"
+              maxLength={4}
+            />
+            <Text style={{ fontSize: 12, fontWeight: '600', color: '#64748B' }}>
+              Patients / Day
+            </Text>
           </View>
         </View>
 

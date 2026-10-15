@@ -37,10 +37,9 @@ export const ConsultationFeedbackModule: React.FC<ConsultationFeedbackModuleProp
   const { t } = useLanguage();
   if (!activeReview) return null;
 
-  const currentWords = reviewText.trim().split(/\s+/).filter(Boolean);
-  const wordCount = reviewText.trim() === '' ? 0 : currentWords.length;
-  const isReady = wordCount >= 10 && reviewRating >= 1;
-  const progressPct = Math.min(100, (wordCount / 10) * 100);
+  const letterCount = reviewText.replace(/\s+/g, '').length;
+  const isReady = letterCount >= 4 && reviewRating >= 1;
+  const progressPct = Math.min(100, (letterCount / 4) * 100);
 
   return (
     <View style={styles.feedbackCardContainer}>
@@ -65,7 +64,7 @@ export const ConsultationFeedbackModule: React.FC<ConsultationFeedbackModuleProp
         How was your consultation with {activeReview.doctor_name}?
       </Text>
       <Text style={styles.feedbackPromptSubtitle}>
-        Optional reference for other patients. Please write at least 10 words about the clinician's explanation and care quality.
+        Optional reference for other patients. Please write at least 4 letters about the clinician's explanation and care quality.
       </Text>
 
       {/* 5-Star Clinical Rating Selector */}
@@ -107,13 +106,13 @@ export const ConsultationFeedbackModule: React.FC<ConsultationFeedbackModuleProp
         numberOfLines={3}
       />
 
-      {/* Sleek 10-Word Verification Progress Meter */}
+      {/* Sleek 4-Letter Verification Progress Meter */}
       <View style={styles.wordCounterContainer}>
         <View style={styles.wordCounterHeaderRow}>
           <Text style={styles.wordCounterText}>
-            {wordCount < 10
-              ? `${wordCount} of 10 words minimum (${10 - wordCount} more required)`
-              : `${wordCount} words recorded`}
+            {letterCount < 4
+              ? `${letterCount} of 4 letters minimum (${4 - letterCount} more required)`
+              : `${letterCount} letters recorded`}
           </Text>
           {isReady && (
             <View style={styles.wordCounterVerifiedBadge}>

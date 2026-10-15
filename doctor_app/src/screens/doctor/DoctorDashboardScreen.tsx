@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Platform,
   View,
   Text,
   StyleSheet,
@@ -68,6 +69,47 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
   const [customSlotTime, setCustomSlotTime] = useState<string>('05:30 PM');
   const [customSlotAction, setCustomSlotAction] = useState<'add' | 'block' | 'unblock'>('add');
   const [savingCustomSlot, setSavingCustomSlot] = useState<boolean>(false);
+
+  // Daily Consultation Capacity Modal States
+  const [showCapacityModal, setShowCapacityModal] = useState<boolean>(false);
+  const [capacityInput, setCapacityInput] = useState<string>('');
+  const [savingCapacity, setSavingCapacity] = useState<boolean>(false);
+
+  const handleOpenCapacityModal = () => {
+    const currentLimit = scheduleData?.max_daily_patients || 20;
+    setCapacityInput(String(currentLimit));
+    setShowCapacityModal(true);
+  };
+
+  const handleSaveCapacity = async () => {
+    const num = parseInt(capacityInput, 10);
+    if (!num || num <= 0) {
+      Alert.alert('Invalid Number', 'Please enter a valid positive number for your daily consultation capacity.');
+      return;
+    }
+    setSavingCapacity(true);
+    try {
+      await mobileApi.updateDoctorSchedule(
+        { max_daily_patients: num },
+        doctor.id
+      );
+      if (scheduleData) {
+        setScheduleData({
+          ...scheduleData,
+          max_daily_patients: num,
+        });
+      }
+      setShowCapacityModal(false);
+      try {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } catch (_) {}
+      Alert.alert('Capacity Updated', `Your daily consultation capacity is set to ${num} patients.`);
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Failed to update capacity.');
+    } finally {
+      setSavingCapacity(false);
+    }
+  };
 
   // Hardware Back button protection for walk-in modal
   useEffect(() => {
@@ -778,27 +820,35 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
           const isFull = currentCount >= limit;
           const pct = Math.min(100, Math.round((currentCount / limit) * 100));
           return (
-            <View style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: 12,
-              padding: 12,
-              marginBottom: 12,
-              borderWidth: 1,
-              borderColor: isFull ? '#FCA5A5' : '#E2E8F0',
-              borderLeftWidth: 4,
-              borderLeftColor: isFull ? '#EF4444' : '#0D9488',
-              shadowColor: '#0F172A',
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.04,
-              shadowRadius: 4,
-              elevation: 1,
-            }}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleOpenCapacityModal}
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: 12,
+                padding: 12,
+                marginBottom: 12,
+                borderWidth: 1,
+                borderColor: isFull ? '#FCA5A5' : '#E2E8F0',
+                borderLeftWidth: 4,
+                borderLeftColor: isFull ? '#EF4444' : '#0D9488',
+                shadowColor: '#0F172A',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.04,
+                shadowRadius: 4,
+                elevation: 1,
+              }}
+            >
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Ionicons name="people" size={15} color={isFull ? '#DC2626' : '#0D9488'} />
                   <Text style={{ fontSize: 13, fontWeight: '700', color: '#0F172A' }}>
                     Daily Consultation Capacity
                   </Text>
+                  <View style={{ backgroundColor: '#F1F5F9', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                    <Ionicons name="pencil" size={10} color="#0D9488" />
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: '#0D9488' }}>Set Number</Text>
+                  </View>
                 </View>
                 <View style={{
                   backgroundColor: isFull ? '#FEF2F2' : '#F0FDFA',
@@ -817,7 +867,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
               <View style={{ height: 6, backgroundColor: '#F1F5F9', borderRadius: 3, overflow: 'hidden' }}>
                 <View style={{ height: '100%', width: `${pct}%`, backgroundColor: isFull ? '#EF4444' : pct > 75 ? '#F59E0B' : '#0D9488', borderRadius: 3 }} />
               </View>
-            </View>
+            </TouchableOpacity>
           );
         })()
       ) : null}
@@ -1576,6 +1626,95 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
                 </>
               )}
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+              {/* 3. Daily Consultation Capacity Setting Modal */}
+      <Modal
+        visible={showCapacityModal}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setShowCapacityModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxWidth: 360 }]}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                <View style={{ backgroundColor: '#F0FDFA', padding: 8, borderRadius: 10 }}>
+                  <Ionicons name="people" size={20} color="#0D9488" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modalTitle}>Daily Consultation Capacity</Text>
+                  <Text style={{ fontSize: 11, color: Colors.textSecondary, marginTop: 2 }}>
+                    Type your capacity number manually
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => setShowCapacityModal(false)}>
+                <Ionicons name="close" size={22} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 12, color: '#64748B', marginBottom: 12, lineHeight: 17 }}>
+              Set the maximum number of patients you will consult in a day. The OPD tracker will update immediately.
+            </Text>
+
+            <Text style={styles.inputLabel}>Capacity Limit (Patients / Day)</Text>
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: '#F8FAFC',
+              borderWidth: 1.5,
+              borderColor: '#CBD5E1',
+              borderRadius: 12,
+              paddingHorizontal: 14,
+              paddingVertical: Platform.OS === 'ios' ? 10 : 4,
+              marginBottom: 18,
+            }}>
+              <Ionicons name="medical-outline" size={18} color="#0D9488" style={{ marginRight: 8 }} />
+              <TextInput
+                style={{
+                  flex: 1,
+                  fontSize: 18,
+                  fontWeight: '700',
+                  color: '#0F172A',
+                  paddingVertical: 6,
+                }}
+                value={capacityInput}
+                onChangeText={(t) => setCapacityInput(t.replace(/[^0-9]/g, ''))}
+                placeholder="Set numbers"
+                placeholderTextColor="#94A3B8"
+                keyboardType="number-pad"
+                maxLength={4}
+                autoFocus
+              />
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#64748B' }}>
+                Patients
+              </Text>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity
+                style={[styles.modalSubmitBtn, { flex: 1, backgroundColor: '#F1F5F9' }]}
+                onPress={() => setShowCapacityModal(false)}
+              >
+                <Text style={[styles.modalSubmitBtnText, { color: '#475569' }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalSubmitBtn, { flex: 1.5, backgroundColor: '#0D9488' }]}
+                onPress={handleSaveCapacity}
+                disabled={savingCapacity}
+              >
+                {savingCapacity ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle" size={18} color="#ffffff" />
+                    <Text style={styles.modalSubmitBtnText}>Save Capacity</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>

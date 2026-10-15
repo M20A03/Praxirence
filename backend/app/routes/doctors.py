@@ -64,7 +64,7 @@ class DoctorReviewCreate(BaseModel):
     patient_name: Optional[str] = Field(None, description="Optional display name")
     visit_id: Optional[str] = Field(None, description="Optional visit ID being reviewed")
     rating: int = Field(..., ge=1, le=5, description="Star rating between 1 and 5")
-    review_text: str = Field(..., description="Review comment - must be at least 10 words")
+    review_text: str = Field(..., description="Review comment - must be at least 4 letters")
 
 
 # ==================== UTILITIES ====================
@@ -688,14 +688,15 @@ def submit_doctor_review(
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor not found.")
 
-    # 2. Validate word count (minimum 10 words)
-    words = [w for w in payload.review_text.strip().split() if w]
-    word_count = len(words)
-    if word_count < 10:
+    # 2. Validate letter count (minimum 4 letters)
+    clean_text = payload.review_text.strip()
+    letter_count = len([c for c in clean_text if not c.isspace()])
+    if letter_count < 4:
         raise HTTPException(
             status_code=400,
-            detail=f"Please write at least 10 words describing your consultation experience to help other patients. You currently have {word_count} words."
+            detail=f"Please write at least 4 letters describing your consultation experience to help other patients. You currently have {letter_count} letters."
         )
+    word_count = letter_count
 
     # 3. Determine patient display name
     patient_name = payload.patient_name

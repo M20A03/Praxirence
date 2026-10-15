@@ -875,11 +875,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   };
 
   const handleSubmitReview = async (pendingReview: any) => {
-    const words = reviewText.trim().split(/\s+/).filter(Boolean);
-    if (words.length < 10) {
+    const letterCount = reviewText.replace(/\s+/g, '').length;
+    if (letterCount < 4) {
       Alert.alert(
-        'Minimum 10 Words Required',
-        `Please write at least 10 words to provide helpful reference for other patients. You currently have ${words.length} words.`
+        'Minimum 4 Letters Required',
+        `Please write at least 4 letters to provide helpful reference for other patients. You currently have ${letterCount} letters.`
       );
       return;
     }

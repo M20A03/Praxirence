@@ -43,11 +43,11 @@ def test_create_and_search_patient():
     create_res = client.post(
         "/patients",
         headers=headers,
-        json={"name": "Alice Wonderland", "phone": "+15554443322", "dob": "1990-05-15"}
+        json={"name": "Synthetic Patient A", "phone": "+15554443322", "dob": "1990-05-15"}
     )
     assert create_res.status_code == 201
     patient_data = create_res.json()
-    assert patient_data["name"] == "Alice Wonderland"
+    assert patient_data["name"] == "Synthetic Patient A"
     assert patient_data["phone"] == "+15554443322"
     patient_id = patient_data["id"]
 
@@ -56,7 +56,7 @@ def test_create_and_search_patient():
     assert search_res.status_code == 200
     results = search_res.json()
     assert len(results) >= 1
-    assert results[0]["name"] == "Alice Wonderland"
+    assert results[0]["name"] == "Synthetic Patient A"
 
     # Searching by name returns empty to protect against duplicate names
     name_search = client.get("/patients?query=Alice", headers=headers)
@@ -132,7 +132,7 @@ def test_visit_audio_upload_ai_extraction_and_auto_purge():
     p_res = client.post(
         "/patients",
         headers=headers,
-        json={"name": "Marcus Brown", "phone": "+15559998877", "dob": "1985-11-20"}
+        json={"name": "Synthetic Patient B", "phone": "+15559998877", "dob": "1985-11-20"}
     )
     patient_id = p_res.json()["id"]
 
@@ -222,8 +222,8 @@ def test_check_phone_number_endpoint():
     assert data["role"] == "doctor"
 
     # Patient phone check
-    client.post("/auth/patient/register", json={"name": "Mayank", "phone": "+919835139865"})
-    res_pat = client.post("/auth/check-phone", json={"phone": "+919835139865"})
+    client.post("/auth/patient/register", json={"name": "Synthetic Patient", "phone": "+919800000001"})
+    res_pat = client.post("/auth/check-phone", json={"phone": "+919800000001"})
     assert res_pat.status_code == 200
     pat_data = res_pat.json()
     assert pat_data["registered"] is True
@@ -245,7 +245,7 @@ def test_doctor_google_auth_and_register():
     reg_res = client.post(
         "/auth/doctor/register",
         json={
-            "name": "Dr. Sarah Connor",
+            "name": "Dr. Test Physician",
             "email": "sarah.connor@clinics.org",
             "password": "Password123!",
             "phone": "+919811122233",
@@ -257,7 +257,7 @@ def test_doctor_google_auth_and_register():
     assert reg_res.status_code == 200
     reg_data = reg_res.json()
     assert reg_data["role"] == "doctor"
-    assert reg_data["user"]["name"] == "Dr. Sarah Connor"
+    assert reg_data["user"]["name"] == "Dr. Test Physician"
 
 
 def test_auth_directory_and_me():
@@ -318,7 +318,7 @@ def test_summarize_consultation():
 
     # Summarize conversation
     conversation = (
-        "Doctor: Hello Ramesh, what brings you here today? "
+        "Doctor: Hello, what brings you here today? "
         "Patient: Doctor, I have had high fever, dry cough and body ache for 3 days. "
         "Doctor: Your temperature is 101.4F and throat is congested. You have Acute Viral Bronchitis. "
         "I am prescribing Paracetamol 650mg three times daily after food for fever, and Azithromycin 500mg once daily for 5 days. "
@@ -330,7 +330,7 @@ def test_summarize_consultation():
     res = client.post(
         "/visits/summarize",
         headers=headers,
-        json={"conversation": conversation, "patient_name": "Ramesh Kumar"}
+        json={"conversation": conversation, "patient_name": "Synthetic Patient Case"}
     )
     assert res.status_code == 200
     data = res.json()
@@ -356,7 +356,7 @@ def test_visit_with_patient_summary_and_portal():
     p_res = client.post(
         "/patients",
         headers=headers,
-        json={"name": "Suresh Patel", "email": portal_pat_email, "phone": "+919988776655", "dob": "1985-11-20"}
+        json={"name": "Synthetic Patient Portal", "email": portal_pat_email, "phone": "+919988776655", "dob": "1985-11-20"}
     )
     assert p_res.status_code == 201
     patient_id = p_res.json()["id"]
@@ -409,7 +409,7 @@ def test_visit_with_patient_summary_and_portal():
 
     # 5. Patient Email OTP login & check portal
     from app.services.email_service import _email_otp_cache
-    client.post("/auth/patient/email-otp/request", json={"email": portal_pat_email, "name": "Suresh Patel"})
+    client.post("/auth/patient/email-otp/request", json={"email": portal_pat_email, "name": "Synthetic Patient Portal"})
     p_code = _email_otp_cache[portal_pat_email]["code"]
     p_login = client.post("/auth/patient/email-otp/verify", json={"email": portal_pat_email, "code": p_code})
     p_token = p_login.json()["access_token"]
@@ -430,7 +430,7 @@ def test_doctor_email_otp_flow():
     email = "dr.sharma@apollohospital.org"
     req_res = client.post(
         "/auth/doctor/email-otp/request",
-        json={"email": email, "name": "Dr. Ramesh Sharma"}
+        json={"email": email, "name": "Dr. Test Practitioner"}
     )
     assert req_res.status_code == 200
     assert req_res.json()["success"] is True
@@ -454,7 +454,7 @@ def test_patient_email_otp_flow():
     email = "aarav.care@gmail.com"
     req_res = client.post(
         "/auth/patient/email-otp/request",
-        json={"email": email, "name": "Aarav Sharma"}
+        json={"email": email, "name": "Synthetic User A"}
     )
     assert req_res.status_code == 200
     assert req_res.json()["success"] is True
@@ -469,7 +469,7 @@ def test_patient_email_otp_flow():
     data = verify_res.json()
     assert data["role"] == "patient"
     assert "access_token" in data
-    assert data["user"]["name"] == "Aarav Sharma"
+    assert data["user"]["name"] == "Synthetic User A"
 
 
 
@@ -485,7 +485,7 @@ def test_patient_health_records_pdf_download():
     p_res = client.post(
         "/patients",
         headers=headers,
-        json={"name": "Kavita Rao", "phone": "+919876543299", "dob": "1990-05-15"}
+        json={"name": "Synthetic Patient Consent", "phone": "+919876543299", "dob": "1990-05-15"}
     )
     patient_id = p_res.json()["id"]
 

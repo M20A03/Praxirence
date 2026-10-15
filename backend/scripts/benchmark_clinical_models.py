@@ -35,9 +35,9 @@ BENCHMARK_CASES = [
     # 1. Cardiology: Hypertension & CAD
     {
         "specialty": "Cardiology",
-        "doctor": "Dr. Rajesh Sharma, MD (Cardiology)",
-        "patient": "Anand Verma",
-        "transcript": "Doctor: Namaste Anand ji. Your blood pressure is 150/96 mmHg today. We need to stabilize it. I am prescribing Telma 40 once daily in morning (1-0-0) after breakfast. Also take Ecosprin 75 once daily after dinner (0-0-1) for cardiac protection. Restrict sodium and walk 30 minutes daily.",
+        "doctor": "Dr. Specialist Case 01",
+        "patient": "Synthetic Patient 01",
+        "transcript": "Doctor: Namaste. Your blood pressure is 150/96 mmHg today. We need to stabilize it. I am prescribing Telma 40 once daily in morning (1-0-0) after breakfast. Also take Ecosprin 75 once daily after dinner (0-0-1) for cardiac protection. Restrict sodium and walk 30 minutes daily.",
         "ground_truth_meds": ["Telma 40", "Ecosprin 75"],
         "ground_truth_diagnosis": "Hypertension",
         "contraindicated_test_pair": None
@@ -45,9 +45,9 @@ BENCHMARK_CASES = [
     # 2. Cardiology: Severe DDI Risk (Telmisartan + Ramipril)
     {
         "specialty": "Cardiology",
-        "doctor": "Dr. Sunita Rao, DM (Cardiology)",
-        "patient": "Rohan Mehta",
-        "transcript": "Doctor: Rohan, your BP remains elevated despite treatment. Let us check your active medications: you are taking Telmisartan and Ramipril simultaneously. This dual RAAS blockade is dangerous for your kidneys.",
+        "doctor": "Dr. Specialist Case 02",
+        "patient": "Synthetic Patient 02",
+        "transcript": "Doctor: Your BP remains elevated despite treatment. Let us check your active medications: you are taking Telmisartan and Ramipril simultaneously. This dual RAAS blockade is dangerous for your kidneys.",
         "ground_truth_meds": ["Telmisartan", "Ramipril"],
         "ground_truth_diagnosis": "Hypertension",
         "contraindicated_test_pair": ("telmisartan", "ramipril")
@@ -55,9 +55,9 @@ BENCHMARK_CASES = [
     # 3. Endocrinology: Type 2 Diabetes & Dyslipidemia
     {
         "specialty": "Endocrinology",
-        "doctor": "Dr. Vikram Sengupta, MD, DM (Endo)",
-        "patient": "Meera Nair",
-        "transcript": "Doctor: Meera ji, fasting sugar is 184 mg/dL and HbA1c is 8.6%. We are initiating Glycomet 500 twice daily with meals (1-0-1). Also take Pan 40 empty stomach in morning. Avoid refined sugar and carbohydrates.",
+        "doctor": "Dr. Specialist Case 03",
+        "patient": "Synthetic Patient 03",
+        "transcript": "Doctor: Hello, fasting sugar is 184 mg/dL and HbA1c is 8.6%. We are initiating Glycomet 500 twice daily with meals (1-0-1). Also take Pan 40 empty stomach in morning. Avoid refined sugar and carbohydrates.",
         "ground_truth_meds": ["Glycomet 500", "Pan 40"],
         "ground_truth_diagnosis": "Diabetes",
         "contraindicated_test_pair": None
@@ -65,8 +65,8 @@ BENCHMARK_CASES = [
     # 4. Infectious Disease: DDI Risk (Clarithromycin + Atorvastatin)
     {
         "specialty": "Infectious Disease",
-        "doctor": "Dr. Farooq Abdullah, MD",
-        "patient": "Kavita Joshi",
+        "doctor": "Dr. Specialist Case 04",
+        "patient": "Synthetic Patient 04",
         "transcript": "Doctor: You have an atypical respiratory tract infection. You are currently taking Atorvastatin 20mg for cholesterol. If I prescribe Clarithromycin 500mg, this will inhibit statin clearance and cause severe rhabdomyolysis.",
         "ground_truth_meds": ["Clarithromycin", "Atorvastatin"],
         "ground_truth_diagnosis": "Respiratory Infection",
@@ -75,9 +75,9 @@ BENCHMARK_CASES = [
     # 5. Pulmonology: Acute Bronchitis & Wheezing
     {
         "specialty": "Pulmonology",
-        "doctor": "Dr. Alok Nath, MD (Pulmonary Med)",
-        "patient": "Suresh Patel",
-        "transcript": "Doctor: Suresh ji, severe productive cough and wheezing on chest auscultation. Take Augmentin 625 twice daily after food for 5 days. Add Dolo 650 as needed for fever and Montair LC once daily at bedtime.",
+        "doctor": "Dr. Specialist Case 05",
+        "patient": "Synthetic Patient 05",
+        "transcript": "Doctor: Severe productive cough and wheezing on chest auscultation. Take Augmentin 625 twice daily after food for 5 days. Add Dolo 650 as needed for fever and Montair LC once daily at bedtime.",
         "ground_truth_meds": ["Augmentin 625", "Dolo 650", "Montair LC"],
         "ground_truth_diagnosis": "Bronchitis",
         "contraindicated_test_pair": None
@@ -85,9 +85,9 @@ BENCHMARK_CASES = [
     # 6. Rheumatology: DDI Risk (Methotrexate + Naproxen)
     {
         "specialty": "Rheumatology",
-        "doctor": "Dr. Deepa Menon, MD",
-        "patient": "Pooja Hegde",
-        "transcript": "Doctor: Pooja, you are on weekly Methotrexate for Rheumatoid Arthritis. Do not take Naproxen or any NSAID for flare-ups, because NSAIDs block methotrexate excretion in the kidneys.",
+        "doctor": "Dr. Specialist Case 06",
+        "patient": "Synthetic Patient 06",
+        "transcript": "Doctor: You are on weekly Methotrexate for Rheumatoid Arthritis. Do not take Naproxen or any NSAID for flare-ups, because NSAIDs block methotrexate excretion in the kidneys.",
         "ground_truth_meds": ["Methotrexate", "Naproxen"],
         "ground_truth_diagnosis": "Rheumatoid Arthritis",
         "contraindicated_test_pair": ("methotrexate", "naproxen")
@@ -95,9 +95,9 @@ BENCHMARK_CASES = [
     # 7. Gastroenterology: Acid Peptic Disease & H. Pylori
     {
         "specialty": "Gastroenterology",
-        "doctor": "Dr. Manoj Kulkarni, DM (Gastro)",
-        "patient": "Dinesh Iyer",
-        "transcript": "Doctor: Dinesh, severe epigastric burning and acid reflux. Prescribing Pan-D once daily before breakfast on empty stomach for 15 days. Avoid oily food and late night dinners.",
+        "doctor": "Dr. Specialist Case 07",
+        "patient": "Synthetic Patient 07",
+        "transcript": "Doctor: Severe epigastric burning and acid reflux. Prescribing Pan-D once daily before breakfast on empty stomach for 15 days. Avoid oily food and late night dinners.",
         "ground_truth_meds": ["Pan-D"],
         "ground_truth_diagnosis": "Gastritis",
         "contraindicated_test_pair": None
@@ -105,9 +105,9 @@ BENCHMARK_CASES = [
     # 8. Nephrology: Diabetic Nephropathy & Metformin in CKD
     {
         "specialty": "Nephrology",
-        "doctor": "Dr. Aris Thorne, DM (Nephro)",
-        "patient": "Harish Singhal",
-        "transcript": "Doctor: Harish ji, serum creatinine is 3.1 and eGFR is 22 ml/min. We must immediately discontinue Metformin to prevent Metformin-Associated Lactic Acidosis.",
+        "doctor": "Dr. Specialist Case 08",
+        "patient": "Synthetic Patient 08",
+        "transcript": "Doctor: Serum creatinine is 3.1 and eGFR is 22 ml/min. We must immediately discontinue Metformin to prevent Metformin-Associated Lactic Acidosis.",
         "ground_truth_meds": ["Metformin"],
         "ground_truth_diagnosis": "Chronic Kidney Disease",
         "contraindicated_test_pair": None
@@ -115,9 +115,9 @@ BENCHMARK_CASES = [
     # 9. Urology: DDI Risk (Sildenafil + Sorbitrate)
     {
         "specialty": "Urology",
-        "doctor": "Dr. Tariq Mansoor, MCh (Uro)",
-        "patient": "Balram Yadav",
-        "transcript": "Doctor: Balram, you take Sorbitrate for ischemic chest angina. Sildenafil is strictly contraindicated with nitrates as it can cause fatal circulatory collapse.",
+        "doctor": "Dr. Specialist Case 09",
+        "patient": "Synthetic Patient 09",
+        "transcript": "Doctor: you take Sorbitrate for ischemic chest angina. Sildenafil is strictly contraindicated with nitrates as it can cause fatal circulatory collapse.",
         "ground_truth_meds": ["Sildenafil", "Sorbitrate"],
         "ground_truth_diagnosis": "Angina",
         "contraindicated_test_pair": ("sildenafil", "sorbitrate")
@@ -125,9 +125,9 @@ BENCHMARK_CASES = [
     # 10. Neurology: Peripheral Neuropathy & Radiculopathy
     {
         "specialty": "Neurology",
-        "doctor": "Dr. Pradeep Mishra, DM (Neuro)",
-        "patient": "Usha Rani",
-        "transcript": "Doctor: Usha ji, tingling sensation in both feet from diabetic neuropathy. Start Neurobion Forte once daily after dinner for 30 days and keep your blood sugar in strict check.",
+        "doctor": "Dr. Specialist Case 10",
+        "patient": "Synthetic Patient 10",
+        "transcript": "Doctor: Hello, tingling sensation in both feet from diabetic neuropathy. Start Neurobion Forte once daily after dinner for 30 days and keep your blood sugar in strict check.",
         "ground_truth_meds": ["Neurobion Forte"],
         "ground_truth_diagnosis": "Neuropathy",
         "contraindicated_test_pair": None
@@ -135,9 +135,9 @@ BENCHMARK_CASES = [
     # 11. Pediatrics: Acute Tonsillitis & Pyrexia
     {
         "specialty": "Pediatrics",
-        "doctor": "Dr. Neha Kapoor, MD (Peds)",
-        "patient": "Master Aarav (8 yrs)",
-        "transcript": "Doctor: Aarav has acute follicular tonsillitis and 101F fever. Prescribing Augmentin Duo syrup and Calpol 250 for temperature spikes. Gargle with warm saline.",
+        "doctor": "Dr. Specialist Case 11",
+        "patient": "Synthetic Patient 11",
+        "transcript": "Doctor: Child has acute follicular tonsillitis and 101F fever. Prescribing Augmentin Duo syrup and Calpol 250 for temperature spikes. Gargle with warm saline.",
         "ground_truth_meds": ["Augmentin Duo", "Calpol 250"],
         "ground_truth_diagnosis": "Tonsillitis",
         "contraindicated_test_pair": None
@@ -145,8 +145,8 @@ BENCHMARK_CASES = [
     # 12. Orthopedics: Osteoarthritis of Knees
     {
         "specialty": "Orthopedics",
-        "doctor": "Dr. Sandeep Gupta, MS (Ortho)",
-        "patient": "Kamala Devi",
+        "doctor": "Dr. Specialist Case 12",
+        "patient": "Synthetic Patient 12",
         "transcript": "Doctor: Bilateral knee osteoarthritis grade 2. Take Zerodol-SP twice daily after food for 5 days only during acute flare. Shelcal 500 once daily with milk.",
         "ground_truth_meds": ["Zerodol-SP", "Shelcal 500"],
         "ground_truth_diagnosis": "Osteoarthritis",
@@ -155,8 +155,8 @@ BENCHMARK_CASES = [
     # 13. Dermatology: Allergic Dermatitis & Urticaria
     {
         "specialty": "Dermatology",
-        "doctor": "Dr. Ritu Saxena, MD (Derma)",
-        "patient": "Gaurav Jain",
+        "doctor": "Dr. Specialist Case 13",
+        "patient": "Synthetic Patient 13",
         "transcript": "Doctor: Widespread erythematous urticarial wheals with intense pruritus. Take Allegra 180 once daily for 7 days. Avoid hot showers and harsh soaps.",
         "ground_truth_meds": ["Allegra 180"],
         "ground_truth_diagnosis": "Urticaria",
@@ -165,9 +165,9 @@ BENCHMARK_CASES = [
     # 14. Hematology: DDI Risk (Warfarin + Ciprofloxacin)
     {
         "specialty": "Hematology",
-        "doctor": "Dr. Arvind Narain, MD",
-        "patient": "Shashi Bhushan",
-        "transcript": "Doctor: Shashi ji is on Warfarin for metallic valve replacement. Prescribing Ciprofloxacin will severely inhibit Warfarin metabolism and trigger major hemorrhage.",
+        "doctor": "Dr. Specialist Case 14",
+        "patient": "Synthetic Patient 14",
+        "transcript": "Doctor: Patient is on Warfarin for metallic valve replacement. Prescribing Ciprofloxacin will severely inhibit Warfarin metabolism and trigger major hemorrhage.",
         "ground_truth_meds": ["Warfarin", "Ciprofloxacin"],
         "ground_truth_diagnosis": "Anticoagulation",
         "contraindicated_test_pair": ("warfarin", "ciprofloxacin")
@@ -175,8 +175,8 @@ BENCHMARK_CASES = [
     # 15. Psychiatry: DDI Risk (Tramadol + Linezolid)
     {
         "specialty": "Psychiatry / Infectious",
-        "doctor": "Dr. Shalini Varma, MD",
-        "patient": "Naveen Paul",
+        "doctor": "Dr. Specialist Case 15",
+        "patient": "Synthetic Patient 15",
         "transcript": "Doctor: Linezolid acts as an MAO inhibitor. Tramadol must never be given concomitantly due to fatal serotonin toxicity risk.",
         "ground_truth_meds": ["Tramadol", "Linezolid"],
         "ground_truth_diagnosis": "Infection",
@@ -185,8 +185,8 @@ BENCHMARK_CASES = [
     # 16. ENT: Acute Otitis Media & Eustachian Catarrh
     {
         "specialty": "Otorhinolaryngology",
-        "doctor": "Dr. Hemant Barua, MS (ENT)",
-        "patient": "Pritam Biswas",
+        "doctor": "Dr. Specialist Case 16",
+        "patient": "Synthetic Patient 16",
         "transcript": "Doctor: Acute right otitis media with tympanic hyperemia. Take Taxim-O 200 twice daily for 5 days and Otrivin nasal drops for 3 days.",
         "ground_truth_meds": ["Taxim-O 200"],
         "ground_truth_diagnosis": "Otitis Media",
@@ -195,9 +195,9 @@ BENCHMARK_CASES = [
     # 17. Gynecology: Iron Deficiency Anemia in Pregnancy
     {
         "specialty": "Obstetrics & Gynecology",
-        "doctor": "Dr. Maya Trivedi, MS (OBG)",
-        "patient": "Anjali Pandey (28w Gestation)",
-        "transcript": "Doctor: Anjali, hemoglobin is 9.2 g/dL indicating moderate gestational anemia. Take Orofer-XT once daily after lunch and Shelcal 500 at bedtime with a 4-hour gap.",
+        "doctor": "Dr. Specialist Case 17",
+        "patient": "Synthetic Patient 17",
+        "transcript": "Doctor: hemoglobin is 9.2 g/dL indicating moderate gestational anemia. Take Orofer-XT once daily after lunch and Shelcal 500 at bedtime with a 4-hour gap.",
         "ground_truth_meds": ["Orofer-XT", "Shelcal 500"],
         "ground_truth_diagnosis": "Anemia",
         "contraindicated_test_pair": None
@@ -205,9 +205,9 @@ BENCHMARK_CASES = [
     # 18. Oncology: Immunosuppression DDI (Allopurinol + Azathioprine)
     {
         "specialty": "Oncology / Immunology",
-        "doctor": "Dr. Subhash Bose, DM",
-        "patient": "Tanmay Roy",
-        "transcript": "Doctor: Tanmay is on Azathioprine. If we introduce Allopurinol for hyperuricemia, xanthine oxidase blockade will induce profound agranulocytosis.",
+        "doctor": "Dr. Specialist Case 18",
+        "patient": "Synthetic Patient 18",
+        "transcript": "Doctor: Patient is on Azathioprine. If we introduce Allopurinol for hyperuricemia, xanthine oxidase blockade will induce profound agranulocytosis.",
         "ground_truth_meds": ["Allopurinol", "Azathioprine"],
         "ground_truth_diagnosis": "Hyperuricemia",
         "contraindicated_test_pair": ("allopurinol", "azathioprine")
@@ -215,9 +215,9 @@ BENCHMARK_CASES = [
     # 19. General Medicine: Hinglish Code-Switching Case
     {
         "specialty": "General Medicine",
-        "doctor": "Dr. Ashok Singhal, MBBS",
-        "patient": "Ramesh Yadav",
-        "transcript": "Doctor: Ramesh ji, teen din se tez bukhar aur gale me dard hai. Augmentin 625 subah sham khane ke baad le lijiye, aur Dolo 650 jab bukhar aaye tab. Khansi ke liye Montair LC raat me ek goli.",
+        "doctor": "Dr. Specialist Case 19",
+        "patient": "Synthetic Patient 19",
+        "transcript": "Doctor: Hello, teen din se tez bukhar aur gale me dard hai. Augmentin 625 subah sham khane ke baad le lijiye, aur Dolo 650 jab bukhar aaye tab. Khansi ke liye Montair LC raat me ek goli.",
         "ground_truth_meds": ["Augmentin 625", "Dolo 650", "Montair LC"],
         "ground_truth_diagnosis": "Fever / Pharyngitis",
         "contraindicated_test_pair": None
@@ -225,8 +225,8 @@ BENCHMARK_CASES = [
     # 20. Preventive Health: Executive Annual Physical
     {
         "specialty": "Internal Medicine",
-        "doctor": "Dr. Preeti Deshmukh, MD",
-        "patient": "Sunil Gavaskar",
+        "doctor": "Dr. Specialist Case 20",
+        "patient": "Synthetic Patient 20",
         "transcript": "Doctor: Routine health evaluation. Vitals and lipids are normal, but Vitamin D is 14 ng/mL. Take Uprise-D3 60K once a week for 8 weeks, then monthly. Maintain brisk walking.",
         "ground_truth_meds": ["Uprise-D3 60K"],
         "ground_truth_diagnosis": "Vitamin D Deficiency",

@@ -54,28 +54,28 @@ def run_feature_audit():
         print(f"[{icon}] {name:<45} | {details}")
 
     # 1. Doctor Registration & Profile
-    doc_email = f"dr.verma.{int(time.time())}@praxirence.com"
-    doc_pass = "ClinicalPass123!"
+    doc_email = f"dr.verma.{int(time.time())}@praxirence.test"
+    doc_pass = f"TestPass_{int(time.time())}"
     reg_res = client.post("/auth/doctor/register", json={
         "email": doc_email,
         "password": doc_pass,
-        "name": "Dr. Rajesh Verma",
+        "name": "Dr. Test Specialist (Cardiology)",
         "phone": f"+9198765{int(time.time() % 100000):05d}",
         "specialty": "Cardiology",
         "clinic_name": "Apex Heart & Vascular Institute",
-        "reg_number": "NMC-2026-CARD-091",
+        "reg_number": f"NMC-TEST-{int(time.time() % 100000):05d}",
         "degree": "MBBS, MD (Medicine), DM (Cardiology)",
         "city": "Bengaluru",
         "state": "Karnataka"
     })
-    log_check("1. Doctor Registration & Profile Setup", reg_res.status_code == 200, f"Dr. Rajesh Verma registered (HTTP {reg_res.status_code})")
+    log_check("1. Doctor Registration & Profile Setup", reg_res.status_code == 200, f"Dr. Test Specialist registered (HTTP {reg_res.status_code})")
     doc_token = reg_res.json()["access_token"]
     doc_id = reg_res.json()["user"]["id"]
     doc_headers = {"Authorization": f"Bearer {doc_token}"}
 
     # 2. Patient Registration with UHID
     pat_res = client.post("/patients", headers=doc_headers, json={
-        "name": "Kailash Nath Sharma",
+        "name": "Synthetic Patient FeatureTest",
         "phone": f"+9199887{int(time.time() % 100000):05d}",
         "dob": "1968-11-14",
     })
@@ -112,7 +112,7 @@ def run_feature_audit():
 
     # 7. Voice Dialogue & Audio Pipeline Processing
     dialogue = (
-        "Doctor: Namaste Kailash ji. Please sit down. What seems to be the trouble?\n"
+        "Doctor: Namaste, please sit down. What seems to be the trouble?\n"
         "Patient: Doctor sahab, since 3 days I feel heavy chest squeezing when walking fast, and morning headache.\n"
         "Doctor: Let me measure your vitals. Right arm blood pressure is 162/98 mmHg. Heart rate is 82 bpm, SpO2 is 98%.\n"
         "Doctor: Chest auscultation shows normal vesicular breath sounds without crackles. S1 and S2 heard, no murmur.\n"

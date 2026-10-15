@@ -27,8 +27,8 @@ client = TestClient(app)
 DOCTORS = [
     {
         "key": "doc_cardio",
-        "name": "Dr. Ashish Mehta",
-        "email": "ashish.mehta@praxirence.com",
+        "name": "Dr. Specialist Cardio (Simulated)",
+        "email": "doc.cardio@praxirence.test",
         "specialty": "Cardiology",
         "reg_number": "MCI-CARD-001",
         "clinic": "Mehta Heart Institute",
@@ -36,8 +36,8 @@ DOCTORS = [
     },
     {
         "key": "doc_pulmo",
-        "name": "Dr. Sunita Kulkarni",
-        "email": "sunita.kulkarni@praxirence.com",
+        "name": "Dr. Specialist Pulmo (Simulated)",
+        "email": "doc.pulmo@praxirence.test",
         "specialty": "Pulmonology",
         "reg_number": "MCI-PULM-002",
         "clinic": "Kulkarni Chest & Allergy Center",
@@ -45,8 +45,8 @@ DOCTORS = [
     },
     {
         "key": "doc_diabeto",
-        "name": "Dr. Rajiv Nair",
-        "email": "rajiv.nair@praxirence.com",
+        "name": "Dr. Specialist Diab (Simulated)",
+        "email": "doc.diab@praxirence.test",
         "specialty": "General Medicine & Diabetology",
         "reg_number": "MCI-GEN-003",
         "clinic": "Nair Metabolic Clinic",
@@ -54,8 +54,8 @@ DOCTORS = [
     },
     {
         "key": "doc_pedia",
-        "name": "Dr. Priya Swaminathan",
-        "email": "priya.swaminathan@praxirence.com",
+        "name": "Dr. Specialist Pedia (Simulated)",
+        "email": "doc.pedia@praxirence.test",
         "specialty": "Pediatrics",
         "reg_number": "MCI-PED-004",
         "clinic": "Swaminathan Child Wellness",
@@ -63,8 +63,8 @@ DOCTORS = [
     },
     {
         "key": "doc_derma",
-        "name": "Dr. Farhan Akhtar",
-        "email": "farhan.akhtar@praxirence.com",
+        "name": "Dr. Specialist Derma (Simulated)",
+        "email": "doc.derma@praxirence.test",
         "specialty": "Dermatology",
         "reg_number": "MCI-DERM-005",
         "clinic": "Skin & Aesthetics Lounge",
@@ -76,7 +76,7 @@ DOCTORS = [
 UNAUTH_DOCTOR = {
     "key": "doc_unauth",
     "name": "Dr. Random Stranger",
-    "email": "stranger.doc@praxirence.com",
+    "email": "doc.stranger@praxirence.test",
     "specialty": "General Surgery",
     "reg_number": "MCI-RAND-999",
     "clinic": "Random Clinic",
@@ -84,10 +84,10 @@ UNAUTH_DOCTOR = {
 }
 
 CASES = [
-    # 1. Cardiology (Dr. Ashish Mehta)
+    # 1. Cardiology (Dr. Specialist Cardio)
     {
         "doc_key": "doc_cardio",
-        "patient": {"name": "Rameshvar Sharma", "phone": "+919820010001", "dob": "1968-03-12", "gender": "Male", "custom_uhid": "MHI-PAT-101"},
+        "patient": {"name": "Synthetic Patient 01", "phone": "+919800000001", "dob": "1968-03-12", "gender": "Male", "custom_uhid": "MHI-PAT-101"},
         "chief_complaint": "Persistent occipital morning headaches with blood pressure spikes to 160/100 mmHg",
         "triage": "Priority",
         "diagnosis": "Essential Hypertension Stage 2",
@@ -100,7 +100,7 @@ CASES = [
     },
     {
         "doc_key": "doc_cardio",
-        "patient": {"name": "Kamala Devi", "phone": "+919820010002", "dob": "1960-07-22", "gender": "Female", "custom_uhid": None},
+        "patient": {"name": "Synthetic Patient 02", "phone": "+919800000002", "dob": "1960-07-22", "gender": "Female", "custom_uhid": None},
         "chief_complaint": "Retrosternal chest heaviness on climbing stairs, relieved within 5 minutes of rest",
         "triage": "Routine",
         "diagnosis": "Chronic Stable Angina Pectoris (CCS Class II)",
@@ -113,7 +113,7 @@ CASES = [
     },
     {
         "doc_key": "doc_cardio",
-        "patient": {"name": "Anil Kulkarni", "phone": "+919820010003", "dob": "1975-11-04", "gender": "Male", "custom_uhid": "MHI-PAT-103"},
+        "patient": {"name": "Synthetic Patient 03", "phone": "+919800000003", "dob": "1975-11-04", "gender": "Male", "custom_uhid": "MHI-PAT-103"},
         "chief_complaint": "Post-anterior wall STEMI stent follow-up, lipid profile review",
         "triage": "Routine",
         "diagnosis": "Post-Percutaneous Coronary Intervention / Dyslipidemia",
@@ -126,7 +126,7 @@ CASES = [
     },
     {
         "doc_key": "doc_cardio",
-        "patient": {"name": "Meera Banerjee", "phone": "+919820010004", "dob": "1955-09-19", "gender": "Female", "custom_uhid": None},
+        "patient": {"name": "Synthetic Patient 04", "phone": "+919800000004", "dob": "1955-09-19", "gender": "Female", "custom_uhid": None},
         "chief_complaint": "Bilateral pedal edema, orthopnea, and shortness of breath when lying flat",
         "triage": "Urgent",
         "diagnosis": "Congestive Heart Failure (NYHA Class III)",
@@ -138,10 +138,10 @@ CASES = [
         ]
     },
 
-    # 2. Pulmonology (Dr. Sunita Kulkarni)
+    # 2. Pulmonology (Dr. Specialist Pulmo)
     {
         "doc_key": "doc_pulmo",
-        "patient": {"name": "Vikram Sethi", "phone": "+919820010005", "dob": "1984-01-15", "gender": "Male", "custom_uhid": "PULM-DEL-201"},
+        "patient": {"name": "Synthetic Patient 05", "phone": "+919800000005", "dob": "1984-01-15", "gender": "Male", "custom_uhid": "PULM-DEL-201"},
         "chief_complaint": "Severe productive purulent cough for 5 days with low grade fever and chest tightness",
         "triage": "Priority",
         "diagnosis": "Acute Bronchitis with Bronchospasm",
@@ -154,7 +154,7 @@ CASES = [
     },
     {
         "doc_key": "doc_pulmo",
-        "patient": {"name": "Sonia Gandhi", "phone": "+919820010006", "dob": "1990-06-28", "gender": "Female", "custom_uhid": None},
+        "patient": {"name": "Synthetic Patient 06", "phone": "+919800000006", "dob": "1990-06-28", "gender": "Female", "custom_uhid": None},
         "chief_complaint": "Recurrent episodic nocturnal wheezing and breathlessness triggered by dust and seasonal change",
         "triage": "Routine",
         "diagnosis": "Moderate Persistent Bronchial Asthma",
@@ -167,7 +167,7 @@ CASES = [
     },
     {
         "doc_key": "doc_pulmo",
-        "patient": {"name": "Deepak Joshi", "phone": "+919820010007", "dob": "1998-12-05", "gender": "Male", "custom_uhid": "PULM-DEL-203"},
+        "patient": {"name": "Synthetic Patient 07", "phone": "+919800000007", "dob": "1998-12-05", "gender": "Male", "custom_uhid": "PULM-DEL-203"},
         "chief_complaint": "Dry hacking post-viral cough disrupting sleep for past 2 weeks following fever",
         "triage": "Routine",
         "diagnosis": "Post-Infectious Hyperreactive Airway Cough",
@@ -180,7 +180,7 @@ CASES = [
     },
     {
         "doc_key": "doc_pulmo",
-        "patient": {"name": "Gurpreet Singh", "phone": "+919820010008", "dob": "1958-04-10", "gender": "Male", "custom_uhid": None},
+        "patient": {"name": "Synthetic Patient 08", "phone": "+919800000008", "dob": "1958-04-10", "gender": "Male", "custom_uhid": None},
         "chief_complaint": "Exertional breathlessness with chronic morning sputum production in former smoker",
         "triage": "Priority",
         "diagnosis": "Chronic Obstructive Pulmonary Disease (GOLD Group B)",
@@ -192,10 +192,10 @@ CASES = [
         ]
     },
 
-    # 3. General Medicine & Diabetology (Dr. Rajiv Nair)
+    # 3. General Medicine & Diabetology (Dr. Specialist Diab)
     {
         "doc_key": "doc_diabeto",
-        "patient": {"name": "Harish Patel", "phone": "+919820010009", "dob": "1972-02-18", "gender": "Male", "custom_uhid": "NAIR-MET-301"},
+        "patient": {"name": "Synthetic Patient 09", "phone": "+919800000009", "dob": "1972-02-18", "gender": "Male", "custom_uhid": "NAIR-MET-301"},
         "chief_complaint": "Fasting blood sugar 195 mg/dL, HbA1c 8.6%, polyuria, and fatigue",
         "triage": "Priority",
         "diagnosis": "Uncontrolled Type 2 Diabetes Mellitus",
@@ -209,7 +209,7 @@ CASES = [
     },
     {
         "doc_key": "doc_diabeto",
-        "patient": {"name": "Pooja Verma", "phone": "+919820010010", "dob": "1994-10-30", "gender": "Female", "custom_uhid": None},
+        "patient": {"name": "Synthetic Patient 10", "phone": "+919800000010", "dob": "1994-10-30", "gender": "Female", "custom_uhid": None},
         "chief_complaint": "Acute watery diarrhea 6 episodes since morning, nausea, and severe dehydration",
         "triage": "Urgent",
         "diagnosis": "Acute Gastroenteritis with Moderate Dehydration",
@@ -223,7 +223,7 @@ CASES = [
     },
     {
         "doc_key": "doc_diabeto",
-        "patient": {"name": "Mohd Imran", "phone": "+919820010011", "dob": "1989-05-14", "gender": "Male", "custom_uhid": "NAIR-MET-303"},
+        "patient": {"name": "Synthetic Patient 11", "phone": "+919800000011", "dob": "1989-05-14", "gender": "Male", "custom_uhid": "NAIR-MET-303"},
         "chief_complaint": "Continuous high-grade fever for 7 days with abdominal discomfort, headache, and chills",
         "triage": "Priority",
         "diagnosis": "Enteric (Typhoid) Fever (Widal Positive)",
@@ -236,7 +236,7 @@ CASES = [
     },
     {
         "doc_key": "doc_diabeto",
-        "patient": {"name": "Sunita Aggarwal", "phone": "+919820010012", "dob": "1981-08-09", "gender": "Female", "custom_uhid": None},
+        "patient": {"name": "Synthetic Patient 12", "phone": "+919800000012", "dob": "1981-08-09", "gender": "Female", "custom_uhid": None},
         "chief_complaint": "Fatigue, unexplained weight gain, cold intolerance, and sluggishness",
         "triage": "Routine",
         "diagnosis": "Primary Hypothyroidism (TSH 9.2 uIU/mL)",
@@ -250,7 +250,7 @@ CASES = [
     # 4. Pediatrics (Dr. Priya Swaminathan)
     {
         "doc_key": "doc_pedia",
-        "patient": {"name": "Master Aarav Sharma", "phone": "+919820010013", "dob": "2021-03-25", "gender": "Male", "custom_uhid": "PEDI-SWA-401"},
+        "patient": {"name": "Synthetic Patient 13", "phone": "+919800000013", "dob": "2021-03-25", "gender": "Male", "custom_uhid": "PEDI-SWA-401"},
         "chief_complaint": "Sudden onset high fever 102.5F with single brief twitching episode lasting 1 minute",
         "triage": "Urgent",
         "diagnosis": "Simple Febrile Seizure secondary to Viral Pyrexia",
@@ -262,7 +262,7 @@ CASES = [
     },
     {
         "doc_key": "doc_pedia",
-        "patient": {"name": "Baby Ananya Nair", "phone": "+919820010014", "dob": "2020-09-12", "gender": "Female", "custom_uhid": None},
+        "patient": {"name": "Synthetic Patient 14", "phone": "+919800000014", "dob": "2020-09-12", "gender": "Female", "custom_uhid": None},
         "chief_complaint": "Recurrent clear nasal discharge, sneezing bouts, and itchy watery eyes",
         "triage": "Routine",
         "diagnosis": "Pediatric Allergic Rhinitis",
@@ -275,7 +275,7 @@ CASES = [
     },
     {
         "doc_key": "doc_pedia",
-        "patient": {"name": "Baby Vivaan Gupta", "phone": "+919820010015", "dob": "2024-01-10", "gender": "Male", "custom_uhid": "PEDI-SWA-403"},
+        "patient": {"name": "Synthetic Patient 15", "phone": "+919800000015", "dob": "2024-01-10", "gender": "Male", "custom_uhid": "PEDI-SWA-403"},
         "chief_complaint": "Inconsolable crying spells in evenings with leg curling and abdominal gas distension",
         "triage": "Routine",
         "diagnosis": "Infantile Colic / Lactose Overload",
@@ -287,7 +287,7 @@ CASES = [
     },
     {
         "doc_key": "doc_pedia",
-        "patient": {"name": "Baby Diya Sen", "phone": "+919820010016", "dob": "2019-11-02", "gender": "Female", "custom_uhid": None},
+        "patient": {"name": "Synthetic Patient 16", "phone": "+919800000016", "dob": "2019-11-02", "gender": "Female", "custom_uhid": None},
         "chief_complaint": "Pallor on inner eyelids, poor appetite, and fatigue on running (Hb 8.9 g/dL)",
         "triage": "Routine",
         "diagnosis": "Pediatric Nutritional Iron Deficiency Anemia",
@@ -298,10 +298,10 @@ CASES = [
         ]
     },
 
-    # 5. Dermatology (Dr. Farhan Akhtar)
+    # 5. Dermatology (Dr. Specialist Derma)
     {
         "doc_key": "doc_derma",
-        "patient": {"name": "Rajesh Kannan", "phone": "+919820010017", "dob": "1991-04-18", "gender": "Male", "custom_uhid": "DERM-AKH-501"},
+        "patient": {"name": "Synthetic Patient 17", "phone": "+919800000017", "dob": "1991-04-18", "gender": "Male", "custom_uhid": "DERM-AKH-501"},
         "chief_complaint": "Intensely itchy annular red scaly plaques on groin and inner thighs for 3 weeks",
         "triage": "Routine",
         "diagnosis": "Tinea Cruris et Corporis (Fungal Ringworm Infection)",
@@ -314,7 +314,7 @@ CASES = [
     },
     {
         "doc_key": "doc_derma",
-        "patient": {"name": "Ananya Roy", "phone": "+919820010018", "dob": "2000-08-25", "gender": "Female", "custom_uhid": None},
+        "patient": {"name": "Synthetic Patient 18", "phone": "+919800000018", "dob": "2000-08-25", "gender": "Female", "custom_uhid": None},
         "chief_complaint": "Dry erythematous pruritic patches on bilateral antecubital and popliteal fossae",
         "triage": "Routine",
         "diagnosis": "Atopic Dermatitis Flare-up",
@@ -327,7 +327,7 @@ CASES = [
     },
     {
         "doc_key": "doc_derma",
-        "patient": {"name": "Aditya Chauhan", "phone": "+919820010019", "dob": "2004-12-11", "gender": "Male", "custom_uhid": "DERM-AKH-503"},
+        "patient": {"name": "Synthetic Patient 19", "phone": "+919800000019", "dob": "2004-12-11", "gender": "Male", "custom_uhid": "DERM-AKH-503"},
         "chief_complaint": "Multiple inflammatory pustules and painful cysts on forehead, cheeks, and jawline",
         "triage": "Routine",
         "diagnosis": "Acne Vulgaris Grade 3 (Papulopustular)",
@@ -340,7 +340,7 @@ CASES = [
     },
     {
         "doc_key": "doc_derma",
-        "patient": {"name": "Zoya Siddiqui", "phone": "+919820010020", "dob": "1997-02-14", "gender": "Female", "custom_uhid": None},
+        "patient": {"name": "Synthetic Patient 20", "phone": "+919800000020", "dob": "1997-02-14", "gender": "Female", "custom_uhid": None},
         "chief_complaint": "Acute onset fleeting intensely itchy erythematous wheals across trunk and limbs",
         "triage": "Priority",
         "diagnosis": "Acute Spontaneous Urticaria (Hives)",

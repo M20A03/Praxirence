@@ -72,15 +72,15 @@ def run_simulation():
 
     try:
         # STEP 1: DOCTOR REGISTRATION & PROFILE SETUP
-        doc_email = f"dr.sunita.{int(time.time())}@praxirence.com"
+        doc_email = f"dr.lifecycle.{int(time.time())}@praxirence.test"
         reg_doc = client.post("/auth/doctor/register", json={
             "email": doc_email,
-            "password": "ClinicalPass123!",
-            "name": "Dr. Sunita Rao, MD",
+            "password": f"TestPass_{int(time.time())}",
+            "name": "Dr. Test Cardiologist Lifecycle",
             "phone": f"+9198765{int(time.time() % 100000):05d}",
             "specialty": "Cardiology",
             "clinic_name": "Apex Heart & Vascular Care",
-            "reg_number": "NMC-2026-CARD-789",
+            "reg_number": f"NMC-TEST-{int(time.time() % 100000):05d}",
             "degree": "MBBS, MD (Medicine), DM (Cardiology)",
             "city": "Bengaluru",
             "state": "Karnataka"
@@ -89,11 +89,11 @@ def run_simulation():
         doc_token = reg_doc.json().get("access_token") if doc_ok else ""
         doc_id = reg_doc.json().get("user", {}).get("id") if doc_ok else ""
         doc_headers = {"Authorization": f"Bearer {doc_token}"}
-        log_check("1. Doctor Registration & MCI Onboarding", doc_ok, f"Dr. Sunita Rao registered (HTTP {reg_doc.status_code})")
+        log_check("1. Doctor Registration & MCI Onboarding", doc_ok, f"Dr. Test Cardiologist registered (HTTP {reg_doc.status_code})")
 
         # STEP 2: PATIENT REGISTRATION WITH UHID
         pat_res = client.post("/patients", headers=doc_headers, json={
-            "name": "Ramesh Kumar Sharma",
+            "name": "Synthetic Patient Lifecycle",
             "phone": f"+9199887{int(time.time() % 100000):05d}",
             "dob": "1972-04-15"
         })
@@ -128,7 +128,7 @@ def run_simulation():
 
         # STEP 6: SPOKEN DIALOGUE WITH PHONETIC MISPRONUNCIATIONS & THIRD-PARTY HISTORY
         dialogue = (
-            "Doctor: Namaste Ramesh ji. Please sit down. Kya takleef ho rahi hai?\n"
+            "Doctor: Namaste, please sit down. Kya takleef ho rahi hai?\n"
             "Patient: Doctor sahab, chest me heavy feeling hoti hai stairs chadhne me. Aur khana khane ke baad pet me burning hoti hai. "
             "By the way, my brother took Amlodipine 5 years ago for his heart.\n"
             "Doctor: Theek hai, aapka blood pressure 150/95 hai aur ECG show kar raha hai sinus tachycardia. "
@@ -180,7 +180,7 @@ def run_simulation():
             wf.writeframes(frames)
         audio_bytes = wav_io.getvalue()
 
-        files = {"audio_file": ("consultation_ramesh.wav", audio_bytes, "audio/wav")}
+        files = {"audio_file": ("consultation_synthetic.wav", audio_bytes, "audio/wav")}
         data = {"patient_id": pat_id, "keep_recording": "false", "language": "hi"}
 
         upload_res = client.post("/visits/upload-audio", headers=doc_headers, data=data, files=files)

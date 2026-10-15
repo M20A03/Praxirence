@@ -70,13 +70,13 @@ export const AppShowcase: React.FC<AppShowcaseProps> = () => {
                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
                     <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>Clinician Workspace</span>
                   </div>
-                  <span style={{ fontSize: '10px', color: '#0284c7', fontWeight: 700 }}>Dr. Mayank</span>
+                  <span style={{ fontSize: '10px', color: '#0284c7', fontWeight: 700 }}>Dr. Attending Physician</span>
                 </div>
 
                 {/* Patient Header */}
                 <div style={{ background: '#ffffff', padding: '8px 10px', borderRadius: '10px', marginBottom: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '11px' }}>Ramesh Sharma</span>
+                    <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '11px' }}>Patient (OPD-204)</span>
                     <span style={{ fontSize: '9px', color: '#059669', background: 'rgba(16,185,129,0.12)', padding: '2px 6px', borderRadius: '10px', fontWeight: 600 }}>OPD-204</span>
                   </div>
                   <span style={{ fontSize: '9px', color: '#64748b' }}>48 Y / Male • +91 98765-43210</span>

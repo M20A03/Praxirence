@@ -37,16 +37,16 @@ results["Section 1: Backend Health & Zero-Dummy Status"] = "PASS"
 # SECTION 2: DOCTOR REGISTRATION & AUTHENTICATION
 # ------------------------------------------------------------------------------
 print("\n[SECTION 2: Doctor Registration & Authentication]")
-doc_email = f"dr.audit_{uuid.uuid4().hex[:6]}@praxirence.com"
+doc_email = f"dr.audit_{uuid.uuid4().hex[:6]}@praxirence.test"
 doc_phone = f"+9198{uuid.uuid4().int % 100000000:08d}"
 doc_payload = {
-    "name": "Dr. Mayank Raj",
+    "name": "Dr. Test Clinician Alpha",
     "email": doc_email,
     "phone": doc_phone,
-    "password": "SecurePassword123!",
+    "password": f"TestPass_{uuid.uuid4().hex[:8]}",
     "specialty": "Cardiology & Internal Medicine",
     "clinic_name": "Praxirence Heart & Health Clinic",
-    "reg_number": "MCI-2026-789012",
+    "reg_number": f"MCI-TEST-{uuid.uuid4().hex[:6].upper()}",
     "degree": "MBBS, MD"
 }
 r_doc_reg = requests.post(f"{BASE_URL}/auth/doctor/register", json=doc_payload)
@@ -81,7 +81,7 @@ results["Section 2: Doctor Registration & JWT Auth"] = "PASS"
 # ------------------------------------------------------------------------------
 print("\n[SECTION 3: Patient Creation & Unique ID Verification]")
 headers = {"Authorization": f"Bearer {doc_token}"}
-patient_name = "Aarav Sharma"
+patient_name = "Synthetic Patient Alpha"
 patient_phone = f"+9198{uuid.uuid4().int % 100000000:08d}"
 
 # Register Patient 1
@@ -98,7 +98,7 @@ print("Patient 1 ID (UUID 36 chars):", patient_id, f"(Length: {len(patient_id)})
 assert len(patient_id) == 36
 
 # Non-uniqueness of Patient Name Verification:
-# Create Patient 2 with SAME name "Aarav Sharma" but different phone
+# Create Patient 2 with SAME name "Synthetic Patient Alpha" but different phone
 patient_phone_2 = f"+9198{uuid.uuid4().int % 100000000:08d}"
 r_pat2 = requests.post(
     f"{BASE_URL}/patients",
@@ -113,9 +113,9 @@ assert pat2_data.get("name") == patient_name
 print("Confirmed: Patient name is NOT required to be unique! (Multiple patients can share names)")
 
 # Search by Name
-r_search_name = requests.get(f"{BASE_URL}/patients", headers=headers, params={"query": "Aarav Sharma"})
+r_search_name = requests.get(f"{BASE_URL}/patients", headers=headers, params={"query": "Synthetic Patient Alpha"})
 results_name = r_search_name.json()
-print("3. Search by Name ('Aarav Sharma') Count:", len(results_name))
+print("3. Search by Name ('Synthetic Patient Alpha') Count:", len(results_name))
 assert any(p["id"] == patient_id for p in results_name)
 
 # Search by Phone (using query parameter with proper encoding)
@@ -189,9 +189,9 @@ visit_payload = {
     "patient_id": patient_id,
     "doctor_id": doctor_id,
     "diagnosis": "Bacterial Respiratory Infection with Acute Pharyngitis",
-    "patient_summary": "Aarav Sharma, Dr. Mayank Raj evaluated your chest and throat.",
+    "patient_summary": "Synthetic Patient Alpha, Dr. Test Clinician Alpha evaluated your chest and throat.",
     "doctor_advice": "Complete full 5-day course of Augmentin 625. Warm saline gargles twice daily.",
-    "raw_transcription": "Consultation between Dr. Mayank Raj and Aarav Sharma regarding sore throat and pyrexia.",
+    "raw_transcription": "Consultation between Dr. Test Clinician Alpha and Synthetic Patient Alpha regarding sore throat and pyrexia.",
     "medicines": medicines,
     "reminders": reminders,
     "status": "approved"
@@ -231,7 +231,7 @@ assert vault_visits[0]["diagnosis"] == "Bacterial Respiratory Infection with Acu
 r_spec = requests.get(f"{BASE_URL}/doctors")
 assert r_spec.status_code == 200
 assert any(d["id"] == doctor_id for d in r_spec.json().get("doctors", []))
-print("3. Specialists Tab: Directory verified with Dr. Mayank Raj.")
+print("3. Specialists Tab: Directory verified with Dr. Test Clinician Alpha.")
 
 # 4. Assistant Tab - Grounded AI Chat Assistant (Hindi/English)
 chat_payload = {
@@ -266,8 +266,8 @@ print("\n[SECTION 6: Offline Resilience]")
 from app.services.ai_service import ai_service
 offline_summary = ai_service.summarize_consultation_for_patient(
     conversation="Patient presenting with acute bronchitis, coughing, wheezing and fever since 3 days.",
-    patient_name="Aarav Sharma",
-    doctor_name="Dr. Mayank Raj"
+    patient_name="Synthetic Patient Alpha",
+    doctor_name="Dr. Test Clinician Alpha"
 )
 print("1. Local Offline Clinical Entity Extraction:")
 print("   Diagnosis:", offline_summary.get("diagnosis"))

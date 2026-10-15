@@ -48,12 +48,12 @@ def setup_module():
         lko_doc.latitude = 26.8833
         lko_doc.longitude = 80.9984
 
-    blr_doc = db.query(User).filter((User.email == "dr.mayank.raj@praxirence.com") | (User.phone == "+919876543299")).first()
+    blr_doc = db.query(User).filter((User.email == "dr.s.clinician@praxirence.com") | (User.phone == "+919876543299")).first()
     if not blr_doc:
         blr_doc = User(
-            email="dr.mayank.raj@praxirence.com",
+            email="dr.s.clinician@praxirence.com",
             hashed_password="mock",
-            name="Dr. Mayank Raj",
+            name="Dr. S. Clinician",
             phone="+919876543299",
             specialty="Chief Medical Officer",
             clinic_name="Praxirence Clinical Centre",
@@ -81,7 +81,7 @@ def setup_module():
 
     pat = db.query(Patient).first()
     if not pat:
-        pat = Patient(name="Mayank", phone="+919835139865", consent_status=True)
+        pat = Patient(name="Synthetic Patient Scheduling", phone="+919800000002", consent_status=True)
         db.add(pat)
 
     db.commit()
@@ -419,7 +419,7 @@ def test_book_slot_unregistered_patient_autoprovisions():
     """
     setup_module()
     db = get_test_db()
-    doc = db.query(User).filter(User.email == "dr.mayank.raj@praxirence.com").first()
+    doc = db.query(User).filter(User.email == "dr.s.clinician@praxirence.com").first()
     assert doc is not None
     doc_id = str(doc.id)
     db.close()
@@ -450,7 +450,7 @@ def test_doctor_custom_consultation_fee():
     """
     setup_module()
     db = get_test_db()
-    doc = db.query(User).filter(User.email == "dr.mayank.raj@praxirence.com").first()
+    doc = db.query(User).filter(User.email == "dr.s.clinician@praxirence.com").first()
     assert doc is not None
     doc_id = str(doc.id)
     db.close()

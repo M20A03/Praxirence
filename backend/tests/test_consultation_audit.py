@@ -15,12 +15,12 @@ client = TestClient(app)
 def setup_test_users():
     db = TestingSessionLocal()
     # 1. Doctor A
-    doc_a = db.query(User).filter(User.email == "doc_a@praxirence.com").first()
+    doc_a = db.query(User).filter(User.email == "doc_a@praxirence.test").first()
     if not doc_a:
         doc_a = User(
-            email="doc_a@praxirence.com",
+            email="doc_a@praxirence.test",
             hashed_password=get_password_hash("DocPass123!"),
-            name="Dr. Ashish Mehta",
+            name="Dr. Test Specialist A",
             specialty="Cardiology",
             reg_number="MCI-12345",
             phone="+919811111111"
@@ -28,12 +28,12 @@ def setup_test_users():
         db.add(doc_a)
     
     # 2. Doctor B (Unauthorized / Random Doctor)
-    doc_b = db.query(User).filter(User.email == "doc_b@praxirence.com").first()
+    doc_b = db.query(User).filter(User.email == "doc_b@praxirence.test").first()
     if not doc_b:
         doc_b = User(
-            email="doc_b@praxirence.com",
+            email="doc_b@praxirence.test",
             hashed_password=get_password_hash("DocPass123!"),
-            name="Dr. Random Stranger",
+            name="Dr. Test Specialist B",
             specialty="Dermatology",
             reg_number="MCI-99999",
             phone="+919822222222"
@@ -57,7 +57,7 @@ def test_patient_uhid_generation_and_custom_id():
     # 1. Register with auto-generated UHID
     res = client.post(
         "/patients/",
-        json={"name": "Vikram Malhotra", "phone": "+919876500001", "dob": "1988-05-10"},
+        json={"name": "Synthetic Patient Alpha", "phone": "+919876500001", "dob": "1988-05-10"},
         headers=headers_a
     )
     assert res.status_code == 201, res.text
@@ -70,7 +70,7 @@ def test_patient_uhid_generation_and_custom_id():
     # 2. Register with custom UHID
     res2 = client.post(
         "/patients/",
-        json={"name": "Kavita Rao", "phone": "+919876500002", "uhid": "AIIMS-DEL-4042"},
+        json={"name": "Synthetic Patient Beta", "phone": "+919876500002", "uhid": "AIIMS-DEL-4042"},
         headers=headers_a
     )
     assert res2.status_code == 201
@@ -94,7 +94,7 @@ def test_doctor_linking_authorization_workflow():
     # Patient registered under clinic
     res_orig = client.post(
         "/patients/",
-        json={"name": "Rohan Gupta", "phone": "+919876599999", "dob": "1992-04-12"},
+        json={"name": "Synthetic Patient Gamma", "phone": "+919876599999", "dob": "1992-04-12"},
         headers=headers_a
     )
     patient = res_orig.json()
@@ -103,7 +103,7 @@ def test_doctor_linking_authorization_workflow():
     # Doctor B (different doctor) tries to add existing patient Rohan
     res_b = client.post(
         "/patients/",
-        json={"name": "Rohan Gupta", "phone": "+919876599999"},
+        json={"name": "Synthetic Patient Gamma", "phone": "+919876599999"},
         headers=headers_b
     )
     assert res_b.status_code == 201
@@ -162,7 +162,7 @@ def test_consultation_lifecycle_clean_vault_and_pdf():
     # 1. Register Patient
     p_res = client.post(
         "/patients/",
-        json={"name": "Aarav Sharma", "phone": "+919876543219", "dob": "1995-11-20"},
+        json={"name": "Synthetic Patient Delta", "phone": "+919876543219", "dob": "1995-11-20"},
         headers=headers_a
     )
     patient = p_res.json()

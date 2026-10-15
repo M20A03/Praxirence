@@ -30,6 +30,36 @@ from app.services.pharmacology_service import pharmacology_service
 logger = logging.getLogger("praxirence.ai")
 
 
+def is_inaudible_or_non_speech(raw: Optional[str]) -> bool:
+    """
+    Detects if audio transcription consists solely of silence, non-speech acoustic artifacts
+    (e.g., (beep), (static), (coughing), [music]), or insufficient dialogue to form a clinical care plan.
+    """
+    if not raw or not raw.strip():
+        return True
+    lower = raw.strip().lower()
+    exact_inaudible = {
+        "00:00", "[audio_silent_or_inaudible]", "[silence]", "[silent]", "[inaudible]",
+        "(silence)", "silence", "inaudible", "no speech", "[no speech]", "(beep)", "(static)",
+        "(beeping)", "(music)", "[music]", "(ambient noise)", "(background noise)",
+        "(coughing)", "(cough)", "(laughter)", "(sigh)", "(applause)", "(typing)",
+        "no speech detected", "[ambient]", "(groan)", "(throat clearing)"
+    }
+    if lower in exact_inaudible or "[audio_silent_or_inaudible]" in lower or "[silence]" in lower:
+        return True
+
+    # Strip known speaker headers like [Doctor]: [Patient]: Doctor: Patient: Dr: Pt:
+    cleaned = re.sub(r'(?i)\[?\s*(?:doctor|patient|dr|pt)\s*\]?\s*:\s*', '', raw)
+    # Strip bracketed or parenthesized acoustic descriptors e.g. (beep), [music], (chime)
+    cleaned = re.sub(r'[\(\[][^\)\]]*[\)\]]', '', cleaned).strip()
+
+    # Count alphanumeric characters (English + Hindi / Devanagari)
+    alnum = re.findall(r'[a-zA-Z0-9ऀ-ॿ]', cleaned)
+    if len(alnum) < 3:
+        return True
+    return False
+
+
 class AIService:
     def __init__(self):
         logger.info("Initializing Praxirence Clinical AI Service...")
@@ -71,15 +101,13 @@ class AIService:
             # High-performance speech models with instant latency and multimodal audio support
             models = [
                 os.environ.get("GEMINI_TRANSCRIPTION_MODEL", "gemini-3.1-flash-lite"),
-                "gemini-3.1-flash-lite",
-                "gemini-flash-lite-latest",
                 "gemini-3.5-transcribe",
             ]
             models = list(dict.fromkeys([m for m in models if m]))
             for m in models:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key}"
                 try:
-                    with httpx.Client(timeout=10.0) as client:
+                    with httpx.Client(timeout=6.0) as client:
                         res = client.post(url, json=payload, headers={"X-goog-api-key": api_key, "Content-Type": "application/json"})
                         if res.status_code == 200:
                             data = res.json()
@@ -88,17 +116,11 @@ class AIService:
                             parts = content.get("parts", [])
                             if parts and "text" in parts[0]:
                                 text = parts[0]["text"].strip()
-                                if text:
-                                    norm_text = text.strip().lower()
-                                    if (
-                                        norm_text in ("00:00", "", "[audio_silent_or_inaudible]", "[silence]", "[silent]", "[inaudible]", "(silence)", "silence", "inaudible", "no speech", "[no speech]")
-                                        or "[audio_silent_or_inaudible]" in norm_text
-                                        or "[silence]" in norm_text
-                                    ):
-                                        logger.info(f"Gemini ({m}) detected silent or inaudible audio: {text}")
-                                        return "[AUDIO_SILENT_OR_INAUDIBLE]"
-                                    logger.info(f"Audio consultation successfully transcribed via Gemini ({m})")
-                                    return text
+                                if is_inaudible_or_non_speech(text):
+                                    logger.info(f"Gemini ({m}) detected silent, inaudible, or non-speech acoustic audio: {text}")
+                                    return "[AUDIO_SILENT_OR_INAUDIBLE]"
+                                logger.info(f"Audio consultation successfully transcribed via Gemini ({m})")
+                                return text
                 except Exception as err:
                     logger.warning(f"Gemini ASR attempt with {m} notice: {err}")
         except Exception as e:
@@ -125,6 +147,8 @@ class AIService:
             try:
                 cloud_text = self._transcribe_audio_with_gemini(audio_path, language=language, api_key=gemini_key)
                 if cloud_text:
+                    if is_inaudible_or_non_speech(cloud_text):
+                        return "[AUDIO_SILENT_OR_INAUDIBLE]"
                     return cloud_text
             except Exception as e:
                 logger.warning(f"Cloud ASR notice ({e}). Failing over to local Faster-Whisper.")
@@ -133,7 +157,7 @@ class AIService:
         if self.model_loader:
             try:
                 local_text = self.model_loader.transcribe(audio_path, language=language)
-                if local_text and len(local_text.strip()) > 5 and local_text != "Doctor: Patient consultation completed. No specific prescription recorded.":
+                if local_text and not is_inaudible_or_non_speech(local_text) and local_text != "Doctor: Patient consultation completed. No specific prescription recorded.":
                     logger.info("Audio consultation successfully transcribed via Tier 2 In-House Faster-Whisper.")
                     return local_text
             except Exception as e:

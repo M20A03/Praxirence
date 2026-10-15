@@ -455,6 +455,17 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
       return;
     }
 
+    if (
+      conversationText.trim() === '[AUDIO_SILENT_OR_INAUDIBLE]' ||
+      conversationText.includes('AUDIO_SILENT_OR_INAUDIBLE')
+    ) {
+      Alert.alert(
+        'Inaudible Audio Detected',
+        'The consultation audio was recorded as silent or inaudible. Please re-record or enter clinical dialogue.'
+      );
+      return;
+    }
+
     const selectedPat = patients.find((p) => p.id === selectedPatientId);
     setSummarizing(true);
     try {
@@ -463,6 +474,17 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
         patient_name: selectedPat?.name || 'Patient',
         doctor_name: doctor.name,
       });
+
+      if (
+        summaryResult.patient_summary?.includes('AUDIO_SILENT_OR_INAUDIBLE') ||
+        summaryResult.diagnosis === 'Inaudible Audio'
+      ) {
+        Alert.alert(
+          'Inaudible Audio Detected',
+          'The consultation dialogue is silent or inaudible. Please check the microphone and record valid consultation dialogue.'
+        );
+        return;
+      }
 
       setPatientSummary(summaryResult.patient_summary);
       setDoctorAdvice(summaryResult.doctor_advice);

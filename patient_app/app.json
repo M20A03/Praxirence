@@ -29,7 +29,8 @@
         "ACCESS_NETWORK_STATE",
         "VIBRATE",
         "WAKE_LOCK"
-      ]
+      ],
+      "largeHeap": true
     },
     "web": {
       "favicon": "./assets/favicon.png"

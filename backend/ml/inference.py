@@ -320,7 +320,14 @@ class ModelLoader:
                     except Exception:
                         pass
                 if transcription and transcription.strip():
-                    return normalize_indian_clinical_terms(transcription.strip())
+                    norm_t = normalize_indian_clinical_terms(transcription.strip())
+                    try:
+                        from app.services.ai_service import is_inaudible_or_non_speech
+                        if is_inaudible_or_non_speech(norm_t):
+                            return "[AUDIO_SILENT_OR_INAUDIBLE]"
+                    except Exception:
+                        pass
+                    return norm_t
             except Exception as e:
                 logger.error(f"Inference transcription error: {e}. Using fallback.")
 

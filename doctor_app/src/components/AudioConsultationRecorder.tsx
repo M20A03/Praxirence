@@ -118,7 +118,7 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
         sound.unloadAsync().catch(() => {});
       }
     };
-  }, [patientId, patientName, doctorName]);
+  }, []);
 
   // Animate pulse & waveform while recording
   useEffect(() => {
@@ -402,12 +402,7 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
         (result as any)?.patient_summary?.includes('AUDIO_SILENT_OR_INAUDIBLE') ||
         (result as any)?.diagnosis === 'Inaudible Audio';
 
-      if (isInaudible) {
-        Alert.alert(
-          'Microphone Muted or Audio Silent',
-          'The audio recording was below clinical voice threshold or silent. Please check your microphone and re-record the consultation.'
-        );
-      } else {
+      if (!isInaudible) {
         Alert.alert(
           'Audio Transcribed & Extracted',
           'Clinical voice dialogue processed, medications extracted, and patient instructions generated.'

@@ -30,7 +30,8 @@
         "WAKE_LOCK",
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_MICROPHONE"
-      ]
+      ],
+      "largeHeap": true
     },
     "web": {
       "favicon": "./assets/favicon.png"

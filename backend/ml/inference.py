@@ -262,6 +262,17 @@ class ModelLoader:
                     text = " ".join([seg.text for seg in segments]).strip()
                 if text and len(text) > 3:
                     text = normalize_indian_clinical_terms(text)
+                    try:
+                        from app.services.ai_service import is_inaudible_or_non_speech
+                        if is_inaudible_or_non_speech(text):
+                            if converted_wav and os.path.exists(converted_wav):
+                                try:
+                                    os.remove(converted_wav)
+                                except Exception:
+                                    pass
+                            return "[AUDIO_SILENT_OR_INAUDIBLE]"
+                    except Exception:
+                        pass
                     if converted_wav and os.path.exists(converted_wav):
                         try:
                             os.remove(converted_wav)
@@ -358,6 +369,32 @@ class ModelLoader:
         Guarantees response in < 1 second and gracefully falls back to template
         if the model output is malformed JSON.
         """
+        if not transcript or "[AUDIO_SILENT_OR_INAUDIBLE]" in transcript:
+            return {
+                "status": "AUDIO_SILENT_OR_INAUDIBLE",
+                "diagnosis": "Inaudible Audio",
+                "patient_summary": "Recorded audio was silent or below minimum clinical voice decibel threshold.",
+                "doctor_advice": "Check device microphone and re-record consultation.",
+                "medicines": [],
+                "reminders": [],
+                "warning_signs": [],
+                "amber_alerts": ["Audio inaudible or silent; re-recording required."]
+            }
+        try:
+            from app.services.ai_service import is_inaudible_or_non_speech
+            if is_inaudible_or_non_speech(transcript):
+                return {
+                    "status": "AUDIO_SILENT_OR_INAUDIBLE",
+                    "diagnosis": "Inaudible Audio",
+                    "patient_summary": "Recorded audio was silent or below minimum clinical voice decibel threshold.",
+                    "doctor_advice": "Check device microphone and re-record consultation.",
+                    "medicines": [],
+                    "reminders": [],
+                    "warning_signs": [],
+                    "amber_alerts": ["Audio inaudible or silent; re-recording required."]
+                }
+        except Exception:
+            pass
         if "[AUDIO_SILENT_OR_INAUDIBLE]" in transcript:
             return {
                 "status": "AUDIO_SILENT_OR_INAUDIBLE",

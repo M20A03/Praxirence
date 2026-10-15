@@ -354,10 +354,10 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
       recordingRef.current = null;
       setLastAudioUri(uri);
 
-      if (recordedDuration < 2 || maxMeteringRef.current < -42) {
+      if (recordedDuration < 1.5) {
         Alert.alert(
-          "Microphone Muted or Audio Silent",
-          "Microphone muted or audio silent. Please record at least 2 to 3 seconds of dialogue.",
+          "Recording Too Short",
+          "Please record at least 2 to 3 seconds of clinical consultation dialogue.",
           [{ text: "OK" }]
         );
         return;

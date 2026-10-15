@@ -33,7 +33,7 @@ logger = logging.getLogger("praxirence.ai")
 def is_inaudible_or_non_speech(raw: Optional[str]) -> bool:
     """
     Detects if audio transcription consists solely of silence, non-speech acoustic artifacts
-    (e.g., (beep), (static), (coughing), [music]), or insufficient dialogue to form a clinical care plan.
+    (e.g., (beep), (static), (coughing), [music]), timestamps (00:01), or insufficient dialogue.
     """
     if not raw or not raw.strip():
         return True
@@ -43,7 +43,9 @@ def is_inaudible_or_non_speech(raw: Optional[str]) -> bool:
         "(silence)", "silence", "inaudible", "no speech", "[no speech]", "(beep)", "(static)",
         "(beeping)", "(music)", "[music]", "(ambient noise)", "(background noise)",
         "(coughing)", "(cough)", "(laughter)", "(sigh)", "(applause)", "(typing)",
-        "no speech detected", "[ambient]", "(groan)", "(throat clearing)"
+        "no speech detected", "[ambient]", "(groan)", "(throat clearing)",
+        "thank you for watching", "thanks for watching", "please subscribe",
+        "subtitles by", "you", "bye", "bye."
     }
     if lower in exact_inaudible or "[audio_silent_or_inaudible]" in lower or "[silence]" in lower:
         return True
@@ -53,10 +55,19 @@ def is_inaudible_or_non_speech(raw: Optional[str]) -> bool:
     # Strip bracketed or parenthesized acoustic descriptors e.g. (beep), [music], (chime)
     cleaned = re.sub(r'[\(\[][^\)\]]*[\)\]]', '', cleaned).strip()
 
-    # Count alphanumeric characters (English + Hindi / Devanagari)
-    alnum = re.findall(r'[a-zA-Z0-9ऀ-ॿ]', cleaned)
-    if len(alnum) < 3:
+    # Strip standalone timestamps e.g. 00:01, 00:00 - 00:05, 01:23
+    cleaned = re.sub(r'\b\d{1,2}:\d{2}(?::\d{2})?\s*(?:-|–|—|to)\s*\d{1,2}:\d{2}(?::\d{2})?\b', '', cleaned)
+    cleaned = re.sub(r'\b\d{1,2}:\d{2}(?::\d{2})?\b', '', cleaned).strip()
+
+    # Check for Indian medical dosage patterns (e.g. 1-0-1, 1-0-0, 0-1-0)
+    if re.search(r'\b[012]-[012]-[012](?:-[012])?\b', cleaned):
+        return False
+
+    # Require at least one word with 2+ letters (English or Devanagari)
+    letters = re.findall(r'[a-zA-Z\u0900-\u097F]{2,}', cleaned)
+    if not letters:
         return True
+
     return False
 
 

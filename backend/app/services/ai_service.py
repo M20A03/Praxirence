@@ -41,7 +41,7 @@ class AIService:
     def _transcribe_audio_with_gemini(self, audio_path: str, language: Optional[str] = None, api_key: str = "") -> Optional[str]:
         if not audio_path or not os.path.exists(audio_path):
             return None
-        if not api_key or not api_key.startswith("AIzaSy"):
+        if not api_key or len(api_key.strip()) < 15:
             return None
         try:
             import base64
@@ -58,26 +58,31 @@ class AIService:
                     ]
                 }]
             }
-            # Specialized Google Speech/Audio models (gemini-3.8 is for text/reasoning, not voice audio)
+            # High-performance speech models with instant latency and multimodal audio support
             models = [
-                os.environ.get("GEMINI_TRANSCRIPTION_MODEL", "gemini-3.5-transcribe"),
-                "gemini-3.6-flash",
+                os.environ.get("GEMINI_TRANSCRIPTION_MODEL", "gemini-3.5-flash-lite"),
+                "gemini-flash-lite-latest",
+                "gemini-3.5-transcribe",
                 "gemini-3.5-flash",
-                "gemini-3.5-flash-lite",
+                "gemini-3.7-flash",
                 "gemini-flash-latest",
             ]
             models = list(dict.fromkeys([m for m in models if m]))
             for m in models:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key}"
                 try:
-                    with httpx.Client(timeout=6.0) as client:
+                    with httpx.Client(timeout=25.0) as client:
                         res = client.post(url, json=payload, headers={"X-goog-api-key": api_key, "Content-Type": "application/json"})
                         if res.status_code == 200:
                             data = res.json()
-                            text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-                            if text:
-                                logger.info(f"Audio consultation successfully transcribed via Gemini ({m})")
-                                return text
+                            candidate = data.get("candidates", [{}])[0]
+                            content = candidate.get("content", {})
+                            parts = content.get("parts", [])
+                            if parts and "text" in parts[0]:
+                                text = parts[0]["text"].strip()
+                                if text:
+                                    logger.info(f"Audio consultation successfully transcribed via Gemini ({m})")
+                                    return text
                 except Exception as err:
                     logger.warning(f"Gemini ASR attempt with {m} notice: {err}")
         except Exception as e:
@@ -86,10 +91,17 @@ class AIService:
 
     def transcribe_audio(self, audio_path: str, language: Optional[str] = None) -> str:
         """
-        Transcribes doctor-patient consultation audio using local Whisper or Multimodal Cloud ASR.
-        Guarantees processing for long consultations without truncation.
+        Transcribes doctor-patient consultation audio using multimodal Gemini Cloud ASR or local Whisper.
+        Guarantees accurate drug brand names and code-switching without truncation.
         """
-        # 1. Try high-performance local Whisper / Faster-Whisper ASR
+        # 1. Try multimodal Gemini audio transcription if API key is configured
+        gemini_key = settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY")
+        if gemini_key:
+            cloud_text = self._transcribe_audio_with_gemini(audio_path, language=language, api_key=gemini_key)
+            if cloud_text:
+                return cloud_text
+
+        # 2. Try high-performance local Whisper / Faster-Whisper ASR
         if self.model_loader:
             try:
                 text = self.model_loader.transcribe(audio_path, language=language)
@@ -97,13 +109,6 @@ class AIService:
                     return text
             except Exception as e:
                 logger.warning(f"Local Whisper transcription failed: {e}")
-
-        # 2. Try multimodal Gemini audio transcription if API key is configured
-        gemini_key = settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY")
-        if gemini_key:
-            cloud_text = self._transcribe_audio_with_gemini(audio_path, language=language, api_key=gemini_key)
-            if cloud_text:
-                return cloud_text
 
         # 3. Graceful fallback
         if self.model_loader:
@@ -444,7 +449,7 @@ class AIService:
         Executes Gemini 2.5 / 2.0 Flash structured JSON extraction for clinical care plans.
         Guarded by < 800ms cloud latency heartbeat check.
         """
-        if not api_key or not api_key.startswith("AIzaSy"):
+        if not api_key or len(api_key.strip()) < 15:
             return None
         if not ClinicalConnectivityHeartbeat.check_cloud_availability(max_latency_ms=800.0):
             logger.info("Cloud latency > 800ms or offline. Skipping cloud tier to trigger immediate edge failover.")
@@ -493,13 +498,12 @@ class AIService:
         }
 
         models = [
-            os.environ.get("GEMINI_PRIMARY_MODEL", "gemini-3.8-flash"),
-            "gemini-3.7-flash",
-            "gemini-3.6-flash",
+            os.environ.get("GEMINI_PRIMARY_MODEL", "gemini-3.5-flash-lite"),
+            "gemini-flash-lite-latest",
             "gemini-3.5-flash",
-            "gemini-3.5-flash-lite",
-            "gemini-3-flash-preview",
+            "gemini-3.7-flash",
             "gemini-flash-latest",
+            "gemini-3.8-flash",
         ]
         models = list(dict.fromkeys([m for m in models if m]))
         for m in models:

@@ -61,6 +61,22 @@ class ModelLoader:
             self._models_loaded = True
             return
 
+        logger.info(f"Initializing ModelLoader on device: {self.device.upper()}")
+
+        # 1. Load Tier 1 Faster-Whisper ASR (CTranslate2 Base int8 - lightweight ~200MB RAM, optimized for Railway CPU)
+        try:
+            from faster_whisper import WhisperModel
+            logger.info("Pre-loading Tier 1 Faster-Whisper base CTranslate2 ASR (int8)...")
+            self._faster_whisper_model = WhisperModel(
+                "base",
+                device=self.device if self.device == "cuda" else "cpu",
+                compute_type="float16" if self.device == "cuda" else "int8",
+                cpu_threads=2,
+            )
+            logger.info("Tier 1 Faster-Whisper CTranslate2 ASR ready.")
+        except Exception as fw_err:
+            logger.warning(f"Faster-Whisper pre-load notice: {fw_err}")
+
         # In cloud containers (e.g. Railway) without GPU, avoid downloading 15GB LLM weights to prevent OOM crashes
         is_cloud_cpu = (
             os.environ.get("RAILWAY_ENVIRONMENT") or 
@@ -68,25 +84,9 @@ class ModelLoader:
             os.environ.get("DYNO")
         ) and self.device == "cpu" and not os.environ.get("FORCE_LOCAL_ML_DOWNLOAD")
         if is_cloud_cpu:
-            logger.info("Railway cloud environment without GPU detected. Using fast clinical rule-based engine to prevent OOM crashes.")
+            logger.info("Railway cloud CPU detected: Tier 1 Faster-Whisper active. Skipping 15GB LLM to prevent memory overflow; Cloud Tier 2 / Edge Rule engine will synthesize care plans.")
             self._models_loaded = True
             return
-
-        logger.info(f"Initializing ModelLoader on device: {self.device.upper()}")
-
-        # 1. Load Whisper ASR (High-Performance CTranslate2 Faster-Whisper)
-        try:
-            from faster_whisper import WhisperModel
-            logger.info("Pre-loading Faster-Whisper base CTranslate2 ASR...")
-            self._faster_whisper_model = WhisperModel(
-                "base",
-                device=self.device if self.device == "cuda" else "cpu",
-                compute_type="float16" if self.device == "cuda" else "int8",
-                cpu_threads=4,
-            )
-            logger.info("Faster-Whisper CTranslate2 ASR ready.")
-        except Exception as fw_err:
-            logger.warning(f"Faster-Whisper pre-load notice: {fw_err}")
 
         try:
             from transformers import WhisperForConditionalGeneration, WhisperProcessor  # type: ignore

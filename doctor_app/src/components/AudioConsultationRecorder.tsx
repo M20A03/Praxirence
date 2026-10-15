@@ -42,7 +42,7 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
   const [isPlaying, setIsPlaying] = useState(false);
   const [uploadFailed, setUploadFailed] = useState<boolean>(false);
   const [backgroundPaused, setBackgroundPaused] = useState<boolean>(false);
-  const [selectedLanguage, setSelectedLanguage] = useState<'hi' | 'en' | 'kn' | 'te' | 'ta'>('hi');
+  const [selectedLanguage, setSelectedLanguage] = useState<'auto' | 'hi' | 'en' | 'kn' | 'te' | 'ta'>('auto');
 
   // Pulse & Waveform Animation Refs
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -462,6 +462,49 @@ Tap "Retry Upload (Draft Saved)" when connection stabilizes.`
       <Text style={styles.description}>
         Tap the microphone to record doctor-patient dialogue. Whisper ASR & Clinical LLM will transcribe the conversation and auto-fill diagnosis & prescription.
       </Text>
+
+      {/* Spoken Language Mode Selector */}
+      {!isRecording && (
+        <View style={{ marginBottom: 12 }}>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B', textTransform: 'uppercase', marginBottom: 6, letterSpacing: 0.5 }}>
+            Spoken Language / भाषा:
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingVertical: 2 }}>
+            {[
+              { code: 'auto', label: '🌐 Auto (Hinglish / English)' },
+              { code: 'hi', label: '🇮🇳 हिन्दी (Hindi)' },
+              { code: 'en', label: '🇬🇧 English' },
+              { code: 'te', label: 'తెలుగు (Telugu)' },
+              { code: 'ta', label: 'தமிழ் (Tamil)' },
+              { code: 'kn', label: 'ಕನ್ನಡ (Kannada)' },
+            ].map((lang) => (
+              <TouchableOpacity
+                key={lang.code}
+                onPress={() => setSelectedLanguage(lang.code as any)}
+                activeOpacity={0.7}
+                style={{
+                  paddingVertical: 5,
+                  paddingHorizontal: 11,
+                  borderRadius: 16,
+                  borderWidth: 1.5,
+                  backgroundColor: selectedLanguage === lang.code ? '#0284C7' : '#F8FAFC',
+                  borderColor: selectedLanguage === lang.code ? '#0284C7' : '#E2E8F0',
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: selectedLanguage === lang.code ? '700' : '500',
+                    color: selectedLanguage === lang.code ? '#FFFFFF' : '#475569',
+                  }}
+                >
+                  {lang.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
       {/* Warning when no patient is selected */}
       {!isRecording && (!patientId || !patientId.trim()) && (

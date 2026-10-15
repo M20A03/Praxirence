@@ -228,17 +228,24 @@ class ModelLoader:
                 transcribe_kwargs = {
                     "beam_size": 3,
                     "best_of": 3,
-                    "temperature": [0.0, 0.2, 0.4],
+                    "temperature": [0.0, 0.2],
                     "repetition_penalty": 1.15,
                     "initial_prompt": clinical_prompt,
                     "vad_filter": True,
-                    "vad_parameters": dict(min_silence_duration_ms=400, threshold=0.4),
+                    "vad_parameters": dict(min_silence_duration_ms=600, threshold=0.25),
                 }
-                if language and language.lower() not in ("auto", "none"):
+                if language and language.lower() not in ("auto", "none", ""):
                     transcribe_kwargs["language"] = language.lower()
 
                 segments, _ = self._faster_whisper_model.transcribe(target_path, **transcribe_kwargs)
                 text = " ".join([seg.text for seg in segments]).strip()
+
+                # If VAD was overly aggressive on soft speech, retry raw without VAD filter
+                if not text or len(text) < 4:
+                    kwargs_no_vad = {k: v for k, v in transcribe_kwargs.items() if k not in ("vad_filter", "vad_parameters")}
+                    kwargs_no_vad["vad_filter"] = False
+                    segments, _ = self._faster_whisper_model.transcribe(target_path, **kwargs_no_vad)
+                    text = " ".join([seg.text for seg in segments]).strip()
                 if text and len(text) > 3:
                     text = normalize_indian_clinical_terms(text)
                     if converted_wav and os.path.exists(converted_wav):
@@ -322,7 +329,7 @@ class ModelLoader:
             logger.warning(f"Cloud ASR failover notice: {e}")
 
         # Clean consultation fallback when audio transcription has no audible words
-        return "Doctor: Patient consultation completed. No specific prescription recorded."
+        return "[AUDIO_SILENT_OR_INAUDIBLE]"
 
     def extract_care_plan(self, transcript: str) -> Dict[str, Any]:
         """

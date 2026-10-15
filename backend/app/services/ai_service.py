@@ -51,10 +51,19 @@ class AIService:
                 b64_audio = base64.b64encode(f.read()).decode("utf-8")
 
             payload = {
+                "generationConfig": {"temperature": 0.0, "maxOutputTokens": 2048},
                 "contents": [{
                     "parts": [
                         {"inlineData": {"mimeType": mime, "data": b64_audio}},
-                        {"text": "You are Praxirence Clinical Speech ASR. Transcribe this doctor-patient voice consultation verbatim. Accurately capture clinician-patient dialogue, symptoms, Indian brand and generic medications, dosages, frequency (e.g. 1-0-1), and follow-up advice. Separate Doctor and Patient turns clearly."}
+                        {"text": (
+                            "You are an exact verbatim medical speech-to-text transcriber for clinical OPD consultations. "
+                            "Transcribe ONLY what is audibly spoken in the audio file word-for-word.\n"
+                            "CRITICAL ACCURACY & SAFETY RULES:\n"
+                            "1. Do NOT invent, hallucinate, assume, or add any dialogue, symptoms, diseases, medications, dosages, or advice not explicitly spoken in the audio.\n"
+                            "2. If the audio contains NO human speech, is silent, consists only of background noise, or is unintelligible, respond ONLY with: [AUDIO_SILENT_OR_INAUDIBLE]\n"
+                            "3. Retain the exact language spoken (Hinglish, English, Hindi, or regional terms) and label speaker turns as Doctor: and Patient: when distinguishable.\n"
+                            "4. Accurately transcribe Indian brand and generic medication names, strengths, and dosages (e.g. Augmentin 625, Dolo 650, Pantocid 40, Telma 40, 1-0-1, BD, OD, TDS, SOS) exactly as spoken."
+                        )}
                     ]
                 }]
             }
@@ -81,6 +90,9 @@ class AIService:
                             if parts and "text" in parts[0]:
                                 text = parts[0]["text"].strip()
                                 if text:
+                                    if text.strip() in ("00:00", "", "[AUDIO_SILENT_OR_INAUDIBLE]") or "[AUDIO_SILENT_OR_INAUDIBLE]" in text:
+                                        logger.info(f"Gemini ({m}) detected silent or inaudible audio.")
+                                        return "[AUDIO_SILENT_OR_INAUDIBLE]"
                                     logger.info(f"Audio consultation successfully transcribed via Gemini ({m})")
                                     return text
                 except Exception as err:
@@ -302,6 +314,21 @@ class AIService:
         - Identifies amber alerts
         """
         logger.info(f"Synthesizing Tier-1 SOAP Care Plan for {patient_name}...")
+
+        if not conversation or "[AUDIO_SILENT_OR_INAUDIBLE]" in conversation or conversation.strip() in ("00:00", ""):
+            logger.info("Consultation audio was silent or inaudible; skipping AI synthesis.")
+            return {
+                "patient_summary": "AUDIO_SILENT_OR_INAUDIBLE: Recorded audio was silent or below minimum voice threshold.",
+                "doctor_advice": "Check device microphone and re-record consultation.",
+                "warning_signs": [],
+                "diagnosis": "Inaudible Audio",
+                "medicines": [],
+                "reminders": [],
+                "follow_up_days": 1,
+                "soap": None,
+                "diarized_transcript": "[AUDIO_SILENT_OR_INAUDIBLE]",
+                "amber_alerts": []
+            }
 
         # 1. Diarize transcript & detect amber alerts
         diarized_transcript, amber_alerts = self.diarize_and_denoise_transcript(conversation)

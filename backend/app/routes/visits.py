@@ -306,11 +306,12 @@ async def upload_consultation_audio(
 
     try:
         # Step 1: Non-Blocking Async Transcribe with in-house local ASR model
+        effective_lang = None if (not language or language.lower() in ("auto", "none")) else language.lower()
         try:
-            transcription = await asyncio.to_thread(ai_service.transcribe_audio, saved_path, language=language)
+            transcription = await asyncio.to_thread(ai_service.transcribe_audio, saved_path, language=effective_lang)
         except Exception as t_err:
             logger.warning(f"Audio transcription notice ({t_err}), trying model_loader.")
-            transcription = await asyncio.to_thread(model_loader.transcribe, saved_path, language=language)
+            transcription = await asyncio.to_thread(model_loader.transcribe, saved_path, language=effective_lang)
 
         # Step 2: Non-Blocking Care Plan Extraction with Clinical LLM / Parser
         care_plan = await asyncio.to_thread(model_loader.extract_care_plan, transcription)

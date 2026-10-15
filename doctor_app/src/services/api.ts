@@ -1011,7 +1011,7 @@ export const mobileApi = {
     const effectivePatientId = params.patientId && params.patientId.length > 3 ? params.patientId : 'pat_live_01';
     formData.append('patient_id', effectivePatientId);
     formData.append('keep_recording', 'false');
-    formData.append('language', params.language || 'hi');
+    formData.append('language', params.language || 'auto');
 
     formData.append('audio_file', {
       uri: cleanUri,

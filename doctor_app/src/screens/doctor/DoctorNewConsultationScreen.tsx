@@ -528,7 +528,12 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
     if (result.id) {
       setActiveVisitId(result.id);
     }
-    if (result.conversation === '[AUDIO_SILENT_OR_INAUDIBLE]' || result.patient_summary?.includes('AUDIO_SILENT_OR_INAUDIBLE')) {
+    if (
+      result.conversation === '[AUDIO_SILENT_OR_INAUDIBLE]' ||
+      result.patient_summary?.includes('AUDIO_SILENT_OR_INAUDIBLE') ||
+      (result as any).raw_transcription?.includes('[AUDIO_SILENT_OR_INAUDIBLE]') ||
+      result.diagnosis === 'Inaudible Audio'
+    ) {
       Alert.alert(
         'Inaudible or Silent Audio Detected',
         'The recorded audio was below the clinical voice decibel threshold or silent. Please check your device microphone and re-record the consultation.',

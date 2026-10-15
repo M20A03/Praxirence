@@ -70,16 +70,16 @@ class AIService:
             }
             # High-performance speech models with instant latency and multimodal audio support
             models = [
-                os.environ.get("GEMINI_TRANSCRIPTION_MODEL", "gemini-3.5-flash-lite"),
+                os.environ.get("GEMINI_TRANSCRIPTION_MODEL", "gemini-3.1-flash-lite"),
                 "gemini-3.1-flash-lite",
-                "gemini-3.5-flash",
-                "gemini-3.7-flash",
+                "gemini-flash-lite-latest",
+                "gemini-3.5-transcribe",
             ]
             models = list(dict.fromkeys([m for m in models if m]))
             for m in models:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key}"
                 try:
-                    with httpx.Client(timeout=25.0) as client:
+                    with httpx.Client(timeout=10.0) as client:
                         res = client.post(url, json=payload, headers={"X-goog-api-key": api_key, "Content-Type": "application/json"})
                         if res.status_code == 200:
                             data = res.json()
@@ -89,8 +89,13 @@ class AIService:
                             if parts and "text" in parts[0]:
                                 text = parts[0]["text"].strip()
                                 if text:
-                                    if text.strip() in ("00:00", "", "[AUDIO_SILENT_OR_INAUDIBLE]") or "[AUDIO_SILENT_OR_INAUDIBLE]" in text:
-                                        logger.info(f"Gemini ({m}) detected silent or inaudible audio.")
+                                    norm_text = text.strip().lower()
+                                    if (
+                                        norm_text in ("00:00", "", "[audio_silent_or_inaudible]", "[silence]", "[silent]", "[inaudible]", "(silence)", "silence", "inaudible", "no speech", "[no speech]")
+                                        or "[audio_silent_or_inaudible]" in norm_text
+                                        or "[silence]" in norm_text
+                                    ):
+                                        logger.info(f"Gemini ({m}) detected silent or inaudible audio: {text}")
                                         return "[AUDIO_SILENT_OR_INAUDIBLE]"
                                     logger.info(f"Audio consultation successfully transcribed via Gemini ({m})")
                                     return text

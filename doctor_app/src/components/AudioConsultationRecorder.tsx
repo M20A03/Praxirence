@@ -396,10 +396,23 @@ export const AudioConsultationRecorder: React.FC<AudioConsultationRecorderProps>
 
       onRecordingProcessed(result);
 
-      Alert.alert(
-        'Audio Transcribed & Extracted',
-        'Clinical voice dialogue processed, medications extracted, and patient instructions generated.'
-      );
+      const isInaudible =
+        (result as any)?.transcription?.includes('[AUDIO_SILENT_OR_INAUDIBLE]') ||
+        (result as any)?.raw_transcription?.includes('[AUDIO_SILENT_OR_INAUDIBLE]') ||
+        (result as any)?.patient_summary?.includes('AUDIO_SILENT_OR_INAUDIBLE') ||
+        (result as any)?.diagnosis === 'Inaudible Audio';
+
+      if (isInaudible) {
+        Alert.alert(
+          'Microphone Muted or Audio Silent',
+          'The audio recording was below clinical voice threshold or silent. Please check your microphone and re-record the consultation.'
+        );
+      } else {
+        Alert.alert(
+          'Audio Transcribed & Extracted',
+          'Clinical voice dialogue processed, medications extracted, and patient instructions generated.'
+        );
+      }
     } catch (err: any) {
       console.warn('Audio upload network timeout, caching draft:', err);
       setUploadFailed(true);

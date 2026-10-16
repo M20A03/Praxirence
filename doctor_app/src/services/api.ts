@@ -939,7 +939,7 @@ export const mobileApi = {
       const res = await resilientFetch(`${getEffectiveApiUrl()}/visits/summarize`, {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify(params),
+        body: JSON.stringify(payload),
       }, 1);
 
       if (res.ok) {
@@ -1086,7 +1086,7 @@ export const mobileApi = {
     }
   },
 
-    async createStructuredVisit(params: {
+  async createStructuredVisit(params: {
     visit_id?: string;
     patient_id: string;
     diagnosis: string;
@@ -1095,7 +1095,12 @@ export const mobileApi = {
     raw_transcription?: string;
     patient_summary?: string;
     doctor_advice?: string;
+    status?: string;
   }): Promise<Visit> {
+    const payload = {
+      ...params,
+      status: params.status || 'approved',
+    };
     let created: Visit | null = null;
     try {
       const res = await resilientFetch(`${getEffectiveApiUrl()}/visits`, {

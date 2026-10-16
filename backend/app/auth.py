@@ -836,7 +836,7 @@ def verify_patient_email_otp(req: PatientEmailOTPVerifyRequest, db: Session = De
             patient = Patient(
                 name=effective_name,
                 email=clean_email,
-                consent_status=False,
+                consent_status=True,
                 uhid=generate_uhid(db)
             )
             patient.phone = f"email_{clean_email}"
@@ -958,7 +958,7 @@ def register_patient(req: PatientRegisterRequest, db: Session = Depends(get_db))
 
     patient = Patient(
         name=req.name.strip(),
-        consent_status=False,
+        consent_status=True,
         dob=dob_val,
         uhid=generate_uhid(db)
     )

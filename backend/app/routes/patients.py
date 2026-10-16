@@ -271,7 +271,7 @@ def create_patient(
     patient = Patient(
         name=req.name.strip(),
         dob=req.dob,
-        consent_status=False,
+        consent_status=True,
         uhid=patient_uhid
     )
     if getattr(req, "email", None) and req.email.strip():

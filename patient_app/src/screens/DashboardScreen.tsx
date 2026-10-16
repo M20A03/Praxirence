@@ -910,28 +910,57 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     }
   };
 
-  const latestApprovedVisit = visits.find(
-    (v) => (v.status === 'approved' || v.status === 'completed') && (Boolean(v.diagnosis) || (v.medicines && v.medicines.length > 0))
+  // 1. Find the latest visit with non-empty prescribed medicines
+  const visitWithMedicines = visits.find(
+    (v) => (v.status === 'approved' || v.status === 'completed') && v.medicines && v.medicines.length > 0
   );
-  const activeMedicines: MedicineItem[] = latestApprovedVisit?.medicines || [];
+
+  // 2. Find the latest approved/completed visit for clinical diagnosis & advice
+  const latestApprovedVisit = visits.find(
+    (v) => (v.status === 'approved' || v.status === 'completed') && Boolean(v.diagnosis)
+  ) || visitWithMedicines || visits[0];
+
+  // 3. Aggregate active prescribed medicines across valid active visits (deduplicating by medicine name)
+  const prescriptionVisits = visits.filter(
+    (v) => (v.status === 'approved' || v.status === 'completed') && v.medicines && v.medicines.length > 0
+  );
+  const activeMedicinesMap = new Map<string, MedicineItem>();
+  for (const v of prescriptionVisits) {
+    for (const med of v.medicines || []) {
+      const key = (med.name || '').trim().toLowerCase();
+      if (key && !activeMedicinesMap.has(key)) {
+        activeMedicinesMap.set(key, med);
+      }
+    }
+  }
+  const activeMedicines: MedicineItem[] = activeMedicinesMap.size > 0
+    ? Array.from(activeMedicinesMap.values())
+    : (visitWithMedicines?.medicines || latestApprovedVisit?.medicines || []);
 
   // When patient hasn't customized reminder times, our own clinical default time reminder schedule works automatically
   const getPrescribedOrDerivedReminders = (): ReminderItem[] => {
-    if (!latestApprovedVisit) return [];
+    // If explicit reminders were saved by doctor in any active prescription visit, collect them
+    const allExplicitReminders: ReminderItem[] = [];
+    prescriptionVisits.forEach((v) => {
+      if (v.reminders && v.reminders.length > 0) {
+        v.reminders.forEach((r, i) => {
+          const medClean = (r.medicine_name || '').toLowerCase().trim();
+          const customTime = customMedTimes[medClean];
+          allExplicitReminders.push({
+            ...r,
+            id: `prescribed_${v.id}_${i}`,
+            time: customTime || r.time || '08:30 AM',
+            is_custom: false,
+          });
+        });
+      }
+    });
 
-    // If explicit reminders were saved by doctor, use them, overriding with customMedTimes if set
-    if (latestApprovedVisit.reminders && latestApprovedVisit.reminders.length > 0) {
-      return latestApprovedVisit.reminders.map((r, i) => {
-        const medClean = (r.medicine_name || '').toLowerCase().trim();
-        const customTime = customMedTimes[medClean];
-        return {
-          ...r,
-          id: `prescribed_${i}`,
-          time: customTime || r.time || '08:30 AM',
-          is_custom: false,
-        };
-      });
+    if (allExplicitReminders.length > 0) {
+      return allExplicitReminders;
     }
+
+    if (!latestApprovedVisit && activeMedicines.length === 0) return [];
 
     // If patient hasn't set custom reminders or no explicit visit reminders exist,
     // our own custom time reminder schedule automatically works for all prescribed medicines:

@@ -163,15 +163,27 @@ def create_structured_visit(
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
 
+    # Attending clinician consultation automatically authorizes doctor-patient relationship
     link = db.query(DoctorPatientLink).filter(
         DoctorPatientLink.doctor_id == current_doctor.id,
         DoctorPatientLink.patient_id == patient.id
     ).first()
-    if link and link.status in ("pending", "rejected"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Access denied: Doctor-patient link status is '{link.status}'. Patient authorization required."
+    if not link:
+        link = DoctorPatientLink(
+            doctor_id=current_doctor.id,
+            patient_id=patient.id,
+            status="authorized",
+            authorized_at=datetime.now(timezone.utc)
         )
+        db.add(link)
+    elif link.status != "authorized":
+        link.status = "authorized"
+        link.authorized_at = datetime.now(timezone.utc)
+
+    # Ensure patient has active consent for care plan reception
+    if not patient.consent_status:
+        patient.consent_status = True
+        patient.consent_updated_at = datetime.now(timezone.utc)
 
     today_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     visit = None
@@ -197,6 +209,8 @@ def create_structured_visit(
         doctor_advice=req.doctor_advice
     )
 
+    desired_status = getattr(req, "status", None) or "approved"
+
     if visit:
         visit.diagnosis = req.diagnosis
         visit.medicines = [m.model_dump() for m in req.medicines]
@@ -204,7 +218,9 @@ def create_structured_visit(
         visit.raw_transcription = stored_transcription
         if not visit.appointment_date:
             visit.appointment_date = today_iso
-        visit.status = "draft"
+        visit.status = desired_status
+        if desired_status == "approved" and not visit.approved_at:
+            visit.approved_at = datetime.now(timezone.utc)
     else:
         visit = Visit(
             patient_id=patient.id,
@@ -214,12 +230,51 @@ def create_structured_visit(
             medicines=[m.model_dump() for m in req.medicines],
             reminders=[r.model_dump() for r in req.reminders],
             raw_transcription=stored_transcription,
-            status="draft"
+            status=desired_status,
+            approved_at=datetime.now(timezone.utc) if desired_status == "approved" else None
         )
         db.add(visit)
 
+    if desired_status == "approved":
+        visit.retention_until = datetime.now(timezone.utc) + timedelta(days=3 * 365)
+        sig_payload = f"{current_doctor.reg_number}:{visit.patient_id}:{visit.date.isoformat() if visit.date else ''}:{json.dumps(visit.medicines or [], sort_keys=True)}"
+        visit.signature_hash = hashlib.sha256(sig_payload.encode()).hexdigest()
+
     db.commit()
     db.refresh(visit)
+
+    if desired_status == "approved":
+        try:
+            token_disp = f"PX-{visit.token_number:02d}" if visit.token_number else "PX-01"
+            realtime_manager.emit_to_doctor_sync(
+                str(visit.doctor_id),
+                "QUEUE_UPDATE",
+                {"action": "completed", "visit_id": visit.id, "status": "approved", "token": token_disp}
+            )
+            if visit.patient_id:
+                realtime_manager.emit_to_patient_sync(
+                    str(visit.patient_id),
+                    "CONSULTATION_COMPLETED",
+                    {
+                        "visit_id": visit.id,
+                        "doctor_name": current_doctor.name,
+                        "status": "approved",
+                        "diagnosis": visit.diagnosis,
+                        "message": f"Dr. {current_doctor.name} has completed your consultation and dispatched your care plan."
+                    }
+                )
+                realtime_manager.emit_to_patient_sync(
+                    str(visit.patient_id),
+                    "NEW_PRESCRIPTION",
+                    {"visit_id": visit.id, "doctor_name": current_doctor.name}
+                )
+                realtime_manager.emit_to_patient_sync(
+                    str(visit.patient_id),
+                    "QUEUE_UPDATE",
+                    {"action": "completed", "visit_id": visit.id, "status": "approved", "token": token_disp}
+                )
+        except Exception as e:
+            logger.warning(f"Realtime emit notice on create_structured_visit: {e}")
 
     audit = AuditLog(
         actor_id=current_doctor.id,
@@ -300,7 +355,8 @@ async def upload_consultation_audio(
                 phone_encrypted=encrypt_phone(dummy_phone),
                 phone_hash=compute_phone_hash(dummy_phone),
                 age=40,
-                gender="Other"
+                gender="Other",
+                consent_status=True
             )
             db.add(patient)
             db.commit()

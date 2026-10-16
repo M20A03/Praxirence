@@ -72,6 +72,7 @@ class VisitCreate(BaseModel):
     raw_transcription: Optional[str] = None
     patient_summary: Optional[str] = None
     doctor_advice: Optional[str] = None
+    status: Optional[str] = Field("approved", description="Draft or approved status")
 
 
 class VisitUpdate(BaseModel):

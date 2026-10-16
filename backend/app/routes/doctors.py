@@ -506,21 +506,27 @@ def toggle_doctor_leave(
             affected_visits = db.query(Visit).filter(
                 Visit.doctor_id == doctor.id,
                 Visit.appointment_date == target,
-                Visit.status.in_(["scheduled", "draft", "waiting"])
+                Visit.status.in_(["scheduled", "confirmed", "booked", "pending_confirmation", "draft", "waiting"])
             ).all()
 
             for v in affected_visits:
                 v.status = "reschedule_required"
                 if v.patient_id:
+                    leave_payload = {
+                        "visit_id": str(v.id),
+                        "doctor_name": doctor.name,
+                        "date": target,
+                        "message": f"Dr. {doctor.name} is on leave on {target}. Please reschedule your appointment."
+                    }
                     realtime_manager.emit_to_patient_sync(
                         str(v.patient_id),
                         "DOCTOR_LEAVE_RESCHEDULE_REQUIRED",
-                        {
-                            "visit_id": str(v.id),
-                            "doctor_name": doctor.name,
-                            "date": target,
-                            "message": f"Dr. {doctor.name} is on leave on {target}. Please reschedule your appointment."
-                        }
+                        leave_payload
+                    )
+                    realtime_manager.emit_to_patient_sync(
+                        str(v.patient_id),
+                        "DOCTOR_LEAVE",
+                        leave_payload
                     )
 
             db.commit()
@@ -565,22 +571,28 @@ def broadcast_doctor_delay(
     today_visits = db.query(Visit).filter(
         Visit.doctor_id == doctor.id,
         Visit.appointment_date == today_str,
-        Visit.status.in_(["scheduled", "waiting", "in_progress"])
+        Visit.status.in_(["scheduled", "confirmed", "booked", "waiting", "in_progress", "draft"])
     ).all()
 
     # Broadcast to all affected patients
     for v in today_visits:
         if v.patient_id:
+            delay_payload = {
+                "doctor_id": str(doctor.id),
+                "doctor_name": doctor.name,
+                "delay_mins": doctor.current_delay_mins,
+                "reason": payload.reason or f"Clinic running approximately {doctor.current_delay_mins} mins behind schedule.",
+                "updated_at": doctor.delay_updated_at.isoformat() if doctor.delay_updated_at else None
+            }
             realtime_manager.emit_to_patient_sync(
                 str(v.patient_id),
                 "DOCTOR_DELAY_BROADCAST",
-                {
-                    "doctor_id": str(doctor.id),
-                    "doctor_name": doctor.name,
-                    "delay_mins": doctor.current_delay_mins,
-                    "reason": payload.reason or f"Clinic running approximately {doctor.current_delay_mins} mins behind schedule.",
-                    "updated_at": doctor.delay_updated_at.isoformat() if doctor.delay_updated_at else None
-                }
+                delay_payload
+            )
+            realtime_manager.emit_to_patient_sync(
+                str(v.patient_id),
+                "DOCTOR_DELAY",
+                delay_payload
             )
 
     # Also notify doctor's connected dashboard
@@ -789,6 +801,21 @@ def submit_doctor_review(
     all_reviews = db.query(DoctorReview).filter(DoctorReview.doctor_id == str(doctor.id)).all()
     total_reviews = len(all_reviews)
     avg_rating = round(sum(r.rating for r in all_reviews) / total_reviews, 1) if total_reviews > 0 else payload.rating
+
+    try:
+        realtime_manager.emit_to_doctor_sync(
+            str(doctor.id),
+            "NEW_DOCTOR_REVIEW",
+            {
+                "rating": payload.rating,
+                "patient_name": review.patient_name,
+                "review_text": review.review_text,
+                "average_rating": avg_rating,
+                "total_reviews": total_reviews
+            }
+        )
+    except Exception as e:
+        logger.warning(f"Review realtime emit notice: {e}")
 
     return {
         "success": True,

@@ -939,7 +939,7 @@ export const mobileApi = {
       const res = await resilientFetch(`${getEffectiveApiUrl()}/visits/summarize`, {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify(payload),
+        body: JSON.stringify(params),
       }, 1);
 
       if (res.ok) {

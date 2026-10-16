@@ -142,6 +142,32 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
       loadUpcomingScheduleSilently();
     });
 
+    const unsubPillConfirmed = doctorRealtime.on('PATIENT_PILL_CONFIRMED', () => {
+      loadUpcomingScheduleSilently();
+    });
+
+    const unsubPatientAuth = doctorRealtime.on('PATIENT_LINK_AUTHORIZED', () => {
+      loadUpcomingScheduleSilently();
+    });
+
+    const unsubPatientAuthorized = doctorRealtime.on('PATIENT_AUTHORIZED', () => {
+      loadUpcomingScheduleSilently();
+    });
+
+    const unsubVital = doctorRealtime.on('PATIENT_VITAL_UPDATED', () => {
+      loadUpcomingScheduleSilently();
+    });
+
+    const unsubReview = doctorRealtime.on('NEW_DOCTOR_REVIEW', (data: any) => {
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
+      Alert.alert(
+        'New Patient Review',
+        `A patient rated your consultation ${data?.rating || 5}★
+"${data?.review_text || ''}"`
+      );
+      loadUpcomingScheduleSilently();
+    });
+
     const unsubPending = doctorRealtime.on('APPOINTMENT_PENDING', () => {
       loadUpcomingScheduleSilently();
       loadPendingAppointments();
@@ -162,6 +188,11 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
       unsubQueue();
       unsubBooked();
       unsubPill();
+      unsubPillConfirmed();
+      unsubPatientAuth();
+      unsubPatientAuthorized();
+      unsubVital();
+      unsubReview();
       unsubPending();
       unsubUpdated();
       clearInterval(pollInterval);

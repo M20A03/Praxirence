@@ -52,11 +52,13 @@ async def websocket_endpoint(websocket: WebSocket, role: str, user_id: str):
                     # Forward immediately to doctor
                     doc_id = payload.get("doctor_id")
                     if doc_id:
-                        await realtime_manager.emit_to_doctor(doc_id, "PATIENT_PILL_CONFIRMED", {
+                        pill_data = {
                             "patient_id": user_id,
                             "medicine_name": payload.get("medicine_name"),
                             "dosage_window": payload.get("dosage_window")
-                        })
+                        }
+                        await realtime_manager.emit_to_doctor(doc_id, "PATIENT_PILL_CONFIRMED", pill_data)
+                        await realtime_manager.emit_to_doctor(doc_id, "PILL_TAKEN", pill_data)
 
                 elif event_type == "VITAL_RECORDED" and role == "patient":
                     doc_id = payload.get("doctor_id")
@@ -70,11 +72,13 @@ async def websocket_endpoint(websocket: WebSocket, role: str, user_id: str):
                     # Forward immediately to patient
                     pat_id = payload.get("patient_id")
                     if pat_id:
-                        await realtime_manager.emit_to_patient(pat_id, "NEW_PRESCRIPTION_ISSUED", {
+                        rx_data = {
                             "doctor_id": user_id,
                             "diagnosis": payload.get("diagnosis"),
                             "medicines_count": payload.get("medicines_count")
-                        })
+                        }
+                        await realtime_manager.emit_to_patient(pat_id, "NEW_PRESCRIPTION_ISSUED", rx_data)
+                        await realtime_manager.emit_to_patient(pat_id, "NEW_PRESCRIPTION", rx_data)
 
                 elif event_type == "AUDIO_STREAM_START" and role == "doctor":
                     # Acknowledge start of long-duration consultation audio stream

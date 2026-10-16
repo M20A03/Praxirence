@@ -1270,20 +1270,28 @@ def book_appointment_slot(
 
     # Emit real-time WebSocket update to doctor
     try:
+        booking_payload = {
+            "visit_id": scheduled_visit.id,
+            "token": token_display,
+            "token_number": token_num,
+            "patient_name": patient.name,
+            "patient_id": str(patient.id),
+            "time_slot": clean_slot,
+            "appointment_date": payload.appointment_date,
+            "chief_complaint": payload.chief_complaint,
+            "status": initial_status
+        }
         realtime_manager.emit_to_doctor_sync(
             str(doctor.id),
             "APPOINTMENT_BOOKED",
-            {
-                "visit_id": scheduled_visit.id,
-                "token": token_display,
-                "token_number": token_num,
-                "patient_name": patient.name,
-                "patient_id": str(patient.id),
-                "time_slot": clean_slot,
-                "appointment_date": payload.appointment_date,
-                "chief_complaint": payload.chief_complaint
-            }
+            booking_payload
         )
+        if initial_status == "pending_confirmation":
+            realtime_manager.emit_to_doctor_sync(
+                str(doctor.id),
+                "APPOINTMENT_PENDING",
+                booking_payload
+            )
         realtime_manager.emit_to_doctor_sync(
             str(doctor.id),
             "QUEUE_UPDATE",
@@ -1569,7 +1577,7 @@ def call_next_patient(
         .filter(
             Visit.doctor_id == doctor.id,
             Visit.appointment_date == today_iso,
-            Visit.status.in_(["scheduled", "draft", "deferred"])
+            Visit.status.in_(["scheduled", "confirmed", "waiting", "booked", "draft", "deferred"])
         )
         .order_by(
             case((Visit.triage_level == "Urgent", 0), (Visit.chief_complaint.ilike("%urgent%"), 0), else_=1),
@@ -1604,6 +1612,27 @@ def call_next_patient(
                 "doctor_name": doctor.name,
                 "chamber": chamber_name,
                 "message": f"{doctor.name} is ready for you now in {chamber_name}."
+            }
+        )
+        realtime_manager.emit_to_patient_sync(
+            str(patient.id),
+            "CONSULTATION_STARTED",
+            {
+                "visit_id": next_visit.id,
+                "token": token_disp,
+                "doctor_name": doctor.name,
+                "chamber": chamber_name,
+                "message": f"Dr. {doctor.name} has called you in for your consultation in {chamber_name}."
+            }
+        )
+        realtime_manager.emit_to_patient_sync(
+            str(patient.id),
+            "QUEUE_UPDATE",
+            {
+                "action": "consultation_started",
+                "visit_id": next_visit.id,
+                "status": "in_progress",
+                "token": token_disp
             }
         )
 
@@ -2234,6 +2263,30 @@ def confirm_pending_appointment(
                 "patient_name": p_name
             }
         )
+        if visit.patient_id:
+            realtime_manager.emit_to_patient_sync(
+                str(visit.patient_id),
+                "APPOINTMENT_CONFIRMED",
+                {
+                    "visit_id": str(visit.id),
+                    "status": "confirmed",
+                    "token": token_display,
+                    "token_number": visit.token_number,
+                    "doctor_name": current_doctor.name if hasattr(current_doctor, "name") else "Doctor",
+                    "appointment_date": visit.appointment_date,
+                    "time_slot": visit.time_slot,
+                    "message": f"Your appointment with Dr. {current_doctor.name} has been confirmed. Assigned Token: {token_display}"
+                }
+            )
+            realtime_manager.emit_to_patient_sync(
+                str(visit.patient_id),
+                "QUEUE_UPDATE",
+                {
+                    "action": "confirmed",
+                    "token": token_display,
+                    "status": "confirmed"
+                }
+            )
     except Exception as e:
         logger.warning(f"Realtime emit notice: {e}")
 
@@ -2299,6 +2352,27 @@ def reject_pending_appointment(
                 "patient_name": p_name
             }
         )
+        if visit.patient_id:
+            realtime_manager.emit_to_patient_sync(
+                str(visit.patient_id),
+                "APPOINTMENT_CANCELLED",
+                {
+                    "visit_id": str(visit.id),
+                    "status": "rejected",
+                    "rejection_reason": reason,
+                    "doctor_name": current_doctor.name if hasattr(current_doctor, "name") else "Doctor",
+                    "message": f"Appointment request declined: {reason}"
+                }
+            )
+            realtime_manager.emit_to_patient_sync(
+                str(visit.patient_id),
+                "QUEUE_UPDATE",
+                {
+                    "action": "rejected",
+                    "visit_id": str(visit.id),
+                    "status": "rejected"
+                }
+            )
     except Exception as e:
         logger.warning(f"Realtime emit notice: {e}")
 
@@ -2384,6 +2458,32 @@ def batch_confirm_pending_appointments(
             "QUEUE_UPDATE",
             {"action": "batch_confirmed", "count": len(confirmed_results)}
         )
+        for visit_info in confirmed_results:
+            vis_obj = next((v for v in pending_list if str(v.id) == visit_info["visit_id"]), None)
+            if vis_obj and vis_obj.patient_id:
+                realtime_manager.emit_to_patient_sync(
+                    str(vis_obj.patient_id),
+                    "APPOINTMENT_CONFIRMED",
+                    {
+                        "visit_id": str(vis_obj.id),
+                        "status": "confirmed",
+                        "token": visit_info["token_display"],
+                        "token_number": vis_obj.token_number,
+                        "doctor_name": current_doctor.name if hasattr(current_doctor, "name") else "Doctor",
+                        "appointment_date": vis_obj.appointment_date,
+                        "time_slot": vis_obj.time_slot,
+                        "message": f"Your appointment with Dr. {current_doctor.name} on {vis_obj.appointment_date} has been confirmed. Assigned Token: {visit_info['token_display']}"
+                    }
+                )
+                realtime_manager.emit_to_patient_sync(
+                    str(vis_obj.patient_id),
+                    "QUEUE_UPDATE",
+                    {
+                        "action": "confirmed",
+                        "token": visit_info["token_display"],
+                        "status": "confirmed"
+                    }
+                )
     except Exception as e:
         logger.warning(f"Batch confirmation realtime emit notice: {e}")
 

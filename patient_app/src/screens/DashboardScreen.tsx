@@ -251,21 +251,78 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       loadDashboardDataSilently();
     });
 
-    const unsubApptCancelled = patientRealtime.on('APPOINTMENT_CANCELLED', () => {
+    const unsubApptConfirmed = patientRealtime.on('APPOINTMENT_CONFIRMED', (data: any) => {
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
+      Alert.alert(
+        'Appointment Confirmed!',
+        data?.message || `Your appointment with Dr. ${data?.doctor_name || 'Doctor'} has been confirmed. Assigned Token: ${data?.token || ''}`
+      );
+      loadDashboardDataSilently();
+    });
+
+    const unsubApptCancelled = patientRealtime.on('APPOINTMENT_CANCELLED', (data: any) => {
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); } catch (_) {}
+      Alert.alert(
+        'Appointment Update',
+        data?.message || 'Your appointment has been cancelled or declined.'
+      );
       setQueueStatus(null);
       loadDashboardDataSilently();
     });
 
     const unsubPrescription = patientRealtime.on('NEW_PRESCRIPTION', () => {
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
       loadDashboardDataSilently();
     });
 
-    const unsubLeave = patientRealtime.on('DOCTOR_LEAVE', () => {
+    const unsubPrescriptionIssued = patientRealtime.on('NEW_PRESCRIPTION_ISSUED', (data: any) => {
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
+      Alert.alert(
+        'New Prescription Available',
+        `Dr. ${data?.doctor_name || 'Your doctor'} has issued a new prescription.`
+      );
       loadDashboardDataSilently();
     });
 
-    const unsubDelay = patientRealtime.on('DOCTOR_DELAY', () => {
+    const unsubLeave = patientRealtime.on('DOCTOR_LEAVE', (data: any) => {
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); } catch (_) {}
+      Alert.alert(
+        'Doctor On Leave',
+        data?.message || 'Your attending doctor is on leave on your scheduled date. Please reschedule your appointment.'
+      );
       loadDashboardDataSilently();
+    });
+
+    const unsubLeaveReschedule = patientRealtime.on('DOCTOR_LEAVE_RESCHEDULE_REQUIRED', (data: any) => {
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); } catch (_) {}
+      Alert.alert(
+        'Doctor On Leave',
+        data?.message || 'Your attending doctor is on leave on your scheduled date. Please reschedule your appointment.'
+      );
+      loadDashboardDataSilently();
+    });
+
+    const unsubDelay = patientRealtime.on('DOCTOR_DELAY', (data: any) => {
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); } catch (_) {}
+      Alert.alert(
+        'Clinic Delay Notice',
+        data?.reason || `Dr. ${data?.doctor_name || 'Doctor'} is currently running approximately ${data?.delay_mins || 15} mins behind schedule.`
+      );
+      loadDashboardDataSilently();
+    });
+
+    const unsubDelayBroadcast = patientRealtime.on('DOCTOR_DELAY_BROADCAST', (data: any) => {
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); } catch (_) {}
+      Alert.alert(
+        'Clinic Delay Notice',
+        data?.reason || `Dr. ${data?.doctor_name || 'Doctor'} is currently running approximately ${data?.delay_mins || 15} mins behind schedule.`
+      );
+      loadDashboardDataSilently();
+    });
+
+    const unsubLiveConsent = patientRealtime.on('LIVE_CONSENT_REQUEST', (data: any) => {
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); } catch (_) {}
+      setPendingConsentRequest(data);
     });
 
     // 10s auto-polling fallback if WebSocket disconnects
@@ -288,10 +345,15 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       unsubConsultStarted();
       unsubConsultEnded();
       unsubTokenCalled();
+      unsubApptConfirmed();
       unsubApptCancelled();
       unsubPrescription();
+      unsubPrescriptionIssued();
       unsubLeave();
+      unsubLeaveReschedule();
       unsubDelay();
+      unsubDelayBroadcast();
+      unsubLiveConsent();
       clearInterval(pollInterval);
     };
   }, [user.id]);

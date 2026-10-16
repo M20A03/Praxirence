@@ -1462,6 +1462,20 @@ def request_live_patient_authorization(patient_id: str, payload: dict, db: Sessi
     }
     _live_consent_requests[patient_id] = req_data
 
+    try:
+        realtime_manager.emit_to_patient_sync(
+            patient_id,
+            "DOCTOR_AUTHORIZATION_REQUEST",
+            req_data
+        )
+        realtime_manager.emit_to_patient_sync(
+            patient_id,
+            "LIVE_CONSENT_REQUEST",
+            req_data
+        )
+    except Exception as e:
+        logger.warning(f"Realtime emit notice on auth request: {e}")
+
     return {
         "success": True,
         "message": f"Authorization request sent to {patient.name}'s Praxirence app.",
@@ -1528,6 +1542,29 @@ def respond_live_patient_authorization(patient_id: str, payload: dict, db: Sessi
         if patient_id in _live_consent_requests:
             _live_consent_requests[patient_id]["status"] = "GRANTED"
 
+        if doc_id:
+            try:
+                auth_payload = {
+                    "patient_id": patient_id,
+                    "patient_name": patient.name,
+                    "uhid": patient.uhid,
+                    "status": "authorized",
+                    "action": "GRANT",
+                    "message": f"Patient {patient.name} has confirmed authorization and is now linked."
+                }
+                realtime_manager.emit_to_doctor_sync(
+                    str(doc_id),
+                    "PATIENT_LINK_AUTHORIZED",
+                    auth_payload
+                )
+                realtime_manager.emit_to_doctor_sync(
+                    str(doc_id),
+                    "PATIENT_AUTHORIZED",
+                    auth_payload
+                )
+            except Exception as e:
+                logger.warning(f"Realtime emit notice on auth grant: {e}")
+
         import uuid
         try:
             log = ConsentLog(
@@ -1551,6 +1588,20 @@ def respond_live_patient_authorization(patient_id: str, payload: dict, db: Sessi
     else:
         if patient_id in _live_consent_requests:
             _live_consent_requests[patient_id]["status"] = "DECLINED"
+            doc_id = _live_consent_requests[patient_id].get("doctor_id")
+            if doc_id:
+                try:
+                    decline_payload = {
+                        "patient_id": patient_id,
+                        "patient_name": patient.name,
+                        "uhid": patient.uhid,
+                        "status": "declined",
+                        "action": "DECLINE"
+                    }
+                    realtime_manager.emit_to_doctor_sync(str(doc_id), "PATIENT_LINK_REJECTED", decline_payload)
+                    realtime_manager.emit_to_doctor_sync(str(doc_id), "PATIENT_AUTHORIZATION_DECLINED", decline_payload)
+                except Exception:
+                    pass
         return {
             "success": True,
             "consent_status": False,
@@ -1603,6 +1654,19 @@ def submit_patient_vitals_checkin(patient_id: str, payload: dict, db: Session = 
         latest_visit.day3_followup_status = "responded"
         latest_visit.day3_followup_response = checkin_record
         db.commit()
+        if latest_visit.doctor_id:
+            try:
+                realtime_manager.emit_to_doctor_sync(
+                    str(latest_visit.doctor_id),
+                    "PATIENT_VITAL_UPDATED",
+                    {
+                        "patient_id": patient_id,
+                        "patient_name": patient.name,
+                        "vitals": checkin_record
+                    }
+                )
+            except Exception as e:
+                logger.warning(f"Realtime emit notice on vitals check-in: {e}")
 
     return {
         "success": True,

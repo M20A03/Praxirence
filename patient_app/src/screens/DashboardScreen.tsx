@@ -880,6 +880,12 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
     setVitals(updated);
     await mobileApi.saveVitals(user.id, updated);
+    try {
+      const activeDocId = visits && visits.length > 0 ? visits[0].doctor_id : null;
+      if (activeDocId) {
+        patientRealtime.sendVitalUpdate(activeDocId, updated);
+      }
+    } catch (_) {}
     setShowVitalsModal(false);
     Alert.alert('Vitals Recorded', `Status: ${note}. Your health trends have been updated.`);
   };
@@ -1170,6 +1176,12 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     setTakenReminders(updated);
     try {
       await AsyncStorage.setItem(`@praxirence_doses_${user.id}_${todayStr}`, JSON.stringify(updated));
+    } catch (_) {}
+    try {
+      const activeDocId = visits && visits.length > 0 ? visits[0].doctor_id : null;
+      if (activeDocId) {
+        patientRealtime.sendPillConfirmation(activeDocId, key, 'scheduled_dose');
+      }
     } catch (_) {}
     Alert.alert('Dose Logged', 'Great job staying on track with your medication schedule!');
   };

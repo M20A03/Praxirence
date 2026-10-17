@@ -124,13 +124,16 @@ def test_audit_remediation_security_and_logic():
     assert pat_idor_visits.status_code == 403
 
     # 7. Verify Task 5 & Task 9: Booking, Status State Machine & Batch Confirmation
-    tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+    target_date = datetime.now() + timedelta(days=1)
+    if target_date.strftime("%a") == "Sun":
+        target_date += timedelta(days=1)
+    booking_date = target_date.strftime("%Y-%m-%d")
     book_res = client.post(
         "/visits/book-slot",
         json={
             "doctor_id": doc_id,
             "patient_id": pat_a_id,
-            "appointment_date": tomorrow,
+            "appointment_date": booking_date,
             "time_slot": "11:00 AM",
             "booking_type": "in_person"
         }

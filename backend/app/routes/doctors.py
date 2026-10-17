@@ -248,6 +248,9 @@ def list_doctors(
             "unavailable_dates": unavail_dates,
             "consultation_fee": getattr(d, "consultation_fee", 500) or 500,
             "is_available_today": is_available_today,
+            "current_delay_mins": getattr(d, "current_delay_mins", 0) or 0,
+            "is_on_leave": getattr(d, "is_on_leave", False) or False,
+            "leave_reason": getattr(d, "leave_reason", None),
             "rating": doc_rating,
             "review_count": doc_review_count,
             "role": "doctor"
@@ -478,6 +481,7 @@ def update_doctor_schedule_me(
 @router.post("/me/leave")
 def toggle_doctor_leave(
     payload: LeaveToggleRequest,
+    request: Request = None,
     doctor_id: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
@@ -489,6 +493,16 @@ def toggle_doctor_leave(
     doctor = None
     if doctor_id:
         doctor = db.query(User).filter(User.id == doctor_id).first()
+    if not doctor and request:
+        try:
+            auth_header = request.headers.get("authorization", "")
+            if auth_header.startswith("Bearer "):
+                raw_token = auth_header.split(" ", 1)[1].strip()
+                claims = decode_access_token(raw_token)
+                if claims and claims.get("sub"):
+                    doctor = db.query(User).filter(User.id == claims["sub"]).first()
+        except Exception as e:
+            logger.warning(f"Leave doctor auth token notice: {e}")
     if not doctor:
         doctor = db.query(User).first()
     if not doctor:

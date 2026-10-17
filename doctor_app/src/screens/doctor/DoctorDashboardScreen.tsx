@@ -354,7 +354,7 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
     const waitingCount = (scheduleData?.total_scheduled || 0) - (scheduleData?.completed || 0);
     const hasQueueItems = Boolean(
       scheduleData?.queue &&
-      scheduleData.queue.some((q) => q.status === 'scheduled' || q.status === 'waiting' || q.status === 'draft' || q.status === 'deferred')
+      scheduleData.queue.some((q) => ['scheduled', 'confirmed', 'waiting', 'Waiting in Clinic', 'booked', 'draft', 'deferred'].includes(q.status))
     );
 
     if (waitingCount <= 0 && !hasQueueItems) {

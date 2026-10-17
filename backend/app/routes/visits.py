@@ -270,6 +270,11 @@ def create_structured_visit(
                 )
                 realtime_manager.emit_to_patient_sync(
                     str(visit.patient_id),
+                    "NEW_PRESCRIPTION_ISSUED",
+                    {"visit_id": visit.id, "doctor_name": current_doctor.name}
+                )
+                realtime_manager.emit_to_patient_sync(
+                    str(visit.patient_id),
                     "QUEUE_UPDATE",
                     {"action": "completed", "visit_id": visit.id, "status": "approved", "token": token_disp}
                 )
@@ -739,6 +744,11 @@ def approve_and_send_care_plan(
             realtime_manager.emit_to_patient_sync(
                 str(visit.patient_id),
                 "NEW_PRESCRIPTION",
+                {"visit_id": visit.id, "doctor_name": current_doctor.name}
+            )
+            realtime_manager.emit_to_patient_sync(
+                str(visit.patient_id),
+                "NEW_PRESCRIPTION_ISSUED",
                 {"visit_id": visit.id, "doctor_name": current_doctor.name}
             )
             realtime_manager.emit_to_patient_sync(
@@ -1671,7 +1681,7 @@ def advance_visit_queue_status(
     if not visit:
         raise HTTPException(status_code=404, detail="Visit not found")
 
-    valid_statuses = ["scheduled", "in_progress", "completed", "cancelled", "skipped", "deferred", "reschedule_required"]
+    valid_statuses = ["scheduled", "confirmed", "waiting", "booked", "in_progress", "completed", "cancelled", "skipped", "deferred", "reschedule_required"]
     if payload.status not in valid_statuses:
         raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of {valid_statuses}")
 

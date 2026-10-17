@@ -333,6 +333,9 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
             style: 'destructive',
             onPress: async () => {
               if (selectedPatientId) {
+                try {
+                  doctorRealtime.sendPrescriptionNotification(selectedPatientId, diagnosis.trim() || 'General Consultation', medicines.length);
+                } catch (_) {}
                 await AsyncStorage.removeItem(`@praxirence_consult_draft_${selectedPatientId}`).catch(() => {});
               }
               resetConsultationForm();
@@ -691,6 +694,9 @@ export const DoctorNewConsultationScreen: React.FC<DoctorNewConsultationScreenPr
         }
 
         if (selectedPatientId) {
+          try {
+            doctorRealtime.sendPrescriptionNotification(selectedPatientId, diagnosis.trim() || 'Clinical Care Plan', medicines.length);
+          } catch (_) {}
           await AsyncStorage.removeItem(`@praxirence_consult_draft_${selectedPatientId}`).catch(() => {});
         }
 

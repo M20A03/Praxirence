@@ -60,7 +60,7 @@ async def websocket_endpoint(websocket: WebSocket, role: str, user_id: str):
                         await realtime_manager.emit_to_doctor(doc_id, "PATIENT_PILL_CONFIRMED", pill_data)
                         await realtime_manager.emit_to_doctor(doc_id, "PILL_TAKEN", pill_data)
 
-                elif event_type == "VITAL_RECORDED" and role == "patient":
+                elif event_type in ["VITAL_RECORDED", "VITALS_LOGGED"] and role == "patient":
                     doc_id = payload.get("doctor_id")
                     if doc_id:
                         await realtime_manager.emit_to_doctor(doc_id, "PATIENT_VITAL_UPDATED", {

@@ -485,6 +485,7 @@ appointments_alias_router = APIRouter(prefix="/appointments", tags=["Appointment
 appointments_alias_router.add_api_route("/pending", visits.get_pending_appointments, methods=["GET"])
 appointments_alias_router.add_api_route("/{visit_id}/confirm", visits.confirm_pending_appointment, methods=["POST"])
 appointments_alias_router.add_api_route("/{visit_id}/reject", visits.reject_pending_appointment, methods=["POST"])
+appointments_alias_router.add_api_route("/batch-confirm", visits.batch_confirm_pending_appointments, methods=["POST"])
 app.include_router(appointments_alias_router)
 app.include_router(appointments_alias_router, prefix="/api/v1")
 

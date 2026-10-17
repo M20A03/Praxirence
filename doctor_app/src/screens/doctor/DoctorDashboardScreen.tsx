@@ -870,27 +870,34 @@ export const DoctorDashboardScreen: React.FC<DoctorDashboardScreenProps> = ({
                 elevation: 1,
               }}
             >
+              {/* Row 1: Title & Set Number Action */}
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Ionicons name="people" size={15} color={isFull ? '#DC2626' : '#0D9488'} />
                   <Text style={{ fontSize: 13, fontWeight: '700', color: '#0F172A' }}>
                     Daily Consultation Capacity
                   </Text>
-                  <View style={{ backgroundColor: '#F1F5F9', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                    <Ionicons name="pencil" size={10} color="#0D9488" />
-                    <Text style={{ fontSize: 10, fontWeight: '700', color: '#0D9488' }}>Set Number</Text>
-                  </View>
                 </View>
+                <View style={{ backgroundColor: '#F1F5F9', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Ionicons name="pencil" size={11} color="#0D9488" />
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#0D9488' }}>Set Limit</Text>
+                </View>
+              </View>
+              {/* Row 2: Status & Slots Count (Guaranteed No Overflow) */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: '#64748B' }}>
+                  {currentCount} of {limit} Patients Booked
+                </Text>
                 <View style={{
                   backgroundColor: isFull ? '#FEF2F2' : '#F0FDFA',
                   borderWidth: 1,
                   borderColor: isFull ? '#FECACA' : '#CCFBF1',
                   paddingHorizontal: 8,
                   paddingVertical: 2,
-                  borderRadius: 12,
+                  borderRadius: 10,
                 }}>
                   <Text style={{ fontSize: 11, fontWeight: '700', color: isFull ? '#B91C1C' : '#0F766E' }}>
-                    {currentCount} / {limit} Patients {isFull ? '(FULL)' : `(${Math.max(0, limit - currentCount)} left)`}
+                    {isFull ? 'CAPACITY FULL' : `${Math.max(0, limit - currentCount)} slots left`}
                   </Text>
                 </View>
               </View>

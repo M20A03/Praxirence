@@ -63,6 +63,33 @@ def strip_emojis(text: str) -> str:
     return cleaned.strip()
 
 
+def clean_clinical_text(text: str) -> str:
+    """
+    Sanitizes AI-generated output for patient clinical display:
+    - Strips emojis.
+    - Strips markdown asterisks: **bold** -> bold, *italic* -> italic.
+    - Converts markdown bullet asterisks (* item) into clean bullets (• item).
+    - Removes double-slash syntax artifacts (//, // notes).
+    - Strips markdown headers (###, ##, #) and code ticks.
+    - Normalizes spacing and clean line breaks.
+    """
+    if not text:
+        return ""
+    text = strip_emojis(text)
+    text = re.sub(r'```[a-zA-Z]*\n?', '', text)
+    text = re.sub(r'`', '', text)
+    text = re.sub(r'(?m)^#{1,6}\s*', '', text)
+    text = re.sub(r'(?m)^\s*//\s*', '', text)
+    text = re.sub(r'\s*//\s*', ' — ', text)
+    text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
+    text = re.sub(r'\*([^*]+)\*', r'\1', text)
+    text = re.sub(r'(?m)^\s*[\*\-]\s+', '• ', text)
+    text = re.sub(r'\*+', '', text)
+    text = re.sub(r'[ \t]+', ' ', text)
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    return text.strip()
+
+
 def generate_grounded_fallback(
     query: str,
     language: str,
@@ -565,7 +592,7 @@ async def patient_chat_assistant(
             "3. NEVER refuse to give health guidance. NEVER say 'I cannot provide medical advice'. You MUST provide supportive home care guidance while recommending professional consultation for definitive diagnosis.\n"
             "4. If the patient asks about missed doses, explain: take immediately unless close to next scheduled dose; never double up.\n"
             "5. If the patient asks about food timings, provide standard pharmacological guidance (e.g. PPIs on empty stomach, NSAIDs after food, thyroid 30 min before breakfast).\n"
-            "6. Do NOT use emojis under any circumstances to maintain clinical dignity.\n"
+            "6. Do NOT use emojis. Do NOT use Markdown formatting such as asterisks (** or *), hashtags (###), or double slashes (//). Use clean plain text with standard bullet points (•) for lists.\n"
             "7. Structure your response with clear numbered points and bullet points for readability.\n"
             f"8. Support natural code-switching and respond in the patient's language: {req.language}."
         )
@@ -608,7 +635,7 @@ async def patient_chat_assistant(
                             reply_texts = [p.get("text", "") for p in parts if p.get("text")]
                             if reply_texts:
                                 raw_reply = "\n\n".join(reply_texts)
-                                llm_reply = strip_emojis(raw_reply)
+                                llm_reply = clean_clinical_text(raw_reply)
                                 logger.info(f"Successfully generated grounded response via Google Gemini API ({model_name}).")
                                 break
                     else:
@@ -667,7 +694,7 @@ async def patient_chat_assistant(
         active_medications=req.active_medications
     )
 
-    clean_reply = strip_emojis(reply_text)
+    clean_reply = clean_clinical_text(reply_text)
 
     return ChatResponse(
         reply=clean_reply,

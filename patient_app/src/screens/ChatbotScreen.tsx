@@ -79,6 +79,19 @@ const cleanDoctorName = (name?: string): string => {
   return `Dr. ${clean || 'Physician'}`;
 };
 
+function formatCleanClinicalText(raw: string): string {
+  if (!raw) return '';
+  return raw
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/^(\s*)\/\/\s*/gm, '$1')
+    .replace(/\s*\/\/\s*/g, ' — ')
+    .replace(/^[\*\-]\s+/gm, '• ')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/\*+/g, '')
+    .trim();
+}
+
 export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
   user,
   onNavigateToDoctors,
@@ -417,7 +430,7 @@ export const ChatbotScreen: React.FC<ChatbotScreenProps> = ({
                   ]}
                   selectable={!isUser}
                 >
-                  {msg.text}
+                  {isUser ? msg.text : formatCleanClinicalText(msg.text)}
                 </Text>
 
                 {/* ESI Tier-1 Hospital-Grade Emergency Alert Card */}

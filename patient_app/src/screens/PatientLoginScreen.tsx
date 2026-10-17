@@ -156,7 +156,12 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
 
   // Request Email OTP
   const handleRequestEmailOtp = async () => {
-    if (isRequestingOtpRef.current || loading || resendCooldown > 0) return;
+    if (loading) return;
+    if (resendCooldown > 0) {
+      setError(`Please wait ${resendCooldown}s before requesting another verification code.`);
+      return;
+    }
+    if (isRequestingOtpRef.current) return;
     if (!email.trim() || !email.includes('@')) {
       setError('Please enter a valid email address.');
       return;
@@ -182,8 +187,17 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
       setLoading(false);
       setTimeout(() => {
         isRequestingOtpRef.current = false;
-      }, 1200);
+      }, 1000);
     }
+  };
+
+  const handleResetToEmailStep = () => {
+    setEmailOtpSent(false);
+    setEmailOtpCode('');
+    setError(null);
+    setSuccessNotice(null);
+    setResendCooldown(0);
+    isRequestingOtpRef.current = false;
   };
 
   // Verify Email OTP
@@ -282,19 +296,25 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
               />
             </View>
 
-            {!emailOtpSent ? (
+            {!(emailOtpSent || (Boolean(successNotice) && email.trim().length > 3)) ? (
               <TouchableOpacity
-                style={[styles.primaryBtn, { backgroundColor: '#10b981' }, loading && { opacity: 0.8 }]}
+                style={[
+                  styles.primaryBtn,
+                  { backgroundColor: '#10b981' },
+                  (loading || resendCooldown > 0) && { opacity: 0.8 }
+                ]}
                 activeOpacity={0.7}
                 onPress={handleRequestEmailOtp}
-                disabled={loading}
+                disabled={loading || resendCooldown > 0}
               >
                 {loading ? (
                   <ActivityIndicator color="#ffffff" />
                 ) : (
                   <>
                     <Ionicons name="mail-outline" size={18} color="#ffffff" />
-                    <Text style={styles.primaryBtnText}>Send Verification Code to Email</Text>
+                    <Text style={styles.primaryBtnText}>
+                      {resendCooldown > 0 ? `Wait ${resendCooldown}s to Resend` : 'Send Verification Code to Email'}
+                    </Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -357,7 +377,7 @@ export const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onAuthen
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    onPress={() => { setEmailOtpSent(false); setEmailOtpCode(''); setError(null); }}
+                    onPress={handleResetToEmailStep}
                     activeOpacity={0.7}
                     style={{ paddingVertical: 8 }}
                   >

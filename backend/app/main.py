@@ -569,3 +569,26 @@ async def download_patient_apk():
                 }
             )
     raise HTTPException(status_code=404, detail="Patient APK binary not found on server.")
+
+
+@app.get("/downloads/Praxirence-Doctor.apk")
+async def download_doctor_apk():
+    """Serves the verified production Praxirence Doctor App APK directly."""
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    apk_candidates = [
+        os.path.join(base_dir, "Praxirence-APKs", "Praxirence-Doctor.apk"),
+        os.path.join(base_dir, "web_app", "public", "downloads", "Praxirence-Doctor.apk"),
+        os.path.join(base_dir, "doctor_app", "android", "app", "build", "outputs", "apk", "release", "app-release.apk"),
+    ]
+    for candidate in apk_candidates:
+        if os.path.isfile(candidate) and os.path.getsize(candidate) > 1000000:
+            return FileResponse(
+                candidate,
+                media_type="application/vnd.android.package-archive",
+                filename="Praxirence-Doctor.apk",
+                headers={
+                    "Content-Disposition": "attachment; filename=Praxirence-Doctor.apk",
+                    "Cache-Control": "public, max-age=3600"
+                }
+            )
+    raise HTTPException(status_code=404, detail="Doctor APK binary not found on server.")
